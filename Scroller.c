@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.109 2001/05/05 07:42:37 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.110 2001/05/06 01:50:22 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1301,17 +1301,16 @@ static void Destroy(Widget widget)
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
-    DPRINTF((stderr, "Resize()\n"));
-#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
 
-    /* Nothing to do if we're not yet realized or if the width hasn't changed */
+    /* If the widget isn't realized then just update the gap size */
     if (! XtIsRealized(widget))
     {
 	self -> scroller.left_holder -> width = self -> core.width;
 	return;
     }
 
+    /* If we're using an offscreen pixmap then we'll need a new one */
     if (self -> scroller.use_pixmap)
     {
 	/* Otherwise we need a new offscreen pixmap */
@@ -1348,34 +1347,36 @@ static void Resize(Widget widget)
 	    /* Did we find one? */
 	    if (holder -> glyph == self -> scroller.gap)
 	    {
-		int new_width;
-
 		/* Determine how wide the gap *should* be */
 		if (holder -> previous != NULL)
 		{
-		    new_width = gap_width(self, glyph_holder_width(holder -> previous));
+		    holder -> width = gap_width(self, glyph_holder_width(holder -> previous));
 		}
 		else
 		{
-		    glyph_t glyph = self -> scroller.left_glyph -> previous;
-
-		    if (glyph != self -> scroller.gap)
+		    glyph_t glyph = holder -> glyph -> previous;
+		    while (glyph -> is_expired(glyph))
 		    {
-			new_width = gap_width(self, glyph -> get_width(glyph));
+			glyph = glyph -> previous;
+		    }
+
+		    /* Watch for the gap */
+		    if (glyph == self -> scroller.gap)
+		    {
+			holder -> width = self -> core.width;
 		    }
 		    else
 		    {
-			new_width = self -> core.width;
+			holder -> width = gap_width(self, glyph -> get_width(glyph));
 		    }
 		}
-
-		holder -> width = new_width;
 	    }
 
 	    offset += holder -> width;
 	    holder = holder -> previous;
 	}
 
+	/* Adjust the left offset and update the edges */
 	self -> scroller.left_offset = offset - self -> core.width;
 	adjust_left_left(self);
 	adjust_right_left(self);
@@ -1389,17 +1390,17 @@ static void Resize(Widget widget)
 	holder = holder -> next;
 	while (holder != NULL)
 	{
-	    /* Did we find one? */
+	    /* Adjust the width of the gap */
 	    if (holder -> glyph == self -> scroller.gap)
 	    {
-		int new_width = gap_width(self, glyph_holder_width(holder -> previous));
-		holder -> width = new_width;
+		holder -> width = gap_width(self, glyph_holder_width(holder -> previous));
 	    }
 
 	    offset += holder -> width;
 	    holder = holder -> next;
 	}
 
+	/* Adjust the right offset and update the edges */
 	self -> scroller.right_offset = offset - self -> core.width;
 	adjust_right_right(self);
 	adjust_left_right(self);
@@ -1411,7 +1412,6 @@ static void Resize(Widget widget)
 	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
 	Redisplay(self, NULL);
     }
-#endif
 }
 
 /* What should this do? */
