@@ -28,19 +28,15 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.54 1999/10/02 08:06:19 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.55 1999/10/02 08:30:00 phelps Exp $";
 #endif /* lint */
-
-/* These must be defined for us to have access to crypt() and
- * gethostid() simultaneously */
-#define _XOPEN_SOURCE
-#define _BSD_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#include <crypt.h>
 #include <time.h>
 #include <pwd.h>
 #include "sanity.h"
@@ -1111,7 +1107,7 @@ static char *crypt_id(time_t now)
     sprintf(hostid, "%08lx", (long)gethostid());
 
     /* Return the encrypted result */
-    return crypt(salt, hostid);
+    return crypt(hostid, salt);
 }
 
 /* Generates a universally unique identifier for a message */
