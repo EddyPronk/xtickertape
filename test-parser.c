@@ -331,7 +331,7 @@ static int prim_defun(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t err
     }
 
     /* Assign the lambda to the function name */
-    return env_assign(env, symbol, *result, error);
+    return env_set(env, symbol, *result, error);
 }
 
 /* The `eq' primitive function */
@@ -545,7 +545,7 @@ static int prim_lambda(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t er
     }
 
     /* Grab references to the env, arg list and body */
-    if (env_alloc_ref(env, error) == 0 ||
+    if (sexp_alloc_ref(env, error) == 0 ||
 	sexp_alloc_ref(arg_list, error) == 0 ||
 	sexp_alloc_ref(body, error) == 0)
     {
@@ -1374,7 +1374,7 @@ static int prim_setq(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t erro
     }
 
     /* Assign it */
-    if (! env_assign(env, symbol, *result, error))
+    if (! env_set(env, symbol, *result, error))
     {
 	return 0;
     }
@@ -1384,11 +1384,11 @@ static int prim_setq(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 
 
 /* Initializes the Lisp evaluation engine */
-static sexp_t root_env_alloc(elvin_error_t error)
+static sexp_t make_root_env(elvin_error_t error)
 {
     sexp_t env;
 
-    if ((env = env_alloc(nil_alloc(error), error)) == NULL)
+    if ((env = root_env_alloc(error)) == NULL)
     {
 	return NULL;
     }
@@ -1397,7 +1397,7 @@ static sexp_t root_env_alloc(elvin_error_t error)
     if (env_set_symbol(env, "t", "t", error) == 0 ||
 	env_set_float(env, "pi", M_PI, error) == 0)
     {
-	env_free(env, NULL);
+	sexp_free(env, NULL);
 	return NULL;
     }
 
@@ -1418,7 +1418,7 @@ static sexp_t root_env_alloc(elvin_error_t error)
 	env_set_builtin(env, "setq", prim_setq, error) == 0 ||
 	env_set_builtin(env, "*", prim_times, error) == 0)
     {
-	env_free(env, NULL);
+	sexp_free(env, NULL);
 	return NULL;
     }
 
@@ -1448,7 +1448,7 @@ int main(int argc, char *argv[])
     }
 
     /* Allocate the root environment */
-    if ((root_env = root_env_alloc(error)) == NULL)
+    if ((root_env = make_root_env(error)) == NULL)
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);
@@ -1514,9 +1514,9 @@ int main(int argc, char *argv[])
     }
 
     /* Free the root environment */
-    if (env_free(root_env, error) == 0)
+    if (sexp_free(root_env, error) == 0)
     {
-	fprintf(stderr, "env_free(): failed\n");
+	fprintf(stderr, "sexp_free(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }

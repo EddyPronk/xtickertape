@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.16 2000/11/13 13:47:54 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.17 2000/11/17 04:04:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -69,6 +69,15 @@ struct lambda
     sexp_t body;
 };
 
+/* A (non-root) environment */
+struct env
+{
+    sexp_t parent;
+    sexp_t arg_names;
+    uint32_t arg_count;
+    sexp_t args[1];
+};
+
 /* An sexp can be many things */
 struct sexp
 {
@@ -88,6 +97,7 @@ struct sexp
 	struct cons c;
 	struct builtin b;
 	struct lambda l;
+	struct env e;
     } value;
 };
 
@@ -511,7 +521,7 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	{
 	    int result;
 
-	    result = env_free(sexp -> value.l.env, error);
+	    result = sexp_free(sexp -> value.l.env, error);
 	    result = sexp_free(sexp -> value.l.arg_list, error);
 	    result = sexp_free(sexp -> value.l.body, result ? error : NULL) && result;
 	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
@@ -623,6 +633,53 @@ int sexp_print(sexp_t sexp)
 }
 
 
+/* Returns the length of an sexp (list or string) */
+int sexp_length(sexp_t sexp, uint32_t *length_out, elvin_error_t error)
+{
+    switch (sexp_get_type(sexp))
+    {
+	/* Strings have lengths */
+	case SEXP_STRING:
+	{
+	    return strlen(sexp -> value.s);
+	}
+
+	/* We let `nil' count as a zero-length list */
+	case SEXP_NIL:
+	{
+	    *length_out = 0;
+	    return 1;
+	}
+
+	/* Only properly formatted lists have lengths */
+	case SEXP_CONS:
+	{
+	    *length_out = 0;
+	    while (sexp_get_type(sexp) == SEXP_CONS)
+	    {
+		sexp = cons_cdr(sexp, error);
+		(*length_out)++;
+	    }
+
+	    /* Make sure we've got a proper list */
+	    if (sexp_get_type(sexp) != SEXP_NIL)
+	    {
+		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus list");
+		return 0;
+	    }
+
+	    return 1;
+	}
+
+	/* Nothing else works */
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+	    return 0;
+	}
+    }
+}
+
 /* Initialize an environment from an arg list and a set of args */
 static int init_env_with_args(
     sexp_t env,
@@ -670,6 +727,7 @@ static int init_env_with_args(
     return 1;
 }
 
+
 /* Evaluates a function */
 static int funcall(
     sexp_t function,
@@ -694,19 +752,12 @@ static int funcall(
 	    sexp_t body;
 
 	    /* Create an environment for execution */
-	    if ((lambda_env = env_alloc(function -> value.l.env, error)) == NULL)
-	    {
-		return 0;
-	    }
-
-	    /* Map the args to their values */
-	    if ((init_env_with_args(
-		     lambda_env, env,
+	    if ((lambda_env = env_alloc(
+		     function -> value.l.env,
 		     function -> value.l.arg_list,
 		     args,
-		     error)) == 0)
+		     error)) == NULL)
 	    {
-		env_free(lambda_env, NULL);
 		return 0;
 	    }
 
@@ -726,12 +777,12 @@ static int funcall(
 	    if (sexp_get_type(body) != SEXP_NIL)
 	    {
 		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "dotted func body");
-		env_free(lambda_env, NULL);
+		sexp_free(lambda_env, NULL);
 		return 0;
 	    }
 
 	    /* Free the environment */
-	    if (env_free(lambda_env, error) == 0)
+	    if (sexp_free(lambda_env, error) == 0)
 	    {
 		return 0;
 	    }
@@ -784,7 +835,7 @@ int sexp_eval(sexp_t sexp, sexp_t env, sexp_t *result, elvin_error_t error)
 	    }
 
 	    /* Increment its reference count */
-	    (*result) -> ref_count++;
+	    sexp_alloc_ref(*result, error);
 	    return 1;
 	}
 
@@ -821,47 +872,136 @@ int sexp_eval(sexp_t sexp, sexp_t env, sexp_t *result, elvin_error_t error)
 }
 
 /* Allocates and initializes an environment */
-sexp_t env_alloc(sexp_t parent, elvin_error_t error)
+sexp_t root_env_alloc(elvin_error_t error)
 {
-    /* Allocate a cons cell to hold the environment's parent and alist */
-    return cons_alloc(parent, nil_alloc(error), error);
+    /* For now, the root environment is an a-list */
+    return cons_alloc(nil_alloc(error), nil_alloc(error), error);
 }
 
-/* Allocates another reference to the environment */
-int env_alloc_ref(sexp_t env, elvin_error_t error)
+/* Allocates a non-root environment with the given arg list and values */
+sexp_t env_alloc(sexp_t parent, sexp_t arg_names, sexp_t args, elvin_error_t error)
 {
-    return sexp_alloc_ref(env, error);
+    uint32_t length, i;
+    sexp_t sexp;
+
+    /* Count the number of args in the arg_list (and verify that it ends nicely) */
+    if (! sexp_length(arg_names, &length, error))
+    {
+	return NULL;
+    }
+
+    /* Create the environment with enough space for the values */
+    if ((sexp = (sexp_t)ELVIN_MALLOC(sizeof(struct sexp) + length * sizeof(sexp_t), error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Record the type */
+    sexp -> type = SEXP_ENV;
+    sexp -> ref_count = 1;
+
+    /* Copy the values into place */
+    for (i = 0; i < length; i++)
+    {
+	sexp_t arg;
+
+	/* Make sure we have a list */
+	if (sexp_get_type(args) != SEXP_CONS)
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	    return NULL;
+	}
+
+	/* Copy the arg */
+	arg = cons_car(args, error);
+	sexp_alloc_ref(arg, error);
+	sexp -> value.e.args[i] = arg;
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure we're ok */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return NULL;
+    }
+
+    /* Record the parent */
+    sexp -> value.e.parent = parent;
+    sexp_alloc_ref(parent, error);
+
+    /* Record the arg names */
+    sexp -> value.e.arg_names = arg_names;
+    sexp_alloc_ref(arg_names, error);
+
+    /* Record the number of args */
+    sexp -> value.e.arg_count = length;
+    return sexp;
 }
 
-/* Frees an environment and all of its references */
-int env_free(sexp_t env, elvin_error_t error)
+
+/* Returns the index into the list of the given value */
+int list_index(sexp_t list, sexp_t value, uint32_t *result, elvin_error_t error)
 {
-    return sexp_free(env, error);
+    *result = 0;
+
+    /* Look through the list starting from the beginning */
+    while (sexp_get_type(list) == SEXP_CONS)
+    {
+	/* Only do pointer equality for now */
+	if (cons_car(list, error) == value)
+	{
+	    return 1;
+	}
+
+	list = cons_cdr(list, error);
+	(*result)++;
+    }
+
+    return 0;
 }
 
 /* Looks up a symbol's value in the environment */
 int env_get(sexp_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 {
-    /* Keep checking until we run out of parent environments */
-    while (env != &nil)
+    /* Keep checking until we get to the root environment */
+    while (sexp_get_type(env) == SEXP_ENV)
     {
-	/* Look for an assocation */
-	if (assoc(symbol, cons_cdr(env, error), result, error) == 0)
-	{
-	    return 0;
-	}
+	uint32_t i;
 
-	/* Did we find a match */
-	if (*result != &nil)
+	/* Check through the args to see if we find a match */
+	if (list_index(env -> value.e.arg_names, symbol, &i, error) != 0)
 	{
-	    *result = cons_cdr(*result, error);
+	    *result = env -> value.e.args[i];
 	    return 1;
 	}
 
-	/* Move on to the parent environment */
-	env = cons_car(env, error);
+	env = env -> value.e.parent;
     }
 
+    /* Sanity check: the root environment should be a cons cell */
+    if (sexp_get_type(env) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus environment");
+	return 0;
+    }
+
+    /* Check in the root environment */
+    if (assoc(symbol, cons_cdr(env, error), result, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Did we find a match */
+    if (*result != &nil)
+    {
+	*result = cons_cdr(*result, error);
+	return 1;
+    }
+
+    /* No match */
     ELVIN_ERROR_LISP_SYM_UNDEF(error, symbol_name(symbol, error));
     return 0;
 }
@@ -871,6 +1011,20 @@ int env_set(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
     sexp_t pair;
     sexp_t alist;
+
+    /* Hunt for the variable in non-root environments */
+    while (sexp_get_type(env) == SEXP_ENV)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "env_set");
+	return 0;
+    }
+
+    /* Sanity check: the root environment should be a cons cell */
+    if (sexp_get_type(env) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus environment");
+	return 0;
+    }
 
     /* Create a new association */
     if ((pair = cons_alloc(symbol, value, error)) == NULL)
@@ -886,39 +1040,14 @@ int env_set(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
     /* Allocate some references */
     sexp_alloc_ref(symbol, error);
     sexp_alloc_ref(value, error);
-
     return 1;
 }
 
 /* Sets a symbol's value in the appropriate environment */
 int env_assign(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
-    sexp_t pair;
-
-    /* Look for a non-root environment which defines the symbol */
-    while (cons_car(env, error) != &nil)
-    {
-	/* Do we have a match? */
-	if (assoc(symbol, cons_cdr(env, error), &pair, error) == 0)
-	{
-	    return 0;
-	}
-
-	/* If it's mentioned in this environment then set its value */
-	if (pair != &nil)
-	{
-	    sexp_free(pair -> value.c.cdr, error);
-	    pair -> value.c.cdr = value;
-	    sexp_alloc_ref(value, error);
-	    return 1;
-	}
-
-	/* No luck.  Try the parent environment */
-	env = cons_car(env, error);
-    }
-
-    /* We must be in the root environment */
-    return env_set(env, symbol, value, error);
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "env_assign");
+    return 0;
 }
 
 /* Sets the named symbol's value */

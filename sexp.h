@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.9 2000/11/13 13:47:54 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.10 2000/11/17 04:04:31 phelps Exp $";
 #endif /* lint */
 
 /* The types of sexps */
@@ -46,7 +46,8 @@ typedef enum
     SEXP_SYMBOL,
     SEXP_CONS,
     SEXP_BUILTIN,
-    SEXP_LAMBDA
+    SEXP_LAMBDA,
+    SEXP_ENV
 } sexp_type_t;
 
 /* An sexp_t is a an opaque struct */
@@ -137,14 +138,15 @@ sexp_t cons_cdr(sexp_t sexp, elvin_error_t error);
 sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error);
 
 
-/* Allocates and returns an evalutaion environment */
-sexp_t env_alloc(sexp_t parent, elvin_error_t error);
+/* Allocates a root environment */
+sexp_t root_env_alloc(elvin_error_t error);
+
+/* Allocates a non-root environment */
+sexp_t env_alloc(sexp_t parent, sexp_t arg_list, sexp_t args, elvin_error_t error);
 
 /* Allocates another reference to the environment */
 int env_alloc_ref(sexp_t env, elvin_error_t error);
 
-/* Frees an environment and all of its references */
-int env_free(sexp_t env, elvin_error_t error);
 
 /* Looks up a symbol's value in the environment */
 int env_get(sexp_t env, sexp_t sexp, sexp_t *result, elvin_error_t error);
