@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.55 1999/08/29 15:11:51 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.56 1999/09/26 07:00:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,6 +38,7 @@ static const char cvsid[] = "$Id: main.c,v 1.55 1999/08/29 15:11:51 phelps Exp $
 #endif /* HAVE_UNISTD_H */
 #include <getopt.h>
 #include <pwd.h>
+#include <signal.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
@@ -66,16 +67,17 @@ static struct option long_options[] =
 };
 
 /* Static function headers */
-static void QuitAction(
+static void do_quit(
     Widget widget, XEvent *event,
     String *params, Cardinal *cparams);
-static void Usage(int argc, char *argv[]);
-static void ParseArgs(
+static void usage(int argc, char *argv[]);
+static void parse_args(
     int argc, char *argv[],
     char **user_return, char **tickerDir_return,
     char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return);
-static Window CreateIcon(Widget shell);
+static Window create_icon(Widget shell);
+static void reload_subs(int signum);
 
 
 /* The Tickertape */
@@ -84,17 +86,17 @@ static tickertape_t tickertape;
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
-    {"quit", QuitAction}
+    {"quit", do_quit}
 };
 
 /* Callback for when the Window Manager wants to close a window */
-static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
+static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
     tickertape_quit(tickertape);
 }
 
 /* Print out usage message */
-static void Usage(int argc, char *argv[])
+static void usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
     fprintf(stderr, "  -h host,     --host=host\n");
@@ -107,7 +109,7 @@ static void Usage(int argc, char *argv[])
 }
 
 /* Parses arguments and sets stuff up */
-static void ParseArgs(
+static void parse_args(
     int argc, char *argv[],
     char **user_return, char **tickerDir_return,
     char **groupsFile_return, char **usenetFile_return,
@@ -173,29 +175,47 @@ static void ParseArgs(
 	    /* --help */
 	    case 'z':
 	    {
-		Usage(argc, argv);
+		usage(argc, argv);
 		exit(0);
 	    }
 
 	    /* Unknown option */
 	    default:
 	    {
-		Usage(argc, argv);
+		usage(argc, argv);
 		exit(1);
 	    }
 	}
     }
 
-    /* Set the user name if not specified on the command line */
-    if (*user_return == NULL)
+    /* If the user name was provided on the command-line then we're done */
+    if ((*user_return != NULL) && (**user_return != '\0'))
     {
-	*user_return = getpwuid(getuid()) -> pw_name;
+	return;
     }
+
+    /* Failing that, try the `USER' environment variable */
+    *user_return = getenv("USER");
+    if ((*user_return != NULL) && (**user_return != '\0'))
+    {
+	return;
+    }
+
+    /* Not there either.  How about the `LOGNAME' environment variable? */
+    *user_return = getenv("LOGNAME");
+    if ((*user_return != NULL) && (**user_return != '\0'))
+    {
+	return;
+    }
+
+    /* Not there either.  Pull rank and get the name from the uid */
+    *user_return = getpwuid(getuid()) -> pw_name;
+    return;
 }
 
 
 /* Create the icon window */
-static Window CreateIcon(Widget shell)
+static Window create_icon(Widget shell)
 {
     Display *display = XtDisplay(shell);
     Screen *screen = XtScreen(shell);
@@ -249,10 +269,16 @@ static Window CreateIcon(Widget shell)
     return window;
 }
 
+/* Signal handler which causes xtickertape to reload its subscriptions */
+static void reload_subs(int signum)
+{
+    tickertape_reload_groups(tickertape);
+    tickertape_reload_usenet(tickertape);
+}
 
 #ifndef HAVE_STRDUP
 /* Define strdup if it's not in the standard C library */
-char *strdup(char *string)
+char *strdup(const char *string)
 {
     char *result;
 
@@ -291,13 +317,16 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Scan what's left of the arguments */
-    ParseArgs(argc, argv, &user, &tickerDir, &groupsFile, &usenetFile, &host, &port);
+    parse_args(argc, argv, &user, &tickerDir, &groupsFile, &usenetFile, &host, &port);
 
     /* Create an Icon for the root shell */
-    XtVaSetValues(top, XtNiconWindow, CreateIcon(top), NULL);
+    XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
 
     /* Create a Tickertape */
     tickertape = tickertape_alloc(user, tickerDir, groupsFile, usenetFile, host, port, top);
+
+    /* Set up SIGHUP to reload the subscriptions */
+    signal(SIGHUP, reload_subs);
 
 #ifdef HAVE_LIBXMU
     /* Enable editres support */
