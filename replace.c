@@ -36,6 +36,9 @@
 #ifdef HAVE_CTYPE_H
 #include <ctype.h> /* toupper */
 #endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
 #include "replace.h"
 
 /* Replacements for standard functions */
@@ -120,5 +123,23 @@ char *strchr(const char *s, int c)
     }
 
     return NULL;
+}
+#endif
+
+#ifndef HAVE_STRDUP
+/* A slow but correct implementation of strdup */
+char *strdup(const char *s)
+{
+    size_t length;
+    char *result;
+
+    length = strlen(s) + 1;
+    if ((result = (char *)malloc(length)) == NULL)
+    {
+	return NULL;
+    }
+
+    memcpy(result, s, length);
+    return result;
 }
 #endif

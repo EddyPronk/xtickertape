@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.11 2002/04/23 16:22:25 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.12 2002/04/23 17:21:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -44,6 +44,7 @@ static const char cvsid[] = "$Id: usenet_parser.c,v 1.11 2002/04/23 16:22:25 phe
 #ifdef HAVE_STRING_H
 #include <string.h> /* strcmp, strdup */
 #endif
+#include "replace.h"
 #include "usenet_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64

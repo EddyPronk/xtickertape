@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.104 2002/04/23 16:38:56 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.105 2002/04/23 17:21:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -67,6 +67,7 @@ static const char cvsid[] = "$Id: main.c,v 1.104 2002/04/23 16:38:56 phelps Exp 
 #include <X11/Xmu/Editres.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
+#include "replace.h"
 #include "message.h"
 #include "tickertape.h"
 

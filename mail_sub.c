@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.31 2002/04/23 16:22:24 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.32 2002/04/23 17:21:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -44,6 +44,7 @@ static const char cvsid[] = "$Id: mail_sub.c,v 1.31 2002/04/23 16:22:24 phelps E
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
+#include "replace.h"
 #include "message.h"
 #include "mbox_parser.h"
 #include "mail_sub.h"
