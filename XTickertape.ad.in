@@ -129,24 +129,26 @@ XTickertape.metamailPath: @METAMAIL@
 ! Keyboard translations
 ! (go for a basic emacs feel)
 !
-*XmTextField.translations: #override \n\
-	~Meta ~Alt Ctrl<Key>a: beginning-of-line() \n\
-	~Meta ~Alt Ctrl<Key>b: backward-character() \n\
-	~Meta ~Alt Ctrl<Key>d: delete-next-character() \n\
-	~Meta ~Alt Ctrl<Key>e: end-of-line() \n\
-	~Meta ~Alt Ctrl<Key>f: forward-character() \n\
-	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line() \n
+*XmTextField.translations: #override\
+	~Meta ~Alt Ctrl<Key>a: beginning-of-line()\n\
+	~Meta ~Alt Ctrl<Key>b: backward-character()\n\
+	~Meta ~Alt Ctrl<Key>d: delete-next-character()\n\
+	~Meta ~Alt Ctrl<Key>e: end-of-line()\n\
+	~Meta ~Alt Ctrl<Key>f: forward-character()\n\
+	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line()
 
-*XmList.translations: #override \n\
-	~Meta ~Alt Ctrl<Key>a: ListBeginLine() \n\
-	~Meta ~Alt Ctrl<Key>e: ListEndLine() \n\
-	~Meta ~Alt Ctrl<Key>p: ListPrevItem() \n\
-	~Meta ~Alt Ctrl<Key>n: ListNextItem() \n
+*XmList.translations: #override\
+	~Meta ~Alt Ctrl<Key>a: ListBeginLine()\n\
+	~Meta ~Alt Ctrl<Key>e: ListEndLine()\n\
+	~Meta ~Alt Ctrl<Key>p: ListPrevItem()\n\
+	~Meta ~Alt Ctrl<Key>n: ListNextItem()
 
 !
 ! Scroller action translations
 !
-*.scroller.translations: #override\n\
+! Set XTickertape.scroller.translations to override these settings
+!
+*.scroller.baseTranslations: \
 	<Btn1Down>: start-drag()\n\
 	<Btn1Motion>: drag()\n\
 	<Btn1Up>: show-menu()\n\
@@ -169,12 +171,14 @@ XTickertape.metamailPath: @METAMAIL@
 	<Key>6: set-speed(6)\n\
 	<Key>7: set-speed(7)\n\
 	<Key>8: set-speed(8)\n\
-	<Key>9: set-speed(9)\n
+	<Key>9: set-speed(9)
 
 !
 ! History action translations
 !
-*.history.translations: #override \n\
+! Set XTickertape.history.translations to override these settings
+!
+*.history.baseTranslations: \
 	<Unmap>: PrimitiveUnmap()\n\
 	<Enter>: PrimitiveEnter()\n\
 	<Leave>: PrimitiveLeave()\n\
@@ -196,4 +200,4 @@ XTickertape.metamailPath: @METAMAIL@
 	<Key>osfUp: select-previous()\n\
 	<Key>osfDown: select-next()\n\
 	<Key>osfLeft: scroll-left()\n\
-	<Key>osfRight: scroll-right()\n
+	<Key>osfRight: scroll-right()
