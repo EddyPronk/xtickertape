@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.1 2000/07/06 14:00:01 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.2 2000/07/06 14:24:44 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -261,10 +261,145 @@ static int eval_boolean(ast_t value, int *result_out, elvin_error_t error)
 }
 
 /* Converts a list of strings into an elvin_keys_t */
-static int eval_keys(ast_t value, elvin_keys_t *keys_out, elvin_error_t error)
+static int eval_producer_keys(
+    ast_t value,
+    elvin_keys_t *keys_out,
+    elvin_error_t error)
 {
-    printf("eval_keys(): not yet implemented\n");
-    keys_out = NULL;
+    elvin_keys_t keys;
+    elvin_key_t key;
+    ast_t ast;
+
+    /* Don't accidentally return anything interesting */
+    *keys_out = NULL;
+
+    /* Make sure we were given a list */
+    if (value -> type != AST_LIST)
+    {
+	fprintf(stderr, "keys must be lists\n");
+	return 0;
+    }
+
+    /* If the list is empty then don't bother creating a key set */
+    if (value -> value.list == NULL)
+    {
+	return 1;
+    }
+
+    /* Allocate some room for the key set */
+    if (! (keys = elvin_keys_alloc(7, error)))
+    {
+	return 0;
+    }
+
+    /* Go through the list and add keys */
+    for (ast = value -> value.list; ast != NULL; ast = ast -> next)
+    {
+	/* FIX THIS: we should allow functions to read from files */
+	/* Make sure the key is a string */
+	if (ast -> type != AST_STRING)
+	{
+	    fprintf(stderr, "bad producer key type: %d\n", ast -> type);
+	    return 0;
+	}
+
+	/* Convert it to a producer key */
+	if (! (key = elvin_keyraw_alloc(
+	    ast -> value.string,
+	    strlen(ast -> value.string),
+	    error)))
+	{
+	    elvin_keys_free(keys, NULL);
+	    return 0;
+	}
+
+	/* Add it to the key set */
+	if (! elvin_keys_add(keys, key, error))
+	{
+	    elvin_key_free(key, NULL);
+	    elvin_keys_free(keys, NULL);
+	    return 0;
+	}
+
+	/* Release our reference to the key */
+	if (! elvin_key_free(key, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Success! */
+    *keys_out = keys;
+    return 1;
+}
+
+/* Converts a list of strings into an elvin_keys_t */
+static int eval_consumer_keys(
+    ast_t value,
+    elvin_keys_t *keys_out,
+    elvin_error_t error)
+{
+    elvin_keys_t keys;
+    elvin_key_t key;
+    ast_t ast;
+
+    /* Don't accidentally return anything interesting */
+    *keys_out = NULL;
+
+    /* Make sure we've been given a list */
+    if (value -> type != AST_LIST)
+    {
+	fprintf(stderr, "keys must be list\n");
+	return 0;
+    }
+
+    /* If the list is empty then don't bother creating a key set */
+    if (value -> value.list == NULL)
+    {
+	return 1;
+    }
+
+    /* Allocate some room for the key set */
+    if (! (keys = elvin_keys_alloc(7, error)))
+    {
+	return 0;
+    }
+
+    /* Go through the list and add keys */
+    for (ast = value -> value.list; ast != NULL; ast = ast -> next)
+    {
+	/* FIX THIS: we should allow functions to read from files */
+	/* Make sure the key is a string */
+	if (ast -> type != AST_STRING)
+	{
+	    fprintf(stderr, "bad consumer key type: %d\n", ast -> type);
+	    return 0;
+	}
+
+	/* Convert it into a consumer key */
+	if (! (key = elvin_keyprime_from_hexstring(ast -> value.string, error)))
+	{
+	    elvin_keys_free(keys, NULL);
+	    return 0;
+	}
+
+	/* Add it to the key set */
+	if (! elvin_keys_add(keys, key, error))
+	{
+	    elvin_key_free(key, NULL);
+	    elvin_keys_free(keys, NULL);
+	    return 0;
+	}
+
+	/* Release our reference to the key */
+	if (! elvin_key_free(key, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Success! */
+    *keys_out = keys;
     return 1;
 }
 
@@ -325,7 +460,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "consumer-keys") == 0)
 		{
-		    if (! eval_keys(value, &consumer_keys, error))
+		    if (! eval_consumer_keys(value, &consumer_keys, error))
 		    {
 			abort();
 		    }
@@ -427,7 +562,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "producer-keys") == 0)
 		{
-		    if (! eval_keys(value, &producer_keys, error))
+		    if (! eval_producer_keys(value, &producer_keys, error))
 		    {
 			abort();
 		    }
