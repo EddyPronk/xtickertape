@@ -1,7 +1,15 @@
+*.xpm
+.deps
+Makefile.in
+aclocal.m4
 alpha-dec-osfV3.2
 alpha-dec-osfV4.0
+config.cache
+config.log
+config.status
+configure
 ix86-gnu-linux2.0
 sparc-sun-solaris2.5
 sparc-sun-solaris2.6
 xtickertape
-*.xpm
+xtickertape-1.5.3.tar.gz
