@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.99 2002/07/08 05:27:15 croy Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.100 2002/11/16 21:50:57 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2008,8 +2008,12 @@ tickertape_t tickertape_alloc(
 #endif /* ENABLE_LISP_INTERPRETER */
 
     /* Set the handle's status callback */
-    handle -> status_cb = status_cb;
-    handle -> status_closure = self;
+    if (! elvin_handle_set_status_cb(handle, status_cb, self, self -> error))
+    {
+        fprintf(stderr, PACKAGE ": elvin_handle_set_status_cb(): failed\n");
+        elvin_error_fprintf(stderr, error);
+        exit(1);
+    }
 
     /* Connect to the elvin server */
     if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
