@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.14 1999/09/09 08:13:44 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.15 1999/09/09 13:30:19 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,7 +38,6 @@ static const char cvsid[] = "$Id: message_glyph.c,v 1.14 1999/09/09 08:13:44 phe
 #include "glyph.h"
 #include "ScrollerP.h"
 
-#define SPACING 10
 #define SEPARATOR ":"
 #define MAX(x, y) ((x > y) ? x : y)
 
@@ -76,6 +75,9 @@ struct message_glyph
 
     /* The width of the receiver's message string */
     unsigned int string_width;
+
+    /* The width of the whitepspace after the message */
+    unsigned int spacing;
 
     /* The receiver's timer id */
     XtIntervalId timer;
@@ -181,7 +183,7 @@ static unsigned int get_width(message_glyph_t self)
 	self -> user_width +
 	self -> separator_width +
 	self -> string_width +
-	SPACING;
+	self -> spacing;
 }
 
 /* Answers statistics to use for a given character in the font */
@@ -191,7 +193,7 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
     unsigned int last = font -> max_char_or_byte2;
 
     /* Look for the most common case first */
-    if ((first <= ch) || (ch <= last))
+    if ((first <= ch) && (ch <= last))
     {
 	return font -> per_char + ch - first;
     }
@@ -422,6 +424,8 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     font = ScFontForString(self -> widget);
     self -> string_width = measure_string(font, Message_getString(self -> message));
     self -> ascent = MAX(self -> ascent, font -> ascent);
+
+    self -> spacing = measure_string(font, "n");
 
     set_clock(self);
 
