@@ -36,7 +36,7 @@ if test "$ok" = "no" ; then
 fi
 
 dnl Make sure that an elvin library can be found
-AC_CHECK_LIB(vin4, elvin_notification_alloc, LIBS="-lvin4 -lep $LIBS" ; ok=yes, ok=no, -lep)
+AC_CHECK_LIB(vin4, elvin_notification_alloc, LIBS="-lvin4 -le4lang -lep $LIBS" ; ok=yes, ok=no, -le4lang -lep)
 if test "$ok" = "no" ; then
 	echo "ERROR: \`libvin4' is missing on your system.  This probably"
 	echo "       means that you need to specify where to go look for it."
