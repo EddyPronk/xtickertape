@@ -168,6 +168,13 @@ considered to be a drag action.  Small values make it difficult to get
 the control panel to pop up, whereas larger values make it difficult
 to drag the scroller precisely.
 .TP
+.B "usePixmap (\fPclass\fB Boolean)"
+Determines whether or not the scroller uses an offscreen pixmap to do
+its drawing.  Some X11 implementations have bugs which cause parts of
+the text to be lost under certain conditions.  Enabling the use of the
+offscreen pixmap should help these.  Not using an offscreen pixmap can 
+often permit graphic card accelerations to be used.
+.TP
 .B "frequency (\fPclass\fB Dimension)"
 The number of times per second to scroll the notifications in the
 scroller.  Use this in conjunction with \fIstepSize\fP (below) to
