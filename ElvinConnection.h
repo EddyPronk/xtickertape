@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.7 1998/10/16 02:09:08 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.8 1998/10/16 03:46:25 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -31,8 +31,5 @@ void ElvinConnection_register(
 
 /* Sends a message by posting an Elvin event */
 void ElvinConnection_send(ElvinConnection self, Message message);
-
-/* Call this when the connection has data available */
-void ElvinConnection_read(ElvinConnection self);
 
 #endif /* ELVINCONNECTION_H */
