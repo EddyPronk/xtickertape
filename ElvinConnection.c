@@ -1,11 +1,9 @@
-/* $Id: ElvinConnection.c,v 1.4 1997/02/14 10:52:32 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.5 1997/02/25 04:32:31 phelps Exp $ */
 
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef ELVIN
 #include <elvin.h>
-#endif /* ELVIN */
 
 #include "ElvinConnection.h"
 
@@ -13,9 +11,7 @@
 
 struct ElvinConnection_t
 {
-#ifdef ELVIN
-    static elvin_t connection;
-#endif /* ELVIN */
+    elvin_t connection;
     ElvinConnectionCallback callback;
     void *context;
     List subscriptions;
@@ -26,15 +22,13 @@ struct ElvinConnection_t
 
 
 /* Set up callbacks */
-#ifdef ELVIN
-static void (*quench_function)(elvin_t connection, char *quench) = NULL;
+static void (*quenchCallback)(elvin_t connection, char *quench) = NULL;
 
-static void error(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
+static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
 {
     fprintf(stderr, "*** Elvin error %d (%s): exiting\n", code, message);
     exit(0);
 }
-#endif
 
 
 /* Add the subscription info for an 'group' to the buffer */
@@ -96,13 +90,13 @@ ElvinConnection ElvinConnection_alloc(
 
     /* Allocate memory for the new ElvinConnection */
     self = (ElvinConnection) malloc(sizeof(struct ElvinConnection_t));
-#ifdef ELVIN
-    if ((self -> connection = elvin_connect(hostname, port, quench_function, error, NULL)) == 0)
+    if ((self -> connection = elvin_connect(
+	EC_NAMEDHOST, hostname, port,
+	quenchCallback, errorCallback, NULL)) == NULL)
     {
 	fprintf(stderr, "*** Unable to connect to elvin server at %s:%d\n", hostname, port);
 	exit(0);
     }
-#endif /* ELVIN */
 
     self -> callback = callback;
     self -> context = context;
@@ -120,10 +114,8 @@ ElvinConnection ElvinConnection_alloc(
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self)
 {
-#ifdef ELVIN
     /* Disconnect from elvin server */
     elvin_disconnect(self -> connection);
-#endif
 
     /* Free our memory */
     free(self);

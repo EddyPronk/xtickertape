@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.15 1997/02/17 06:55:18 phelps Exp $ */
+/* $Id: main.c,v 1.16 1997/02/25 04:32:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,17 @@
 
 #include "Message.h"
 #include "Subscription.h"
-#include "BridgeConnection.h"
+#ifdef USE_ELVIN
+# include "ElvinConnection.h"
+# define CONNECTION ElvinConnection
+#else /* USE_ELVIN */
+# include "BridgeConnection.h"
+# define CONNECTION BridgeConnection
+# define CONNECTION_ALLOC BridgeConnection_alloc
+# define CONNECTION_SEND BridgeConnection_send
+# define CONNECTION_GETFD BridgeConnection_getFD
+# define CONNECTION_READ BridgeConnection_read
+#endif /* USE_ELVIN */
 #include "Control.h"
 #include "Tickertape.h"
 
@@ -69,11 +79,19 @@ static void Click(Widget widget, XtPointer context, XtPointer ignored)
 /* Callback for message to send from control panel */
 static void sendMessage(Message message, void *context)
 {
-    BridgeConnection connection = (BridgeConnection)context;
+    CONNECTION connection = (CONNECTION)context;
 
-    BridgeConnection_send(connection, message);
+    CONNECTION_SEND(connection, message);
     Message_free(message);
 }
+
+/* Callback for message to show in scroller */
+static void receiveMessage(Message message, void *context)
+{
+    TickertapeWidget tickertape = (TickertapeWidget)context;
+    TtAddMessage(tickertape, message);
+}
+
 
 /* Answers the user's group file */
 static FILE *getGroupFile()
@@ -100,7 +118,7 @@ static FILE *getGroupFile()
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
-    BridgeConnection connection;
+    CONNECTION connection;
     FILE *file;
     List subscriptions;
     TickertapeWidget tickertape;
@@ -152,12 +170,15 @@ int main(int argc, char *argv[])
     }
 
     /* listen for messages from the bridge */
-    connection = BridgeConnection_alloc(tickertape, hostname, port, subscriptions);
+    connection = CONNECTION_ALLOC(
+	hostname, port, subscriptions,
+	receiveMessage, tickertape);
+
     XtAppAddInput(
 	context,
-	BridgeConnection_getFD(connection),
+	CONNECTION_GETFD(connection),
 	(XtPointer) XtInputReadMask,
-	(XtInputCallbackProc) BridgeConnection_read,
+	(XtInputCallbackProc) CONNECTION_READ,
 	connection);
 
     /* Build the widget */

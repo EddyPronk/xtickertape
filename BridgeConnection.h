@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.h,v 1.2 1997/02/14 10:52:29 phelps Exp $ */
+/* $Id: BridgeConnection.h,v 1.3 1997/02/25 04:32:31 phelps Exp $ */
 
 #ifndef BRIDGECONNECTION_H
 #define BRIDGECONNECTION_H
@@ -6,14 +6,17 @@
 typedef struct BridgeConnection_t *BridgeConnection;
 
 #include "List.h"
-#include "Tickertape.h"
+#include "Message.h"
+
+typedef void (*BridgeConnectionCallback)(Message message, void *context);
 
 /* Answers a new BridgeConnection */
 BridgeConnection BridgeConnection_alloc(
-    TickertapeWidget target,
     char *hostname,
     int port,
-    List subscriptions);
+    List subscriptions,
+    BridgeConnectionCallback callback,
+    void *context);
 
 /* Releases the resources used by the BridgeConnection */
 void BridgeConnection_free(BridgeConnection self);

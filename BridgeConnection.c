@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.9 1997/02/17 02:28:03 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.10 1997/02/25 04:32:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,19 +17,24 @@
 #include "BridgeConnection.h"
 #include "Subscription.h"
 
+#ifndef NOT_CONNECTING
+# define CONNECTING
+#endif /* NOT_CONNECTING */
+
 #define BUFFERSIZE 4096
-/*#define CONNECTING*/
 #define EOL '\2'
 #define SEPARATOR '|'
 
 struct BridgeConnection_t
 {
-    TickertapeWidget tickertape;
     int fd;
     FILE *in;
     FILE *out;
     List subscriptions;
+    BridgeConnectionCallback callback;
+    void *context;
 };
+
 
 
 /*
@@ -101,6 +106,15 @@ static int readToSeparator(BridgeConnection self, char *buffer)
 }
 
 
+/* Posts a message to the callback */
+void postMessage(BridgeConnection self, Message message)
+{
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(message, self -> context);
+    }
+}
+
 
 
 
@@ -111,10 +125,11 @@ static int readToSeparator(BridgeConnection self, char *buffer)
 
 /* Answers a new BridgeConnection */
 BridgeConnection BridgeConnection_alloc(
-    TickertapeWidget tickertape,
     char *hostname,
     int port,
-    List subscriptions)
+    List subscriptions,
+    BridgeConnectionCallback callback,
+    void *context)
 {
     BridgeConnection self;
 #ifdef CONNECTING
@@ -124,8 +139,9 @@ BridgeConnection BridgeConnection_alloc(
 
     /* Allocate memory for the object */
     self = (BridgeConnection) malloc(sizeof(struct BridgeConnection_t));
-    self -> tickertape = tickertape;
     self -> subscriptions = subscriptions;
+    self -> callback = callback;
+    self -> context = context;
 
 #ifdef CONNECTING 
     /* Look up the host name */
@@ -264,10 +280,7 @@ void BridgeConnection_read(BridgeConnection self)
 		    free(group);
 		    free(user);
 		    free(string);
-#ifdef DEBUG
-		    Message_debug(message);
-#endif /* DEBUG */
-		    TtAddMessage(self -> tickertape, message);
+		    postMessage(self, message);
 		    return;
 		}
 	    }
