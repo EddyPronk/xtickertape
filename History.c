@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.34 2001/08/25 14:04:42 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.35 2001/09/03 03:41:17 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -165,6 +165,8 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_previous(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void scroll_left(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 
 static XtActionsRec actions[] =
 {
@@ -174,7 +176,9 @@ static XtActionsRec actions[] =
     { "toggle-selection", toggle_selection },
     { "show-attachment", show_attachment },
     { "select-previous", select_previous },
-    { "select-next", select_next }
+    { "select-next", select_next },
+    { "scroll-left", scroll_left },
+    { "scroll-right", scroll_right }
 };
 
 
@@ -429,9 +433,11 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     scrollbar = XtVaCreateManagedWidget(
 	"HorizScrollBar", xmScrollBarWidgetClass,
 	XtParent(self),
-	XmNorientation, XmHORIZONTAL,
-	XmNminimum, 0,
+	XmNincrement, self -> history.line_height,
 	XmNmaximum, self -> history.width,
+	XmNminimum, 0,
+	XmNorientation, XmHORIZONTAL,
+	XmNpageIncrement, self -> core.width,
 	XmNsliderSize, self -> history.width,
 	NULL);
 
@@ -450,9 +456,11 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     scrollbar = XtVaCreateManagedWidget(
 	"VertScrollBar", xmScrollBarWidgetClass,
 	XtParent(self),
-	XmNorientation, XmVERTICAL,
-	XmNminimum, 0,
+	XmNincrement, self -> history.line_height,
 	XmNmaximum, self -> history.height,
+	XmNminimum, 0,
+	XmNorientation, XmVERTICAL,
+	XmNpageIncrement, self -> core.height,
 	XmNsliderSize, self -> history.height,
 	NULL);
 
@@ -538,7 +546,7 @@ static void realize(
     Display *display = XtDisplay(self);
     XGCValues values;
 
-    printf("History: realize() w=%d, h=%d\n", self -> core.width, self -> core.height);
+    dprintf(("History: realize()\n"));
 
     /* Create our window */
     XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
@@ -1140,6 +1148,27 @@ static void destroy(Widget self)
 /* Resize the widget */
 static void resize(Widget widget)
 {
+    HistoryWidget self = (HistoryWidget)widget;
+    int page_inc;
+
+    dprintf(("History: resize() w=%d, h=%d\n", self -> core.width, self -> core.height));
+
+    /* Update the page increment of the horizontal scrollbar */
+    page_inc = self -> core.height;
+    XtVaSetValues(
+	self -> history.hscrollbar,
+	XmNpageIncrement, self -> core.width,
+	NULL);
+    printf("hscrollbar.page_inc: %d\n", page_inc);
+
+    /* Update the page increment of the vertical scrollbar */
+    page_inc = self -> core.height;
+    XtVaSetValues(
+	self -> history.vscrollbar,
+	XmNpageIncrement, page_inc,
+	NULL);
+    printf("vscrollbar.page_inc: %d\n", page_inc);
+
     /* Update the scrollbar sizes */
     update_scrollbars(widget);
 }
@@ -1503,6 +1532,40 @@ static void select_next(Widget widget, XEvent *event, String *params, Cardinal *
 
     /* Select the next item */
     set_selection_index(self, index);
+}
+
+/* Scroll the window left if we can */
+static void scroll_left(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    int increment;
+
+    /* Get the horizontal scrollbar's increment */
+    XtVaGetValues(self -> history.hscrollbar, XmNincrement, &increment, NULL);
+
+    /* Move that far to the left */
+    set_origin(
+	self,
+	MAX(self -> history.x - increment, 0),
+	self -> history.y,
+	1);
+}
+
+/* Scroll the window right if we can */
+static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    int increment;
+
+    /* Get the scrollbar's increment */
+    XtVaGetValues(self -> history.hscrollbar, XmNincrement, &increment, NULL);
+
+    /* Move that far to the right */
+    set_origin(
+	self,
+	MIN(self -> history.x + increment, (self -> history.width - self -> core.width)),
+	self -> history.y,
+	1);
 }
 
 
