@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.60 1999/08/29 14:19:01 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.61 1999/08/29 14:27:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -122,7 +122,7 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
-static void init_drag(Widget widget, XEvent *event);
+static void start_drag(Widget widget, XEvent *event);
 static void drag(Widget widget, XEvent *event);
 static void show_menu(Widget widget, XEvent *event);
 static void show_attachment(Widget widget, XEvent *event);
@@ -136,7 +136,7 @@ static void slower(Widget widget, XEvent *event);
  */
 static XtActionsRec actions[] =
 {
-    { "init-drag", (XtActionProc)init_drag },
+    { "start-drag", (XtActionProc)start_drag },
     { "drag", (XtActionProc)drag },
     { "show-menu", (XtActionProc)show_menu },
     { "show-attachment", (XtActionProc)show_attachment },
@@ -152,7 +152,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: init-drag()\n"
+    "<Btn1Down>: start-drag()\n"
     "<Btn1Motion>: drag()\n"
     "<Btn1Up>: show-menu()\n"
     "<Btn2Down>: show-attachment()\n"
@@ -1571,7 +1571,7 @@ static void slower(Widget widget, XEvent *event)
 }
 
 /* Someone has pressed a mouse button */
-static void init_drag(Widget widget, XEvent *event)
+static void start_drag(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
