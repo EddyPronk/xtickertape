@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.11 2000/11/22 22:57:43 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.12 2000/11/24 06:50:26 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -104,6 +104,9 @@ int vm_push_float(vm_t self, double value, elvin_error_t error);
 /* Pushes a string onto the vm's stack */
 int vm_push_string(vm_t self, char *value, elvin_error_t error);
 
+/* Pushes a symbol onto the vm's stack */
+int vm_push_symbol(vm_t self, char *name, elvin_error_t error);
+
 /* Pushes a char onto the vm's stack */
 int vm_push_char(vm_t self, int value, elvin_error_t error);
 
@@ -136,11 +139,17 @@ int vm_make_lambda(vm_t self, elvin_error_t error);
  * place, leaving only the value on the stack */
 int vm_assign(vm_t self, elvin_error_t error);
 
+/* Compares the top two items on the stack for pointer equality */
+int vm_eq(vm_t self, elvin_error_t error);
+
 /* Adds the top two elements of the stack together */
 int vm_add(vm_t self, elvin_error_t error);
 
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error);
+
+/* Perform garbage collection */
+int vm_gc(vm_t self, elvin_error_t error);
 
 
 /* Prints the top of the stack onto stdout */

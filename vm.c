@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.13 2000/11/23 22:17:52 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.14 2000/11/24 06:50:26 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -50,8 +50,12 @@ static const char cvsid[] = "$Id: vm.c,v 2.13 2000/11/23 22:17:52 phelps Exp $";
 #define TYPE_MASK 0x0000FF00
 #define FLAGS_MASK 0x000000FF
 
-#define OBJECT_SIZE(obj) ((((uint32_t)obj[0]) >> 16) & 0xFFFF)
+#define IS_POINTERS_FLAG 0x00008000
+#define MIGRATED_FLAG 0x00000080
 
+#define OBJECT_SIZE(flags) (((flags) >> 16) & 0xFFFF)
+
+static void do_print(object_t object);
 
 
 /* The structure of the virtual machine */
@@ -61,13 +65,13 @@ struct vm
     object_t root_set;
 
     /* The symbol table */
-    object_t symbol_table;
+    object_t *symbol_table;
 
     /* The virtual machine's heap */
-    object_t heap;
+    object_t *heap;
 
     /* The next free spot in the heap */
-    object_t heap_next;
+    object_t *heap_next;
 
     /* The bottom of the stack */
     object_t stack;
@@ -89,67 +93,6 @@ struct vm
     /* The program counter */
     uint32_t pc;
 };
-
-
-/* Allocates and initializes a new virtual machine */
-vm_t vm_alloc(elvin_error_t error)
-{
-    vm_t self;
-
-    /* Allocate some room for the VM itself */
-    if (! (self = ELVIN_MALLOC(sizeof(struct vm), error)))
-    {
-	return NULL;
-    }
-
-    /* Initialize its fields to safe values */
-    memset(self, 0, sizeof(struct vm));
-
-    /* Allocate an initial heap */
-    if (! (self -> heap = ELVIN_MALLOC(HEAP_BLOCK_SIZE * POINTER_SIZE, error)))
-    {
-	vm_free(self, NULL);
-	return NULL;
-    }
-    memset(self -> heap, 0, HEAP_BLOCK_SIZE * POINTER_SIZE);
-
-    /* Point to the first free part of the heap */
-    self -> heap_next = self -> heap + 1;
-
-    /* Allocate a symbol table */
-    if (! (self -> symbol_table = ELVIN_MALLOC(SYMTAB_SIZE * POINTER_SIZE, error)))
-    {
-	vm_free(self, NULL);
-	return NULL;
-    }
-    memset(self -> symbol_table, 0, SYMTAB_SIZE * POINTER_SIZE);
-
-    /* Allocate an initial stack */
-    if (! (self -> stack = ELVIN_MALLOC(STACK_SIZE * POINTER_SIZE, error)))
-    {
-	vm_free(self, NULL);
-	return NULL;
-    }
-
-    /* Make an empty cons cell to be our root environment */
-    if (! vm_push_nil(self, error) ||
-	! vm_push_nil(self, error) ||
-	! vm_make_cons(self, error) ||
-	! vm_pop(self, &self -> env, error))
-    {
-	vm_free(self, NULL);
-	return NULL;
-    }
-
-    return self;
-}
-
-/* Frees a virtual machine */
-int vm_free(vm_t self, elvin_error_t error)
-{
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "vm_free");
-    return 0;
-}
 
 
 /* Returns the type of the given object */
@@ -321,12 +264,15 @@ int vm_new(
     }
 
     /* Record the object pointer and update the heap poiner */
-    object = self -> heap_next;
+    object = (object_t)(self -> heap_next);
     self -> heap_next += size + 1;
 
     /* Write the object header (it pretends to be an integer) */
     header = (size & 0xFFFF) << 16 | (type & 0xFF) << 8 | (flags & 0xFF);
     object[0] = (void *)header;
+
+    /* Clear the rest of it */
+    memset(object + 1, 0, size * POINTER_SIZE);
 
     /* Push the object onto the stack */
     return vm_push(self, object, error);
@@ -413,6 +359,45 @@ int vm_push_string(vm_t self, char *value, elvin_error_t error)
     return 1;
 }
 
+/* Pushes a symbol onto the vm's stack */
+int vm_push_symbol(vm_t self, char *name, elvin_error_t error)
+{
+    object_t *pointer;
+    uint32_t length;
+    uint32_t size;
+
+    /* Go through the symbol table to see if we already have one */
+    for (pointer = self -> symbol_table; *pointer; pointer++)
+    {
+	/* If we get a match then we're done */
+	if (strcmp((char *)(*pointer + 1), name) == 0)
+	{
+	    return vm_push(self, *pointer, error);
+	}
+    }
+
+    /* No symbol yet.  Make a new one. */
+    length = strlen(name);
+    size = 1 + length / POINTER_SIZE;
+    if (! vm_new(self, size, SEXP_SYMBOL, size * POINTER_SIZE - length, error))
+    {
+	return 0;
+    }
+
+    /* Find it on the top of the stack */
+    if (! vm_top(self, pointer, error))
+    {
+	return 0;
+    }
+
+    /* Copy the string bytes into place */
+    memcpy(*pointer + 1, name, length + 1);
+
+    /* Null-terminate the symbol table */
+    *(pointer + 1) = NULL;
+    return 1;
+}
+
 /* Pushes a char onto the vm's stack */
 int vm_push_char(vm_t self, int value, elvin_error_t error)
 {
@@ -491,6 +476,7 @@ int vm_make_symbol(vm_t self, elvin_error_t error)
 
     /* Write it on the end of the symbol table */
     *pointer = string;
+    *(pointer + 1) = NULL;
     return 1;
 }
 
@@ -841,6 +827,32 @@ int vm_assign(vm_t self, elvin_error_t error)
     }
 }
 
+/* Puts `t' on the top of the stack if the top two items are pointers
+ * to the same object, `nil' otherwise */
+int vm_eq(vm_t self, elvin_error_t error)
+{
+    object_t arg1, arg2;
+
+    /* Pop the args */
+    if (! vm_pop(self, &arg2, error) ||
+	! vm_pop(self, &arg1, error))
+    {
+	return 0;
+    }
+
+    /* If they're not the same then push nil */
+    if (arg1 == arg2)
+    {
+	/* FIX THIS: this is a slow way to say true */
+	return vm_push_symbol(self, "t", error);
+    }
+    else
+    {
+	return vm_push_nil(self, error);
+    }
+}
+
+
 /* Adds the top two elements of the stack together */
 int vm_add(vm_t self, elvin_error_t error)
 {
@@ -1056,7 +1068,7 @@ static int funcall(vm_t self, elvin_error_t error)
 	    uint32_t count, i;
 
 	    /* Check number of args */
-	    count = OBJECT_SIZE(object) - 2;
+	    count = OBJECT_SIZE((uint32_t)object[0]) - 2;
 	    if (count != self -> pc - 1)
 	    {
 		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong argc");
@@ -1274,21 +1286,149 @@ int vm_eval(vm_t self, elvin_error_t error)
 }
 
 
+/* Migrate an object into a new heap */
+static void migrate(vm_t self, object_t *heap, object_t **end, object_t *object)
+{
+    uint32_t flags;
+    uint32_t size;
+
+    /* If the object is nil or an integer then do nothing */
+    if (*object == NULL || ((uint32_t)*object & 1) == 1)
+    {
+	return;
+    }
+
+    /* If the object has already been migrated then update the pointer */
+    flags = (uint32_t)(**object);
+    if (MIGRATED_FLAG & flags)
+    {
+	/* Update the pointer from the forwarding address */
+	*object = *(*object + 1);
+	return;
+    }
+
+    /* Copy the object to the new heap */
+    size = OBJECT_SIZE(flags) + 1;
+    memcpy(*end, *object, size * POINTER_SIZE);
+
+    /* Leave a forwarding address */
+    flags |= MIGRATED_FLAG;
+    **object = (object_t)flags;
+    *(*object + 1) = (object_t)*end;
+    
+    /* Update the object pointer */
+    *object = (object_t)*end;
+    (*end) += size;
+}
+
+/* Perform garbage collection */
+int vm_gc(vm_t self, elvin_error_t error)
+{
+    object_t *heap;
+    object_t *point;
+    object_t *end;
+    uint32_t i;
+
+    /* Create a new heap to copy stuff to */
+    if (! (heap = (object_t *)ELVIN_MALLOC(HEAP_BLOCK_SIZE * POINTER_SIZE, error)))
+    {
+	return 0;
+    }
+    end = heap;
+
+    /* Use the current VM state to migrate the root set */
+    migrate(self, heap, &end, &self -> env);
+    migrate(self, heap, &end, &self -> expr);
+
+
+    /* Migrate the stack */
+    for (i = 0; i < self -> sp; i++)
+    {
+ 	migrate(self, heap, &end, (object_t *)&(self -> stack[i]));
+    }
+
+    /* We've got our root set.  Now migrate the transitive closure of that. */
+    point = heap;
+    while (point < end)
+    {
+	uint32_t flags = (uint32_t)(*(point++));
+	object_t *next = point + OBJECT_SIZE(flags);
+
+	/* If the object contains pointers then migrate them */
+	if (flags & IS_POINTERS_FLAG)
+	{
+	    while (point < next)
+	    {
+		migrate(self, heap, &end, point);
+		point++;
+	    }
+	}
+
+	point = next;
+    }
+
+    /* Remember where the end of the heap is */
+    self -> heap_next = end;
+
+    /* Clean up the symbol table */
+    end = self -> symbol_table;
+    for (point = end; *point; point++)
+    {
+	uint32_t flags;
+
+	/* Keep the symbol if it's been migrated */
+	flags = (uint32_t)(**point);
+	if (flags & MIGRATED_FLAG)
+	{
+	    *(end++) = *(*point + 1);
+	}
+    }
+
+    *end = NULL;
+
+    /* Swap the new heap into place */
+    ELVIN_FREE(self -> heap, NULL);
+    self -> heap = heap;
+
+    /* Push the amount of used space onto the stack */
+    return vm_push_integer(self, self -> heap_next - self -> heap, error);
+}
+
+
 
 /* Prints a single object */
 static void do_print(object_t object)
 {
-    switch (object_type(object))
+    uint32_t header;
+
+    /* Is the object nil? */
+    if (object == NULL)
+    {
+	printf("nil");
+	return;
+    }
+
+    /* Is it an integer masquerading as a pointer? */
+    if (((int32_t)object & 1) == 1)
+    {
+	printf("%d", ((int32_t)object) >> 1);
+	return;
+    }
+
+    /* Grab the header */
+    header = (uint32_t)(*object);
+    if (header & MIGRATED_FLAG)
+    {
+	printf("<migrated object>");
+	return;
+    }
+
+    switch ((header >> 8) &0xFF)
     {
 	case SEXP_NIL:
-	{
-	    printf("nil");
-	    break;
-	}
-
 	case SEXP_INTEGER:
 	{
-	    printf("%d", ((int32_t)object) >> 1);
+	    printf("uh oh\n");
 	    break;
 	}
 
@@ -1400,7 +1540,9 @@ int vm_print_state(vm_t self, elvin_error_t error)
     uint32_t i;
 
     /* Print the state */
-    printf("fp=%d, sp=%d, pc=%d\n", self -> fp, self -> sp, self -> pc);
+    printf("fp=%d, sp=%d, pc=%d heap-size: %d\n",
+	   self -> fp, self -> sp, self -> pc,
+	   self -> heap_next - self -> heap);
     printf("env="); do_print(self -> env); printf("\n");
     printf("expr="); do_print(self -> expr); printf("\n");
     printf("stack:\n");
@@ -1415,5 +1557,78 @@ int vm_print_state(vm_t self, elvin_error_t error)
 
     fflush(stdout);
     return 1;
+}
+
+/* Allocates and initializes a new virtual machine */
+vm_t vm_alloc(elvin_error_t error)
+{
+    vm_t self;
+
+    /* Allocate some room for the VM itself */
+    if (! (self = ELVIN_MALLOC(sizeof(struct vm), error)))
+    {
+	return NULL;
+    }
+
+    /* Initialize its fields to safe values */
+    memset(self, 0, sizeof(struct vm));
+
+    /* Allocate an initial heap */
+    if (! (self -> heap = (object_t *)ELVIN_MALLOC(
+	       HEAP_BLOCK_SIZE * POINTER_SIZE, error)))
+    {
+	vm_free(self, NULL);
+	return NULL;
+    }
+
+    /* Point to the first free part of the heap */
+    self -> heap_next = self -> heap + 1;
+
+    /* Allocate a symbol table */
+    if (! (self -> symbol_table = (object_t *)ELVIN_MALLOC(
+	       SYMTAB_SIZE * POINTER_SIZE, error)))
+    {
+	vm_free(self, NULL);
+	return NULL;
+    }
+    memset(self -> symbol_table, 0, SYMTAB_SIZE * POINTER_SIZE);
+
+    /* Allocate an initial stack */
+    if (! (self -> stack = ELVIN_MALLOC(STACK_SIZE * POINTER_SIZE, error)))
+    {
+	vm_free(self, NULL);
+	return NULL;
+    }
+
+    /* Make an empty cons cell to be our root environment */
+    if (! vm_push_nil(self, error) ||
+	! vm_push_nil(self, error) ||
+	! vm_make_cons(self, error) ||
+	! vm_pop(self, &self -> env, error))
+    {
+	vm_free(self, NULL);
+	return NULL;
+    }
+
+    return self;
+}
+
+/* Frees a virtual machine */
+int vm_free(vm_t self, elvin_error_t error)
+{
+    int result = 1;
+
+    /* Free the root set */
+    /* Free the symbol table */
+    result = ELVIN_FREE(self -> symbol_table, result ? error : NULL) && result;
+
+    /* Free the heap */
+    result = ELVIN_FREE(self -> heap, result ? error : NULL) && result;
+
+    /* Free the stack */
+    result = ELVIN_FREE(self -> stack, result ? error : NULL) && result;
+
+    /* Free the VM itself */
+    return ELVIN_FREE(self, result ? error : NULL) && result;
 }
 
