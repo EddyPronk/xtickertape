@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.66 1999/11/29 07:12:54 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.67 1999/12/02 01:48:39 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -72,16 +72,6 @@ static struct option long_options[] =
 static void do_quit(
     Widget widget, XEvent *event,
     String *params, Cardinal *cparams);
-static void usage(int argc, char *argv[]);
-static void parse_args(
-    int argc, char *argv[],
-    char **user_return, char **domain_return,
-    char **ticker_dir_return,
-    char **groups_file_return, char **usenet_file_return,
-    char **elvin_url_return);
-static Window create_icon(Widget shell);
-static void reload_subs(int signum);
-
 
 /* The Tickertape */
 static tickertape_t tickertape;
@@ -279,7 +269,7 @@ static Window create_icon(Widget shell)
     unsigned long black = BlackPixelOfScreen(screen);
     Window window;
     Pixmap pixmap, mask;
-    XColor color, ignored;
+    XColor color;
     GC gc;
     XGCValues values;
 
@@ -290,12 +280,12 @@ static Window create_icon(Widget shell)
 	CopyFromParent, CopyFromParent);
 
     /* Allocate the color red by name */
-    XAllocNamedColor(display, colormap, "red", &color, &ignored);
+    XAllocNamedColor(display, colormap, "red", &color, &color);
 
     /* Create a pixmap from the red bitmap data */
     pixmap = XCreatePixmapFromBitmapData(
 	display, window, red_bits, red_width, red_height,
-	color.pixel ^ black, 0, depth);
+	color.pixel, black, depth);
 
     /* Create a graphics context */
     values.function = GXxor;
@@ -304,7 +294,7 @@ static Window create_icon(Widget shell)
     /* Create a pixmap for the white 'e' and paint it on top */
     mask = XCreatePixmapFromBitmapData(
 	display, pixmap, white_bits, white_width, white_height,
-	WhitePixelOfScreen(screen) , black, depth);
+	WhitePixelOfScreen(screen) ^ black, 0, depth);
     XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
     XFreePixmap(display, mask);
     XFreeGC(display, gc);
