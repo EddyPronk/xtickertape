@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.3 1997/02/09 14:02:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,7 +195,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 
     CreateGC(self);
     fprintf(stderr, "initializing tickertape 0x%p\n", self);
-    self -> core.height = 40;
+    self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
     self -> core.width = 200;
 
     fprintf(stderr, "background_pixel = %ld\n", self -> core.background_pixel);
