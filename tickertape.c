@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.48 2000/01/11 02:31:56 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.49 2000/04/05 12:44:14 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -65,14 +65,12 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.48 2000/01/11 02:31:56 phelps
 #define METAMAIL_FORMAT "%s %s %s %s"
 
 /* How long to wait before we tell the user we're having trouble connecting */
-#define CONNECT_TIMEOUT 3 * 1000
 #define BUFFER_SIZE 1024
 
-#define RECONNECT_MSG "Connected to elvin server at %s:%d."
+#define CONNECT_MSG "Connected to elvin server: %s."
 #define NO_CONNECT_MSG "Unable to connect to elvin server at %s:%d.  Still trying..."
-#define LOST_CONNECT_MSG \
-"Lost connection to elvin server at %s:%d.  Attempting to reconnect..."
-#define SLOW_CONNECT_MSG "The elvin server is slow to reply.  Still trying..."
+#define LOST_CONNECT_MSG "Lost connection to elvin server %s."
+#define UNKNOWN_STATUS_MSG "Unknown status: %d"
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
@@ -739,12 +737,12 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
     /* Construct a reconnect message */
     host = connection_host(connection);
     port = connection_port(connection);
-    if ((buffer = (char *)malloc(strlen(RECONNECT_MSG) + strlen(host) + 5 - 3)) == NULL)
+    if ((buffer = (char *)malloc(strlen(CONNECT_MSG) + strlen(host) + 5 - 3)) == NULL)
     {
 	return;
     }
 
-    sprintf(buffer, RECONNECT_MSG, host, port);
+    sprintf(buffer, CONNECT_MSG, host, port);
 
     /* Display the message on the scroller */
     message = message_alloc(
@@ -979,31 +977,6 @@ static void subscribe_to_orbit(tickertape_t self)
 
 #endif /* ORBIT */
 
-/* This is called when our connection request hasn't been handled in a
- * timely fasion (usually means the server is broken or a very long
- * way away). */
-static void connect_timeout(XtPointer rock, XtIntervalId *interval)
-{
-    tickertape_t self = (tickertape_t)rock;
-    message_t message;
-
-    /* If we've successfully connected then we're done */
-    if (self -> handle != NULL)
-    {
-	return;
-    }
-
-    /* Otherwise alert the user that we're having trouble connecting */
-    message = message_alloc(
-	NULL,
-	"internal", "tickertape",
-	SLOW_CONNECT_MSG, 10,
-	NULL, NULL,
-	NULL, NULL, NULL);
-    receive_callback(self, message);
-    message_free(message);
-}
-
 /* This is called when our connection request is handled */
 static void connect_cb(
     elvin_handle_t handle, int result,
@@ -1040,6 +1013,84 @@ static void connect_cb(
     /* Listen for Orbit-related notifications and alert */
     subscribe_to_orbit(self);
 #endif /* ORBIT */
+}
+
+
+/* Callback for elvin status changes */
+static void status_cb(
+    elvin_handle_t handle, elvin_url_t url,
+    elvin_status_event_t event,
+    void *rock,
+    elvin_error_t error)
+{
+    tickertape_t self = (tickertape_t)rock;
+    message_t message;
+    char *buffer = NULL;
+    char *string;
+
+    /* Construct an appropriate message string */
+    switch (event)
+    {
+	case ELVIN_STATUS_CONNECTION_FOUND:
+	{
+	    /* Tell the control panel that we're connected */
+	    control_panel_set_connected(self -> control_panel, True);
+	    
+	    /* Make room for a combined string and URL */
+	    if ((buffer = (char *)malloc(sizeof(CONNECT_MSG) + strlen(url->url) - 2)) == NULL)
+	    {
+		return;
+	    }
+
+	    sprintf(buffer, CONNECT_MSG, url->url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_CONNECTION_LOST:
+	{
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
+	    /* Make room for a combined string and URL */
+	    if ((buffer = (char *)malloc(sizeof(LOST_CONNECT_MSG) + strlen(url->url) - 2)) == NULL)
+	    {
+		return;
+	    }
+
+	    sprintf(buffer, LOST_CONNECT_MSG, url->url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_CONNECTION_FAILED:
+	case ELVIN_STATUS_IGNORED_ERROR:
+	case ELVIN_STATUS_PROTOCOL_ERROR:
+	case ELVIN_STATUS_CLIENT_ERROR:
+	default:
+	{
+	    buffer = (char *)malloc(sizeof(UNKNOWN_STATUS_MSG) + 11);
+	    sprintf(buffer, UNKNOWN_STATUS_MSG, event);
+	    string = buffer;
+	    break;
+	}
+    }
+
+    /* Construct a message for the string and add it to the scroller */
+    if ((message = message_alloc(
+	NULL, "internal", "tickertape", string, 30,
+	NULL, NULL,
+	NULL, NULL, NULL)) != NULL)
+    {
+	receive_callback(self, message);
+	message_free(message);
+    }
+
+    /* Clean up */
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
 }
 
 /*
@@ -1105,6 +1156,10 @@ tickertape_t tickertape_alloc(
     /* Draw the user interface */
     init_ui(self);
 
+    /* Set the handle's status callback */
+    handle -> status_cb = status_cb;
+    handle -> status_closure = self;
+
     /* Connect to the elvin server */
     if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
     {
@@ -1112,10 +1167,6 @@ tickertape_t tickertape_alloc(
 	exit(1);
     }
 
-    /* Register a timeout in case the connect request doesn't come back */
-    XtAppAddTimeOut(
-	XtWidgetToApplicationContext(top), CONNECT_TIMEOUT,
-	connect_timeout, self);
     return self;
 }
 
