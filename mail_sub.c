@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.18 2000/04/12 05:33:09 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.19 2000/04/17 00:45:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -61,7 +61,7 @@ struct mail_sub
     elvin_handle_t handle;
 
     /* The receiver's subscription id */
-    elvin_sub_t subscription;
+    elvin_subscription_t subscription;
 
     /* The receiver's rfc822 mailbox parser */
     mbox_parser_t parser;
@@ -77,7 +77,7 @@ struct mail_sub
 /* Delivers a notification which matches the receiver's e-mail subscription */
 static void notify_cb(
     elvin_handle_t handle,
-    elvin_sub_t subscription,
+    elvin_subscription_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -213,7 +213,7 @@ void mail_sub_free(mail_sub_t self)
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    elvin_sub_t subscription, void *rock,
+    elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;

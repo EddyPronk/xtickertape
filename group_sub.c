@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.16 2000/04/12 05:33:09 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.17 2000/04/17 00:45:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -80,7 +80,7 @@ struct group_sub
     elvin_error_t error;
 
     /* The receiver's subscription */
-    elvin_sub_t subscription;
+    elvin_subscription_t subscription;
 
     /* The receiver's control panel */ 
     control_panel_t control_panel;
@@ -111,7 +111,7 @@ struct group_sub
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
-    elvin_sub_t subscription,
+    elvin_subscription_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -524,7 +524,7 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    elvin_sub_t subscription, void *rock,
+    elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
@@ -541,7 +541,7 @@ static void subscribe_cb(
 /* Callback for an unsubscribe request */
 static void unsubscribe_cb(
     elvin_handle_t handle, int result,
-    elvin_sub_t subscription, void *rock,
+    elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
