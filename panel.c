@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.62 2002/04/09 22:43:08 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.63 2002/04/11 12:55:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1591,6 +1591,7 @@ void control_panel_set_status_message(
     char buffer[BUFFER_SIZE];
     size_t length;
     char *string;
+    int had_attachment = 0;
 
     /* Bail if we're already displaying that message */
     if (self -> status_message == message)
@@ -1601,6 +1602,8 @@ void control_panel_set_status_message(
     /* Lose our reference to the old status message */
     if (self -> status_message != NULL)
     {
+	/* Did it have an attachment? */
+	had_attachment = message_has_attachment(self -> status_message);
 	message_free(self -> status_message);
 	self -> status_message = NULL;
     }
@@ -1611,11 +1614,17 @@ void control_panel_set_status_message(
 	self -> status_message = message_alloc_reference(message);
     }
 
-    /* If no attachment then show the original status message */
+    /* No attachment? */
     if (! message || ! message_has_attachment(message) || 
 	! (length = message_get_attachment(message, &string)))
     {
-	show_status(self, self -> status);
+	/* If the old message had an attachment then replace it with
+	 * the original status message */
+	if (had_attachment)
+	{
+	    show_status(self, self -> status);
+	}
+
 	return;
     }
 
