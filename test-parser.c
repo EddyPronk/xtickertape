@@ -55,6 +55,22 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
     }
 }
 
+/* The `setq' special form */
+static int spec_setq(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* FIX THIS: setq should allow multiple args */
+    if (argc != 2)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* FIX THIS: we need to evaluate the top of the stack */
+
+    /* Assign the value to the variable */
+    return vm_assign(vm, error);
+}
+
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
@@ -81,6 +97,11 @@ int main(int argc, char *argv[])
     if (! vm_push_string(vm, "pi", error) ||
 	! vm_make_symbol(vm, error) ||
 	! vm_push_float(vm, M_PI, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error) ||
+	! vm_push_string(vm, "setq", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_push_special_form(vm, spec_setq, error) ||
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error))
     {
