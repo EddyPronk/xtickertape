@@ -9,7 +9,10 @@ Configuration
 - Write replacement functions for XtVaXXX() so that we can run with
   older versions of X11.
 
+
 Control Panel:
+
+- Add a menu item to allow the keys file to be reloaded.
 
 - Add an Edit menu with Cut, Paste and Copy options which apply to the
   widget with focus.  This should allow us to cut and paste messages
@@ -17,6 +20,7 @@ Control Panel:
 
 - The message in the status bar should include the time when of last
   change.
+
 
 Scroller:
 
@@ -57,6 +61,7 @@ History Widget
 - Check the max ascent and descent rather than blindly trusting the
   font description since it's known to have incorrect values for some
   fonts.
+
 
 Scheme Interpreter [POSTPONED until v3]:
 
