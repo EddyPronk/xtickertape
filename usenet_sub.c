@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.18 2000/04/11 14:04:57 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.19 2000/04/12 00:45:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -615,7 +615,7 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
     {
 	if (elvin_xt_delete_subscription(
 	    self -> handle, self -> subscription,
-	    NULL, NULL,
+	    unsubscribe_cb, self,
 	    error) == 0)
 	{
 	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
