@@ -7,8 +7,8 @@ TICKERTAPE = xtickertape
 ALL = $(TICKERTAPE) 
 
 OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o \
-	Subscription.o UsenetSubscription.o OrbitSubscription.o Hash.o List.o \
-	StringBuffer.o FileStreamTokenizer.o main.o
+	Subscription.o UsenetSubscription.o MailSubscription.o OrbitSubscription.o \
+	StringBuffer.o FileStreamTokenizer.o Hash.o List.o main.o
 
 CDEBUGFLAGS = -g -Wall
 #CDEBUGFLAGS = -O2 -Wall
@@ -18,7 +18,7 @@ INCLUDES = -I/usr/local/include -I/usr/local/include/elvin3
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
 LIBDIRS = -L/usr/local/lib
-LIBS = -lXaw -lXt -lXmu -lX11 -lvin -lpthread
+LIBS = -lXm -lXt -lXmu -lXext -lX11 -lvin -lpthread
 
 all: $(ALL)
 
