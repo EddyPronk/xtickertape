@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.28 2001/08/20 13:03:53 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.29 2001/08/24 04:59:25 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -405,6 +405,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.dqueue = NULL;
 
     /* Allocate enough room for all of our message views */
+    self -> history.message_capacity = MAX(self -> history.message_capacity, 1);
     self -> history.message_count = 0;
     self -> history.message_views =
 	calloc(self -> history.message_capacity, sizeof(message_view_t));
