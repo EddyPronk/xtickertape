@@ -15,7 +15,7 @@ AC_SEARCH_LIBS(crypt, crypt)
 
 # See if we need -lm for fmod()
 # FIX THIS: this should go in elvin-config somehow
-AC_SEARCH_LIBS(fmod, m)
+#AC_SEARCH_LIBS(fmod, m)
 
 # Figure out where X11 lives.
 AC_PATH_XTRA
@@ -68,7 +68,7 @@ AC_PATH_PROG(ELVIN_CONFIG, elvin-config, not found, $withval/bin:$PATH)
 if test "$ELVIN_CONFIG" = "not found" ; then
     echo "WARNING: \`elvin-config' is missing on your system.  It"
     echo "         is normally installed as part of the elvin4 libraries,"
-    echo "         which is available from http://elvin.dstc.edu.au/"
+    echo "         which are available from http://elvin.dstc.edu.au/"
     exit 1
 fi
 
