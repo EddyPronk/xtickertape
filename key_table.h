@@ -31,7 +31,7 @@
 #define KEY_TABLE_H
 
 #ifndef lint
-static const char cvs_KEY_TABLE_H[] = "$Id: key_table.h,v 1.1 2002/04/14 20:44:00 phelps Exp $";
+static const char cvs_KEY_TABLE_H[] = "$Id: key_table.h,v 1.2 2004/08/02 15:15:57 phelps Exp $";
 #endif /* lint */
 
 /* The key table data type */
@@ -61,5 +61,16 @@ int key_table_lookup(
     char **data_out,
     int *length_out,
     int *is_private_out);
+
+void key_table_diff(
+    key_table_t old_key_table,
+    char **old_key_names,
+    int old_key_count,
+    key_table_t new_key_table,
+    char **new_key_names,
+    int new_key_count,
+    int is_for_notify,
+    elvin_keys_t *keys_to_add_out,
+    elvin_keys_t *keys_to_remove_out);
 
 #endif /* KEY_TABLE_H */
