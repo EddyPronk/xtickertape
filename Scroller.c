@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.134 2002/04/25 10:31:31 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.135 2002/05/09 13:52:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -183,39 +183,6 @@ static XtActionsRec actions[] =
     { "set-speed", set_speed }
 };
 
-
-/*
- * Default translation table
- */
-static char defaultTranslations[] =
-{
-    "<Btn1Down>: start-drag()\n"
-    "<Btn1Motion>: drag()\n"
-    "<Btn1Up>: show-menu()\n"
-    "<Btn2Down>: show-attachment()\n"
-    "<Btn3Down>: expire()\n"
-    "<Key>d: expire()\n"
-    "<Key>x: delete()\n"
-    "<Key>k: kill()\n"
-    "<Key>q: quit()\n"
-    "<Key>-: slower()\n"
-    "<Key>=: faster()\n"
-    "<Key>comma: faster()\n"
-    "<Key>.: slower()\n"
-    "<Key>0: set-speed(0)\n"
-    "<Key>1: set-speed(1)\n"
-    "<Key>2: set-speed(2)\n"
-    "<Key>3: set-speed(3)\n"
-    "<Key>4: set-speed(4)\n"
-    "<Key>5: set-speed(5)\n"
-    "<Key>6: set-speed(6)\n"
-    "<Key>7: set-speed(7)\n"
-    "<Key>8: set-speed(8)\n"
-    "<Key>9: set-speed(9)\n"
-};
-
-
-
 /*
  * Method declarations
  */
@@ -278,7 +245,7 @@ ScrollerClassRec scrollerClassRec =
 	NULL, /* accept_focus */
 	XtVersion, /* version */
 	NULL, /* callback_private */
-	defaultTranslations, /* tm_table */
+	NULL, /* tm_table */
 	query_geometry, /* query_geometry */
 	XtInheritDisplayAccelerator, /* display_accelerator */
 	NULL /* extension */
