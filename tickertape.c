@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.9 1997/02/12 13:51:57 phelps Exp $ */
+/* $Id: tickertape.c,v 1.1 1997/02/13 08:13:46 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>

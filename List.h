@@ -1,8 +1,12 @@
 /*
- * $Id: List.h,v 1.3 1997/02/10 14:42:20 phelps Exp $
+ * $Id: List.h,v 1.4 1997/02/13 08:13:43 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
+
+
+#ifndef LIST_H
+#define LIST_H
 
 /* The List pointer type */
 typedef struct List_t *List;
@@ -55,3 +59,5 @@ void List_doWith(List self, void (*function)(), void *context);
 
 /* Debugging */
 void List_debug(List self);
+
+#endif /* LIST_H */

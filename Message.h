@@ -1,9 +1,7 @@
-/* $Id: Message.h,v 1.2 1997/02/10 07:14:54 phelps Exp $ */
+/* $Id: Message.h,v 1.3 1997/02/13 08:13:44 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
-
-#include <X11/Xlib.h>
 
 /* The Message pointer type */
 typedef struct Message_t *Message;
