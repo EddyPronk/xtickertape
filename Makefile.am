@@ -21,7 +21,8 @@ xtickertape_SOURCES = \
 	Hash.h Hash.c \
 	List.h List.c \
 	mask.xbm red.xbm white.xbm \
-	getopt.c getopt1.c main.c
+	getopt.h getopt.c getopt1.c \
+	main.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 groups.5 usenet.5
