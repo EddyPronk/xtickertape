@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.69 1999/12/09 13:21:36 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.70 1999/12/09 13:27:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -98,7 +98,7 @@ static void usage(int argc, char *argv[])
     fprintf(stderr, "  -G filename, --groups=filename\n");
     fprintf(stderr, "  -U filename, --usenet=filename\n");
     fprintf(stderr, "  -v,          --version\n");
-    fprintf(stderr, "               --help\n");
+    fprintf(stderr, "  -h,          --help\n");
 }
 
 /* Returns the name of the user who started this program */
@@ -177,7 +177,7 @@ static void parse_args(
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:u:D:U:G:v", long_options,
+	"e:u:D:U:G:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
