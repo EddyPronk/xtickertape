@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.14 2000/06/14 03:09:27 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.15 2000/08/27 12:21:32 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -158,6 +158,7 @@ static int accept_subscription(groups_parser_t self)
 /* Adds a producer key to the current list */
 static int accept_producer_key(groups_parser_t self, char *string)
 {
+#if 0
     elvin_key_t key;
 
     /* Make sure we have a key set */
@@ -180,6 +181,7 @@ static int accept_producer_key(groups_parser_t self, char *string)
     {
 	abort();
     }
+#endif
 
     return 0;
 }
@@ -187,6 +189,7 @@ static int accept_producer_key(groups_parser_t self, char *string)
 /* Adds a consumer key to the current list */
 static int accept_consumer_key(groups_parser_t self, char *string)
 {
+#if 0
     elvin_key_t key;
 
     /* Make sure we have a key set */
@@ -209,7 +212,7 @@ static int accept_consumer_key(groups_parser_t self, char *string)
     {
 	abort();
     }
-
+#endif
     return 0;
 }
 

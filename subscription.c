@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: subscription.c,v 2.5 2000/07/11 07:12:27 phelps Exp $";
+static const char cvsid[] = "$Id: subscription.c,v 2.6 2000/08/27 12:21:32 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -326,6 +326,7 @@ static int eval_producer_keys(
     /* Don't accidentally return anything interesting */
     *keys_out = NULL;
 
+#if 0
     /* Make sure we were given a list */
     if (value -> type != VALUE_LIST)
     {
@@ -385,6 +386,7 @@ static int eval_producer_keys(
 
     /* Success! */
     *keys_out = keys;
+#endif
     return 1;
 }
 
@@ -401,6 +403,7 @@ static int eval_consumer_keys(
     /* Don't accidentally return anything interesting */
     *keys_out = NULL;
 
+#if 0
     /* If the list is empty then don't bother creating a key set */
     if (value -> value.list.count == 0)
     {
@@ -448,6 +451,7 @@ static int eval_consumer_keys(
 
     /* Success! */
     *keys_out = keys;
+#endif
     return 1;
 }
 
