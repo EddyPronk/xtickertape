@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.8 2000/11/20 06:24:04 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.9 2000/11/20 12:46:55 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -599,6 +599,95 @@ int vm_assign(vm_t self, elvin_error_t error)
 	vm_pop(self, NULL, error);
 }
 
+/* Adds the top two elements of the stack together */
+int vm_add(vm_t self, elvin_error_t error)
+{
+    object_t arg1, arg2;
+
+    /* Pop the args */
+    if (! vm_pop(self, &arg2, error) ||
+	! vm_pop(self, &arg1, error))
+    {
+	return 0;
+    }
+
+    /* Watch for promotion rules */
+    switch (object_type(arg1))
+    {
+	case SEXP_INTEGER:
+	{
+	    int32_t value = ((int32_t)arg1) >> 1;
+
+	    switch (object_type(arg2))
+	    {
+		case SEXP_INTEGER:
+		{
+		    /* FIX THIS: watch for promotion */
+		    return vm_push_integer(self, value + ((int32_t)arg2 >> 1), error);
+		}
+
+		case SEXP_LONG:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "+long");
+		    return 0;
+		}
+
+		case SEXP_FLOAT:
+		{
+		    return vm_push_float(self, value + *(double *)(arg2 + 1), error);
+		}
+
+		default:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+		    return 0;
+		}
+	    }
+	}
+
+	case SEXP_LONG:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "+long");
+	    return 0;
+	}
+
+	case SEXP_FLOAT:
+	{
+	    double value = *(double *)(arg1 + 1);
+	    switch (object_type(arg2))
+	    {
+		case SEXP_INTEGER:
+		{
+		    return vm_push_float(self, value + ((int32_t)arg2 >> 1), error);
+		}
+
+		case SEXP_LONG:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "+long");
+		    return 0;
+		}
+
+		case SEXP_FLOAT:
+		{
+		    return vm_push_float(self, value + *(double *)(arg2 + 1), error);
+		}
+
+		default:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+		    return 0;
+		}
+	    }
+	}
+
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+	    return 0;
+	}
+    }
+}
+
 /* Locates a cons cell in an alist */
 static int do_assoc(vm_t self, object_t alist, object_t symbol, elvin_error_t error)
 {
@@ -748,34 +837,110 @@ static int do_return(vm_t self, elvin_error_t error)
     return 1;
 }
 
+/* Call a function object */
+static int funcall(vm_t self, elvin_error_t error)
+{
+    object_t object;
+
+    /* Roll the function to the top of the stack */
+    if (! vm_unroll(self, self -> pc - 1, error))
+    {
+	return 0;
+    }
+
+    /* Pop it */
+    if (! vm_pop(self, &object, error))
+    {
+	return 0;
+    }
+
+    switch (object_type(object))
+    {
+	case SEXP_SPECIAL:
+	case SEXP_SUBR:
+	{
+	    /* Call the primitive function */
+	    if (! ((prim_t)object[1])(self, self -> pc - 1, error))
+	    {
+		return 0;
+	    }
+
+	    /* Return the top of the stack as the result */
+	    return do_return(self, error);
+	}
+
+	case SEXP_LAMBDA:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda");
+	    return 0;
+	}
+
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad function");
+	    return 0;
+	}
+    }
+}
+
+/* Evaluate an arg of the expression */
+static int eval_next_arg(vm_t self, elvin_error_t error)
+{
+    /* Double-check that we have a cons cell */
+    switch (object_type(self -> expr))
+    {
+	/* Watch for the end of the expression */
+	case SEXP_NIL:
+	{
+	    return funcall(self, error);
+	}
+
+	/* Evaluate the next arg */
+	case SEXP_CONS:
+	{
+	    self -> pc++;
+
+	    /* Push the car of the expression onto the stack */
+	    if (! vm_push(self, self -> expr[1], error))
+	    {
+		return 0;
+	    }
+
+	    /* Just keep the cdr of the expression */
+	    self -> expr = self -> expr[2];
+
+	    /* Prepare to evaluate the arg */
+	    if (! eval_setup(self, error))
+	    {
+		return 0;
+	    }
+
+	    return 1;
+	}
+
+	/* Bogus arg list */
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	    return 0;
+	}
+    }
+}
 
 /* Perform the next calculation based on the VM state */
 static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 {
     /* Keep evaluating until... when? */
-    while (self -> sp > sp_exit)
+    while (sp_exit < self -> sp)
     {
 	switch (self -> pc)
 	{
 	    /* Always evaluate the first arg */
 	    case 0:
 	    {
-		self -> pc++;
-
-		/* Push the car of the expression onto the stack */
-		if (! vm_push(self, self -> expr[1], error))
+		if (! eval_next_arg(self, error))
 		{
-		    self -> sp = sp_exit;
-		    return 0;
-		}
-
-		/* The expression becomes the cdr */
-		self -> expr = self -> expr[2];
-
-		/* Set up to evaluate the expression */
-		if (! eval_setup(self, error))
-		{
-		    self -> sp = sp_exit;
+		    self -> sp = sp_exit - 1;
 		    return 0;
 		}
 
@@ -790,7 +955,7 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 		/* The function should be on the top of the stack */
 		if (! vm_top(self, &object, error))
 		{
-		    self -> sp = sp_exit;
+		    self -> sp = sp_exit - 1;
 		    return 0;
 		}
 
@@ -804,7 +969,7 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 			{
 			    if (! vm_push(self, self -> expr[1], error))
 			    {
-				self -> sp = sp_exit;
+				self -> sp = sp_exit - 1;
 				return 0;
 			    }
 
@@ -815,36 +980,15 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 			/* Make sure we have a null-terminated list */
 			if (object_type(self -> expr) != SEXP_NIL)
 			{
-			    self -> sp = sp_exit;
+			    self -> sp = sp_exit - 1;
 			    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
 			    return 0;
 			}
 
 			/* Roll the function to the top of the stack */
-			if (! vm_unroll(self, self -> pc - 1, error))
+			if (! funcall(self, error))
 			{
-			    self -> sp = sp_exit;
-			    return 0;
-			}
-
-			/* Pop it and call it */
-			if (! vm_pop(self, &object, error))
-			{
-			    self -> sp = sp_exit;
-			    return 0;
-			}
-
-			/* Call the function */
-			if (! ((prim_t)object[1])(self, self -> pc - 1, error))
-			{
-			    self -> sp = sp_exit;
-			    return 0;
-			}
-
-			/* Return the top of the stack as the result */
-			if (! do_return(self, error))
-			{
-			    self -> sp = sp_exit;
+			    self -> sp = sp_exit - 1;
 			    return 0;
 			}
 
@@ -855,46 +999,10 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 		    case SEXP_SUBR:
 		    case SEXP_LAMBDA:
 		    {
-			switch (object_type(self -> expr))
+			if (! eval_next_arg(self, error))
 			{
-			    case SEXP_NIL:
-			    {
-				printf("we're done evaluating args (there are none)\n");
-				vm_print_state(self, error);
-				exit(1);
-			    }
-
-			    case SEXP_CONS:
-			    {
-				self -> pc++;
-
-				/* Push the car of the expression onto the stack */
-				if (! vm_push(self, self -> expr[1], error))
-				{
-				    self -> sp = sp_exit;
-				    return 0;
-				}
-
-				/* The expression becomes its cdr */
-				self -> expr = self -> expr[2];
-
-				/* Set up to evaluate this arg */
-				if (! eval_setup(self, error))
-				{
-				    self -> sp = sp_exit;
-				    return 0;
-				}
-				
-				break;
-			    }
-
-			    /* Anything else is trouble */
-			    default:
-			    {
-				self -> sp = sp_exit;
-				ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
-				return 0;
-			    }
+			    self -> sp = sp_exit - 1;
+			    return 0;
 			}
 
 			break;
@@ -903,7 +1011,7 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 		    /* Bogus function.  Bail! */
 		    default:
 		    {
-			self -> sp = sp_exit;
+			self -> sp = sp_exit - 1;
 			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus func");
 			return 0;
 		    }
@@ -915,48 +1023,12 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 	    /* We must be evaluating args */
 	    default:
 	    {
-		switch (object_type(self -> expr))
+		if (! eval_next_arg(self, error))
 		{
-		    case SEXP_NIL:
-		    {
-			printf("we're done evaluating args\n");
-			vm_print_state(self, error);
-			exit(1);
-		    }
-
-		    case SEXP_CONS:
-		    {
-			self -> pc++;
-
-			/* Push the car of the expression onto the stack */
-			if (! vm_push(self, self -> expr[1], error))
-			{
-			    self -> sp = sp_exit;
-			    return 0;
-			}
-
-			/* The expression becomes its cdr */
-			self -> expr = self -> expr[2];
-
-			/* Set up to evaluate this arg */
-			if (! eval_setup(self, error))
-			{
-			    self -> sp = sp_exit;
-			    return 0;
-			}
-
-			break;
-		    }
-
-		    default:
-		    {
-			self -> sp = sp_exit;
-			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
-			return 0;
-		    }
+		    self -> sp = sp_exit - 1;
+		    return 0;
 		}
 	    }
-		
 	}
     }
 
