@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.77 1999/11/22 23:50:00 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.78 1999/11/23 00:12:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -497,6 +497,8 @@ static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_gl
     next -> previous = new_glyph;
     old_glyph -> next = NULL;
 
+    old_glyph -> set_replacement(old_glyph, new_glyph);
+
     /* Update the left_glyph if appropriate */
     if (self -> scroller.left_glyph == old_glyph)
     {
@@ -913,9 +915,7 @@ static void remove_left_holder(ScrollerWidget self)
 	    if (! probe -> glyph -> is_expired(probe -> glyph))
 	    {
 		/* Be careful to use the replacement if there is one */
-		self -> scroller.left_glyph = queue_find_replacement(
-		    self -> scroller.gap,
-		    probe -> glyph);
+		self -> scroller.left_glyph = probe -> glyph -> get_replacement(probe -> glyph);
 		return;
 	    }
 
@@ -948,9 +948,7 @@ static void remove_right_holder(ScrollerWidget self)
 	{
 	    if (! probe -> glyph -> is_expired(probe -> glyph))
 	    {
-		self -> scroller.right_glyph = queue_find_replacement(
-		    self -> scroller.gap,
-		    probe -> glyph);
+		self -> scroller.right_glyph = probe -> glyph -> get_replacement(probe -> glyph);
 		return;
 	    }
 
