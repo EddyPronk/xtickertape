@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.100 2000/05/05 03:54:28 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.101 2000/05/20 00:53:44 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1300,7 +1300,7 @@ static void overflow_recover(ScrollerWidget self)
     {
 	case DS_NOT_DRAGGING:
 	{
-	    Tick((Widget)self, NULL);
+	    Tick((XtPointer)self, NULL);
 	    return;
 	}
 
