@@ -4,12 +4,9 @@
 #include <stdlib.h>
 #include <alloca.h>
 #include "FileStreamTokenizer.h"
+#include "StringBuffer.h"
 #include "List.h"
-#include "Hash.h"
 #include "sanity.h"
-
-#define BUFFERSIZE 8192
-#define SEPARATORS " \t\n"
 
 #ifdef SANITY
 static char *sanity_value = "UsenetSubscription";
@@ -41,15 +38,17 @@ struct UsenetSubscription_t
 };
 
 
-/* The mapping from fields in the usenet file to the elvin notification equivalents */
-static Hashtable fieldMap = NULL;
-
 
 /*
  *
  * Static function headers
  *
  */
+static char *TranslateField(char *field);
+static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer);
+static void GetFromUsenetFileLine(
+    char *token, FileStreamTokenizer tokenizer, StringBuffer buffer, int *isFirst);
+static int GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p);
 static void HandleNotify(UsenetSubscription self, en_notify_t notification);
 
 /*
@@ -58,38 +57,87 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification);
  *
  */
 
-/* Copies characters from inString into outString */
-void AppendString(char *inString, char **outString)
+/* Answers the Elvin field which matches the field from the usenet file */
+static char *TranslateField(char *field)
 {
-    char *pointer;
-
-    for (pointer = inString; *pointer != '\0'; pointer++)
+    switch (*field)
     {
-	**outString = *pointer;
-	(*outString)++;
+	/* email */
+	case 'e':
+	{
+	    if (strcmp(field, "email") == 0)
+	    {
+		return "FROM_EMAIL";
+	    }
+
+	    return NULL;
+	}
+
+	/* from */
+	case 'f':
+	{
+	    if (strcmp(field, "from") == 0)
+	    {
+		return "FROM_NAME";
+	    }
+
+	    return NULL;
+	}
+
+	/* keywords */
+	case 'k':
+	{
+	    if (strcmp(field, "keywords") == 0)
+	    {
+		return "KEYWORDS";
+	    }
+
+	    return NULL;
+	}
+
+	/* newsgroups */
+	case 'n':
+	{
+	    if (strcmp(field, "newsgroups") == 0)
+	    {
+		return "NEWSGROUPS";
+	    }
+
+	    return NULL;
+	}
+
+	/* subject */
+	case 's':
+	{
+	    if (strcmp(field, "subject") == 0)
+	    {
+		return "SUBJECT";
+	    }
+
+	    return NULL;
+	}
+
+	/* x-posts */
+	case 'x':
+	{
+	    if (strcmp(field, "x-posts") == 0)
+	    {
+		return "CROSSPOSTS";
+	    }
+
+	    return NULL;
+	}
+
+	/* No match */
+	default:
+	{
+	    return NULL;
+	}
     }
 }
 
-
-/* Answers the field map (from field to subscription thingy) */
-static Hashtable GetFieldMap()
-{
-    if (fieldMap == NULL)
-    {
-	fieldMap = Hashtable_alloc(13);
-	Hashtable_put(fieldMap, "from", "FROM_NAME");
-	Hashtable_put(fieldMap, "email", "FROM_EMAIL");
-	Hashtable_put(fieldMap, "subject", "SUBJECT");
-	Hashtable_put(fieldMap, "keywords", "KEYWORDS");
-	Hashtable_put(fieldMap, "x-posts", "CROSS_POSTS");
-	Hashtable_put(fieldMap, "newsgroups", "NEWSGROUPS");
-    }
-
-    return fieldMap;
-}
-
-/* Reads the next tuple from the FileStreamTokenizer */
-static char *GetTupleFromTokenizer(FileStreamTokenizer tokenizer)
+/* Reads the next tuple from the FileStreamTokenizer into the StringBuffer */
+static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer)
 {
     char *field;
     char *operation;
@@ -100,10 +148,10 @@ static char *GetTupleFromTokenizer(FileStreamTokenizer tokenizer)
     field = FileStreamTokenizer_next(tokenizer);
     if ((field == NULL) || (*field == '/') || (*field == '\n'))
     {
-	return NULL;
+	return;
     }
 
-    if ((elvinField = Hashtable_get(GetFieldMap(), field)) == NULL)
+    if ((elvinField = TranslateField(field)) == NULL)
     {
 	fprintf(stderr, "*** Unrecognized field \"%s\"\n", field);
 	exit(1);
@@ -114,49 +162,200 @@ static char *GetTupleFromTokenizer(FileStreamTokenizer tokenizer)
     operation = FileStreamTokenizer_next(tokenizer);
     if ((operation == NULL) || (*operation == '/') || (*field == '\n'))
     {
-	return NULL;
+	return;
     }
 
     /* Read the pattern */
     pattern = FileStreamTokenizer_next(tokenizer);
     if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
     {
-	return NULL;
+	return;
     }
 
-    printf("  field=\"%s\", operation=\"%s\", pattern=\"%s\"\n", elvinField, operation, pattern);
+    switch (*operation)
+    {
+	/* matches */
+	case 'm':
+	{
+	    if (strcmp(operation, "matches") == 0)
+	    {
+		/* Construct our portion of the subscription */
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " matches(\"");
+		StringBuffer_append(buffer, pattern);
+		StringBuffer_append(buffer, "\")");
+		return;
+	    }
+
+	    break;
+	}
+
+	/* not */
+	case 'n':
+	{
+	    if (strcmp(operation, "not") == 0)
+	    {
+		/* Construct our portion of the subscription */
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " !matches(\"");
+		StringBuffer_append(buffer, pattern);
+		StringBuffer_append(buffer, "\")");
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    break;
+	}
+
+	/* = */
+	case '=':
+	{
+	    if (strcmp(operation, "=") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " == \"");
+		StringBuffer_append(buffer, pattern);
+		StringBuffer_append(buffer, "\"");
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    break;
+	}
+
+	/* != */
+	case '!':
+	{
+	    if (strcmp(operation, "!=") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " != \"");
+		StringBuffer_append(buffer, pattern);
+		StringBuffer_append(buffer, "\"");
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    break;
+	}
+
+	/* < or <= */
+	case '<':
+	{
+	    if (strcmp(operation, "<") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " < ");
+		StringBuffer_append(buffer, pattern);
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    if (strcmp(operation, "<=") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " <= ");
+		StringBuffer_append(buffer, pattern);
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    break;
+	}
+
+	/* > or >= */
+	case '>':
+	{
+	    if (strcmp(operation, ">") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " > ");
+		StringBuffer_append(buffer, pattern);
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    if (strcmp(operation, ">=") == 0)
+	    {
+		StringBuffer_append(buffer, " && ");
+		StringBuffer_append(buffer, elvinField);
+		StringBuffer_append(buffer, " >= ");
+		StringBuffer_append(buffer, pattern);
+		free(operation);
+		free(pattern);
+		return;
+	    }
+
+	    break;
+	}
+    }
+
+    /* If we get here, then we have a bad operation */
+    fprintf(stderr, "*** don't understand operation \"%s\"\n", operation);
     free(operation);
     free(pattern);
-
-    return strdup("bob");
 }
 
 
 /* Scans a non-empty, non-comment line of the usenet file and answers
  * a malloc'ed string corresponding to that line's part of the
  * subscription expression */
-static char *GetFromUsenetFileLine(char *token, FileStreamTokenizer tokenizer)
+static void GetFromUsenetFileLine(
+    char *token, FileStreamTokenizer tokenizer, StringBuffer buffer, int *isFirst)
 {
-    List list = List_alloc();
     int isGroupNegated = 0;
-    char *group;
 
     /* Read the group: [not] groupname */
     if (strcmp(token, "not") == 0)
     {
 	isGroupNegated = 1;
-	if ((group = FileStreamTokenizer_next(tokenizer)) == NULL)
+	if ((token = FileStreamTokenizer_next(tokenizer)) == NULL)
 	{
 	    fprintf(stderr, "*** Invalid usenet line containing \"%s\"\n", token);
-	    return NULL;
+	    return;
 	}
 
-	printf("group: !\"%s\"\n", group);
+	if (*isFirst)
+	{
+	    *isFirst = 0;
+	}
+	else
+	{
+	    StringBuffer_append(buffer, " || ");
+	}
+
+	StringBuffer_append(buffer, "( NEWSGROUPS matches(\"");
+	StringBuffer_append(buffer, "!");
+	StringBuffer_append(buffer, token);
+	StringBuffer_append(buffer, "\")");
     }
     else
     {
-	group = token;
-	printf("group: \"%s\"\n", group);
+	if (*isFirst)
+	{
+	    *isFirst = 0;
+	}
+	else
+	{
+	    StringBuffer_append(buffer, " || ");
+	}
+
+	StringBuffer_append(buffer, "( NEWSGROUPS matches(\"");
+	StringBuffer_append(buffer, token);
+	StringBuffer_append(buffer, "\")");
     }
 
     /* Read tuples */
@@ -177,35 +376,26 @@ static char *GetFromUsenetFileLine(char *token, FileStreamTokenizer tokenizer)
 	    break;
 	}
 
-	/* Token separator? */
 	if (*tok == '/')
 	{
-	    char *expression;
 	    free(tok);
-
-	    expression = GetTupleFromTokenizer(tokenizer);
-	    if (expression == NULL)
-	    {
-		fprintf(stderr, "*** Invalid usenet line for group %s\n", group);
-		exit(1);
-	    }
-
-	    List_addLast(list, expression);
+	    
+	    GetTupleFromTokenizer(tokenizer, buffer);
 	}
 	else
 	{
-	    fprintf(stderr, "*** Invalid usenet line for group %s\n", group);
+	    fprintf(stderr, "*** Invalid usenet line for group %s\n", token);
 	    exit(1);
 	}
     }
-
-    return strdup("hi");
+    
+    StringBuffer_append(buffer, " )");
 }
 
 /* Scans the next line of the usenet file and answers a malloc'ed
  * string corresponding to that line's part of the subscription
  * expression */
-static char *GetFromUsenetFile(FILE *file)
+static int GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
 {
     FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, "/\n");
     char *token;
@@ -227,16 +417,16 @@ static char *GetFromUsenetFile(FILE *file)
 	/* Useful line */
 	else
 	{
-	    char *result = GetFromUsenetFileLine(token, tokenizer);
+	    GetFromUsenetFileLine(token, tokenizer, buffer, isFirst_p);
 	    free(token);
-	    return result;
+	    return 1;
 	}
     }
 
     FileStreamTokenizer_free(tokenizer);
     fclose(file);
 
-    return NULL;
+    return 0;
 }
 
 
@@ -360,53 +550,21 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 UsenetSubscription UsenetSubscription_readFromUsenetFile(
     FILE *usenet, UsenetSubscriptionCallback callback, void *context)
 {
-    List list = List_alloc();
-    char *prefix = "ELVIN_CLASS == \"NEWSWATCHER\" && ELVIN_SUBCLASS == \"MONITOR\" && ( ";
-    char *suffix = " )";
-    char *conjunction = " || ";
-    char *expression;
-    char *pointer;
-    int size = 0;
+    UsenetSubscription subscription;
+    StringBuffer buffer = StringBuffer_alloc();
+    int isFirst = 1;
+
+    StringBuffer_append(buffer, "ELVIN_CLASS == \"NEWSWATCHER\" && ");
+    StringBuffer_append(buffer, "ELVIN_SUBCLASS == \"MONITOR\" && ( ");
 
     /* Get the subscription expressions for each individual line */
-    while ((expression = GetFromUsenetFile(usenet)) != NULL)
-    {
-	if (List_isEmpty(list))
-	{
-	    size = strlen(expression);
-	}
-	else
-	{
-	    size += sizeof(conjunction) + strlen(expression);
-	}
+    while (GetFromUsenetFile(usenet, buffer, &isFirst) != 0);
 
-	List_addLast(list, expression);
-    }
+    StringBuffer_append(buffer, " )");
+    subscription = UsenetSubscription_alloc(StringBuffer_getBuffer(buffer), callback, context);
+    StringBuffer_free(buffer);
 
-    /* If the List is empty, then return NULL now */
-    if (List_isEmpty(list))
-    {
-/*	List_free(list);*/
-	return NULL;
-    }
-
-    /* Construct one ubersubscription for all Usenet news */
-    expression = (char *)alloca(sizeof(prefix) + sizeof(suffix) + size);
-    pointer = expression;
-
-    /* Copy the prefix into the expression */
-    AppendString(prefix, &pointer);
-
-    /* Copy in each of the List elements */
-    List_doWith(list, AppendString, &pointer);
-/*    List_do(list, free);*/
-/*    List_free(list);*/
-    
-    /* Copy in the suffix */
-    AppendString(suffix, &pointer);
-
-    printf("expression: %s\n", expression);
-    return UsenetSubscription_alloc("ELVIN_CLASS == \"NEWSWATCHER\"", callback, context);
+    return subscription;
 }
 
 
