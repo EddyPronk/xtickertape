@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.20 2000/04/12 05:33:09 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.21 2000/04/17 00:45:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -57,6 +57,17 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.20 2000/04/12 05:33:09 phelps
 #define XPOSTS "CROSS_POSTS"
 #define X_NNTP_HOST "X-NNTP-Host"
 
+#define F_MATCHES "regex(%s, \"%s\")"
+#define F_NOT_MATCHES "!regex(%s, \"%s\")"
+#define F_EQ "%s == %s"
+#define F_STRING_EQ "%s == \"%s\""
+#define F_NEQ "%s != %s"
+#define F_STRING_NEQ "%s != \"%s\""
+#define F_LT "%s < %s"
+#define F_GT "%s > %s"
+#define F_LE "%s <= %s"
+#define F_GE "%s >= %s"
+
 #define ONE_SUB \
 "ELVIN_CLASS == \"NEWSWATCHER\" && " \
 "ELVIN_SUBCLASS == \"MONITOR\" && (%s)"
@@ -80,7 +91,7 @@ struct usenet_sub
     elvin_handle_t handle;
 
     /* The reciever's subscription */
-    elvin_sub_t subscription;
+    elvin_subscription_t subscription;
 
     /* The receiver's callback */
     usenet_sub_callback_t callback;
@@ -96,7 +107,7 @@ struct usenet_sub
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
-    elvin_sub_t subscription,
+    elvin_subscription_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -131,7 +142,7 @@ static void notify_cb(
 	string = "news";
     }
 
-    /* Prepent `usenet:' to the beginning of the group field */
+    /* Prepend `usenet:' to the beginning of the group field */
     if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
     {
 	return;
@@ -260,6 +271,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 {
     char *field_name;
     char *format;
+    size_t format_length;
     char *result;
 
     /* Get the string representation for the field */
@@ -321,14 +333,16 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* matches */
 	case O_MATCHES:
 	{
-	    format = "regex(%s, \"%s\")";
+	    format = F_MATCHES;
+	    format_length = sizeof(F_MATCHES);
 	    break;
 	}
 
 	/* not [matches] */
 	case O_NOT:
 	{
-	    format = "!regex(%s, \"%s\")";
+	    format = F_NOT_MATCHES;
+	    format_length = sizeof(F_NOT_MATCHES);
 	    break;
 	}
 
@@ -337,11 +351,13 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	{
 	    if (expression -> field == F_XPOSTS)
 	    {
-		format = "%s == %s";
+		format = F_EQ;
+		format_length = sizeof(F_EQ);
 		break;
 	    }
 
-	    format = "%s == \"%s\"";
+	    format = F_STRING_EQ;
+	    format_length = sizeof(F_STRING_EQ);
 	    break;
 	}
 
@@ -350,40 +366,45 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	{
 	    if (expression -> field == F_XPOSTS)
 	    {
-		format = "%s != %s";
+		format = F_NEQ;
+		format_length = sizeof(F_NEQ);
 		break;
 	    }
 
-	    format = "%s != \"%s\"";
+	    format = F_STRING_NEQ;
+	    format_length = sizeof(F_STRING_NEQ);
 	    break;
 	}
 
 	/* < */
 	case O_LT:
 	{
-	    format = "%s < %s";
+	    format = F_LT;
+	    format_length = sizeof(F_LT);
 	    break;
 	}
 
 	/* > */
 	case O_GT:
 	{
-	    format = "%s > %s";
+	    format = F_GT;
+	    format_length = sizeof(F_GT);
 	    break;
 	}
 
 	/* <= */
 	case O_LE:
 	{
-	    format = "%s <= %s";
+	    format = F_LE;
+	    format_length = sizeof(F_LE);
 	    break;
 	}
 
 	/* >= */
 	case O_GE:
 	{
-	    printf("GE\n");
-	    format = "%s >= %s";
+	    format = F_GE;
+	    format_length = sizeof(F_GE);
 	    break;
 	}
 
@@ -396,7 +417,9 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     /* Allocate space for the result */
     if ((result = (char *)malloc(
-	strlen(format) + strlen(field_name) + strlen(expression -> pattern) - 3)) == NULL)
+	format_length +
+	strlen(field_name) +
+	strlen(expression -> pattern) - 4)) == NULL)
     {
 	return NULL;
     }
@@ -576,7 +599,7 @@ int usenet_sub_add(
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    elvin_sub_t subscription, void *rock,
+    elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
@@ -593,7 +616,7 @@ static void subscribe_cb(
 /* Callback for an unsubscribe request */
 static void unsubscribe_cb(
     elvin_handle_t handle, int result,
-    elvin_sub_t subscription, void *rock,
+    elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
