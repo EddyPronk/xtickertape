@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.34 2000/10/22 09:05:52 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.35 2000/10/25 07:21:27 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -167,6 +167,9 @@ struct control_panel
     /* The receiver's history list widget */
     Widget history;
 
+    /* The status line widget */
+    Widget status_line;
+
     /* The tool-tip timer */
     XtIntervalId timer;
 
@@ -181,6 +184,9 @@ struct control_panel
 
     /* The y position of the pointer when the timer was last set */
     Position y;
+
+    /* The current status message string */
+    char *status;
 
     /* The uuid counter */
     int uuid_count;
@@ -764,7 +770,8 @@ static void cancel_tool_tip_timer(control_panel_t self)
 	self -> timer = 0;
     }
 }
-    
+
+#if 0    
 /* This is called when the mouse enters or leaves or moves around
  * inside the history widget */
 static void history_motion_callback(
@@ -863,22 +870,102 @@ static void history_motion_callback(
 	}
     }
 }
+#endif
+
+
+/* Displays a message in the status line */
+static void show_status(
+    control_panel_t self,
+    char *message)
+{
+    XmString string;
+
+
+    /* Bail if we're already displaying that message */
+    if (self -> status == message)
+    {
+	return;
+    }
+
+    /* Create a string to display the message */
+    string = XmStringCreateSimple(message);
+    XtVaSetValues(self -> status_line, XmNlabelString, string, NULL);
+    XmStringFree(string);
+
+    self -> status = message;
+}
+
+/* This is called when the mouse enters, leaves or moves around in the
+ * history widget */
+static void history_motion_callback(
+    Widget widget,
+    control_panel_t self,
+    XEvent *event)
+{
+    Position x, y;
+    message_t message;
+    char *mime_args;
+
+    switch (event->type)
+    {
+	case MotionNotify:
+	{
+	    XMotionEvent *motion_event = (XMotionEvent *)event;
+	    x = motion_event -> x;
+	    y = motion_event -> y;
+	    break;
+	}
+
+	case EnterNotify:
+	case LeaveNotify:
+	{
+	    XCrossingEvent *crossing_event = (XCrossingEvent *)event;
+	    x = crossing_event -> x;
+	    y = crossing_event -> y;
+	    break;
+	}
+
+	default:
+	{
+	    return;
+	}
+    }
+
+    /* Figure out which message we're looking at */
+    message = history_get_at_point(tickertape_history(self -> tickertape), x, y);
+
+    /* Make sure there is a message */
+    if (message == NULL)
+    {
+	return;
+    }
+
+    /* See if it has mime args attached */
+    if ((mime_args = message_get_mime_args(message)) == NULL)
+    {
+	return;
+    }
+
+    /* Show the mime_args in the status line */
+    show_status(self, mime_args);
+}
 
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
 {
-    Arg args[9];
+    Arg args[10];
 
     XtSetArg(args[0], XmNleftAttachment, XmATTACH_FORM);
     XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
     XtSetArg(args[2], XmNtopAttachment, XmATTACH_FORM);
-    XtSetArg(args[3], XmNbottomAttachment, XmATTACH_FORM);
-    XtSetArg(args[4], XmNselectionPolicy, XmBROWSE_SELECT);
-    XtSetArg(args[5], XmNitemCount, 0);
-    XtSetArg(args[6], XmNvisibleItemCount, 3);
-    XtSetArg(args[7], XmNlistSizePolicy, XmCONSTANT);
-    XtSetArg(args[8], XmNscrollBarDisplayPolicy, XmSTATIC);
-    self -> history = XmCreateScrolledList(parent, "history", args, 9);
+    XtSetArg(args[3], XmNbottomAttachment, XmATTACH_WIDGET);
+    XtSetArg(args[4], XmNbottomWidget, self -> status_line);
+    XtSetArg(args[5], XmNselectionPolicy, XmBROWSE_SELECT);
+    XtSetArg(args[6], XmNitemCount, 0);
+    XtSetArg(args[7], XmNvisibleItemCount, 3);
+    XtSetArg(args[8], XmNlistSizePolicy, XmCONSTANT);
+    XtSetArg(args[9], XmNscrollBarDisplayPolicy, XmSTATIC);
+    self -> history = XmCreateScrolledList(parent, "history", args, 10);
 
     /* Add callbacks for interesting things */
     XtAddCallback(
@@ -900,6 +987,32 @@ static void create_history_box(control_panel_t self, Widget parent)
     /* Tell the tickertape's history to use this XmList widget */
     history_set_list(tickertape_history(self -> tickertape), self -> history);
 }
+
+/* Constructs the status line */
+static void create_status_line(control_panel_t self, Widget parent)
+{
+    Widget frame;
+    XmString string;
+
+    /* Create a frame for the status line */
+    frame = XtVaCreateManagedWidget(
+	"statusFrame", xmFrameWidgetClass, parent,
+	XmNshadowType, XmSHADOW_IN,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNbottomAttachment, XmATTACH_FORM,
+	NULL);
+
+    /* Create an empty string for the status line */
+    string = XmStringCreateSimple(PACKAGE "" VERSION);
+    self -> status_line = XtVaCreateManagedWidget(
+	"statusLabel", xmLabelWidgetClass, frame,
+	XmNalignment, XmALIGNMENT_BEGINNING,
+	XmNlabelString, string,
+	NULL);
+    XmStringFree(string);
+}
+
 
 /* Constructs the top box of the Control Panel */
 static void create_top_box(control_panel_t self, Widget parent)
@@ -1238,7 +1351,12 @@ static void init_ui(control_panel_t self, Widget parent)
 	XmNtopWidget, button_form,
 	NULL);
 
+    /* Create the status line */
+    create_status_line(self, self -> history_form);
+
+    /* And the history box */
     create_history_box(self, self -> history_form);
+
     XtManageChild(self -> history_form);
 
     /* Manage the form widget */
@@ -1594,28 +1712,9 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     control_panel_t self = (control_panel_t)malloc(sizeof(struct control_panel));
 
     /* Set the receiver's contents to something sane */
+    memset(self, 0, sizeof(struct control_panel));
     self -> tickertape = tickertape;
-    self -> top = NULL;
-    self -> user = NULL;
-    self -> group = NULL;
-    self -> group_menu = NULL;
-    self -> group_count = 0;
-    self -> timeout = NULL;
-    self -> default_timeout = NULL;
-    self -> mime_type = NULL;
-    self -> mime_args = NULL;
-    self -> text = NULL;
-    self -> send = NULL;
-    self -> history = NULL;
-    self -> timer = 0;
-    self -> tool_tip = NULL;
-    self -> tool_tip_label = NULL;
-    self -> x = 0;
-    self -> y = 0;
-    self -> uuid_count = 0;
-    self -> selection = NULL;
     self -> timeouts = timeouts;
-    self -> message_id = NULL;
 
     /* Initialize the UI */
     init_ui(self, parent);
