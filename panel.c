@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.78 2003/01/27 16:17:46 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.79 2003/01/27 17:34:06 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1441,6 +1441,30 @@ static char *get_mime_args(control_panel_t self)
     return result;
 }
 
+/* Returns the first line of an attachment's body, complete with NUL
+ * termination */
+char *attachment_first_line(char *attachment, size_t length)
+{
+    char *point;
+    char *string;
+
+    /* Find the position of a '\r' or '\n' */
+    for (point = attachment; point < attachment + length; point++)
+    {
+	if (*point == '\r' || *point == '\n')
+	{
+	    break;
+	}
+    }
+
+    /* Allocate memory */
+    string = (char *)malloc(point - attachment + 1);
+    memcpy(string, attachment, point - attachment);
+    string[point - attachment] = 0;
+    return string;
+}
+
+
 /* Generates a universally unique identifier for a message.  Result
  * should point to a buffer of UUID_SIZE bytes. */
 void create_uuid(control_panel_t self, char *result)
@@ -1574,57 +1598,14 @@ static message_t construct_message(control_panel_t self)
     return message;
 }
 
-/* Copy the message's Content-Type into the buffer and return a
- * pointer to the MIME arg.  Note: this is a very dodgy hack that only
- * works because we generate the buffer to begin with and can
- * therefore be confident of its format.  FIX THIS: make this less of
- * a hack and move it into message.c where we can share it. */
-static void extract_attachment(
-    char *attachment,
-    size_t length,
-    char *buffer, size_t buflen,
-    char **pointer_out)
-{
-    char *point;
-    char *mark;
-    int count;
-    int ch;
-
-    /* The Content-Type field starts a fixed distance from the start */
-    point = attachment + 32;
-    mark = strchr(point, ';');
-    if (mark == NULL)
-    {
-	abort();
-    }
-
-    count = length - 1 < mark - point ? length - 1 : mark - point;
-    strncpy(buffer, point, count);
-    buffer[count] = '\0';
-
-    /* Replace the last byte of the body (a newline) with a null */
-    ch = attachment[length - 1];
-    if (ch != '\n')
-    {
-	abort();
-    }
-
-    attachment[length - 1] = '\0';
-
-    /* The body starts a fixed distance from the semicolon */
-    *pointer_out = strdup(mark + 20);
-
-    /* Put the byte back */
-    attachment[length - 1] = ch;
-}
 
 /* Sets the control panel's state from the given message */
 static void deconstruct_message(control_panel_t self, message_t message)
 {
     menu_item_tuple_t tuple;
+    char *mime_type;
     char *attachment;
-    char mime_type[BUFFER_SIZE];
-    char *point;
+    char *line;
     size_t length;
 
     /* Set the user field */
@@ -1646,17 +1627,33 @@ static void deconstruct_message(control_panel_t self, message_t message)
     }
 
     /* Decode the mime type and mime arg */
-    if (message_has_attachment(message))
+    if (message_decode_attachment(message, &mime_type, &attachment, &length) < 0)
     {
-	length = message_get_attachment(message, &attachment);
-	extract_attachment(attachment, length, mime_type, BUFFER_SIZE, &point);
-	set_mime_type(self, mime_type);
-	set_mime_args(self, point);
+	mime_type = NULL;
+	attachment = NULL;
+	length = 0;
+    }
+
+    /* Set the mime type if any */
+    if (mime_type == NULL)
+    {
+	reset_mime_type(self);
     }
     else
     {
-	reset_mime_type(self);
+	set_mime_type(self, mime_type);
+	free(mime_type);
+    }
+
+    if (attachment == NULL)
+    {
 	set_mime_args(self, "");
+    }
+    else
+    {
+	line = attachment_first_line(attachment, length);
+	set_mime_args(self, line);
+	free(line);
     }
 }
 
@@ -1849,81 +1846,6 @@ void control_panel_set_status(
     }
 }
 
-/* Copies from the attachment into the buffer */
-/* FIX THIS: make this less of a hack and move it into message.c where
- * we can share it */
-static void decode_attachment(
-    char *attachment, size_t length,
-    char *buffer, size_t buflen)
-{
-    char *end = attachment + length;
-    char *point;
-    char *out = buffer;
-    int state = 0;
-    int ch;
-
-    /* Find the start of the body */
-    for (point = attachment; point < end; point++)
-    {
-	ch = *point;
-
-	/* Decide how to treat the character depending on our state */
-	switch (state)
-	{
-	    /* Skipping the MIME header */
-	    case 0:
-	    {
-		if (ch == '\n')
-		{
-		    state = 1;
-		    break;
-		}
-
-		break;
-	    }
-
-	    /* Looking at the ch after a linefeed in the header */
-	    case 1:
-	    {
-		if (ch == '\n')
-		{
-		    state = 2;
-		    break;
-		}
-
-		state = 0;
-		break;
-	    }
-
-	    /* Looking at a character in the body */
-	    case 2:
-	    {
-		if (isprint(ch))
-		{
-		    if (out < buffer + buflen)
-		    {
-			*(out++) = ch;
-		    }
-		    else
-		    {
-			*(buffer + buflen - 1) = '\0';
-			return;
-		    }
-		}
-
-		break;
-	    }
-
-	    default:
-	    {
-		abort();
-	    }
-	}
-    }
-
-    *out = '\0';
-}
-
 /* Displays a message in the status line.  If `message' is NULL then
  * the message will revert to the message set from
  * control_set_status(). */
@@ -1931,8 +1853,9 @@ void control_panel_set_status_message(
     control_panel_t self,
     message_t message)
 {
-    char buffer[BUFFER_SIZE];
-    size_t length;
+    char *mime_type = NULL;
+    char *attachment = NULL;
+    size_t length = 0;
     char *string;
     int had_attachment = 0;
 
@@ -1955,25 +1878,31 @@ void control_panel_set_status_message(
     if (message)
     {
 	self -> status_message = message_alloc_reference(message);
+	message_decode_attachment(message, &mime_type, &attachment, &length);
     }
 
-    /* No attachment? */
-    if (! message || ! message_has_attachment(message) || 
-	! (length = message_get_attachment(message, &string)))
+    /* If there's a MIME type we can display (text/xxx or x-elvin/url)
+     * then display it now */
+    if (mime_type)
     {
-	/* If the old message had an attachment then replace it with
-	 * the original status message */
-	if (had_attachment)
+	/* This is an ugly hack... */
+	if (strcmp(mime_type, mime_types[0]) == 0 || strncmp(mime_type, mime_types[1], 5) == 0)
 	{
-	    show_status(self, self -> status);
+	    string = attachment_first_line(attachment, length);
+	    show_status(self, string);
+	    free(mime_type);
+	    free(string);
+	    return;
 	}
 
-	return;
+	free(mime_type);
     }
 
-    /* Yank out the interesting bits and display them */
-    decode_attachment(string, length, buffer, BUFFER_SIZE);
-    show_status(self, buffer);
+    /* Display the status if the previous message had an attachment */
+    if (had_attachment)
+    {
+	show_status(self, self -> status);
+    }
 }
 
 /* This is called when the elvin connection status changes */
