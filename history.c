@@ -28,12 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.25 1999/12/16 07:52:09 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.26 2000/03/16 06:54:18 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <X11/IntrinsicP.h>
 #include <Xm/List.h>
 #include "glyph.h"
@@ -46,6 +47,8 @@ static const char cvsid[] = "$Id: history.c,v 1.25 1999/12/16 07:52:09 phelps Ex
 #define MAX_LIST_COUNT 30
 #endif /* DEBUG */
 
+#define DATE_FORMAT "%2d:%02d%s "
+#define MSG_FORMAT "%s:%s:%s"
 
 /* The structure of a node in a message history */
 typedef struct history_node *history_node_t;
@@ -139,17 +142,44 @@ static int history_node_indent(history_node_t self)
 }
 
 /* Constructs a Motif string representation of the receiver's message */
-static XmString history_node_string(history_node_t self, int is_threaded)
+static XmString history_node_string(history_node_t self, int is_threaded, int show_timestamp)
 {
     char *group = message_get_group(self -> message);
     char *user = message_get_user(self -> message);
     char *string = message_get_string(self -> message);
     int spaces = is_threaded ? (history_node_indent(self) * 2) : 0;
-    char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string) + spaces + 3);
-    char *pointer = buffer;
+    int length = sizeof(MSG_FORMAT) - 6 + strlen(group) + strlen(user) + strlen(string) + spaces;
+    char *buffer;
+    char *pointer;
     char *tag;
     XmString result;
     int i;
+
+    /* Shall we show the timestamp? */
+    if (show_timestamp)
+    {
+	struct tm *ltime;
+
+	/* Get the current time */
+	if ((ltime = localtime(message_get_creation_time(self -> message))) == NULL)
+	{
+	    perror("localtime(): failed");
+	    exit(1);
+	}
+
+	/* Print it into the buffer */
+	buffer = (char *)malloc(length + sizeof(DATE_FORMAT) - 4);
+	sprintf(buffer, DATE_FORMAT,
+	    (ltime -> tm_hour % 12 == 0) ? 12 : (ltime -> tm_hour % 12),
+	    ltime -> tm_min,
+	    (ltime -> tm_hour / 12 == 0) ? "am" : "pm");
+	pointer = buffer + sizeof(DATE_FORMAT) - 4;
+    }
+    else
+    {
+	buffer = (char *)malloc(length);
+	pointer = buffer;
+    }
 
     /* Set up the indent */
     for (i = 0; i < spaces; i++)
@@ -158,10 +188,11 @@ static XmString history_node_string(history_node_t self, int is_threaded)
     }
 
     /* Print the message */
-    sprintf(pointer, "%s:%s:%s", group, user, string);
+    sprintf(pointer, MSG_FORMAT, group, user, string);
     tag = message_has_attachment(self -> message) ? "MIME" : XmFONTLIST_DEFAULT_TAG;
     result = XmStringCreate(buffer, tag);
 
+    /* Clean up */
     free(buffer);
     return result;
 }
@@ -223,6 +254,9 @@ struct history
     /* Nonzero if the history is being displayed threaded */
     int is_threaded;
 
+    /* Nonzero if a timestamp should be displayed */
+    int show_timestamp;
+
     /* The last node in the history (in receipt order) */
     history_node_t last;
 
@@ -251,6 +285,7 @@ history_t history_alloc()
     /* Initialize the fields to sane values */
     self -> threaded_count = 0;
     self -> is_threaded = 1;
+    self -> show_timestamp = 1;
     self -> last = NULL;
     self -> last_response = NULL;
     self -> list = NULL;
@@ -408,7 +443,11 @@ void history_set_list(history_t self, Widget list)
 
 
 /* Constructs a threaded version of the history */
-static void history_node_get_strings_threaded(history_node_t self, XmString *items, int count)
+static void history_node_get_strings_threaded(
+    history_node_t self,
+    XmString *items,
+    int count,
+    int show_timestamp)
 {
     int max = count;
     history_node_t node = self;
@@ -421,11 +460,11 @@ static void history_node_get_strings_threaded(history_node_t self, XmString *ite
 	/* Add the start of the thread to the table */
 	if ((index = max - (node -> child_count + 1)) >= 0)
 	{
-	    items[index] = history_node_string(node, True);
+	    items[index] = history_node_string(node, True, show_timestamp);
 	}
 
 	/* Recursively add its children */
-	history_node_get_strings_threaded(node -> last_response, items, max);
+	history_node_get_strings_threaded(node -> last_response, items, max, show_timestamp);
 
 	/* Go on to the next thread */
 	node = node -> previous_response;
@@ -446,7 +485,7 @@ static void history_get_strings_unthreaded(history_t self, XmString *items, int 
 	    return;
 	}
 
-	items[--index] = history_node_string(node, False);
+	items[--index] = history_node_string(node, False, self -> show_timestamp);
     }
 }
 
@@ -457,7 +496,11 @@ static XmString *history_get_strings(history_t self, int count)
 
     if (self -> is_threaded)
     {
-	history_node_get_strings_threaded(self -> last_response, items, count);
+	history_node_get_strings_threaded(
+	    self -> last_response,
+	    items,
+	    count,
+	    self -> show_timestamp);
 	return items;
     }
     else
@@ -548,6 +591,63 @@ void history_set_threaded(history_t self, int is_threaded)
     /* Re-select the previously selected item */
     XmListSelectPos(self -> list, index, False);
 }
+
+/* Sets whether or not a time stamp is displayed in the history */
+void history_show_timestamp(history_t self, int show_timestamp)
+{
+    message_t selection;
+    int count;
+    XmString *items;
+    int index;
+
+    /* Make sure we're changing the value */
+    if (self -> show_timestamp == show_timestamp)
+    {
+	return;
+    }
+
+    /* Set the value */
+    self -> show_timestamp = show_timestamp;
+
+    /* If we don't have a list to update then we're done */
+    if (self -> list == NULL)
+    {
+	return;
+    }
+
+    /* Remember the current selection (if any) */
+    if ((index = history_get_selection_index(self)) == 0)
+    {
+	selection = NULL;
+    }
+    else
+    {
+	selection = history_get(self, index);
+    }
+
+    /* Reconstruct the list */
+    count = history_count(self);
+    items = history_get_strings(self, count);
+
+    /* Replace the old list with the new one */
+    XmListReplaceItemsPos(self -> list, items, count, 1);
+
+    /* Free the strings */
+    for (index = 0; index < count; index++)
+    {
+	XmStringFree(items[index]);
+    }
+
+    /* Free the array */
+    free(items);
+
+    /* Locate the previously selected item */
+    index = history_index(self, selection);
+
+    /* Re-select the previously selected item */
+    XmListSelectPos(self -> list, index, False);
+}
+
 
 /* Answers the message at the given index */
 static history_node_t history_get_node_threaded(history_t self, int index)
@@ -710,7 +810,7 @@ int history_add(history_t self, message_t message)
     if (self -> list != NULL)
     {
 	/* Add the item to the List widget */
-	XmString string = history_node_string(node, self -> is_threaded);
+	XmString string = history_node_string(node, self -> is_threaded, self -> show_timestamp);
 	XmListAddItem(self -> list, string, history_index(self, node -> message));
 	XmStringFree(string);
 

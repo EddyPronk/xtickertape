@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.27 2000/03/16 05:17:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.28 2000/03/16 06:54:18 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -229,6 +229,7 @@ static void help_about(Widget widget, control_panel_t self, XtPointer unused);
 static void create_help_menu(control_panel_t self, Widget parent);
 
 static void options_threaded(Widget widget, XtPointer rock, XtPointer data);
+static void options_show_time(Widget widget, XtPointer rock, XtPointer data);
 static void options_close_policy(Widget widget, XtPointer rock, XtPointer data);
 static void create_options_menu(control_panel_t self, Widget parent);
 
@@ -337,7 +338,16 @@ static void options_threaded(Widget widget, XtPointer rock, XtPointer data)
     history_set_threaded(tickertape_history(self -> tickertape), info -> set);
 }
 
-/* This is called when the `close_policy' toggle button is changed */
+/* This is called when the `show time' toggle button is changed */
+static void options_show_time(Widget widget, XtPointer rock, XtPointer data)
+{
+    control_panel_t self = (control_panel_t)rock;
+    XmToggleButtonCallbackStruct *info = (XmToggleButtonCallbackStruct *)data;
+
+    history_show_timestamp(tickertape_history(self -> tickertape), info -> set);
+}
+
+/* This is called when the `close policy' toggle button is changed */
 static void options_close_policy(Widget widget, XtPointer rock, XtPointer data)
 {
     control_panel_t self = (control_panel_t)rock;
@@ -360,7 +370,12 @@ static void create_options_menu(control_panel_t self, Widget parent)
     XtAddCallback(item, XmNvalueChangedCallback, options_threaded, (XtPointer)self);
     history_set_threaded(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
 
-    /* Create a `close_policy' menu item */
+    /* Create the `show time' menu item */
+    item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass, menu, NULL);
+    XtAddCallback(item, XmNvalueChangedCallback, options_show_time, (XtPointer)self);
+    history_show_timestamp(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
+
+    /* Create a `close policy' menu item */
     item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNvalueChangedCallback, options_close_policy, (XtPointer)self);
     self -> close_on_send = XmToggleButtonGetState(item);

@@ -71,6 +71,10 @@
 *menuBar*threaded.set: True
 *menuBar*threaded.visibleWhenOff: True
 
+*menuBar*showTime.labelString: Show Time Stamps
+*menuBar*showTime.set: False
+*menuBar*showTime.visibleWhenOff: True
+
 *menuBar*closePolicy.labelString: Close On Send
 *menuBar*closePolicy.mnemonic: c
 *menuBar*closePolicy.accelerator: Alt<Key>C
