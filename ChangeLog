@@ -1,3 +1,14 @@
+1999-10-04  Ted Phelps  <phelps@pobox.com>
+
+	* FileStreamTokenizer.h, FileStreamTokenizer.c: removed
+	
+	* StringBuffer.h, StringBuffer.c: removed
+
+	* UsenetSubscription.h, UsenetSubscription.c: removed
+
+	* tickertape.c: Purged old UsenetSubscription stuff and replaced
+		  it with the exciting new usenet_sub and usenet_parser.
+
 1999-10-03  Ted Phelps  <phelps@pobox.com>
 
 	* List.c: fixed an ancient bug with inserting at the end of the list 
