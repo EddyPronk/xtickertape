@@ -1,27 +1,61 @@
 Things that would be nice to have in future versions of xtickertape:
 
+Configuration
+
+- It should be possible to specify the location of `metamail' at
+  both configure-time and run-time.  Perhaps both a command-line
+  option and an environment variable would be useful.
+
+
+Control Panel:
+
 - You should be able to traverse the list of messages you have sent by 
-  using C-p and C-n like you can with every GNU program.  It's
-  probably not that useful to keep history information around,
-  especially since the *last* message is still available when you
-  click on the tickertape.
+  using C-p and C-n like you can with every GNU program.
+
+
+Scroller:
 
 - It should be possible to have the scrolling speed change when the
   mouse enters/leaves the scroller.  I'm not sure yet how '=' and '-'
-  should affect this...
+  would affect this...
 
-- Get the history to behave properly when the control panel is
-  resized.  It seems to think that it's more important to keep the
-  first list item in place than the last one, even if this means
-  leaving a gaping white space at the bottom of the list.  Bizarre.
+- Deletion has less than satisfactory results on the scroller's state.
 
-- Perhaps the control panel should resize in increments corresponding
-  to a complete line in the history?  [too hard.  just build a new
-  history widget instead]
 
-- The length of the history should be configurable (how?
-  configuration file?  [build a history widget?]
+History Widget
 
-- It should be possible to specify the location of `metamail' at
-  both configure-time and run-time. [command-line and environment
-  variable?]
+- We should have resources for the colors to use when drawing the
+  selected line so that people on black and white machines can still
+  read it.
+
+- It should be possible to scroll horizontally from the keyboard.
+
+- It should be able to perform Motif-style keyboard focus changes via
+  the tab key.
+
+- Dragging should not occur until a threshold has been crossed.  This
+  should make it less annoying to deselect an item as dragging
+  automatically selects.
+
+- It should be possible to display a timestamp in front of each
+  message.  The timestamp should optionally include the date as well
+  as hour/minute/am|pm.
+
+- Messages should be indented to indicate threading.  This will expose
+  a bit of unimplemented functionality in regards to inserting a
+  message somewhere other than the end of the list.
+
+- Keyboard initiated scrolling should make the margin visible when the
+  user attempts to select before the first message or after the last one.
+
+- It should be possible to view the attachment of the selected message
+  from the keyboard.
+
+
+Scheme Interpreter:
+
+- This needs to be connected to everything so that we can do
+  amusing things.
+
+- It should be possible to load and evaulate from a file.
+
