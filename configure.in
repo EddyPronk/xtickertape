@@ -143,7 +143,11 @@ AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
 dnl =============================
-dnl AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memmove memset mkdir setlocale socket strcasecmp strchr strdup strerror strrchr uname])
+# This is an ugly hack to force configure to check for gethostbyname()
+# again.  If it wasn't found in the first attempt (in AC_PATH_XTRA)
+# then the cache value will be set to no, even if it was then found in
+# -lnsl.  By clearing the cache, we can force it to be checked again.
+unset ac_cv_func_gethostbyname
 AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname])
 
 
