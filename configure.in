@@ -116,7 +116,7 @@ fi
 
 dnl Check for the metamail program
 AH_TEMPLATE(METAMAIL, [Define to the path to the metamail program])
-AC_PATH_PROG(METAMAIL, metalmail, , $DSTCDIR/script:$PATH)
+AC_PATH_PROG(METAMAIL, metamail, , $DSTCDIR/script:$PATH)
 if test x"$METAMAIL" = x ; then
     echo "WARNING: \`metamail' is missing on your system. Without it,"
     echo "          xtickertape will be unable to decode MIME messages"
