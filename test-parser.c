@@ -26,7 +26,6 @@ int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
     if (atom_eval(sexp, root_env, &result, error) == 0)
     {
 	elvin_error_fprintf(stderr, error);
-	return 1;
     }
     else
     {
@@ -34,8 +33,14 @@ int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
 	atom_print(result); printf("\n");
 
 	/* Free it */
-	return atom_free(result, error);
+	if (atom_free(result, error) == 0)
+	{
+	    return 0;
+	}
     }
+
+    printf("> "); fflush(stdout);
+    return 1;
 }
 
 /* Parse a file */
@@ -99,6 +104,9 @@ int main(int argc, char *argv[])
     /* If we have no args, then read from stdin */
     if (argc < 2)
     {
+	/* Print the prompt */
+	printf("> "); fflush(stdout);
+
 	if (! parse_file(parser, STDIN_FILENO, "[stdin]", error))
 	{
 	    fprintf(stderr, "parse_file(): failed\n");
