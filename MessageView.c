@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.21 1998/10/15 06:19:35 phelps Exp $ */
+/* $Id: MessageView.c,v 1.22 1998/10/15 06:22:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,7 +117,7 @@ static void SetClock(MessageView self)
     self -> timer = TtStartTimer(
 	self -> widget,
 	duration,
-	Tick,
+	(XtTimerCallbackProc) Tick,
 	(XtPointer) self);
 }
 

@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.14 1998/10/15 04:21:09 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.15 1998/10/15 06:22:45 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -17,7 +17,13 @@ static char *sanity_value = "ElvinConnection";
 static char *sanity_freed = "Freed ElvinConnection";
 #endif /* SANITY */
 
+/* Static function headers */
+static void ReceiveCallback(elvin_t connection, void *object, uint32 id, en_notify_t notify);
+static void ErrorCallback(elvin_t connection, void *arg, elvin_error_code_t code, char *message);
+static void SubscribeToItem(Subscription subscription, ElvinConnection self);
 
+
+/* The ElvinConnection data structure */
 struct ElvinConnection_t
 {
 #ifdef SANITY
