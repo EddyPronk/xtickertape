@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.2 2000/11/03 09:11:42 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.3 2000/11/04 03:25:39 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -54,6 +54,9 @@ struct atom
     /* The type determines all */
     atom_type_t type;
 
+    /* The number of references to this atom */
+    uint32_t ref_count;
+
     /* Everything else is part of the big union */
     union
     {
@@ -66,13 +69,29 @@ struct atom
 };
 
 
-/* The nil value is predefined */
-static struct atom Qnil = { ATOM_NIL, { 0 } };
+/* Some predefined atoms */
+static struct atom nil = { ATOM_NIL, 1, { 0 } };
+static struct atom minus_one = { ATOM_INT32, 1, { -1 } };
+static struct atom numbers[] =
+{
+    { ATOM_INT32, 1, { 0 } },
+    { ATOM_INT32, 1, { 1 } },
+    { ATOM_INT32, 1, { 2 } },
+    { ATOM_INT32, 1, { 3 } },
+    { ATOM_INT32, 1, { 4 } },
+    { ATOM_INT32, 1, { 5 } },
+    { ATOM_INT32, 1, { 6 } },
+    { ATOM_INT32, 1, { 7 } },
+    { ATOM_INT32, 1, { 8 } },
+    { ATOM_INT32, 1, { 9 } }
+};
+
 
 /* Answers the unique nil instance */
 atom_t nil_alloc(elvin_error_t error)
 {
-    return &Qnil;
+    nil.ref_count++;
+    return &nil;
 }
 
 
@@ -87,6 +106,7 @@ atom_t atom_alloc(atom_type_t type, elvin_error_t error)
 	return NULL;
     }
 
+    atom -> ref_count = 1;
     atom -> type = type;
     return atom;
 }
@@ -96,7 +116,21 @@ atom_t int32_alloc(int32_t value, elvin_error_t error)
 {
     atom_t atom;
 
-    /* Allocate an atom */
+    /* See if we already have the value cached */
+    if (0 <= value && value < 10)
+    {
+	numbers[value].ref_count++;
+	return &numbers[value];
+    }
+
+    /* We also cache -1 */
+    if (value == -1)
+    {
+	minus_one.ref_count++;
+	return &minus_one;
+    }
+
+    /* Allocate a new atom */
     if ((atom = atom_alloc(ATOM_INT32, error)) == NULL)
     {
 	return NULL;
@@ -175,6 +209,28 @@ uchar *string_value(atom_t atom)
 {
     return atom -> value.s;
 }
+
+/* Allocates and initializes a new char atom */
+atom_t char_alloc(uchar ch, elvin_error_t error)
+{
+    atom_t atom;
+
+    /* Allocate an atom */
+    if ((atom = atom_alloc(ATOM_CHAR, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    atom -> value.i = (int32_t)ch;
+    return atom;
+}
+
+/* Answers the char's char */
+uchar char_value(atom_t atom)
+{
+    return (uchar)atom->value.i;
+}
+
 
 /* Allocates and initializes a new symbol atom */
 atom_t symbol_alloc(char *name, elvin_error_t error)
@@ -261,11 +317,19 @@ atom_t cons_reverse(atom_t atom, atom_t end)
 /* Frees an atom */
 int atom_free(atom_t atom, elvin_error_t error)
 {
+    /* Delete a reference to the atom */
+    if (--atom -> ref_count > 0)
+    {
+	return 1;
+    }
+
+    /* Then free the atom */
     switch (atom -> type)
     {
 	case ATOM_NIL:
 	{
-	    return 1;
+	    fprintf(stderr, PACKAGE ": attempted to free `nil'\n");
+	    abort();
 	}
 
 	case ATOM_STRING:
@@ -347,6 +411,12 @@ int atom_print(atom_t atom)
 	    return 1;
 	}
 
+	case ATOM_CHAR:
+	{
+	    printf("?%c", atom -> value.i);
+	    return 1;
+	}
+
 	case ATOM_SYMBOL:
 	{
 	    printf("%s", atom -> value.s);
@@ -382,6 +452,7 @@ atom_t atom_eval(atom_t atom, elvin_error_t error)
 	case ATOM_INT64:
 	case ATOM_FLOAT:
 	case ATOM_STRING:
+	case ATOM_CHAR:
 	{
 	    return atom;
 	}
@@ -389,17 +460,17 @@ atom_t atom_eval(atom_t atom, elvin_error_t error)
 	/* Symbols get extracted from the environment */
 	case ATOM_SYMBOL:
 	{
-	    return &Qnil;
+	    return &nil;
 	}
 
 	case ATOM_CONS:
 	{
-	    return &Qnil;
+	    return &nil;
 	}
 
 	default:
 	{
-	    return &Qnil;
+	    return &nil;
 	}
     }
 }

@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.1 2000/11/01 02:07:02 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.2 2000/11/04 03:25:39 phelps Exp $";
 #endif /* lint */
 
 /* The types of atoms */
@@ -42,8 +42,9 @@ typedef enum
     ATOM_INT64,
     ATOM_FLOAT,
     ATOM_STRING,
+    ATOM_CHAR,
     ATOM_SYMBOL,
-    ATOM_CONS
+    ATOM_CONS,
 } atom_type_t;
 
 /* An atom_t is a an opaque struct */
@@ -68,6 +69,9 @@ atom_t float_alloc(double value, elvin_error_t error);
 /* Allocates and initializes a new string atom */
 atom_t string_alloc(uchar *value, elvin_error_t error);
 
+/* Allocates and initializes a new char atom */
+atom_t char_alloc(uchar ch, elvin_error_t error);
+
 /* Allocates and initializes a new cons atom */
 atom_t cons_alloc(atom_t car, atom_t cdr, elvin_error_t error);
 
@@ -86,25 +90,28 @@ char *atom_to_string(atom_t atom, elvin_error_t error);
 atom_t atom_eval(atom_t atom, elvin_error_t error);
 
 /* Returns the symbol's name */
-char *symbol_name(atom_t symbol);
+char *symbol_name(atom_t atom);
 
 /* Returns the integer's value */
-int32_t int32_value(atom_t integer);
+int32_t int32_value(atom_t atom);
 
 /* Returns the integer's value */
-int64_t int64_value(atom_t long_int);
+int64_t int64_value(atom_t atom);
 
 /* Returns the string's bytes */
-uchar *string_value(atom_t string);
+uchar *string_value(atom_t atom);
+
+/* Returns the char's byte */
+uchar char_value(atom_t atom);
 
 /* Answers the car of a cons atom */
-atom_t cons_car(atom_t cons);
+atom_t cons_car(atom_t atom);
 
 /* Answers the cdr of a cons atom */
-atom_t cons_cdr(atom_t cons);
+atom_t cons_cdr(atom_t atom);
 
 /* Reverse the elements of a list */
-atom_t cons_reverse(atom_t cons, atom_t end);
+atom_t cons_reverse(atom_t atom, atom_t end);
 
 #endif /* ATOM_H */
 
