@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.98 2000/04/28 08:43:16 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.99 2000/05/01 02:43:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -202,7 +202,8 @@ static void scroll(ScrollerWidget self, int offset);
 
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
 static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
-static void Redisplay(Widget widget, XEvent *event, Region region);
+static void Redisplay(ScrollerWidget self, Region region);
+static void do_expose(Widget widget, XEvent *event, Region region);
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
 static void Destroy(Widget widget);
@@ -245,7 +246,7 @@ ScrollerClassRec scrollerClassRec =
 	False, /* visible_interest */
 	Destroy, /* destroy */
 	Resize, /* resize */
-	Redisplay, /* expose */
+	do_expose, /* expose */
 	SetValues, /* set_values */
 	NULL, /* set_values_hook */
 	XtInheritSetValuesAlmost, /* set_values_almost */
@@ -426,8 +427,11 @@ static void DisableClock(ScrollerWidget self)
 /* Sets the timer if the clock isn't stopped */
 static void SetClock(ScrollerWidget self)
 {
-    self -> scroller.timer = ScStartTimer(
-	self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
+    if (self -> scroller.timer == 0)
+    {
+	self -> scroller.timer = ScStartTimer(
+	    self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
+    }
 }
 
 
@@ -435,6 +439,13 @@ static void SetClock(ScrollerWidget self)
 static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
+
+    /* If we were called in response to the timer going off then clear
+     * the timer so that SetClock() can set it again */
+    if (interval != NULL && *interval == self -> scroller.timer)
+    {
+	self -> scroller.timer = 0;
+    }
 
     /* If we haven't yet finished our last scroll then arrange to call
      * Tick again once it has finished */
@@ -453,7 +464,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 	scroll(self, self -> scroller.step);
 	if (self -> scroller.use_pixmap)
 	{
-	    Redisplay((Widget)self, NULL, 0);
+	    Redisplay(self, NULL);
 	}
     }
 }
@@ -701,7 +712,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 		glyph_holder_paint(
 		    holder, display, self -> scroller.pixmap,
 		    offset, 0, 0, self -> core.width, self -> scroller.height);
-		Redisplay((Widget)self, NULL, 0);
+		Redisplay(self, NULL);
 	    }
 	    else
 	    {
@@ -1121,7 +1132,7 @@ static void scroll_left(ScrollerWidget self, int offset)
 	    0, 0, self -> core.width, self -> core.height, -offset, 0);
 
 	/* Scroll the display and paint in the missing bits */
-	Paint(self, self -> core.width - offset, 0, offset, self -> core.height);
+	Paint(self, self -> core.width - offset, 0, offset, self -> scroller.height);
     }
     else
     {
@@ -1131,7 +1142,7 @@ static void scroll_left(ScrollerWidget self, int offset)
 	    XCopyArea(
 		display, XtWindow(self), XtWindow(self),
 		self -> scroller.backgroundGC,
-		offset, 0, self -> core.width, self -> core.height, 0, 0);
+		offset, 0, self -> core.width, self -> scroller.height, 0, 0);
 	    self -> scroller.state = SS_PENDING;
 	}
     }
@@ -1152,19 +1163,22 @@ static void scroll_right(ScrollerWidget self, int offset)
 	XCopyArea(
 	    XtDisplay(self), self -> scroller.pixmap, self -> scroller.pixmap,
 	    self -> scroller.backgroundGC,
-	    0, 0, self -> core.width, self -> core.height, -offset, 0);
+	    0, 0, self -> core.width, self -> scroller.height, -offset, 0);
 
 	/* Scroll the display and paint in the missing bits */
-	Paint(self, 0, 0, -offset, self -> core.height);
+	Paint(self, 0, 0, -offset, self -> scroller.height);
     }
     else
     {
-	/* Scroll the window's contents */
-	XCopyArea(
-	    XtDisplay(self), XtWindow(self), XtWindow(self),
-	    self -> scroller.backgroundGC,
-	    offset, 0, self -> core.width, self -> core.height, 0, 0);
-	self -> scroller.state = SS_PENDING;
+	if (self -> scroller.state == SS_READY)
+	{
+	    /* Scroll the window's contents */
+	    XCopyArea(
+		XtDisplay(self), XtWindow(self), XtWindow(self),
+		self -> scroller.backgroundGC,
+		offset, 0, self -> core.width, self -> scroller.height, 0, 0);
+	    self -> scroller.state = SS_PENDING;
+	}
     }
 }
 
@@ -1227,35 +1241,6 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     }
 }
 
-/* Repaints the scroller */
-static void Redisplay(Widget widget, XEvent *event, Region region)
-{
-    ScrollerWidget self = (ScrollerWidget)widget;
-
-    if (self -> scroller.use_pixmap)
-    {
-	/* Copy the pixmap to the window */
-	XCopyArea(
-	    XtDisplay(self), self -> scroller.pixmap,
-	    XtWindow(self), self -> scroller.backgroundGC,
-	    0, 0, self -> core.width, self -> core.height, 0, 0);
-    }
-    else
-    {
-	/* Repaint each of the regions */
-	if (region != NULL)
-	{
-	    XRectangle rectangle;
-
-	    XClipBox(region, &rectangle);
-	    Paint(self, rectangle.x, 0, rectangle.width, self -> core.height);
-	}
-
-	self -> scroller.state = SS_READY;
-    }
-}
-
-
 /* Processes events that were postponed until the GraphicsExpose (or
  * NoExpose) events were received */
 static void overflow_recover(ScrollerWidget self)
@@ -1278,7 +1263,7 @@ static void overflow_recover(ScrollerWidget self)
 		    glyph_holder_paint(
 			holder, display, self -> scroller.pixmap,
 			offset, 0, 0, self -> core.width, self -> scroller.height);
-		    Redisplay((Widget)self, NULL, 0);
+		    Redisplay(self, NULL);
 		}
 		else
 		{
@@ -1320,6 +1305,45 @@ static void overflow_recover(ScrollerWidget self)
 }
 
 
+/* Repaints the scroller */
+static void Redisplay(ScrollerWidget self, Region region)
+{
+    if (self -> scroller.use_pixmap)
+    {
+	/* Copy the pixmap to the window */
+	XCopyArea(
+	    XtDisplay((Widget)self), self -> scroller.pixmap,
+	    XtWindow((Widget)self), self -> scroller.backgroundGC,
+	    0, 0, self -> core.width, self -> scroller.height, 0, 0);
+    }
+    else
+    {
+	/* Repaint each of the regions */
+	if (region != NULL)
+	{
+	    XRectangle rectangle;
+
+	    XClipBox(region, &rectangle);
+	    Paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
+	}
+    }
+}
+
+static void do_expose(Widget widget, XEvent *event, Region region)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+    scroller_state_t old_state = self -> scroller.state;
+
+    /* Should we postpone the expose event until we're ready? */
+    self -> scroller.state = SS_READY;
+    if (old_state == SS_OVERFLOW)
+    {
+	overflow_recover(self);
+    }
+
+    Redisplay(self, region);
+}
+
 
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
@@ -1339,7 +1363,6 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     if (event -> type == NoExpose)
     {
 	self -> scroller.state = SS_OBSCURED;
-	printf("GExpose: OBSCURED\n");
 
 	/* Do we need to recover from an overflow? */
 	if (old_state == SS_OVERFLOW)
@@ -1383,7 +1406,7 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 #endif
 
 	/* Update this portion of the scroller */
-	Paint(self, g_event -> x, 0, g_event -> width, self -> core.height);
+	Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
 
 	/* If there are no more GraphicsExpose events then exit the loop */
 	if (g_event -> count < 1)
@@ -1446,7 +1469,7 @@ static void Resize(Widget widget)
 	if (self -> scroller.use_pixmap)
 	{
 	    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	    Redisplay(widget, NULL, 0);
+	    Redisplay(self, NULL);
 	}
 
 	return;
@@ -1526,7 +1549,7 @@ static void Resize(Widget widget)
     {
 	/* Update the display on that pixmap */
 	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	Redisplay(widget, NULL, 0);
+	Redisplay(self, NULL);
     }
 }
 
@@ -1937,7 +1960,7 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
     if (self -> scroller.use_pixmap)
     {
 	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	Redisplay((Widget)self, NULL, 0);
+	Redisplay(self, NULL);
     }
     else
     {
@@ -1945,7 +1968,7 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
 	XFillRectangle(
 	    XtDisplay((Widget)self), XtWindow((Widget)self),
 	    self -> scroller.backgroundGC,
-	    0, 0, self -> core.width, self -> core.height);
+	    0, 0, self -> core.width, self -> scroller.height);
 	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
     }
 }
@@ -2110,7 +2133,7 @@ static void drag_to(ScrollerWidget self, int x)
     /* Repaint the pixmap if appropriate */
     if (self -> scroller.use_pixmap)
     {
-	Redisplay((Widget)self, NULL, 0);
+	Redisplay(self, NULL);
     }
 }
 
