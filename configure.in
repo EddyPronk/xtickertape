@@ -11,15 +11,80 @@ AC_PROG_INSTALL
 dnl Checks for libraries.
 dnl =====================
 
-AC_CHECK_LIB(pthread, pthread_create)
+dnl The elvin C library requires pthreads
+AC_CHECK_LIB(pthread, pthread_create, LIBS="-lpthread $LIBS" ; ok=yes , ok=no)
+if test "$ok" = "no" ; then
+	echo "WARNING: \`libpthreads' is missing on your system.  xtickertape"
+	echo "         cannot be compiled without it.  Sorry."
+	exit 1
+fi
+
+dnl Check to see if we need -lnsl -lsocket to use sockets
+dnl (If we can't find them then we don't need them)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(nsl, gethostbyname)
-AC_CHECK_LIB(vin, elvin_connect)
-AC_CHECK_LIB(X11, XOpenDisplay)
+
+dnl Make sure that the elvin headers can be found
+AC_CHECK_HEADER(elvin3/elvin.h, ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`elvin.h' is missing on your system.  Try downloading"
+	echo "         and installing the elvin distribution from"
+	echo "         http://www.dstc.edu.au/elvin/"
+	exit 1
+fi
+
+dnl Make sure that an elvin library can be found
+AC_CHECK_LIB(vin, elvin_connect, LIBS="-lvin $LIBS" ; ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`libvin' is missing on your system.  Try downloading"
+	echo "         it from http://www.dstc.edu.au/elvin/"
+	exit 1
+fi
+
+dnl Look for the core X11 library
+AC_CHECK_LIB(X11, XOpenDisplay, LIBS="-lX11 $LIBS" ; ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`libX11' is missing on your system.  Try downloading"
+	echo "         it from the X consortium at ftp://ftp.x.org/"
+	exit 1
+fi
+
+dnl Check for the X11 extensions library to see if we can make
+dnl a shaped icon
 AC_CHECK_LIB(Xext, XShapeCombineMask)
+
+dnl Check for the X11 miscellaneous utilities library to see if
+dnl we can provide support for editres
 AC_CHECK_LIB(Xmu, _XEditResCheckMessages)
-AC_CHECK_LIB(Xt, XtVaAppInitialize)
-AC_CHECK_LIB(Xm, XmCreatePulldownMenu)
+
+dnl Check that the X11 toolkit library is around
+AC_CHECK_LIB(Xt, XtVaAppInitialize, LIBS="-lXt $LIBS" ; ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`libXt' is missing on your system.  It is part of the"
+	echo "         standard X11 distribution, so it's hard to say why"
+	echo "         it's not there.  Have words with your system"
+	echo "         administrator."
+	exit 1
+fi
+
+
+dnl Check for the Motif headers
+AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`libXm' is missing on your system.  You may obtain"
+	echo "         a free Motif implementation from the Hungry Programmers"
+	echo "         at http://www.lesstif.org/"
+	exit 1
+fi
+
+dnl Check for the Motif library
+AC_CHECK_LIB(Xm, XmCreatePulldownMenu, LIBS="-lXm $LIBS" ; ok=yes, ok=no)
+if test $ok = "no" ; then
+	echo "WARNING: \`libXm' is missing on your system.  You may obtain"
+	echo "         a free Motif implementation from the Hungry Programmers"
+	echo "         at http://www.lesstif.org/"
+	exit 1
+fi
 
 
 dnl Checks for header files.
