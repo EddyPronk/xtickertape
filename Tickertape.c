@@ -1,5 +1,5 @@
 /*
- * $Id: Tickertape.c,v 1.30 1998/12/17 01:26:13 phelps Exp $
+ * $Id: Tickertape.c,v 1.31 1998/12/18 01:22:26 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -16,7 +16,6 @@
 #include "UsenetSubscription.h"
 #include "MailSubscription.h"
 #include "ElvinConnection.h"
-#include "version.h"
 #ifdef ORBIT
 #include "OrbitSubscription.h"
 #endif /* ORBIT */
