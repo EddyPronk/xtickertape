@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.85 2002/04/08 11:58:12 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.86 2002/04/08 14:56:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -870,7 +870,7 @@ static void status_cb(
 	    string = buffer;
 
 	    /* Display it on the status line */
-	    control_panel_show_status(self -> control_panel, buffer);
+	    control_panel_set_status(self -> control_panel, buffer);
 
 	    /* Clean up */
 	    free(buffer);
@@ -935,7 +935,7 @@ static void status_cb(
     }
 
     /* Also display the message on the status line */
-    control_panel_show_status(self -> control_panel, buffer);
+    control_panel_set_status(self -> control_panel, buffer);
 
     /* Clean up */
     if (buffer != NULL)
