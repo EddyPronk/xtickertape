@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.37 1999/05/22 08:23:28 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.38 1999/05/22 08:34:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -827,7 +827,7 @@ FILE *Tickertape_usenetFile(Tickertape self)
     }
 
     /* Try to write a default usenet file for the current user */
-/*    result = UsenetSubscription_writeDefaultUsenetFile(file, self -> user);*/
+    result = UsenetSubscription_writeDefaultUsenetFile(file);
     fclose(file);
 
     if (result < 0)
