@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.8 1998/12/24 05:48:29 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.9 1999/01/21 00:07:34 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -111,18 +111,22 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
-static void Menu();
-static void DecodeMime();
-static void Delete();
+static void Menu(Widget widget, XEvent *event);
+static void DecodeMime(Widget widget, XEvent *event);
+static void Delete(Widget widget, XEvent *event);
+static void Faster(Widget widget, XEvent *event);
+static void Slower(Widget widget, XEvent *event);
 
 /*
  * Actions table
  */
 static XtActionsRec actions[] =
 {
-    { "menu", Menu },
-    { "decodeMime", DecodeMime },
-    { "delete", Delete }
+    { "menu", (XtActionProc)Menu },
+    { "decodeMime", (XtActionProc)DecodeMime },
+    { "delete", (XtActionProc)Delete },
+    { "faster", (XtActionProc)Faster },
+    { "slower", (XtActionProc)Slower }
 };
 
 
@@ -131,7 +135,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>q: quit()"
+    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
 };
 
 
@@ -879,6 +883,8 @@ static void DecodeMime(Widget widget, XEvent *event)
     }
 }
 
+
+/* Expires a Message in short order */
 static void Delete(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
@@ -895,6 +901,29 @@ static void Delete(Widget widget, XEvent *event)
 #endif /* DEBUG */
     }
 }
+
+/* Scroll more quickly */
+static void Faster(Widget widget, XEvent *event)
+{
+    ScrollerWidget self = (ScrollerWidget) widget;
+    int step = self -> scroller.step + 1;
+    self -> scroller.step = step;
+}
+
+/* Scroll more slowly */
+static void Slower(Widget widget, XEvent *event)
+{
+    ScrollerWidget self = (ScrollerWidget) widget;
+    int step = self -> scroller.step -1;
+    if (step >= 0)
+    {
+	self -> scroller.step = step;
+    }
+}
+
+
+
+
 
 /*
  *Public methods
