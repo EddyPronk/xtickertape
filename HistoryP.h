@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.16 2001/08/25 08:51:23 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.17 2001/08/25 09:44:43 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -157,6 +157,9 @@ typedef struct
 
     /* The direction in which to drag */
     drag_direction_t drag_direction;
+
+    /* Non-zero if the timestamps should be displayed */
+    int show_timestamps;
 } HistoryPart;
 
 /* Full instance record declaration */

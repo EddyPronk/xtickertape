@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.31 2001/08/25 08:53:43 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.32 2001/08/25 09:44:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -423,6 +423,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.selection_index = (unsigned int)-1;
     self -> history.drag_timeout = None;
     self -> history.drag_direction = DRAG_NONE;
+    self -> history.show_timestamps = False;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
@@ -600,6 +601,7 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     GC gc = self -> history.gc;
     long xmargin = (long)self -> history.margin_width;
     long ymargin = (long)self -> history.margin_height;
+    int show_timestamps = self -> history.show_timestamps;
     message_view_t view;
     XGCValues values;
     unsigned int index;
@@ -664,7 +666,7 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 	/* Draw the view */
 	message_view_paint(
 	    view, display, window, gc,
-	    True, 0, self -> history.timestamp_pixel,
+	    show_timestamps, 0, self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    x, y + self -> history.font -> ascent, bbox);
@@ -773,6 +775,32 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     }
 }
 
+/* Recompute the dimensions of the widget and update the scrollbars */
+static void recompute_dimensions(HistoryWidget self)
+{
+    int show_timestamps = self -> history.show_timestamps;
+    long width = 0;
+    long height = 0;
+    unsigned int i;
+
+    /* Measure each message */
+    for (i = 0; i < self -> history.message_count; i++)
+    {
+	struct string_sizes sizes;
+
+	message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
+	width = MAX(width, sizes.width);
+	height += self -> history.line_height;
+    }
+
+    /* Update our dimensions */
+    self -> history.width = width + (long)self -> history.margin_width * 2;
+    self -> history.height = height + (long)self -> history.margin_height * 2;
+
+    /* And update the scrollbars */
+    update_scrollbars((Widget)self);
+}
+
 /* Insert a message before the given index */
 static void insert_message(HistoryWidget self, unsigned int index, message_t message)
 {
@@ -787,6 +815,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     unsigned int i;
     XGCValues values;
     GC gc = self -> history.gc;
+    int show_timestamps = self -> history.show_timestamps;
 
     /* Sanity check */
     assert(index <= self -> history.message_count);
@@ -804,7 +833,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     {
 	/* Get rid of the first message and scroll the others upwards */
 	view = self -> history.message_views[0];
-	message_view_get_sizes(view, True, 0, &sizes);
+	message_view_get_sizes(view, show_timestamps, 0, &sizes);
 	message_view_free(view);
 
 	/* Figure out where to start copying */
@@ -816,7 +845,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i];
 
 	    /* Measure the view for the new width/height of the widget */
-	    message_view_get_sizes(view, True, 0, &sizes);
+	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	    self -> history.message_views[i - 1] = view;
@@ -846,7 +875,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	/* Otherwise simply measure the messages */
 	for (i = 0; i < index; i++)
 	{
-	    message_view_get_sizes(self -> history.message_views[i], True, 0, &sizes);
+	    message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	}
@@ -861,7 +890,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     self -> history.message_views[index] = view;
 
     /* Measure it */
-    message_view_get_sizes(view, True, 0, &sizes);
+    message_view_get_sizes(view, show_timestamps, 0, &sizes);
 
     /* Draw it if we have a graphics context */
     if (gc != None)
@@ -880,7 +909,8 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 
 	message_view_paint(
 	    view, display, window, gc,
-	    True, 0, self -> history.timestamp_pixel,
+	    self -> history.show_timestamps, 0,
+	    self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    self -> history.margin_width - self -> history.x,
@@ -898,22 +928,26 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     /* Measure the remaining items */
     for (i = index + 1; i < self -> history.message_count; i++)
     {
-	message_view_get_sizes(self -> history.message_views[i], True, 0, &sizes);
+	message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
 	width = MAX(width, sizes.width);
 	height += self -> history.line_height;
     }
 
+    /* Add on the margins */
+    width += (long)self -> history.margin_width * 2;
+    height += (long)self -> history.margin_height * 2;
+
     /* Has the width changed? */
-    if (self -> history.width != width + (long)self -> history.margin_width * 2)
+    if (self -> history.width != width)
     {
-	self -> history.width = width + (long)self -> history.margin_width * 2;
+	self -> history.width = width;
 
 	/* Repaint the selection so that the right edge is drawn properly */
 	redisplay_index(self, self -> history.selection_index);
     }
 
     /* Update our height */
-    self -> history.height = height + (long)self -> history.margin_height * 2;
+    self -> history.height = height;
 
     /* Update the scrollbars */
     update_scrollbars((Widget)self);
@@ -1002,7 +1036,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
-		True, 0, self -> history.timestamp_pixel,
+		self -> history.show_timestamps, 0,
+		self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
 		self -> history.margin_width - self -> history.x,
@@ -1058,7 +1093,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
-		True, 0, self -> history.timestamp_pixel,
+		self -> history.show_timestamps, 0,
+		self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
 		self -> history.margin_width - self -> history.x,
@@ -1492,14 +1528,51 @@ Boolean HistoryIsThreaded(Widget widget)
 /* Set the widget's display to show timestamps or not */
 void HistorySetShowTimestamps(Widget widget, Boolean show_timestamps)
 {
-    dprintf(("HistorySetShowTimestamps(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)widget;
+    Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
+    GC gc = self -> history.gc;
+    XGCValues values;
+    XRectangle bbox;
+
+    /* Update the flag */
+    self -> history.show_timestamps = show_timestamps;
+
+    /* Recompute the dimensions of the widget */
+    recompute_dimensions(self);
+
+    /* Bail out if we don't have a graphics context */
+    if (gc == None)
+    {
+	return;
+    }
+
+    /* Set up the graphics context */
+    values.clip_mask = None;
+    values.foreground = self -> core.background_pixel;
+    XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+
+    /* And erase the contents of the widget */
+    XFillRectangle(
+	display, window, gc,
+	0, 0,
+	self -> core.width, self -> core.height);
+
+    /* Get a bounding box that contains the entire visible portion of the widget */
+    bbox.x = 0;
+    bbox.y = 0;
+    bbox.width = self -> core.width;
+    bbox.height = self -> core.height;
+
+    /* And repaint it */
+    paint(self, &bbox);
 }
 
 /* Returns whether or not the timestamps are visible */
 Boolean HistoryIsShowingTimestamps(Widget widget)
 {
-    dprintf(("HistoryIsShowingTimestamps(): not yet implemented\n"));
-    return False;
+    HistoryWidget self = (HistoryWidget)widget;
+    return self -> history.show_timestamps;
 }
 
 
