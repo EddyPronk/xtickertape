@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.23 1999/06/20 14:46:06 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.24 1999/06/21 01:12:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -113,8 +113,8 @@ static XtResource resources[] =
  */
 static void Menu(Widget widget, XEvent *event);
 static void DecodeMime(Widget widget, XEvent *event);
+static void Expire(Widget widget, XEvent *event);
 static void Delete(Widget widget, XEvent *event);
-static void Kill(Widget widget, XEvent *event);
 static void Faster(Widget widget, XEvent *event);
 static void Slower(Widget widget, XEvent *event);
 
@@ -125,8 +125,8 @@ static XtActionsRec actions[] =
 {
     { "menu", (XtActionProc)Menu },
     { "decodeMime", (XtActionProc)DecodeMime },
+    { "expire", (XtActionProc)Expire },
     { "delete", (XtActionProc)Delete },
-    { "kill", (XtActionProc)Kill },
     { "faster", (XtActionProc)Faster },
     { "slower", (XtActionProc)Slower }
 };
@@ -137,7 +137,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>x: kill()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
+    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: expire()\n<Key>x: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
 };
 
 
@@ -1100,59 +1100,56 @@ static XtGeometryResult QueryGeometry(
 }
 
 
-/* Locates the view_holder_t at the given offset (NULL if none) */
-#if 0
-static view_holder_t ViewHolderAtOffset(ScrollerWidget self, int offset)
+/* Answers the glyph corresponding to the given point */
+static glyph_t glyph_at_point(ScrollerWidget self, int x, int y)
 {
-    long x = offset + self -> scroller.offset;
-    view_holder_t probe;
+    glyph_t pointer;
+    int left;
+    int right;
 
-    /* Watch out for negative offsets (these can happen with
-     * click-to-focus and actions for keys) */
-    if (x < 0)
+    /* Points outside the scroller bounds return the gap glyph */
+    if ((x < 0) || (self -> core.width <= x) || (y < 0) || (self -> core.height <= y))
     {
-	return NULL;
+	printf("out of bounds! (x=%d, y=%d)\n", x, y);
+	return self -> scroller.glyphs;
     }
 
-    /* Locate the matching view_holder_t */
-    for (probe = self -> scroller.holders; probe != NULL; probe = probe -> next)
+    /* Work from left-to-right looking for the glyph */
+    left = - self -> scroller.left_offset;
+    for (pointer = self -> scroller.left_glyph;
+	 (right = left + pointer -> get_width(pointer)) <= x;
+	 pointer = pointer -> next)
     {
-	x -= probe -> width;
-	if (x < 0)
-	{
-	    return probe;
-	}
+	left = right;
     }
 
-    return NULL;
+    /* Found something.  Return it */
+    return pointer;
 }
-#endif /* 0 */
 
-/* Answers the view_holder_t corresponding to the location of the last
- * event */
-#if 0
-static view_holder_t ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
+/* Answers the glyph corresponding to the location of the last event */
+static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
 {
     switch (event -> type)
     {
 	case KeyPress:
 	case KeyRelease:
 	{
-	    XKeyEvent *keyEvent = (XKeyEvent *) event;
-	    return ViewHolderAtOffset(self, keyEvent -> x);
+	    XKeyEvent *key_event = (XKeyEvent *) event;
+	    return glyph_at_point(self, key_event -> x, key_event -> y);
 	}
 
 	case ButtonPress:
 	case ButtonRelease:
 	{
-	    XButtonEvent *buttonEvent = (XButtonEvent *) event;
-	    return ViewHolderAtOffset(self, buttonEvent -> x);
+	    XButtonEvent *button_event = (XButtonEvent *) event;
+	    return glyph_at_point(self, button_event -> x, button_event -> y);
 	}
 
 	case MotionNotify:
 	{
-	    XMotionEvent *motionEvent = (XMotionEvent *) event;
-	    return ViewHolderAtOffset(self, motionEvent -> x);
+	    XMotionEvent *motion_event = (XMotionEvent *) event;
+	    return glyph_at_point(self, motion_event -> x, motion_event -> y);
 	}
 
 	default:
@@ -1161,7 +1158,7 @@ static view_holder_t ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
 	}
     }
 }
-#endif /* 0 */
+
 
 /* Answers the message under the mouse in the given event */
 #if 0
@@ -1218,24 +1215,19 @@ static void DecodeMime(Widget widget, XEvent *event)
 
 
 /* Expires a Message in short order */
-static void Delete(Widget widget, XEvent *event)
+static void Expire(Widget widget, XEvent *event)
 {
-    printf("delete\n");
-#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = MessageAtEvent(self, event);
+    glyph_t glyph;
 
-    if (view != NULL)
-    {
-	MessageView_expire(view);
-    }
-#endif /* 0 */
+    glyph = glyph_at_event(self, event);
+    glyph -> expire(glyph);
 }
 
 /* Simple remove the message from the scroller NOW */
-static void Kill(Widget widget, XEvent *event)
+static void Delete(Widget widget, XEvent *event)
 {
-    printf("kill\n");
+    printf("delete\n");
 #if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     view_holder_t holder;
