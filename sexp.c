@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.18 2001/08/25 14:04:45 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.19 2001/10/10 12:56:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -263,9 +263,19 @@ char char_value(sexp_t sexp, elvin_error_t error)
 sexp_t symbol_alloc(char *name, elvin_error_t error)
 {
     sexp_t sexp;
+    int found;
 
     /* Check for the symbol in the symbol table */
-    if ((sexp = elvin_hash_get(symbol_table, (elvin_hashkey_t)name, error)) != NULL)
+    if (! elvin_hash_get(symbol_table,
+			 (elvin_hashkey_t)name,
+			 &found,
+			 (elvin_hashdata_t *)&sexp,
+			 error))
+    {
+	return NULL;
+    }
+
+    if (found)
     {
 	sexp -> ref_count++;
 	return sexp;
