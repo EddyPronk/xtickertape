@@ -1,3 +1,9 @@
+Overview of changes in xtickertape-1.6.3
+
+* The history now keeps the bottom item in the history visible as new
+  items are added (hopefully) without being annoying when the user is
+  trying to scroll the history or reply to a message.
+
 Overview of changes in xtickertape-1.6.2
 
 * The widths of the gaps between messages are now based on the size of 

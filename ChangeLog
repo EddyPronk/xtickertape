@@ -1,3 +1,8 @@
+1999-09-19  Ted Phelps  <phelps@pobox.com>
+
+	* history.c: keeping the bottom item of the history in view as new 
+		  items are added.
+
 1999-09-15  Ted Phelps  <phelps@pobox.com>
 
 	* tickertape.c, Subscription.c, UsenetSubscription.c, mail_sub.c:
