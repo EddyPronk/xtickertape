@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.38 1998/12/19 08:26:11 phelps Exp $ */
+/* $Id: main.c,v 1.39 1998/12/23 11:19:45 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -6,6 +6,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#include <getopt.h>
 #include <pwd.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
@@ -21,6 +22,20 @@
 #define HOST "elvin"
 #define PORT 5678
 
+/* The list of long options */
+static struct option long_options[] =
+{
+    { "host", required_argument, NULL, 'h' },
+    { "port", required_argument, NULL, 'p' },
+    { "user", required_argument, NULL, 'u' },
+    { "groups", required_argument, NULL, 'g' },
+    { "news", required_argument, NULL, 'n' },
+    { "version", no_argument, NULL, 'v' },
+    { "help", no_argument, NULL, 'e' },
+    { NULL, no_argument, NULL, '\0' }
+};
+
+
 /* Static function headers */
 static void NotifyAction(
     Widget widget, XEvent *event,
@@ -28,7 +43,7 @@ static void NotifyAction(
 static void QuitAction(
     Widget widget, XEvent *event,
     String *params, Cardinal *cparams);
-static void Usage(char *argv[]);
+static void Usage(int argc, char *argv[]);
 static void ParseArgs(
     int argc, char *argv[],
     char **user_return,
@@ -61,14 +76,16 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 }
 
 /* Print out usage message */
-static void Usage(char *argv[])
+static void Usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
-    fprintf(stderr, "  -host hostname\n");
-    fprintf(stderr, "  -port port\n");
-    fprintf(stderr, "  -user username\n");
-    fprintf(stderr, "  -groupsfile filename\n");
-    fprintf(stderr, "  -usenetfile filename\n");
+    fprintf(stderr, "  -h hostname, --host=hostname\n");
+    fprintf(stderr, "  -p port,     --port=port\n");
+    fprintf(stderr, "  -u username, --user=username\n");
+    fprintf(stderr, "  -g filename, --groups=filename\n");
+    fprintf(stderr, "  -n filename, --news=filename\n");
+    fprintf(stderr, "  -v,          --version\n");
+    fprintf(stderr, "               --help\n");
 }
 
 /* Parses arguments and sets stuff up */
@@ -78,96 +95,76 @@ static void ParseArgs(
     char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return)
 {
-    int index = 1;
+    int choice;
+
+    /* Initialize arguments to sane values */
     *user_return = NULL;
     *groupsFile_return = NULL;
     *usenetFile_return = NULL;
     *host_return = HOST;
     *port_return = PORT;
 
-    while (index < argc)
+    /* Read each argument using getopt */
+    while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) != -1)
     {
-	char *arg = argv[index++];
-
-	/* Make sure options begin with '-' */
-	if (arg[0] != '-')
+	switch (choice)
 	{
-	    Usage(argv);
-	    exit(1);
-	}
-
-	/* Make sure the option has an argument */
-	if (index >= argc)
-	{
-	    Usage(argv);
-	    exit(1);
-	}
-
-	/* Deal with the argument */
-	switch (arg[1])
-	{
-	    /* groupsfile */
-	    case 'g':
-	    {
-		if (strcmp(arg, "-groupsfile") == 0)
-		{
-		    *groupsFile_return = argv[index++];
-		    break;
-		}
-
-		Usage(argv);
-		exit(1);
-	    }
-
-	    /* host */
+	    /* --host= or -h */
 	    case 'h':
 	    {
-		if (strcmp(arg, "-host") == 0)
-		{
-		    *host_return = argv[index++];
-		    break;
-		}
-
-		Usage(argv);
-		exit(1);
+		*host_return = optarg;
+		printf("host=%s\n", *host_return);
+		break;
 	    }
 
-	    /* port */
+	    /* --port= or -p */
 	    case 'p':
 	    {
-		if (strcmp(arg, "-port") == 0)
-		{
-		    *port_return = atoi(argv[index++]);
-		    break;
-		}
-
-		Usage(argv);
-		exit(1);
+		*port_return = atoi(optarg);
+		printf("port=%d\n", *port_return);
+		break;
 	    }
 
-	    /* user */
+	    /* --user= or -u */
 	    case 'u':
 	    {
-		if (strcmp(arg, "-user") == 0)
-		{
-		    *user_return = argv[index++];
-		    break;
-		}
-
-		if (strcmp(arg, "-usenetfile") == 0)
-		{
-		    *usenetFile_return = argv[index++];
-		    break;
-		}
-
-		Usage(argv);
-		exit(1);
+		*user_return = optarg;
+		printf("user=%s\n", *user_return);
+		break;
 	    }
 
-	    /* Anything else is bogus */
-	    default:
+	    /* --groups= or -g */
+	    case 'g':
 	    {
-		Usage(argv);
+		*groupsFile_return = optarg;
+		break;
+	    }
+
+	    /* --news= or -n */
+	    case 'n':
+	    {
+		*usenetFile_return = optarg;
+		break;
+	    }
+
+	    /* --version or -v */
+	    case 'v':
+	    {
+		printf("%s version %s\n", PACKAGE, VERSION);
+		exit(0);
+	    }
+
+	    /* --help */
+	    case 'e':
+	    {
+		Usage(argc, argv);
+		exit(0);
+	    }
+
+	    /* Unknown option */
+	    case '?':
+	    {
+		Usage(argc, argv);
 		exit(1);
 	    }
 	}
@@ -179,45 +176,39 @@ static void ParseArgs(
 	*user_return = getpwuid(getuid()) -> pw_name;
     }
 
-    /* Set the groups file name if not specified on the command line */
+    /* Set the groups/news filenames if not specified on the command line */
     if ((*groupsFile_return == NULL) || (*usenetFile_return == NULL))
     {
-	char *dir;
+	char *home;
+	char *ticker;
 
-	/* Try $TICKERDIR/groups */
-	dir = getenv("TICKERDIR");
-	if (dir != NULL)
+	/* Try $TICKERDIR */
+	if ((ticker = getenv("TICKERDIR")) == NULL)
 	{
-	    if (*groupsFile_return == NULL)
+	    /* No luck.  Try $HOME/.ticker */
+	    if ((home = getenv("HOME")) == NULL)
 	    {
-		*groupsFile_return = (char *)malloc(strlen(dir) + sizeof("/groups"));
-		sprintf(*groupsFile_return, "%s/groups", dir);
+		/* Eek!  $HOME isn't set.  Use "/" */
+		home = "/";
 	    }
 
-	    if (*usenetFile_return == NULL)
-	    {
-		*usenetFile_return = (char *)malloc(strlen(dir) + sizeof("/usenet"));
-		sprintf(*usenetFile_return, "%s/usenet", dir);
-	    }
-
-	    return;
+	    /* ticker then become $HOME/.ticker */
+	    ticker = malloc(strlen(home) + sizeof("/.ticker"));
+	    sprintf(ticker, "%s/.ticker");
 	}
 
-	/* No $TICKERDIR.  Try $HOME/.ticker/groups */
-	dir = getenv("HOME");
-	if (dir != NULL)
+	/* Set the groups filename if appropriate */
+	if (*groupsFile_return == NULL)
 	{
-	    if (*groupsFile_return == NULL)
-	    {
-		*groupsFile_return = (char *)malloc(strlen(dir) + sizeof("/.ticker/groups"));
-		sprintf(*groupsFile_return, "%s/.ticker/groups", dir);
-	    }
+	    *groupsFile_return = (char *)malloc(strlen(ticker) + sizeof("/groups"));
+		sprintf(*groupsFile_return, "%s/groups", ticker);
+	}
 
-	    if (*usenetFile_return == NULL)
-	    {
-		*usenetFile_return = (char *)malloc(strlen(dir) + sizeof("/.ticker/usenet"));
-		sprintf(*usenetFile_return ,"%s/.ticker/usenet", dir);
-	    }
+	/* Set the news filename if appropriate */
+	if (*usenetFile_return == NULL)
+	{
+	    *usenetFile_return = (char *)malloc(strlen(ticker) + sizeof("/usenet"));
+	    sprintf(*usenetFile_return, "%s/usenet", ticker);
 	}
     }
 }
