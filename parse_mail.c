@@ -7,6 +7,7 @@
 #define BUFFER_SIZE 1024
 
 #define UNOTIFY_TYPECODE 1
+#define STRING_TYPECODE 4
 #define PROTO_VERSION_MAJOR 4
 #define PROTO_VERSION_MINOR 0
 
@@ -28,59 +29,112 @@ static int lex_end(int ch);
 static char buffer[MAX_PACKET_SIZE];
 static char *point = buffer;
 static char *end = buffer + MAX_PACKET_SIZE;
+static char *count_point = NULL;
+static char *length_point = NULL;
+static int count = 0;
 static lexer_state_t state = lex_start;
 
+
+/* Writes an int32 into a buffer */
+static void write_int32(char *buffer, int value)
+{
+    buffer[0] = (value >> 24) & 0xff;
+    buffer[1] = (value >> 16) & 0xff;
+    buffer[2] = (value >> 8) && 0xff;
+    buffer[3] = (value >> 0) & 0xff;
+}
 
 /* Append an int32 to the outgoing buffer */
 static int append_int32(int value)
 {
     /* Make sure there's room */
-    if (! (point + 4 < end))
+    if (point + 4 < end)
     {
-	return -1;
+	write_int32(point, value);
+	point += 4;
+	return 0;
     }
 
-    point[0] = (value >> 24) & 0xff;
-    point[1] = (value >> 16) & 0xff;
-    point[2] = (value >> 8) & 0xff;
-    point[3] = (value >> 0) & 0xff;
-    point += 4;
-    return 0;
+    return -1;
 }
 
 
 /* Append a character to the current string */
 static int append_char(int ch)
 {
-    putchar(ch);
-    return 0;
+    if (point < end)
+    {
+	*(point++) = ch;
+	return 0;
+    }
+
+    return -1;
 }
 
 /* Begin an attribute name */
 static int begin_name()
 {
-    printf("{");
-    return 0;
+    if (point + 4 < end)
+    {
+	/* Remember where the length goes */
+	length_point = point;
+	point += 4;
+	return 0;
+    }
+
+    return -1;
 }
 
 /* End an attribute name */
 static int end_name()
 {
-    printf("} ");
+    char *name = length_point + 4;
+
+    /* Write the length */
+    write_int32(length_point, point - name);
+
+    /* Get to a 4-byte boundary */
+    while ((int)point & 3)
+    {
+	*(point++) = '\0';
+    }
+
     return 0;
 }
+
 
 /* Begin an attribute string value */
 static int begin_string_value()
 {
-    printf("[");
-    return 0;
+    if (point + 8 < end)
+    {
+	/* Write the string typecode */
+	append_int32(STRING_TYPECODE);
+
+	/* Remember where the length goes */
+	length_point = point;
+	point += 4;
+	return 0;
+    }
+
+    return -1;
 }
 
 /* End an attribute string value */
 static int end_string_value()
 {
-    printf("]\n");
+    char *value = length_point + 4;
+
+    /* Write the length */
+    write_int32(length_point, point - value);
+
+    /* Get to a 4-byte boundary */
+    while ((int)point & 3)
+    {
+	*(point++) = '\0';
+    }
+
+    count++;
     return 0;
 }
 
@@ -401,6 +455,12 @@ static int lex(char *in, ssize_t length)
 }
 
 
+static void dump_buffer()
+{
+    fwrite(buffer, 1, point - buffer, stdout);
+    fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
     char buffer[BUFFER_SIZE];
@@ -411,6 +471,11 @@ int main(int argc, char *argv[])
     append_int32(PROTO_VERSION_MAJOR);
     append_int32(PROTO_VERSION_MINOR);
 
+    /* The next 4 bytes is where the number of attributes goes */
+    count_point = point;
+    point += 4;
+
+    /* Read the attributes and add them to the notification */
     while (1)
     {
 	ssize_t length;
@@ -434,6 +499,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	    }
 
+	    /* Write the number of attributes field */
+	    write_int32(count_point, count);
+
+	    /* No keys (yet) */
+	    append_int32(0);
+
+	    /* What have we got? */
+	    dump_buffer();
 	    exit(0);
 	}
     }
