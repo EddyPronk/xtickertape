@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.64 1999/09/07 14:02:06 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.65 1999/09/08 04:18:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -429,7 +429,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
  */
 static int gap_width(ScrollerWidget self, int last_width)
 {
-    return (self -> core.width - last_width < END_SPACING) ?
+    return (self -> core.width < last_width + END_SPACING) ?
 	END_SPACING : self -> core.width - last_width;
 }
 
