@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.13 2001/07/19 10:09:39 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.14 2001/07/21 01:12:35 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -102,6 +102,9 @@ typedef struct
     /* The color to use when drawing the selection box */
     Pixel selection_pixel;
 
+    /* The amount of time to wait before scrolling the list when
+     * dragging the selection around */
+    int drag_delay;
     
     /* Private state */
 

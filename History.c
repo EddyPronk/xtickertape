@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.24 2001/07/20 08:10:43 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.25 2001/07/21 01:12:35 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -140,6 +140,12 @@ static XtResource resources[] =
     {
 	XtNselectionPixel, XtCSelectionPixel, XtRPixel, sizeof(Pixel),
 	offset(history.selection_pixel), XtRString, XtDefaultForeground
+    },
+
+    /* int drag_delay */
+    {
+	XtNdragDelay, XtCDragDelay, XtRInt, sizeof(int),
+	offset(history.drag_delay), XtRImmediate, (XtPointer)100
     }
 };
 #undef offset
@@ -1191,7 +1197,7 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     /* Arrange to scroll again after a judicious pause */
     /* FIX THIS: use a resource to specify the delay */
     self -> history.drag_timeout = XtAppAddTimeOut(
-	XtWidgetToApplicationContext((Widget)self), 200,
+	XtWidgetToApplicationContext((Widget)self), self -> history.drag_delay,
 	drag_timeout_cb, (XtPointer)self);
 }
 

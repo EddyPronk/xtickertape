@@ -15,6 +15,7 @@
 *History.marginWidth: 5
 *History.marginHeight: 5
 *History.messageCapacity: 32
+*History.dragDelay: 100
 
 !
 ! Color resources

@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.5 2001/07/19 08:09:08 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.6 2001/07/21 01:12:35 phelps Exp $";
 #endif /* lint */
 
 
@@ -55,6 +55,7 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.5 2001/07/19 08:09:08 ph
  marginHeight	     MarginHeight	Dimension	5
  messageCount	     MessageCount	Dimension	32
  selectionPixel	     SelectionPixel	Pixel		Gray
+ dragDelay	     DragDelay		int		100
 
  background	     Background		Pixel		XtDefaultBackground
  border		     BorderColor	Pixel		XtDefaultForeground
@@ -124,6 +125,12 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.5 2001/07/19 08:09:08 ph
 #endif
 #ifndef XtCSelectionPixel
 # define XtCSelectionPixel "SelectionPixel"
+#endif
+#ifndef XtNdragDelay
+# define XtNdragDelay "dragDelay"
+#endif
+#ifndef XtCDragDelay
+# define XtCDragDelay "DragDelay"
 #endif
 
 
