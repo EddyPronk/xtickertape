@@ -36,13 +36,12 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.13 2001/08/25 14:04:45 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.14 2002/04/08 11:58:13 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
 
 #include <X11/Intrinsic.h>
-#include "history.h"
 
 /* Answers a new Tickertape for the given user using the given file as
  * her groups file and connecting to the notification service */
@@ -67,9 +66,6 @@ char *tickertape_user_name(tickertape_t self);
 
 /* Answers the tickertape's domain name */
 char *tickertape_domain_name(tickertape_t self);
-
-/* Answers the tickertape's history_t */
-history_t tickertape_history(tickertape_t self);
 
 /* Reloads the tickertape's groups file */
 void tickertape_reload_groups(tickertape_t self);

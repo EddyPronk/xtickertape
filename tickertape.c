@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.84 2002/04/08 11:41:50 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.85 2002/04/08 11:58:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -46,7 +46,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.84 2002/04/08 11:41:50 phelps
 #include <elvin/error.h>
 #include "errors.h"
 #include "message.h"
-#include "history.h"
 #include "tickertape.h"
 #include "Scroller.h"
 #include "panel.h"
@@ -140,9 +139,6 @@ struct tickertape
 
     /* The ScrollerWidget */
     ScrollerWidget scroller;
-
-    /* The history */
-    history_t history;
 };
 
 
@@ -250,7 +246,9 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 	return;
     }
 
+#if 0
     history_kill_thread(self -> history, self -> scroller, message);
+#endif
 }
 
 /* Receive a message_t matched by a subscription */
@@ -258,16 +256,8 @@ static void receive_callback(void *rock, message_t message, int show_attachment)
 {
     tickertape_t self = (tickertape_t)rock;
 
-#if 1
     control_panel_add_message(self -> control_panel, message);
     ScAddMessage(self -> scroller, message);
-#else
-    /* Add the message to the history */
-    if (history_add(self -> history, message) == 0)
-    {
-	ScAddMessage(self -> scroller, message);
-    }
-#endif
 
     /* Show the attachment if requested */
     if (show_attachment != False)
@@ -1586,7 +1576,6 @@ tickertape_t tickertape_alloc(
     self -> mail_sub = NULL;
     self -> control_panel = NULL;
     self -> scroller = NULL;
-    self -> history = history_alloc();
 
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)
@@ -1706,13 +1695,6 @@ void tickertape_free(tickertape_t self)
 	control_panel_free(self -> control_panel);
     }
 
-    /* How do we free a ScrollerWidget? */
-
-    if (self -> history != NULL)
-    {
-	history_free(self -> history);
-    }
-
     free(self);
 }
 
@@ -1726,12 +1708,6 @@ char *tickertape_user_name(tickertape_t self)
 char *tickertape_domain_name(tickertape_t self)
 {
     return self -> domain;
-}
-
-/* Answers the tickertape's history_t */
-history_t tickertape_history(tickertape_t self)
-{
-    return self -> history;
 }
 
 /* Quit the application */

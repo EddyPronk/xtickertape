@@ -9,7 +9,6 @@ BUILT_SOURCES = errors.h
 xtickertape_SOURCES = \
 	message_view.h message_view.c \
 	tickertape.h tickertape.c \
-	history.h history.c \
 	panel.h panel.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	message.h message.c \
