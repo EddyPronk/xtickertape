@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.7 1997/05/31 03:42:23 phelps Exp $ */
+/* $Id: Control.c,v 1.8 1998/02/10 23:40:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -563,7 +563,14 @@ void ControlPanel_show(ControlPanel self)
 Message ControlPanel_createMessage(ControlPanel self)
 {
     SANITY_CHECK(self);
-    return Message_alloc(getGroup(self), getUser(self), getText(self), getTimeout(self));
+    /* FIX THIS: should include MIME stuff */
+    return Message_alloc(
+	getGroup(self),
+	getUser(self),
+	getText(self),
+	getTimeout(self),
+	NULL,
+	NULL);
 }
 
 /* Handle notifications */
