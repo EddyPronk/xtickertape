@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.51 1999/09/22 02:47:39 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.52 1999/10/01 06:23:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1023,10 +1023,32 @@ static char *GetMimeType(ControlPanel self)
 }
 
 
+/* Transforms an integer into a digit for use in a crypt salt */
+static char *crypt_id(time_t now)
+{
+    static char chars[] = 
+	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+    char hostid[9];
+    char salt[3];
+    char *result;
+
+    /* Construct a salt out of the current time */
+    salt[0] = chars[now & 0x3f];
+    salt[1] = chars[(now >> 6) & 0x3f];
+    salt[2] = '\0';
+
+    /* Print the hostid into a buffer */
+    sprintf(hostid, "%08lx", (long)gethostid());
+
+    /* Return the encrypted result */
+    return crypt(salt, hostid);
+}
+
 /* Generates a universally unique identifier for a message */
 char *GenerateUUID(ControlPanel self)
 {
-    char *buffer = (char *)malloc(sizeof("YYYYMMDDHHMMSS-11223344-1234-12"));
+    char *cryptid;
+    char *buffer;
     time_t now;
     struct tm *tm_gmt;
 
@@ -1040,13 +1062,15 @@ char *GenerateUUID(ControlPanel self)
     /* Look up what that means in GMT */
     tm_gmt = gmtime(&now);
 
+    /* Construct an encrypted hostid using the time as the salt */
+    cryptid = crypt_id(now);
+
     /* Construct the UUID */
-    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%08lx-%04x-%02x",
+    buffer = (char *)malloc(sizeof("YYYMMDDHHMMSS--1234-12") + strlen(cryptid));
+    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%s-%04x-%02x",
 	    tm_gmt -> tm_year + 1900, tm_gmt -> tm_mon + 1, tm_gmt -> tm_mday,
 	    tm_gmt -> tm_hour, tm_gmt -> tm_min, tm_gmt -> tm_sec,
-	    (long)gethostid(),
-	    (int)getpid(),
-	    self -> uuid_count);
+	    cryptid, (int)getpid(), self -> uuid_count);
 
     self -> uuid_count = (self -> uuid_count + 1) % 256;
     return buffer;
