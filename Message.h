@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.4 1997/05/31 03:42:27 phelps Exp $ */
+/* $Id: Message.h,v 1.5 1998/02/10 23:41:18 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -7,7 +7,13 @@
 typedef struct Message_t *Message;
 
 /* Creates and returns a new message */
-Message Message_alloc(char *group, char *user, char *string, unsigned int timeout);
+Message Message_alloc(
+    char *group,
+    char *user,
+    char *string,
+    unsigned int timeout,
+    char *mimeType,
+    char *mimeArgs);
 
 /* Frees the memory used by the receiver */
 void Message_free(Message self);
@@ -23,6 +29,12 @@ char *Message_getString(Message self);
 
 /* Answers the receiver's timout in minutes */
 unsigned long Message_getTimeout(Message self);
+
+/* Answers the receiver's MIME-type string */
+char *Message_getMimeType(Message self);
+
+/* Answers the receiver's MIME arguments */
+char *Message_getMimeArgs(Message self);
 
 /* Sets the receiver's timeout in minutes*/
 void Message_setTimeout(Message self, unsigned long timeout);

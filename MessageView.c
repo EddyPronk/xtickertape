@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.14 1997/05/31 03:44:52 phelps Exp $ */
+/* $Id: MessageView.c,v 1.15 1998/02/10 23:41:31 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -363,4 +363,28 @@ int MessageView_isTimedOut(MessageView self)
 {
     SANITY_CHECK(self);
     return ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
+}
+
+/* MIME-decodes the receiver's message */
+void MessageView_decodeMime(MessageView self)
+{
+    char *mimeType;
+    char *mimeArgs;
+    char buffer[2048];
+
+    SANITY_CHECK(self);
+    mimeType = Message_getMimeType(self -> message);
+    mimeArgs = Message_getMimeArgs(self -> message);
+
+    if ((mimeType == NULL) || (mimeArgs == NULL))
+    {
+	printf("no mime\n");
+	return;
+    }
+
+    printf("MIME: %s %s\n", mimeType, mimeArgs);
+
+    /* Send it off to metamail to display */
+    sprintf(buffer, "echo %s | metamail -B -q -b -c %s", mimeArgs, mimeType);
+    system(buffer);
 }

@@ -1,4 +1,4 @@
-/* $Id: MessageView.h,v 1.4 1997/02/10 14:45:00 phelps Exp $ */
+/* $Id: MessageView.h,v 1.5 1998/02/10 23:41:45 phelps Exp $ */
 
 #ifndef MESSAGEVIEW_H
 #define MESSAGEVIEW_H
@@ -31,5 +31,8 @@ void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y);
 
 /* Answers non-zero if the receiver has outstayed its welcome */
 int MessageView_isTimedOut(MessageView self);
+
+/* MIME-decodes the receiver's message */
+void MessageView_decodeMime(MessageView self);
 
 #endif /* MESSAGEVIEW_H */

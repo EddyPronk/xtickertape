@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.9 1997/05/31 03:42:23 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.10 1998/02/10 23:40:48 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -43,12 +43,26 @@ static void receiveCallback(elvin_t connection, void *object, uint32 id, en_noti
     char *user;
     char *text;
     int32 *timeout;
+    char *mimeType;
+    char *mimeArgs;
 
     en_search(notify, "TICKERTAPE", &type, (void **)&group);
     en_search(notify, "USER", &type, (void **)&user);
     en_search(notify, "TICKERTEXT", &type, (void **)&text);
     en_search(notify, "TIMEOUT", &type, (void **)&timeout);
-    Subscription_deliverMessage(subscription, Message_alloc(group, user, text, *timeout));
+    if (en_search(notify, "MIME_TYPE", &type, (void **)&mimeType) != 0)
+    {
+	mimeType = NULL;
+    }
+
+    if (en_search(notify, "MIME_ARGS", &type, (void **)&mimeArgs) != 0)
+    {
+	mimeArgs = NULL;
+    }
+
+    Subscription_deliverMessage(
+	subscription,
+	Message_alloc(group, user, text, *timeout, mimeType, mimeArgs));
 }
 
 /* Callback for elvin errors */

@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.16 1997/05/31 03:42:30 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.17 1998/02/10 23:42:00 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,18 +71,22 @@ static XtResource resources[] =
 };
 #undef offset
 
+
 /*
  * Action declarations
  */
-static void Click();
-
+static void Menu();
+static void DecodeMime();
+static void Delete();
 
 /*
  * Actions table
  */
 static XtActionsRec actions[] =
 {
-    {"Click", Click}
+    { "menu", Menu },
+    { "decodeMime", DecodeMime },
+    { "delete", Delete }
 };
 
 
@@ -91,7 +95,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: Click()"
+    "<Btn3Down>: menu()\n<Btn1Up>(2): decodeMime()\n<Key>d: delete()\n<Key>q: quit()"
 };
 
 
@@ -232,6 +236,26 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
     }
 
     context[1] = (void *)(x + self -> width);
+}
+
+/* Locates the Message at the given offset */
+static void ViewHolder_locate(ViewHolder self, void *context[])
+{
+    int x = (int) context[0];
+
+    if (x < 0)
+    {
+	return;
+    }
+
+    x = x - self -> width;
+
+    if (x < 0)
+    {
+	context[1] = self -> view;
+    }
+
+    context[0] = (void *) x;
 }
 
 
@@ -658,15 +682,72 @@ static XtGeometryResult QueryGeometry(
 }
 
 
+/* Locates the message at the given offset (NULL if none) */
+static MessageView messageAtOffset(TickertapeWidget self, int offset)
+{
+    void *context[2];
+
+    context[0] = (void *) (offset + self -> tickertape.offset);
+    context[1] = NULL;
+    List_doWith(self -> tickertape.holders, ViewHolder_locate, context);
+
+    return context[1];
+}
+
+/* Answers the message under the mouse in the given event */
+static MessageView messageAtEvent(TickertapeWidget self, XEvent event)
+{
+    if ((event.type == KeyPress) || (event.type == KeyRelease))
+    {
+	XKeyEvent *keyEvent = (XKeyEvent *) &event;
+	return messageAtOffset(self, keyEvent -> x);
+    }
+
+    if ((event.type == ButtonPress) || (event.type == ButtonRelease))
+    {
+	XButtonEvent *buttonEvent = (XButtonEvent *) &event;
+	return messageAtOffset(self, buttonEvent -> x);
+    }
+
+    if (event.type == MotionNotify)
+    {
+	XMotionEvent *motionEvent = (XMotionEvent *) &event;
+	return messageAtOffset(self, motionEvent -> x);
+    }
+
+    return NULL;
+}
+
+
 /*
  * Action definitions
  */
 
 /* Called when the button is pressed */
-void Click(Widget widget, XEvent event)
+void Menu(Widget widget, XEvent event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
     XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer)NULL);
+}
+
+static void DecodeMime(Widget widget, XEvent event)
+{
+    TickertapeWidget self = (TickertapeWidget) widget;
+    MessageView view = messageAtEvent(self, event);
+    
+    if (view)
+    {
+	MessageView_decodeMime(view);
+    }
+    else
+    {
+	printf("none\n");
+    }
+}
+
+static void Delete(Widget widget, XEvent event)
+{
+    fprintf(stderr, "delete()\n");
 }
 
 /*

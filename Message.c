@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.4 1997/05/31 03:42:26 phelps Exp $ */
+/* $Id: Message.c,v 1.5 1998/02/10 23:41:09 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,12 +21,20 @@ struct Message_t
     char *group;
     char *user;
     char *string;
+    char *mimeType;
+    char *mimeArgs;
     unsigned long timeout; /* in seconds */
 };
 
 
 /* Creates and returns a new message */
-Message Message_alloc(char *group, char *user, char *string, unsigned int timeout)
+Message Message_alloc(
+    char *group,
+    char *user,
+    char *string,
+    unsigned int timeout,
+    char *mimeType,
+    char *mimeArgs)
 {
     Message message = (Message) malloc(sizeof(struct Message_t));
 
@@ -36,6 +44,25 @@ Message Message_alloc(char *group, char *user, char *string, unsigned int timeou
     message -> group = strdup(group);
     message -> user = strdup(user);
     message -> string = strdup(string);
+
+    if (mimeType == NULL)
+    {
+	message -> mimeType = NULL;
+    }
+    else
+    {
+	message -> mimeType = strdup(mimeType);
+    }
+
+    if (mimeArgs == NULL)
+    {
+	message -> mimeArgs = NULL;
+    }
+    else
+    {
+	message -> mimeArgs = strdup(mimeArgs);
+    }
+
     message -> timeout = timeout;
     return message;
 }
@@ -48,7 +75,20 @@ void Message_free(Message self)
 #ifdef SANITY
     self -> sanity_check = sanity_freed;
 #endif /* SANITY */    
+    free(self -> group);
+    free(self -> user);
     free(self -> string);
+
+    if (self -> mimeType)
+    {
+	free(self -> mimeType);
+    }
+
+    if (self -> mimeArgs)
+    {
+	free(self -> mimeArgs);
+    }
+
     free(self);
 }
 
@@ -88,6 +128,19 @@ void Message_setTimeout(Message self, unsigned long timeout)
     self -> timeout = timeout;
 }
 
+/* Answers the receiver's MIME-type string */
+char *Message_getMimeType(Message self)
+{
+    SANITY_CHECK(self);
+    return self -> mimeType;
+}
+
+/* Answers the receiver's MIME arguments */
+char *Message_getMimeArgs(Message self)
+{
+    SANITY_CHECK(self);
+    return self -> mimeArgs;
+}
 
 /* Prints debugging information */
 void Message_debug(Message self)
