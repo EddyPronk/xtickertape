@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.15 1999/11/01 15:16:02 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.16 1999/11/11 02:25:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -163,6 +163,9 @@ struct control_panel
 
     /* The receiver's "Send" button widget */
     Widget send;
+
+    /* The receiver's history form */
+    Widget history_form;
 
     /* The receiver's history list widget */
     Widget history;
@@ -1087,7 +1090,7 @@ static void configure_control_panel(Widget top, XtPointer rock, XConfigureEvent 
 
     /* Figure out how tall the history list is */
     XtVaGetValues(
-	self -> history,
+	self -> history_form,
 	XmNheight, &history_height,
 	NULL);
 
@@ -1104,11 +1107,10 @@ static void init_ui(control_panel_t self, Widget parent)
 {
     Widget form;
     Widget menubar;
-    Widget historyForm;
-    Widget topForm;
-    Widget textForm;
-    Widget mimeForm;
-    Widget buttonForm;
+    Widget top_form;
+    Widget text_form;
+    Widget mime_form;
+    Widget button_form;
     Atom wm_delete_window;
 
     /* Set some variables to sane values */
@@ -1155,7 +1157,7 @@ static void init_ui(control_panel_t self, Widget parent)
     XtManageChild(menubar);
 
     /* Create the top box */
-    topForm = XtVaCreateWidget(
+    top_form = XtVaCreateWidget(
 	"topForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
@@ -1163,55 +1165,55 @@ static void init_ui(control_panel_t self, Widget parent)
 	XmNtopWidget, menubar,
 	NULL);
 
-    create_top_box(self, topForm);
-    XtManageChild(topForm);
+    create_top_box(self, top_form);
+    XtManageChild(top_form);
 
     /* Create the text box */
-    textForm = XtVaCreateWidget(
+    text_form = XtVaCreateWidget(
 	"textForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, topForm,
+	XmNtopWidget, top_form,
 	NULL);
-    create_text_box(self, textForm);
-    XtManageChild(textForm);
+    create_text_box(self, text_form);
+    XtManageChild(text_form);
 
     /* Create the mime box */
-    mimeForm = XtVaCreateWidget(
+    mime_form = XtVaCreateWidget(
 	"mimeForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, textForm,
+	XmNtopWidget, text_form,
 	NULL);
-    create_mime_box(self, mimeForm);
-    XtManageChild(mimeForm);
+    create_mime_box(self, mime_form);
+    XtManageChild(mime_form);
 
     /* Create the buttons across the bottom */
-    buttonForm = XtVaCreateWidget(
+    button_form = XtVaCreateWidget(
 	"buttonForm", xmFormWidgetClass, form,
 	XmNfractionBase, 3,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, mimeForm,
+	XmNtopWidget, mime_form,
 	NULL);
-    create_bottom_box(self, buttonForm);
-    XtManageChild(buttonForm);
+    create_bottom_box(self, button_form);
+    XtManageChild(button_form);
 
     /* Create the history list */
-    historyForm = XtVaCreateWidget(
+    self -> history_form = XtVaCreateWidget(
 	"historyForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
 	XmNbottomAttachment, XmATTACH_FORM,
-	XmNtopWidget, buttonForm,
+	XmNtopWidget, button_form,
 	NULL);
 
-    create_history_box(self, historyForm);
-    XtManageChild(historyForm);
+    create_history_box(self, self -> history_form);
+    XtManageChild(self -> history_form);
 
     /* Manage the form widget */
     XtManageChild(form);
