@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.13 2001/07/13 13:21:56 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.14 2001/07/13 13:23:21 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -744,7 +744,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     if (gc != None)
     {
 	values.clip_mask = None;
- 	values.foreground = WhitePixelOfScreen(XtScreen((Widget)self));
+ 	values.foreground = self -> core.background_pixel;
 	XChangeGC(display, gc, GCClipMask | GCForeground, &values);
     }
 
