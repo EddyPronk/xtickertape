@@ -37,8 +37,11 @@
 /* The history type */
 typedef struct history *history_t;
 
+#include <Xm/Xm.h>
+#include "Message.h"
+
 /* Allocates and initializes a new empty history */
-history_t history_alloc(tickertape_t tickertape);
+history_t history_alloc();
 
 /* Frees the history */
 void history_free(history_t self);
@@ -49,6 +52,8 @@ void history_set_list(history_t self, Widget list);
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message);
 
+/* Answers the Message at the given index */
+Message history_get(history_t self, int index);
 
 
 #endif /* HISTORY_H */

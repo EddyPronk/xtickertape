@@ -28,15 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.4 1999/08/19 05:04:59 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.5 1999/08/19 07:29:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <Xm/XmAll.h>
+#include <Xm/Xm.h>
 #include "Message.h"
-#include "tickertape.h"
 #include "history.h"
+
+#define MAX_LIST_COUNT 30
 
 /* The structure of a node in a message history */
 typedef struct history_node *history_node_t;
@@ -71,7 +72,7 @@ static history_node_t history_node_alloc(Message message)
     }
 
     /* Initialize the fields to sane values */
-/*    self -> message = Message_allocReference(message);*/
+    self -> message = Message_allocReference(message);
     self -> color = 0;
     self -> previous = NULL;
     self -> previous_response = NULL;
@@ -83,18 +84,18 @@ static history_node_t history_node_alloc(Message message)
 /* Releases the resources consumed by the receiver */
 static void history_node_free(history_node_t self)
 {
-/*    Message_free(self -> message); */
+    Message_free(self -> message);
     free(self);
 }
 
 /* Constructs a Motif string representation of the receiver's message */
 static XmString history_node_get_string(history_node_t self)
 {
-    XmString result;
     char *group = Message_getGroup(self -> message);
     char *user = Message_getUser(self -> message);
     char *string = Message_getString(self -> message);
     char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string)+ 3);
+    XmString result;
 
     sprintf(buffer, "%s:%s:%s", group, user, string);
     result = XmStringCreateSimple(buffer);
@@ -113,8 +114,7 @@ static void history_node_print(history_node_t self, int indent, FILE *out)
 	fprintf(out, "  ");
     }
 
-    fprintf(out,
-	    "%s:%s:%s\n",
+    fprintf(out, "%s:%s:%s\n",
 	    Message_getGroup(self -> message),
 	    Message_getUser(self -> message),
 	    Message_getString(self -> message));
@@ -188,19 +188,19 @@ static void history_node_print_threaded(history_node_t self, int indent, FILE *o
 /* The structure of a threaded (or not) message history */
 struct history
 {
-    /* The history's tickertape */
-    tickertape_t tickertape;
-
     /* The number of nodes in the history */
     int count;
 
     /* The last node in the history (in receipt order) */
     history_node_t last;
+
+    /* The receiver's Motif List widget */
+    Widget list;
 };
 
 
 /* Allocates and initializes a new empty history */
-history_t history_alloc(tickertape_t tickertape)
+history_t history_alloc()
 {
     history_t self;
 
@@ -211,9 +211,9 @@ history_t history_alloc(tickertape_t tickertape)
     }
 
     /* Initialize the fields to sane values */
-    self -> tickertape = tickertape;
     self -> count = 0;
     self -> last = NULL;
+    self -> list = NULL;
 
     return self;
 }
@@ -277,15 +277,26 @@ static void history_thread_node(history_t self, history_node_t node)
     parent -> last_response = node;
 }
 
+/* Sets the history's Motif List widget */
+void history_set_list(history_t self, Widget list)
+{
+    self -> list = list;
+}
+
 
 /* Updates the history's list widget after a message was added */
 static void history_update_list(history_t self, history_node_t node)
 {
-#if 0
     XmString string;
 
+    /* Make sure we have a list to play with */
+    if (self -> list == NULL)
+    {
+	return;
+    }
+
     /* Make sure the list doesn't grow without bound */
-    if (! (self -> count < 30))
+    if (! (self -> count < MAX_LIST_COUNT))
     {
 	XmListDeletePos(self -> list, 1);
     }
@@ -294,9 +305,7 @@ static void history_update_list(history_t self, history_node_t node)
     string = history_node_get_string(node);
     XmListAddItem(self -> list, string, 0);
     XmStringFree(string);
-#endif /* 0 */
 }
-
 
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message)
@@ -312,14 +321,64 @@ int history_add(history_t self, Message message)
     /* If the message is part of a thread then deal with it */
     history_thread_node(self, node);
 
+    /* Update the List widget */
+    history_update_list(self, node);
+
     /* Append the node to the end of the history */
     self -> count++;
     node -> previous = self -> last;
     self -> last = node;
 
-    /* Update the List widget */
-    history_update_list(self, node);
     return 0;
+}
+
+/* Answers the Message at the given index */
+Message history_get(history_t self, int index)
+{
+    history_node_t probe;
+    int i;
+
+    /* Make sure we have that many items */
+    if (index > self -> count)
+    {
+	return NULL;
+    }
+
+    /* FIX THIS: will need to do this differently if we're threaded */
+    i = (self -> count < MAX_LIST_COUNT) ? self -> count: MAX_LIST_COUNT;
+    for (probe = self -> last; probe != NULL; probe = probe -> previous)
+    {
+	if (index == i)
+	{
+	    return probe -> message;
+	}
+
+	i--;
+    }
+
+    return NULL;
+}
+
+/* Answers the index of given Message in the history */
+int history_index(history_t self, Message message)
+{
+    /* FIX THIS: will need to do this differently if we're threaded */
+    history_node_t probe;
+    int index;
+
+    index = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
+    for (probe = self -> last; probe != NULL; probe = probe -> previous)
+    {
+	if (probe -> message == message)
+	{
+	    index = (index < 1) ? -1 : index;
+	    return index;
+	}
+
+	index--;
+    }
+
+    return -1;
 }
 
 
@@ -338,3 +397,4 @@ void history_print_threaded(history_t self, FILE *out)
     /* Fob this off on the nodes */
     history_node_print_threaded(self -> last, 1, out);
 }
+
