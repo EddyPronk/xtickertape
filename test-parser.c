@@ -466,6 +466,13 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    /* Initialize the interpreter */
+    if (! interp_init(error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
     /* Allocate the root environment */
     if ((root_env = root_env_alloc(error)) == NULL)
     {
@@ -536,6 +543,14 @@ int main(int argc, char *argv[])
     if (env_free(root_env, error) == 0)
     {
 	fprintf(stderr, "env_free(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Clean up the interpreter */
+    if (! interp_close(error))
+    {
+	fprintf(stderr, "interp_close(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
