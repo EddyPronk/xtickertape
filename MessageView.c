@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.29 1998/10/26 02:28:37 phelps Exp $ */
+/* $Id: MessageView.c,v 1.30 1998/12/17 01:26:13 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,7 @@
 #include <X11/StringDefs.h>
 
 #include "sanity.h"
-#include "TickertapeP.h"
+#include "ScrollerP.h"
 #include "MessageView.h"
 #include "StringBuffer.h"
 
@@ -43,7 +43,7 @@ struct MessageView_t
     char *sanity_check;
 #endif /* SANITY */
     unsigned int refcount;
-    TickertapeWidget widget;
+    ScrollerWidget widget;
     Message message;
     unsigned int fadeLevel;
     char isExpired;
@@ -78,7 +78,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     level = self -> fadeLevel;
 
     /* Draw the group string */
-    gc = TtGCForGroup(self -> widget, level);
+    gc = ScGCForGroup(self -> widget, level);
     string = Message_getGroup(self -> message);
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
@@ -91,7 +91,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     xpos += self -> groupWidth;
 
     /* Draw the separator */
-    gc = TtGCForSeparator(self -> widget, level);
+    gc = ScGCForSeparator(self -> widget, level);
     string = SEPARATOR;
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
@@ -104,7 +104,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     xpos += self -> separatorWidth;
 
     /* Draw the user string */
-    gc = TtGCForUser(self -> widget, level);
+    gc = ScGCForUser(self -> widget, level);
     string = Message_getUser(self -> message);
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
@@ -117,7 +117,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     xpos += self -> userWidth;
 
     /* Draw the separator */
-    gc = TtGCForSeparator(self -> widget, level);
+    gc = ScGCForSeparator(self -> widget, level);
     string = SEPARATOR;
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
@@ -130,7 +130,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     xpos += self -> separatorWidth;
 
     /* Draw the text string */
-    gc = TtGCForString(self -> widget, level);
+    gc = ScGCForString(self -> widget, level);
     string = Message_getString(self -> message);
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
@@ -157,10 +157,10 @@ static void SetClock(MessageView self)
     else
     {
 	duration = 60 * 1000 *
-	    Message_getTimeout(self -> message) / TtGetFadeLevels(self -> widget);
+	    Message_getTimeout(self -> message) / ScGetFadeLevels(self -> widget);
     }
 
-    self -> timer = TtStartTimer(
+    self -> timer = ScStartTimer(
 	self -> widget,
 	duration,
 	(XtTimerCallbackProc) Tick,
@@ -172,7 +172,7 @@ static void ClearClock(MessageView self)
 {
     if ((self -> timer) != 0)
     {
-	TtStopTimer(self -> widget, self -> timer);
+	ScStopTimer(self -> widget, self -> timer);
 	self -> timer = 0;
     }
 }
@@ -186,7 +186,7 @@ static void Tick(MessageView self, XtIntervalId *ignored)
 
     SANITY_CHECK(self);
     self -> timer = 0;
-    maxLevels = TtGetFadeLevels(self -> widget);
+    maxLevels = ScGetFadeLevels(self -> widget);
 
     /* Don't get older than we have to */
     if (++self -> fadeLevel >= maxLevels)
@@ -208,16 +208,16 @@ static unsigned int GetAscent(MessageView self)
     unsigned int ascent;
 
     SANITY_CHECK(self);
-    font = TtFontForGroup(self -> widget);
+    font = ScFontForGroup(self -> widget);
     ascent = font -> ascent;
 
-    font = TtFontForUser(self -> widget);
+    font = ScFontForUser(self -> widget);
     ascent = (ascent > font -> ascent) ? ascent : font -> ascent;
 
-    font = TtFontForString(self -> widget);
+    font = ScFontForString(self -> widget);
     ascent = (ascent > font -> ascent) ? ascent : font -> ascent;
     
-    font = TtFontForSeparator(self -> widget);
+    font = ScFontForSeparator(self -> widget);
     ascent = (ascent > font -> ascent) ? ascent : font -> ascent;
 
     return ascent;
@@ -230,16 +230,16 @@ static unsigned int GetDescent(MessageView self)
     unsigned int descent;
 
     SANITY_CHECK(self);
-    font = TtFontForGroup(self -> widget);
+    font = ScFontForGroup(self -> widget);
     descent = font -> descent;
 
-    font = TtFontForUser(self -> widget);
+    font = ScFontForUser(self -> widget);
     descent = (descent > font -> descent) ? descent : font -> descent;
 
-    font = TtFontForString(self -> widget);
+    font = ScFontForString(self -> widget);
     descent = (descent > font -> descent) ? descent : font -> descent;
     
-    font = TtFontForSeparator(self -> widget);
+    font = ScFontForSeparator(self -> widget);
     descent = (descent > font -> descent) ? descent : font -> descent;
 
     return descent;
@@ -295,23 +295,23 @@ static void ComputeWidths(MessageView self)
 {
     SANITY_CHECK(self);
     self -> groupWidth = GetStringWidth(
-	TtFontForGroup(self -> widget),
+	ScFontForGroup(self -> widget),
 	Message_getGroup(self -> message));
 
     self -> userWidth = GetStringWidth(
-	TtFontForUser(self -> widget),
+	ScFontForUser(self -> widget),
 	Message_getUser(self -> message));
 
     self -> stringWidth = GetStringWidth(
-	TtFontForString(self -> widget),
+	ScFontForString(self -> widget),
 	Message_getString(self -> message));
 
     self -> stringWidth = GetStringWidth(
-	TtFontForString(self -> widget),
+	ScFontForString(self -> widget),
 	Message_getString(self -> message));
 
     self -> separatorWidth = GetStringWidth(
-	TtFontForSeparator(self -> widget),
+	ScFontForSeparator(self -> widget),
 	SEPARATOR);
 }
 
@@ -347,7 +347,7 @@ void MessageView_debug(MessageView self)
 }
 
 /* Creates and returns a 'view' on a Message */
-MessageView MessageView_alloc(TickertapeWidget widget, Message message)
+MessageView MessageView_alloc(ScrollerWidget widget, Message message)
 {
     MessageView self = (MessageView) malloc(sizeof(struct MessageView_t));
 
@@ -363,7 +363,7 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
     self -> height = self -> ascent + GetDescent(self);
     ComputeWidths(self);
     self -> timer = 0;
-    self -> pixmap = TtCreatePixmap(
+    self -> pixmap = ScCreatePixmap(
 	self -> widget,
 	MessageView_getWidth(self),
 	self -> height);
@@ -444,7 +444,7 @@ void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 {
     SANITY_CHECK(self);
     XCopyArea(XtDisplay(self -> widget), self -> pixmap,
-	      drawable, TtGCForBackground(self -> widget),
+	      drawable, ScGCForBackground(self -> widget),
 	      0, 0, MessageView_getWidth(self), self -> height, x, y);
 }
 
@@ -453,7 +453,7 @@ void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 int MessageView_isTimedOut(MessageView self)
 {
     SANITY_CHECK(self);
-    return (self -> isExpired) || ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
+    return (self -> isExpired) || ((self -> fadeLevel) == ScGetFadeLevels(self -> widget));
 }
 
 /* MIME-decodes the receiver's message */

@@ -1,4 +1,4 @@
-/* $Id: MessageView.h,v 1.7 1998/08/26 06:01:12 phelps Exp $ */
+/* $Id: MessageView.h,v 1.8 1998/12/17 01:26:13 phelps Exp $ */
 
 #ifndef MESSAGEVIEW_H
 #define MESSAGEVIEW_H
@@ -11,7 +11,7 @@ typedef struct MessageView_t *MessageView;
 void MessageView_debug(MessageView self);
 
 /* Creates and returns a 'view' on a Message */
-MessageView MessageView_alloc(TickertapeWidget widget, Message message);
+MessageView MessageView_alloc(ScrollerWidget widget, Message message);
 
 /* Free the memory allocated by the receiver */
 void MessageView_free(MessageView self);

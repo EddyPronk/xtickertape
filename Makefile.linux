@@ -6,7 +6,7 @@ TICKERTAPE = xtickertape
 
 ALL = $(TICKERTAPE) 
 
-OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o \
+OBJS = Tickertape.o Control.o Scroller.o ElvinConnection.o MessageView.o Message.o \
 	Subscription.o UsenetSubscription.o MailSubscription.o OrbitSubscription.o \
 	StringBuffer.o FileStreamTokenizer.o Hash.o List.o main.o
 
@@ -28,4 +28,24 @@ $(TICKERTAPE): $(OBJS)
 clean:
 	rm -f $(TARGET) $(OBJS)
 
+
+# Dependency information
+Tickertape.o: Tickertape.c Tickertape.h Hash.h StringBuffer.h Scroller.h Control.h 
+Tickertape.o: Subscription.h UsenetSubscription.h ElvinConnection.h version.h sanity.h
+Control.o: Control.c Control.h List.h sanity.h
+Scroller.o: Scroller.c Scroller.h ScrollerP.h MessageView.h Message.h List.h
+ElvinConnection.o: ElvinConnection.c ElvinConnection.h List.h sanity.h
+MessageView.o: MessageView.h ScrollerP.h Scroller.h Message.h StringBuffer.h sanity.h
+Message.o: Message.c Message.h sanity.h
+Subscription.o: Subscription.c Subscription.h Control.h ElvinConnection.h
+Subscription.o: Message.h FileStreamTokenizer.h StringBuffer.h List.h sanity.h
+UsenetSubscription.o: UsenetSubscription.c UsenetSubscription.h FileStreamTokenizer.h
+UsenetSubscription.o: ElvinConnection.h StringBuffer.h Message.h sanity.h
+OrbitSubscription.o: OrbitSubscription.c OrbitSubscription.h ElvinConnection.h Control.h
+OrbitSubscription.o: Message.h StringBuffer.h sanity.h
+Hash.o: Hash.c Hash.h sanity.h
+List.o: List.c List.h sanity.h
+StringBuffer.o: StringBuffer.c StringBuffer.h sanity.h
+FileStreamTokenizer.o: FileStreamTokenizer.c FileStreamTokenizer.h StringBuffer.h sanity.h
+main.o: main.c Tickertape.h red.xbm white.xbm mask.xbm
 

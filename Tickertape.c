@@ -1,877 +1,624 @@
-/* $Id: Tickertape.c,v 1.29 1998/11/05 01:54:54 phelps Exp $ */
+/*
+ * $Id: Tickertape.c,v 1.30 1998/12/17 01:26:13 phelps Exp $
+ * COPYRIGHT!
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <X11/Xlib.h>
-#include <X11/IntrinsicP.h>
-#include <X11/StringDefs.h>
+#include <X11/Intrinsic.h>
+#include "sanity.h"
+#include "Tickertape.h"
+#include "Hash.h"
+#include "StringBuffer.h"
+#include "Scroller.h"
+#include "Control.h"
+#include "Subscription.h"
+#include "UsenetSubscription.h"
+#include "MailSubscription.h"
+#include "ElvinConnection.h"
+#include "version.h"
+#ifdef ORBIT
+#include "OrbitSubscription.h"
+#endif /* ORBIT */
 
-#include "TickertapeP.h"
-#include "MessageView.h"
+#ifdef SANITY
+static char *sanity_value = "Ticker";
+static char *sanity_freed = "Freed Ticker";
+#endif /* SANITY */
 
-
-#define END_SPACING 30
-
-/*
- * Resources
- */
-#define offset(field) XtOffsetOf(TickertapeRec, field)
-
-static XtResource resources[] =
+/* The Tickertape data type */
+struct Tickertape_t
 {
-    /* XtCallbackList callbacks */
-    {
-	XtNcallback, XtCCallback, XtRCallback, sizeof(XtPointer),
-	offset(tickertape.callbacks), XtRCallback, (XtPointer)NULL
-    },
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
 
-    /* XFontStruct *font */
-    {
-	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
-	offset(tickertape.font), XtRString, XtDefaultFont
-    },
+    /* The user's name */
+    char *user;
 
-    /* Pixel groupPixel */
-    {
-	XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.groupPixel), XtRString, "Blue"
-    },
+    /* The group file from which we read our subscriptions */
+    char *groupsFile;
 
-    /* Pixel userPixel */
-    {
-	XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.userPixel), XtRString, "Green"
-    },
+    /* The usenet file from which we read our usenet subscription */
+    char *usenetFile;
 
-    /* Pixel stringPixel */
-    {
-	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.stringPixel), XtRString, "Red"
-    },
+    /* The top-level widget */
+    Widget top;
 
-    /* Pixel separatorPixel */
-    {
-	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.separatorPixel), XtRString, XtDefaultForeground
-    },
+    /* The receiver's subscriptions (from the groups file) */
+    List subscriptions;
 
-    /* Dimension fadeLevels */
-    {
-	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
-	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
-    },
+    /* The receiver's usenet subscription (from the usenet file) */
+    UsenetSubscription usenetSubscription;
 
-    /* Dimension frequency (in Hz) */
-    {
-	XtNfrequency, XtCFrequency, XtRDimension, sizeof(Dimension),
-	offset(tickertape.frequency), XtRImmediate, (XtPointer)24
-    },
+    /* The receiver's mail subscription */
+    MailSubscription mailSubscription;
 
-    /* Dimension step (in pixels) */
-    {
-	XtNstepSize, XtCStepSize, XtRDimension, sizeof(Dimension),
-	offset(tickertape.step), XtRImmediate, (XtPointer)1
-    }
-};
-#undef offset
+#ifdef ORBIT
+    /* The receiver's Orbit-related subscriptions */
+    Hashtable orbitSubscriptionsById;
+#endif /* ORBIT */
+    /* The elvin connection */
+    ElvinConnection connection;
 
+    /* The control panel */
+    ControlPanel controlPanel;
 
-/*
- * Action declarations
- */
-static void Menu();
-static void DecodeMime();
-static void Delete();
-
-/*
- * Actions table
- */
-static XtActionsRec actions[] =
-{
-    { "menu", Menu },
-    { "decodeMime", DecodeMime },
-    { "delete", Delete }
+    /* The ScrollerWidget */
+    ScrollerWidget scroller;
 };
 
 
 /*
- * Default translation table
+ *
+ * Static function headers
+ *
  */
-static char defaultTranslations[] =
-{
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>q: quit()"
-};
-
+static void PublishStartupNotification(Tickertape self);
+static void Click(Widget widget, Tickertape self, Message message);
+static void ReceiveMessage(Tickertape self, Message message);
+static List ReadGroupsFile(Tickertape self);
+static void ReloadGroups(Tickertape self);
+static void ReloadUsenet(Tickertape self);
+static void InitializeUserInterface(Tickertape self);
+static void Disconnect(Tickertape self, ElvinConnection connection);
+static void Reconnect(Tickertape self, ElvinConnection connection);
+#ifdef ORBIT
+static void OrbitCallback(Tickertape self, en_notify_t notification);
+static void SubscribeToOrbit(Tickertape self);
+#endif /* ORBIT */
 
 
 /*
- * Method declarations
- */
-static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
-static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
-static void Rotate(TickertapeWidget self);
-static void Redisplay(Widget widget, XEvent *event, Region region);
-static void Destroy(Widget widget);
-static void Resize(Widget widget);
-static Boolean SetValues(
-    Widget current,
-    Widget request,
-    Widget new,
-    ArgList args,
-    Cardinal *num_args);
-static XtGeometryResult QueryGeometry(
-    Widget widget,
-    XtWidgetGeometry *intended,
-    XtWidgetGeometry *preferred);
-
-/*
- * Class record initialization
- */
-TickertapeClassRec tickertapeClassRec =
-{
-    /* core_class fields */
-    {
-	(WidgetClass) &widgetClassRec, /* superclass */
-	"Tickertape", /* class_name */
-	sizeof(TickertapeRec), /* widget_size */
-	NULL, /* class_initialize */
-	NULL, /* class_part_initialize */
-	False, /* class_inited */
-	Initialize, /* initialize */
-	NULL, /* initialize_hook */
-	Realize, /* realize */
-	actions, /* actions */
-	XtNumber(actions), /* num_actions */
-	resources, /* resources */
-	XtNumber(resources), /* num_resources */
-	NULLQUARK, /* xrm_class */
-	True, /* compress_motion */
-	True, /* compress_exposure */
-	True, /* compress_enterleave */
-	False, /* visible_interest */
-	Destroy, /* destroy */
-	Resize, /* resize */
-	Redisplay, /* expose */
-	SetValues, /* set_values */
-	NULL, /* set_values_hook */
-	XtInheritSetValuesAlmost, /* set_values_almost */
-	NULL, /* get_values_hook */
-	NULL, /* accept_focus */
-	XtVersion, /* version */
-	NULL, /* callback_private */
-	defaultTranslations, /* tm_table */
-	QueryGeometry, /* query_geometry */
-	XtInheritDisplayAccelerator, /* display_accelerator */
-	NULL /* extension */
-    },
-
-    /* Tickertape class fields initialization */
-    {
-	0 /* ignored */
-    }
-};
-
-WidgetClass tickertapeWidgetClass = (WidgetClass)&tickertapeClassRec;
-
-
-/*
- * Private Methods
+ *
+ * Static functions
+ *
  */
 
-/* Holder for MessageViews and Spacers */
-typedef struct ViewHolder_t
+/* Publishes a notification indicating that the receiver has started */
+static void PublishStartupNotification(Tickertape self)
 {
-    MessageView view;
-    unsigned int width;
-    unsigned int previous_width;
-} *ViewHolder;
+    en_notify_t notification;
+    SANITY_CHECK(self);
 
-static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
-static void ViewHolder_free(ViewHolder self);
-static void ViewHolder_redisplay(ViewHolder self, void *context[]);
-
-static void CreateGC(TickertapeWidget self);
-static Pixel *CreateFadedColors(Display *display, Colormap colormap,
-				XColor *first, XColor *last, unsigned int levels);
-static void StartClock(TickertapeWidget self);
-static void StopClock(TickertapeWidget self);
-static void SetClock(TickertapeWidget self);
-static void Tick(XtPointer widget, XtIntervalId *interval);
-
-static void AddMessageView(TickertapeWidget self, MessageView view);
-static MessageView RemoveMessageView(TickertapeWidget self, MessageView view);
-static void EnqueueViewHolder(TickertapeWidget self, ViewHolder holder);
-static ViewHolder DequeueViewHolder(TickertapeWidget self);
-
-
-/* Allocates a new ViewHolder */
-static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width)
-{
-    ViewHolder self = (ViewHolder) malloc(sizeof(struct ViewHolder_t));
-    self -> view = view;
-    self -> width = width;
-
-    if (view)
-    {
-	MessageView_allocReference(view);
-    }
-
-    return self;
-}
-
-/* Frees a ViewHolder */
-static void ViewHolder_free(ViewHolder self)
-{
-    if (self -> view)
-    {
-	MessageView_freeReference(self -> view);
-    }
-
-    free(self);
-}
-
-/* Displays a ViewHolder */
-static void ViewHolder_redisplay(ViewHolder self, void *context[])
-{
-    TickertapeWidget widget = (TickertapeWidget) context[0];
-    Drawable drawable = (Drawable) context[1];
-    int x = (int) context[2];
-    int y = (int) context[3];
-
-    if (self -> view)
-    {
-	MessageView_redisplay(self -> view, drawable, x, y);
-    }
-    else /* Fill the background color */
-    {
-	XFillRectangle(
-	    XtDisplay(widget), drawable, widget -> tickertape.backgroundGC,
-	    x, y, self -> width, widget -> core.height);
-    }
-
-    context[2] = (void *)(x + self -> width);
-    XFlush(XtDisplay(widget));
-}
-
-/* Locates the Message at the given offset */
-static void ViewHolder_locate(ViewHolder self, long *x, MessageView *view_return)
-{
-    if (*x < 0)
+    /* If we haven't managed to connect, then don't try sending */
+    if (self -> connection == NULL)
     {
 	return;
     }
 
-    *x -= self -> width;
+    notification = en_new();
+    en_add_string(notification, "tickertape.startup", VERSION);
+    en_add_string(notification, "user", self -> user);
+    ElvinConnection_send(self -> connection, notification);
+    en_free(notification);
+}
 
-    if (*x < 0)
+/* Callback for a mouse click in the scroller */
+static void Click(Widget widget, Tickertape self, Message message)
+{
+    SANITY_CHECK(self);
+    ControlPanel_show(self -> controlPanel, message);
+}
+
+/* Receive a Message matched by Subscription */
+static void ReceiveMessage(Tickertape self, Message message)
+{
+    SANITY_CHECK(self);
+    ScAddMessage(self -> scroller, message);
+}
+
+/* Read from the Groups file.  Returns a List of subscriptions if
+ * successful, NULL otherwise */
+static List ReadGroupsFile(Tickertape self)
+{
+    FILE *file;
+    List subscriptions;
+    
+    /* No groups file, no subscriptions list */
+    if (self -> groupsFile == NULL)
     {
-	*view_return = self -> view;
+	return List_alloc();
+    }
+
+    /* Open the groups file and read */
+    if ((file = fopen(self -> groupsFile, "r")) == NULL)
+    {
+	fprintf(stderr, "*** unable to open groups file %s\n", self -> groupsFile);
+	return List_alloc();
+    }
+
+    /* Read the subscriptions */
+    subscriptions = Subscription_readFromGroupFile(
+	file, (SubscriptionCallback)ReceiveMessage, self);
+    fclose(file);
+
+    return subscriptions;
+}
+
+
+/* Read from the usenet file.  Returns a Usenet subscription. */
+static UsenetSubscription ReadUsenetFile(Tickertape self)
+{
+    FILE *file;
+    UsenetSubscription subscription;
+
+    if ((file = fopen(self -> usenetFile, "r")) == NULL)
+    {
+	fprintf(stderr, "*** unable to open usenet file %s\n", self -> usenetFile);
+	return NULL;
+    }
+
+    /* Read the file */
+    subscription = UsenetSubscription_readFromUsenetFile(
+	file, (SubscriptionCallback)ReceiveMessage, self);
+    fclose(file);
+
+    return subscription;
+}
+
+
+
+
+/* Adds the subscription into the Hashtable using the expression as its key */
+static void MapByExpression(Subscription subscription, Hashtable hashtable)
+{
+    Hashtable_put(hashtable, Subscription_expression(subscription), subscription);
+}
+
+/* Make sure that we're subscribed to the right stuff, but share elvin
+ * subscriptions whenever possible */
+static void UpdateElvin(
+    Subscription subscription,
+    Tickertape self,
+    Hashtable hashtable,
+    List list)
+{
+    Subscription match;
+    SANITY_CHECK(self);
+
+    /* Is there already a subscription for this? */
+    if ((match = Hashtable_remove(hashtable, Subscription_expression(subscription))) == NULL)
+    {
+	/* No subscription yet.  Subscribe via elvin */
+	Subscription_setConnection(subscription, self -> connection);
+    }
+    else
+    {
+	/* Subscription found.  Replace the new subscription with the old one */
+	Subscription_updateFromSubscription(match, subscription);
+	List_replaceAll(list, subscription, match);
+	Subscription_free(subscription);
+    }
+}
+
+/* Request from the ControlPanel to reload groups file */
+static void ReloadGroups(Tickertape self)
+{
+    Hashtable hashtable;
+    List newSubscriptions;
+    int index;
+    SANITY_CHECK(self);
+
+    /* Read the new list of subscriptions */
+    newSubscriptions = ReadGroupsFile(self);
+
+    /* Reuse any elvin subscriptions if we can, create new ones we need */
+    hashtable = Hashtable_alloc(37);
+    List_doWith(self -> subscriptions, MapByExpression, hashtable);
+    List_doWithWithWith(newSubscriptions, UpdateElvin, self, hashtable, newSubscriptions);
+
+    /* Delete any elvin subscriptions we're no longer listening to,
+     * remove them from the ControlPanel and free the corresponding
+     * Subscriptions. */
+    Hashtable_doWith(hashtable, Subscription_setConnection, NULL);
+    Hashtable_doWith(hashtable, Subscription_setControlPanel, NULL);
+    Hashtable_do(hashtable, Subscription_free);
+    Hashtable_free(hashtable);
+    List_free(self -> subscriptions);
+
+    /* Set the list of group subscriptions to the new list */
+    self -> subscriptions = newSubscriptions;
+
+    /* Make sure that exactly those Subscriptions which should appear
+     * the in groups menu do, and that they're in the right order */
+    index = 0;
+    List_doWithWith(
+	self -> subscriptions,
+	Subscription_updateControlPanelIndex,
+	self -> controlPanel,
+	&index);
+}
+
+
+/* Request from the ControlPanel to reload usenet file */
+static void ReloadUsenet(Tickertape self)
+{
+    UsenetSubscription subscription;
+    SANITY_CHECK(self);
+
+    /* Read the new usenet subscription */
+    subscription = ReadUsenetFile(self);
+
+    /* Stop listening to old subscription */
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, NULL);
+	UsenetSubscription_free(self -> usenetSubscription);
+    }
+
+    /* Start listening to the new subscription */
+    self -> usenetSubscription = subscription;
+
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
     }
 }
 
 
-
-
-/* Answers a GC with the right background color and font */
-static void CreateGC(TickertapeWidget self)
+/* Initializes the User Interface */
+static void InitializeUserInterface(Tickertape self)
 {
-    XGCValues values;
+    self -> controlPanel = ControlPanel_alloc(
+	self -> top, self -> user,
+	(ReloadCallback)ReloadGroups, self,
+	(ReloadCallback)ReloadUsenet, self);
 
-    values.font = self -> tickertape.font -> fid;
-    values.background = self -> core.background_pixel;
-    values.foreground = self -> core.background_pixel;
-    self -> tickertape.backgroundGC = XCreateGC(
-	XtDisplay(self), XtWindow(self), GCFont | GCBackground | GCForeground, &values);
-    self -> tickertape.gc = XCreateGC(
-	XtDisplay(self), XtWindow(self), GCFont | GCBackground, &values);
+    List_doWith(
+	self -> subscriptions,
+	Subscription_setControlPanel,
+	self -> controlPanel);
+
+    self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
+	"scroller", scrollerWidgetClass, self -> top,
+	NULL);
+    XtAddCallback((Widget)self -> scroller, XtNcallback, (XtCallbackProc)Click, self);
+    XtRealizeWidget(self -> top);
 }
 
 
-/* Answers an array of colors fading from first to last */
-static Pixel *CreateFadedColors(
-    Display *display, Colormap colormap,
-    XColor *first, XColor *last, unsigned int levels)
+
+/* This is called when we get our elvin connection back */
+static void Reconnect(Tickertape self, ElvinConnection connection)
 {
-    Pixel *result = calloc(levels, sizeof(Pixel));
-    long redNumerator = (long)last -> red - first -> red;
-    long greenNumerator = (long)last -> green - first -> green;
-    long blueNumerator = (long)last -> blue - first -> blue;
-    long denominator = levels;
-    long index;
+    StringBuffer buffer;
+    Message message;
+    SANITY_CHECK(self);
 
-    for (index = 0; index < levels; index++)
+    /* Construct a reconnect message */
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "Connected to elvin server at ");
+    StringBuffer_append(buffer, ElvinConnection_host(connection));
+    StringBuffer_appendChar(buffer, ':');
+    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
+    StringBuffer_appendChar(buffer, '.');
+
+    /* Display the message on the scroller */
+    message = Message_alloc(
+	NULL,
+	"internal", "tickertape",
+	StringBuffer_getBuffer(buffer), 10,
+	NULL, NULL,
+	0, 0);
+    ReceiveMessage(self, message);
+
+    /* Republish the startup notification */
+    PublishStartupNotification(self);
+}
+
+/* This is called when we lose our elvin connection */
+static void Disconnect(Tickertape self, ElvinConnection connection)
+{
+    StringBuffer buffer;
+    Message message;
+    SANITY_CHECK(self);
+
+    /* Construct a disconnect message */
+    buffer = StringBuffer_alloc();
+
+    /* If this is called in the middle of ElvinConnection_alloc, then
+     * self -> connection will be NULL.  Let the user know that we've
+     * never managed to connect. */
+    if (self -> connection == NULL)
     {
-	XColor color;
-
-	color.red = first -> red + (redNumerator * index / denominator);
-	color.green = first -> green + (greenNumerator * index / denominator);
-	color.blue = first -> blue + (blueNumerator * index / denominator);
-	color.flags = DoRed | DoGreen | DoBlue;
-	XAllocColor(display, colormap, &color);
-	result[index] = color.pixel;
+	StringBuffer_append(buffer, "Unable to connect to elvin server at ");
+    }
+    else
+    {
+	StringBuffer_append(buffer, "Lost connection to elvin server at ");
     }
 
-    return result;
-}
+    StringBuffer_append(buffer, ElvinConnection_host(connection));
+    StringBuffer_appendChar(buffer, ':');
+    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
 
-
-
-
-
-/* Starts the clock if it isn't already going */
-static void StartClock(TickertapeWidget self)
-{
-    if (self -> tickertape.isStopped)
+    if (self -> connection == NULL)
     {
-#ifdef DEBUG
-	fprintf(stderr, "restarting\n");
-#endif /* DEBUG */
-	fflush(stderr);
-	self -> tickertape.isStopped = False;
-	SetClock(self);
+	StringBuffer_appendChar(buffer, '.');
     }
-}
-
-/* Stops the clock */
-static void StopClock(TickertapeWidget self)
-{
-#ifdef DEBUG
-    fprintf(stderr, "stalling\n");
-#endif /* DEBUG */
-    fflush(stderr);
-    self -> tickertape.isStopped = True;
-}
-
-/* Sets the timer if the clock isn't stopped */
-static void SetClock(TickertapeWidget self)
-{
-    if (! self -> tickertape.isStopped)
+    else
     {
-	TtStartTimer(self, 1000 / self -> tickertape.frequency, Tick, (XtPointer) self);
+	StringBuffer_append(buffer, ".  Attempting to reconnect.");
     }
-}
 
-
-/* One interval has passed */
-static void Tick(XtPointer widget, XtIntervalId *interval)
-{
-    TickertapeWidget self = (TickertapeWidget) widget;
-
-    Rotate(self);
-    Redisplay((Widget)self, NULL, 0);
-    SetClock(self);
-}
-
-
-
-
-
-/* Adds a MessageView to the receiver */
-static void AddMessageView(TickertapeWidget self, MessageView view)
-{
-    List_addLast(self -> tickertape.messages, view);
-    MessageView_allocReference(view);
-#ifdef DEBUG
-    fprintf(stderr, "Added message view %p\n", view);
-#endif /* DEBUG */
-
-    /* Make sure the clock is running */
-    StartClock(self);
-}
-
-/* Removes a MessageView from the receiver */
-static MessageView RemoveMessageView(TickertapeWidget self, MessageView view)
-{
-    List_remove(self -> tickertape.messages, view);
-    MessageView_freeReference(view);
-
-    return view;
-}
-
-
-/* Adds a ViewHolder to the receiver */
-static void EnqueueViewHolder(TickertapeWidget self, ViewHolder holder)
-{
-    List_addLast(self -> tickertape.holders, holder);
-    self -> tickertape.visibleWidth += holder -> width;
-}
-
-/* Removes a ViewHolder from the receiver */
-static ViewHolder DequeueViewHolder(TickertapeWidget self)
-{
-    ViewHolder holder = List_dequeue(self -> tickertape.holders);
-    self -> tickertape.visibleWidth -= holder -> width;
-    return holder;
+    /* Display the message on the scroller */
+    message = Message_alloc(
+	NULL,
+	"internal", "tickertape",
+	StringBuffer_getBuffer(buffer), 10,
+	NULL, NULL,
+	0, 0);
+    ReceiveMessage(self, message);
+    StringBuffer_free(buffer);
 }
 
 
 
+#ifdef ORBIT
 /*
- * Semi-private methods
+ *
+ * Orbit-related functions
+ *
  */
 
-/* Answers a GC for displaying the Group field of a message at the given fade level */
-GC TtGCForGroup(TickertapeWidget self, int level)
+/* Callback for when we match the Orbit notification */
+static void OrbitCallback(Tickertape self, en_notify_t notification)
 {
-    XGCValues values;
+    en_type_t type;
+    char *id;
+    char *tickertape;
+    SANITY_CHECK(self);
 
-    values.foreground = self -> tickertape.groupPixels[level];
-    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
-    return self -> tickertape.gc;
-}
-
-/* Answers a GC for displaying the User field of a message at the given fade level */
-GC TtGCForUser(TickertapeWidget self, int level)
-{
-    XGCValues values;
-
-    values.foreground = self -> tickertape.userPixels[level];
-    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
-    return self -> tickertape.gc;
-}
-
-/* Answers a GC for displaying the String field of a message at the given fade level */
-GC TtGCForString(TickertapeWidget self, int level)
-{
-    XGCValues values;
-
-    values.foreground = self -> tickertape.stringPixels[level];
-    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
-    return self -> tickertape.gc;
-}
-
-/* Answers a GC for displaying the field separators at the given fade level */
-GC TtGCForSeparator(TickertapeWidget self, int level)
-{
-    XGCValues values;
-
-    values.foreground = self -> tickertape.separatorPixels[level];
-    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
-    return self -> tickertape.gc;
-}
-
-/* Answers a GC to be used to draw things in the background color */
-GC TtGCForBackground(TickertapeWidget self)
-{
-    return self -> tickertape.backgroundGC;
-}
-
-/* Answers the XFontStruct to be use for displaying the group */
-XFontStruct *TtFontForGroup(TickertapeWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> tickertape.font;
-}
-
-/* Answers the XFontStruct to be use for displaying the user */
-XFontStruct *TtFontForUser(TickertapeWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> tickertape.font;
-}
-
-
-/* Answers the XFontStruct to be use for displaying the string */
-XFontStruct *TtFontForString(TickertapeWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> tickertape.font;
-}
-
-/* Answers the XFontStruct to be use for displaying the user */
-XFontStruct *TtFontForSeparator(TickertapeWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> tickertape.font;
-}
-
-
-/* Answers the number of fade levels */
-Dimension TtGetFadeLevels(TickertapeWidget self)
-{
-    return self -> tickertape.fadeLevels;
-}
-
-/* Answers a Pixmap of the given width */
-Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width, unsigned int height)
-{
-    Pixmap pixmap;
-    pixmap = XCreatePixmap(XtDisplay(self), XtWindow(self), width, height, self -> core.depth);
-    XFillRectangle(XtDisplay(self), pixmap, TtGCForBackground(self), 0, 0, width, height);
-    return pixmap;
-}
-
-/* Sets a timer to go off in interval milliseconds */
-XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
-			  XtTimerCallbackProc proc, XtPointer client_data)
-{
-    return XtAppAddTimeOut(
-	XtWidgetToApplicationContext((Widget)self),
-	interval, proc, client_data);
-}
-
-/* Stops a timer from going off */
-void TtStopTimer(TickertapeWidget self, XtIntervalId timer)
-{
-     XtRemoveTimeOut(timer);
-}
-
-
-/*
- * Method Definitions
- */
-
-/* ARGSUSED */
-static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
-{
-    TickertapeWidget self = (TickertapeWidget) widget;
-
-    self -> tickertape.isStopped = True;
-    self -> tickertape.messages = List_alloc();
-    self -> tickertape.holders = List_alloc();
-    self -> tickertape.offset = 0;
-    self -> tickertape.visibleWidth = 0;
-    self -> tickertape.nextVisible = 0;
-    self -> tickertape.realCount = 0;
-
-    /* Make sure we have a width */
-    if (self -> core.width == 0)
+    /* Get the id of the zone (if provided) */
+    if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
     {
-	self -> core.width = 400;
+	/* Can't subscribe without a zone id */
+	return;
     }
 
-    /* Make sure we have a height */
-    if (self -> core.height == 0)
+    /* Get the status (if provided) */
+    if ((en_search(notification, "tickertape", &type, (void **)&tickertape) != 0) ||
+	(type != EN_STRING))
     {
-	self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
+	/* Not provided or not a string -- can't determine a useful course of action */
+	return;
     }
 
-    /* Ensure that we always have at least a blank view holder around */
-    EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
-}
-
-/* Realize the widget by creating a window in which to display it */
-static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes)
-{
-    TickertapeWidget self = (TickertapeWidget) widget;
-    Display *display = XtDisplay(self);
-    Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
-    XColor colors[5];
-
-    /* Initialize colors */
-    colors[0].pixel = self -> core.background_pixel;
-    colors[1].pixel = self -> tickertape.groupPixel;
-    colors[2].pixel = self -> tickertape.userPixel;
-    colors[3].pixel = self -> tickertape.stringPixel;
-    colors[4].pixel = self -> tickertape.separatorPixel;
-    XQueryColors(display, colormap, colors, 5);
-
-    /* Create a window and couple graphics contexts */
-    XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
-    CreateGC(self);
-
-    /* Allocate colors */
-    self -> tickertape.groupPixels = CreateFadedColors(
-	display, colormap, &colors[1], &colors[0], self -> tickertape.fadeLevels);
-    self -> tickertape.userPixels = CreateFadedColors(
-	display, colormap, &colors[2], &colors[0], self -> tickertape.fadeLevels);
-    self -> tickertape.stringPixels = CreateFadedColors(
-	display, colormap, &colors[3], &colors[0], self -> tickertape.fadeLevels);
-    self -> tickertape.separatorPixels = CreateFadedColors(
-	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
-}
-
-
-/* Dequeue a ViewHolder if it is no longer visible */
-static void OutWithTheOld(TickertapeWidget self)
-{
-    ViewHolder holder;
-
-    while ((holder = List_first(self -> tickertape.holders)) != NULL)
+    /* See if we're subscribing */
+    if (strcasecmp(tickertape, "true") == 0)
     {
-	/* See if the first holder has scrolled off the left edge */
-	if (self -> tickertape.offset < holder -> width)
+	OrbitSubscription subscription;
+	char *title;
+
+	/* Get the title of the zone (if provided) */
+	if ((en_search(notification, "zone.title", &type, (void **)&title) != 0) ||
+	    (type != EN_STRING))
 	{
+	    title = "Untitled Zone";
+	}
+
+	/* If we already have a subscription, then update the title and quit */
+	if ((subscription = Hashtable_get(self -> orbitSubscriptionsById, id)) != NULL)
+	{
+	    OrbitSubscription_setTitle(subscription, title);
 	    return;
 	}
 
-	/* It has -- remove it from the queue */
-	holder = DequeueViewHolder(self);
-	    
-	if (holder -> view)
-	{
-	    self -> tickertape.realCount--;
-	}
+	/* Otherwise create a new Subscription and record it in the table */
+	subscription = OrbitSubscription_alloc(
+	    title, id,
+	    (OrbitSubscriptionCallback)ReceiveMessage, self);
+	Hashtable_put(self -> orbitSubscriptionsById, id, subscription);
 
-	self -> tickertape.offset = 0;
-	ViewHolder_free(holder);
+	/* Register the subscription with the ElvinConnection and the ControlPanel */
+	OrbitSubscription_setConnection(subscription, self -> connection);
+	OrbitSubscription_setControlPanel(subscription, self -> controlPanel);
     }
-}
 
-/* Enqueue a ViewHolder if there's space for one */
-static void InWithTheNew(TickertapeWidget self)
-{
-    while (self -> tickertape.visibleWidth - self -> tickertape.offset < self -> core.width)
+    /* See if we're unsubscribing */
+    if (strcasecmp(tickertape, "false") == 0)
     {
-	MessageView next;
-
-	/* Find a message that hasn't expired */
-	next = List_get(self -> tickertape.messages, self -> tickertape.nextVisible);
-	while ((next != NULL) && (MessageView_isTimedOut(next)))
+	OrbitSubscription subscription = Hashtable_remove(self -> orbitSubscriptionsById, id);
+	if (subscription != NULL)
 	{
-	    RemoveMessageView(self, next);
-	    next = List_get(self -> tickertape.messages, self -> tickertape.nextVisible);
-	}
-	self -> tickertape.nextVisible++;
-
-	/* If at end of list, add a spacer */
-	if (next == NULL)
-	{
-	    ViewHolder last = List_last(self -> tickertape.holders);
-	    ViewHolder holder;
-	    unsigned long lastWidth;
-	    unsigned long width;
-
-	    if (last == NULL)
-	    {
-		width = self -> core.width;
-		lastWidth = 0;
-	    }
-	    else
-	    {
-		lastWidth = last -> width;
-		if (self -> core.width < last -> width + END_SPACING)
-		{
-		    width = END_SPACING;
-		}
-		else
-		{
-		    width = self -> core.width - last -> width;
-		}
-	    }
-
-	    self -> tickertape.nextVisible = 0;
-	    holder = ViewHolder_alloc(NULL, width);
-	    holder -> previous_width = lastWidth;
-	    EnqueueViewHolder(self, holder);
-	}
-	/* otherwise add message */
-	else
-	{
-	    EnqueueViewHolder(self, ViewHolder_alloc(next, MessageView_getWidth(next)));
-	    self -> tickertape.realCount++;
+	    OrbitSubscription_setConnection(subscription, NULL);
+	    OrbitSubscription_setControlPanel(subscription, NULL);
 	}
     }
 }
 
-/* Move the messages along */
-static void Rotate(TickertapeWidget self)
+
+/* Subscribes to the Orbit meta-subscription */
+static void SubscribeToOrbit(Tickertape self)
 {
-    self -> tickertape.offset += self -> tickertape.step;
+    StringBuffer buffer;
+    SANITY_CHECK(self);
 
-    OutWithTheOld(self);
-    InWithTheNew(self);
+    /* Construct the subscription expression */
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "exists(orbit.view_update) && exists(tickertape) && ");
+    StringBuffer_append(buffer, "user == \"");
+    StringBuffer_append(buffer, self -> user);
+    StringBuffer_append(buffer, "\"");
 
-    /* If no messages around then stop spinning */
-    if ((self -> tickertape.realCount == 0) && List_isEmpty(self -> tickertape.messages))
-    {
-	StopClock(self);
-    }
+    /* Subscribe to the meta-subscription */
+    ElvinConnection_subscribe(
+	self -> connection, StringBuffer_getBuffer(buffer),
+	(NotifyCallback)OrbitCallback, self);
+
+    StringBuffer_free(buffer);
 }
 
-
-/* ARGSUSED */
-/* Repaints all of the ViewHolders' views */
-static void Redisplay(Widget widget, XEvent *event, Region region)
-{
-    TickertapeWidget self = (TickertapeWidget)widget;
-    void *context[4];
-
-#ifdef DEBUG
-    /* Fill in any areas that aren't redrawn so we can spot redisplay bugs... */
-    XFillRectangle(
-	XtDisplay(widget), XtWindow(self), self -> tickertape.gc,
-	0, 0, self -> core.width, self -> core.height);
-#endif /* 0 */
-    context[0] = (void *)widget;
-    context[1] = (void *)XtWindow(self);
-    context[2] = (void *)(0 - self -> tickertape.offset);
-    context[3] = (void *)0;
-    List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
-}
-
-/* FIX THIS: should actually do something? */
-static void Destroy(Widget widget)
-{
-#ifdef DEBUG
-    fprintf(stderr, "Destroy %p\n", widget);
-#endif /* DEBUG */
-}
-
-
-
-/* Update the widget of the blank view */
-static void ViewHolder_Resize(ViewHolder self, TickertapeWidget widget, long *x)
-{
-    long width;
-
-    /* If x < 0 then we don't want to resize (but we do want to update x) */
-    if (*x < 0)
-    {
-	*x += self -> width;
-	return;
-    }
-
-    /* Skip any ViewHolders with actual text */
-    if (self -> view != NULL)
-    {
-	return;
-    }
-
-    /* Ok, we've got the blank one.  Update its size (and make sure
-       the visibleWidth is properly updated */
-    widget -> tickertape.visibleWidth -= self -> width;
-    width = widget -> core.width - self -> previous_width;
-    self -> width = (width < END_SPACING) ? END_SPACING : width;
-    widget -> tickertape.visibleWidth += self -> width;
-}
-
-
-/* Find the empty view and update its width */
-static void Resize(Widget widget)
-{
-    TickertapeWidget self = (TickertapeWidget) widget;
-    long x = 0 - self -> tickertape.offset;
-
-#if DEBUG
-    fprintf(stderr, "Resize %p\n", widget);
-#endif /* DEBUG */
-
-    List_doWithWith(self -> tickertape.holders, ViewHolder_Resize, self, &x);
-
-    /* Make sure we have the right number of things visible */
-    OutWithTheOld(self);
-    InWithTheNew(self);
-}
-
-/* What should this do? */
-static Boolean SetValues(
-    Widget current,
-    Widget request,
-    Widget new,
-    ArgList args,
-    Cardinal *num_args)
-{
-#ifdef DEBUG
-    fprintf(stderr, "SetValues\n");
-#endif /* DEBUG */
-    return False;
-}
-
-/* What should this do? */
-static XtGeometryResult QueryGeometry(
-    Widget widget,
-    XtWidgetGeometry *intended,
-    XtWidgetGeometry *preferred)
-{
-#ifdef DEBUG
-    fprintf(stderr, "QueryGeometry\n");
-#endif /* DEBUG */
-
-    return XtGeometryYes;
-}
-
-
-/* Locates the message at the given offset (NULL if none) */
-static MessageView messageAtOffset(TickertapeWidget self, int offset)
-{
-    long x = offset + self -> tickertape.offset;
-    MessageView view = NULL;
-
-    List_doWithWith(self -> tickertape.holders, ViewHolder_locate, &x, &view);
-    return view;
-}
-
-/* Answers the message under the mouse in the given event */
-static MessageView messageAtEvent(TickertapeWidget self, XEvent *event)
-{
-    if ((event -> type == KeyPress) || (event -> type == KeyRelease))
-    {
-	XKeyEvent *keyEvent = (XKeyEvent *) event;
-	return messageAtOffset(self, keyEvent -> x);
-    }
-
-    if ((event -> type == ButtonPress) || (event -> type == ButtonRelease))
-    {
-	XButtonEvent *buttonEvent = (XButtonEvent *) event;
-	return messageAtOffset(self, buttonEvent -> x);
-    }
-
-    if (event -> type == MotionNotify)
-    {
-	XMotionEvent *motionEvent = (XMotionEvent *) event;
-	return messageAtOffset(self, motionEvent -> x);
-    }
-
-    return NULL;
-}
-
+#endif /* ORBIT */
 
 /*
- * Action definitions
+ *
+ * Exported function definitions 
+ *
  */
 
-/* Called when the button is pressed */
-void Menu(Widget widget, XEvent *event)
+/* Answers a new Tickertape for the given user using the given file as
+ * her groups file and connecting to the notification service
+ * specified by host and port */
+Tickertape Tickertape_alloc(
+    char *user,
+    char *groupsFile, char *usenetFile,
+    char *host, int port,
+    Widget top)
 {
-    TickertapeWidget self = (TickertapeWidget) widget;
-    MessageView view = messageAtEvent(self, event);
-    Message message = view ? MessageView_getMessage(view) : NULL;
-    XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer) message);
+    Tickertape self = (Tickertape) malloc(sizeof(struct Tickertape_t));
+#ifdef SANITY
+    self -> sanity_check = sanity_value;
+#endif /* SANITY */
+    self -> user = strdup(user);
+    self -> groupsFile = strdup(groupsFile);
+    self -> usenetFile = strdup(usenetFile);
+    self -> top = top;
+    self -> subscriptions = ReadGroupsFile(self);
+    self -> usenetSubscription = ReadUsenetFile(self);
+    self -> mailSubscription = MailSubscription_alloc(
+	user, (MailSubscriptionCallback)ReceiveMessage, self);
+    self -> connection = NULL;
+
+    InitializeUserInterface(self);
+
+    /* Connect to elvin and subscribe */
+    self -> connection = ElvinConnection_alloc(
+	host, port, 	XtWidgetToApplicationContext(top),
+	(DisconnectCallback)Disconnect, self,
+	(ReconnectCallback)Reconnect, self);
+    List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
+
+    /* Subscribe to the Usenet subscription if we have one */
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
+    }
+
+    /* Subscribe to the Mail subscription if we have one */
+    if (self -> mailSubscription != NULL)
+    {
+	MailSubscription_setConnection(self -> mailSubscription, self -> connection);
+    }
+
+#ifdef ORBIT
+    /* Listen for Orbit-related notifications and alert the world to our presence */
+    self -> orbitSubscriptionsById = Hashtable_alloc(37);
+    SubscribeToOrbit(self);
+#endif /* ORBIT */
+
+    PublishStartupNotification(self);
+    return self;
 }
 
-static void DecodeMime(Widget widget, XEvent *event)
+/* Free the resources consumed by a Tickertape */
+void Tickertape_free(Tickertape self)
 {
-    TickertapeWidget self = (TickertapeWidget) widget;
-    MessageView view = messageAtEvent(self, event);
-    
-    if (view)
+    SANITY_CHECK(self);
+
+    if (self -> user)
     {
-	MessageView_decodeMime(view);
+	free(self -> user);
     }
-    else
+
+    if (self -> groupsFile)
     {
-#ifdef DEBUG
-	fprintf(stderr, "none\n");
-#endif /* DEBUG */
+	free(self -> groupsFile);
     }
+
+    /* How do we free a Widget? */
+
+    if (self -> subscriptions)
+    {
+	List_free(self -> subscriptions);
+    }
+
+#ifdef ORBIT
+    if (self -> orbitSubscriptionsById)
+    {
+	Hashtable_free(self -> orbitSubscriptionsById);
+    }
+#endif /* ORBIT */
+
+    if (self -> connection)
+    {
+	ElvinConnection_free(self -> connection);
+    }
+
+    if (self -> controlPanel)
+    {
+	ControlPanel_free(self -> controlPanel);
+    }
+
+    /* How do we free a ScrollerWidget? */
+
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#else
+    free(self);
+#endif /* SANITY */
 }
 
-static void Delete(Widget widget, XEvent *event)
-{
-    TickertapeWidget self = (TickertapeWidget) widget;
-    MessageView view = messageAtEvent(self, event);
 
-    if (view)
-    {
-	MessageView_expire(view);
-    }
-    else
-    {
-#ifdef DEBUG       
-	fprintf(stderr, "missed\n");
-#endif /* DEBUG */
-    }
+/* Handle the notify action */
+void Tickertape_handleNotify(Tickertape self, Widget widget)
+{
+    /* Pass this on to the control panel */
+    ControlPanel_handleNotify(self -> controlPanel, widget);
 }
 
-/*
- *Public methods
- */
 
-/* Adds a Message to the receiver */
-void TtAddMessage(TickertapeWidget self, Message message)
+/* Handle the quit action */
+void Tickertape_handleQuit(Tickertape self, Widget widget)
 {
-    AddMessageView(self, MessageView_alloc(self, message));
+    /* If we get the quit action from the top-level widget or the tickertape then quit */
+    if ((widget == self -> top) || (widget == (Widget) self -> scroller))
+    {
+	XtDestroyApplicationContext(XtWidgetToApplicationContext(widget));
+	exit(0);
+    }
+
+    /* Otherwise close the control panel window */
+    XtPopdown(widget);
 }
 
+/* Debugging */
+void Tickertape_debug(Tickertape self)
+{
+    SANITY_CHECK(self);
+
+    printf("Tickertape\n");
+    printf("  user = \"%s\"\n", self -> user);
+    printf("  groupsFile = \"%s\"\n", self -> groupsFile);
+    printf("  usenetFile = \"%s\"\n", self -> usenetFile);
+    printf("  top = 0x%p\n", self -> top);
+    printf("  subscriptions = 0x%p\n", self -> subscriptions);
+#ifdef ORBIT
+    printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
+#endif /* ORBIT */
+    printf("  connection = 0x%p\n", self -> connection);
+    printf("  controlPanel = 0x%p\n", self -> controlPanel);
+    printf("  scroller = 0x%p\n", self -> scroller);
+}
 

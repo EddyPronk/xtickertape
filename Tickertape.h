@@ -1,76 +1,37 @@
-/* $Id: Tickertape.h,v 1.6 1998/11/05 01:54:57 phelps Exp $ */
+/*
+ * $Id: Tickertape.h,v 1.7 1998/12/17 01:26:13 phelps Exp $
+ * COPYRIGHT!
+ *
+ * Tickertape represents a scroller and control panel and manages the
+ * connection between them, the notification service and the user.
+ */
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
 
-/*
- A Tickertape scroller widget
+typedef struct Tickertape_t *Tickertape;
 
- Class:		tickertapeWidgetClass
- Class Name:	Tickertape
- Superclass:	Core
+#include <X11/Intrinsic.h>
 
- Resources added by the Tickertape widget:
+/* Answers a new Tickertape for the given user using the given file as
+ * her groups file and connecting to the notification service
+ * specified by host and port */
+Tickertape Tickertape_alloc(
+    char *user,
+    char *groupsFile, char *usenetFile,
+    char *host, int port,
+    Widget top);
 
- Name		Class		RepType		Default Value
- ----		-----		-------	-----------
- font		Font		XFontStruct *	XtDefaultFont
- groupPixel	GroupPixel	Pixel		Blue
- userPixel	UerPixel		Pixel		Green
- stringPixel	StringPixel	Pixel		Red
- separatorPixel	SeparatorPixel	Pixel		Black
- fadeLevels	FadeLevels	Dimension	5
- frequency	Frequency	Dimension	24
- stepSize		StepSize		Dimension	1
+/* Frees the resources used by the Tickertape */
+void Tickertape_free(Tickertape self);
 
- background	     Background		Pixel		XtDefaultBackground
- border		     BorderColor	Pixel		XtDefaultForeground
- borderWidth	     BorderWidth	Dimension	1
- cursor		     Cursor		Cursor		None
- cursorName	     Cursor		String		NULL
- destroyCallback     Callback		Pointer		NULL
- height		     Height		Dimension	0
- insensitiveBorder   Insensitive	Pixmap		Gray
- mappedWhenManaged   MappedWhenManaged	Boolean		True
- pointerColor        Foreground         Pixel           XtDefaultForeground
- pointerColorBackground Background      Pixel           XtDefaultBackground
- sensitive	     Sensitive		Boolean		True
- width		     Width		Dimension	0
- x		     Position		Position	0
- y		     Position		Position	0
+/* Prints out debugging information about the Tickertape */
+void Tickertape_debug(Tickertape self);
 
- */
+/* Handles the notify action */
+void Tickertape_handleNotify(Tickertape self, Widget widget);
 
-
-#define XtNgroupPixel "groupPixel"
-#define XtCGroupPixel "GroupPixel"
-#define XtNuserPixel "userPixel"
-#define XtCUserPixel "UserPixel"
-#define XtNstringPixel "stringPixel"
-#define XtCStringPixel "StringPixel"
-#define XtNseparatorPixel "separatorPixel"
-#define XtCSeparatorPixel "SeparatorPixel"
-#define XtNfadeLevels "fadeLevels"
-#define XtCFadeLevels "FadeLevels"
-#define XtNfrequency "frequency"
-#define XtCFrequency "Frequency"
-#define XtNstepSize "stepSize"
-#define XtCStepSize "StepSize"
-
-typedef struct _TickertapeClassRec *TickertapeWidgetClass;
-typedef struct _TickertapeRec *TickertapeWidget;
-
-extern WidgetClass tickertapeWidgetClass;
-
-
-/*
- *Public methods
- */
-
-#include "Message.h"
-
-/* Adds a Message to the receiver */
-void TtAddMessage(TickertapeWidget self, Message message);
-
+/* Handles the quit action */
+void Tickertape_handleQuit(Tickertape self, Widget widget);
 
 #endif /* TICKERTAPE_H */

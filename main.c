@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.34 1998/11/05 01:55:12 phelps Exp $ */
+/* $Id: main.c,v 1.35 1998/12/17 01:26:13 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xmu/Editres.h>
-#include "Ticker.h"
+#include "Tickertape.h"
 
 #include "red.xbm"
 #include "white.xbm"
