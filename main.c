@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.67 1999/12/02 01:48:39 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.68 1999/12/06 13:06:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
-	&context, "Tickertape",
+	&context, "XTickertape",
 	NULL, 0, &argc, argv, NULL,
 	XtNborderWidth, 0,
 	NULL);
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
 
-    /* Create a Tickertape */
+    /* Create a tickertape */
     tickertape = tickertape_alloc(user, domain, ticker_dir, groups_file, usenet_file, elvin_url, top);
 
     /* Set up SIGHUP to reload the subscriptions */

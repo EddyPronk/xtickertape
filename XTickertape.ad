@@ -114,7 +114,7 @@
 !
 ! Scroller action translations
 !
-Tickertape.scroller.translations: #override \n\
+*.scroller.translations: #override \n\
 	<Btn1Down>: start-drag()\n\
 	<Btn1Motion>: drag()\n\
 	<Btn1Up>: show-menu() \n\

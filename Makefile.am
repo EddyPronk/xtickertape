@@ -25,14 +25,14 @@ man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
 # and also the show-url script
-EXTRA_DIST = Tickertape.ad show-url $(man_MANS)
+EXTRA_DIST = XTickertape.ad show-url $(man_MANS)
 
 
 # Put the app-defaults somewhere...
 x11libdir = $(libdir)/X11
 appdefaultsdir = $(x11libdir)/app-defaults
 
-# Construct Tickertape from Tickertape.ad
+# Construct XTickertape from XTickertape.ad
 install-data-local:
 	$(mkinstalldirs) $(appdefaultsdir)
-	$(INSTALL_DATA) $(srcdir)/Tickertape.ad $(appdefaultsdir)/Tickertape
+	$(INSTALL_DATA) $(srcdir)/XTickertape.ad $(appdefaultsdir)/XTickertape
