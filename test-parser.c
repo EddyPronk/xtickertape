@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include "ast.h"
@@ -27,44 +30,52 @@ static int parsed(void *rock, uint32_t count, subscription_t *subs, elvin_error_
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
-    elvin_error_t error = NULL;
+    elvin_error_t error = elvin_error_alloc();
     parser_t parser;
-    char buffer[2048];
-    size_t length;
-    int fd;
+    int i;
 
+    /* Allocate a new parser */
     if ((parser = parser_alloc(parsed, (void *)13, error)) == NULL)
     {
 	fprintf(stderr, "parser_alloc(): failed\n");
 	abort();
     }
 
-    /* Read stdin and put it through the parser */
-    fd = STDIN_FILENO;
-    while (1)
+    /* Assume the args are filenames */
+    for (i = 1; i < argc; i++)
     {
-	if ((length = read(fd, buffer, 2048)) < 0)
+	char *filename = argv[i];
+	int fd;
+
+	/* Open the file */
+	if ((fd = open(argv[i], O_RDONLY)) < 0)
 	{
-	    perror("read(): failed");
+	    perror("open(): failed");
 	    exit(1);
 	}
 
-	if (! parser_parse(parser, buffer, length, error))
+	/* Parse its contents */
+	if (! parser_parse_file(parser, fd, filename, error))
 	{
-	    exit(1);
+	    fprintf(stderr, "parser_parse_file(): failed\n");
+	    elvin_error_fprintf(stderr, "en", error);
 	}
 
-	if (length < 1)
+	/* Close the file */
+	if (close(fd) < 0)
 	{
-	    /* Clean up */
-	    if (! parser_free(parser, error))
-	    {
-		fprintf(stderr, "parser_free(): failed\n");
-		exit(1);
-	    }
-	    
-	    elvin_memory_report();
-	    exit(0);
+	    perror("close(): failed");
+	    exit(1);
 	}
     }
+
+    /* Clean up */
+    if (! parser_free(parser, error))
+    {
+	fprintf(stderr, "parser_free(): failed\n");
+	elvin_error_fprintf(stderr, "en", error);
+	exit(1);
+    }
+
+    exit(0);
 }
