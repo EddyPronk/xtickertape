@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.16 2000/04/11 09:36:26 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.17 2000/04/11 13:58:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -87,6 +87,9 @@ struct usenet_sub
 
     /* The argument for the receiver's callback */
     void *rock;
+
+    /* Non-zero if we're waiting on a change to the subscription */
+    int is_pending;
 };
 
 
@@ -129,7 +132,7 @@ static void notify_cb(
     }
 
     /* Prepent `usenet:' to the beginning of the group field */
-    if ((newsgroups = (char *)malloc(strlen(USENET_PREFIX) + strlen(string) - 1)) == NULL)
+    if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
     {
 	return;
     }
@@ -211,9 +214,9 @@ static void notify_cb(
 	    }
 
 	    if ((buffer = (char *)malloc(
-		strlen(NEWS_URL) +
+		sizeof(NEWS_URL) +
 		strlen(news_host) +
-		strlen(message_id) - 3)) == NULL)
+		strlen(message_id) - 4)) == NULL)
 	    {
 		mime_type = NULL;
 		mime_args = NULL;
@@ -481,17 +484,27 @@ usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
     self -> subscription = NULL;
     self -> callback = callback;
     self -> rock = rock;
+    self -> is_pending = 0;
     return self;
 }
     
 /* Releases the resources consumed by the receiver */
 void usenet_sub_free(usenet_sub_t self)
 {
+    /* Free the subscription expression */
     if (self -> expression != NULL)
     {
 	free(self -> expression);
+	self -> expression = NULL;
     }
 
+    /* Don't free a pending subscription */
+    if (self -> is_pending)
+    {
+	return;
+    }
+
+    /* It should be safe to free the subscription now */
     free(self);
 }
 
@@ -568,7 +581,31 @@ static void subscribe_cb(
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     self -> subscription = subscription;
+    self -> is_pending = 0;
+
+    /* Unsubscribe if we were pending when we were freed */
+    if (self -> expression == NULL)
+    {
+	usenet_sub_set_connection(self, NULL, error);
+    }
 }
+
+/* Callback for an unsubscribe request */
+static void unsubscribe_cb(
+    elvin_handle_t handle, int result,
+    elvin_sub_t subscription, void *rock,
+    elvin_error_t error)
+{
+    usenet_sub_t self = (usenet_sub_t)rock;
+    self -> is_pending = 0;
+
+    /* Free the receiver if we were pending when we were freed */
+    if (self -> expression == NULL)
+    {
+	usenet_sub_free(self);
+    }
+}
+
 
 /* Sets the receiver's elvin connection */
 void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error)
@@ -584,6 +621,8 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
 	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
 	    abort();
 	}
+
+	self -> is_pending = 1;
     }
 
     /* Connect to the new one */
@@ -600,5 +639,7 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
 	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
 	    abort();
 	}
+
+	self -> is_pending = 1;
     }
 }
