@@ -1,0 +1,1 @@
+make INCLUDES='-I/usr/openwin/include -I/usr/local/dstc/include/elvin3 -I/usr/local/dstc/include' DEFINES='-D__SPARC_SUN_SOLARIS2_5 -DUSE_ELVIN -DDEBUG' LIBS='-lXaw3d -lXmu -lXt -lX11 -lvin'
