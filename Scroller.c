@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.21 1999/06/16 04:48:40 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.22 1999/06/20 12:39:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,9 +38,10 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.21 1999/06/16 04:48:40 phelps E
 #include <X11/StringDefs.h>
 
 #include "ScrollerP.h"
-#include "MessageView.h"
+#include "glyph.h"
 
 
+/* FIX THIS: should compute based on the width of some number of 'n's */
 #define END_SPACING 30
 
 /*
@@ -144,9 +145,11 @@ static char defaultTranslations[] =
 /*
  * Method declarations
  */
+static void scroll(ScrollerWidget self, int offset);
+
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
 static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
-static void Rotate(ScrollerWidget self);
+/*static void Rotate(ScrollerWidget self);*/
 static void Redisplay(Widget widget, XEvent *event, Region region);
 static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
 static void Destroy(Widget widget);
@@ -216,18 +219,6 @@ WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
  * Private Methods
  */
 
-/* Holder for MessageViews and Spacers */
-struct view_holder
-{
-    view_holder_t next;
-    MessageView view;
-    unsigned int width;
-    unsigned int previous_width;
-};
-
-static view_holder_t view_holder_alloc(MessageView view, unsigned int width);
-static void view_holder_free(view_holder_t self);
-
 static void CreateGC(ScrollerWidget self);
 static Pixel *CreateFadedColors(Display *display, Colormap colormap,
 				XColor *first, XColor *last, unsigned int levels);
@@ -236,49 +227,6 @@ static void StopClock(ScrollerWidget self);
 static void SetClock(ScrollerWidget self);
 static void Tick(XtPointer widget, XtIntervalId *interval);
 
-static void AddMessageView(ScrollerWidget self, MessageView view);
-static MessageView RemoveMessageView(ScrollerWidget self, MessageView view);
-static void EnqueueViewHolder(ScrollerWidget self, view_holder_t view_holder);
-static view_holder_t DequeueViewHolder(ScrollerWidget self);
-static view_holder_t RemoveViewHolder(ScrollerWidget self, view_holder_t view_holder);
-
-/* Allocates and initializes new view_holder_t.  Returns a valid
- * view_holder_t if successful, NULL otherwise */
-static view_holder_t view_holder_alloc(MessageView view, unsigned int width)
-{
-    view_holder_t self;
-
-    if ((self = (view_holder_t) malloc(sizeof(struct view_holder))) == NULL)
-    {
-	return NULL;
-    }
-
-    self -> next = NULL;
-    self -> width = width;
-    self -> previous_width = 0;
-
-    if (view != NULL)
-    {
-	self -> view = MessageView_allocReference(view);
-    }
-    else
-    {
-	self -> view = NULL;
-    }
-
-    return self;
-}
-
-/* Frees a view_holder_t */
-static void view_holder_free(view_holder_t self)
-{
-    if (self -> view)
-    {
-	MessageView_freeReference(self -> view);
-    }
-
-    free(self);
-}
 
 
 /* Answers a GC with the right background color and font */
@@ -366,132 +314,90 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
-    Rotate(self);
+    scroll(self, self -> scroller.step);
     Redisplay((Widget)self, NULL, 0);
     SetClock(self);
 }
 
 
 
-
-
-/* Adds a MessageView to the receiver */
-static void AddMessageView(ScrollerWidget self, MessageView view)
+/*
+ * Answers the width of the gap for the given scroller width and sum
+ * of the widths of all glyphs
+ */
+static int gap_width(unsigned int scroller_width, unsigned int glyphs_width)
 {
-    List_addLast(self -> scroller.messages, view);
-    MessageView_allocReference(view);
-#ifdef DEBUG
-    fprintf(stderr, "Added message view %p\n", view);
-#endif /* DEBUG */
-
-    /* Make sure the clock is running */
-    StartClock(self);
-}
-
-/* Removes a MessageView from the receiver */
-static MessageView RemoveMessageView(ScrollerWidget self, MessageView view)
-{
-    List_remove(self -> scroller.messages, view);
-    MessageView_freeReference(view);
-
-    return view;
+    return (scroller_width < glyphs_width + END_SPACING) ?
+	END_SPACING : scroller_width - glyphs_width;
 }
 
 
-/* Adds a view_holder_t to the receiver */
-static void EnqueueViewHolder(ScrollerWidget self, view_holder_t holder)
+/* Answers True if the queue contains only the gap */
+static int queue_is_empty(glyph_t head)
 {
-    holder -> next = NULL;
-    self -> scroller.visibleWidth += holder -> width;
-
-    /* If the list is empty, then simply add this view_holder_t */
-    if (self -> scroller.last_holder == NULL)
-    {
-	self -> scroller.holders = holder;
-    }
-    else
-    {
-	self -> scroller.last_holder -> next = holder;
-    }
-
-    self -> scroller.last_holder = holder;
+    /* If the last element of the queue is also the first, then the
+     * queue is empty */
+    return head == head -> previous;
 }
 
-/* Removes the first view_holder_t from the receiver */
-static view_holder_t DequeueViewHolder(ScrollerWidget self)
+/* Adds an item to a circular queue of glyphs */
+static void queue_add(glyph_t head, glyph_t glyph)
 {
-    view_holder_t holder;
+    glyph_t tail = head -> previous;
 
-    /* Watch for an empty list */
-    if ((holder = self -> scroller.holders) == NULL)
-    {
-	return holder;
-    }
-
-    self -> scroller.holders = holder -> next;
-
-    /* Watch for removal of the only holder */
-    if (self -> scroller.last_holder == holder)
-    {
-	self -> scroller.last_holder = NULL;
-    }
-
-    /* See if we've updated the spacer */
-    if (holder == self -> scroller.spacer)
-    {
-	self -> scroller.spacer = NULL;
-    }
-
-    /* Update the visible width */
-    self -> scroller.visibleWidth -= holder -> width;
-    return holder;
+    glyph -> previous = tail;
+    glyph -> next = head;
+    tail -> next = glyph;
+    head -> previous = glyph;
 }
 
-/* Removes a view_holder_t from the receiver */
-static view_holder_t RemoveViewHolder(ScrollerWidget self, view_holder_t holder)
+/* Removes an item from a circular queue of glyphs */
+static void queue_remove(glyph_t glyph)
 {
-    view_holder_t probe;
+    glyph -> previous -> next = glyph -> next;
+    glyph -> next -> previous = glyph -> previous;
 
-    /* Short cut for removing the first view_holder_t */
-    if (self -> scroller.holders == holder)
-    {
-	return DequeueViewHolder(self);
-    }
-
-    /* Otherwise we spin through the list looking for the holder */
-    for (probe = self -> scroller.holders; probe != NULL; probe = probe -> next)
-    {
-	if (probe -> next == holder)
-	{
-	    probe -> next = holder -> next;
-
-	    /* Watch for removal of the last view_holder_t */
-	    if (self -> scroller.last_holder == holder)
-	    {
-		self -> scroller.last_holder = probe;
-	    }
-
-	    /* Update the spacer */
-	    if (holder == self -> scroller.spacer)
-	    {
-		self -> scroller.spacer = NULL;
-	    }
-
-	    /* Update the visible width */
-	    self -> scroller.visibleWidth -= holder -> width;
-	    return holder;
-	}
-    }
-
-    /* Didn't find the view_holder_t in the list.  Return NULL */
-    return NULL;
+    glyph -> previous = NULL;
+    glyph -> next = NULL;
 }
 
+/* Adds all glyphs on the pending queue to the visible queue */
+static void queue_append_queue(glyph_t head, glyph_t queue)
+{
+    glyph_t tail;
+
+    /* If queue is empty, then we're done */
+    if (queue_is_empty(queue))
+    {
+	return;
+    }
+
+    /* Locate our tail */
+    tail = head -> previous;
+
+    /* Tell head and the tail of the queue where to go */
+    queue -> next -> previous = tail;
+    queue -> previous -> next = head;
+
+    /* Update our queue to point to the new elements */
+    head -> previous = queue -> previous;
+    tail -> next = queue -> next;
+
+    /* Update the old queue's gap to point to itself */
+    queue -> previous = queue;
+    queue -> next = queue;
+}
 
 
 /*
  * Semi-private methods
  */
+
+/* Answers the GC for the background */
+GC ScGCForBackground(ScrollerWidget self)
+{
+    return self -> scroller.backgroundGC;
+}
 
 /* Answers a GC for displaying the Group field of a message at the given fade level */
 GC ScGCForGroup(ScrollerWidget self, int level)
@@ -584,30 +490,10 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer)
      XtRemoveTimeOut(timer);
 }
 
-/* Repaints the given MessageView (if visible */
+/* Repaints the given MessageView (if visible) */
 void ScRepaintMessageView(ScrollerWidget self, MessageView view)
 {
-    view_holder_t holder;
-    long offset;
-
-    /* Locate the offset and view_holder of the MessageView */
-    offset = -self -> scroller.offset;
-    for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
-    {
-	/* If we find the chosen one, then repaint it.
-	 * NOTE: this message might appear more than once in the
-	 * scroller, so we have to scan all of the view_holders. */
-	if (holder -> view == view)
-	{
-	    MessageView_redisplay(
-		view, self -> scroller.pixmap, offset,
-		0, 0, self -> core.width, self -> core.height);
-
-	    Redisplay((Widget)self, NULL, NULL);
-	}
-
-	offset += holder -> width;
-    }
+    printf("ScRepaintMessageView\n");
 }
 
 
@@ -622,14 +508,16 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     ScrollerWidget self = (ScrollerWidget) widget;
 
     self -> scroller.isStopped = True;
-    self -> scroller.messages = List_alloc();
-    self -> scroller.holders = NULL;
-    self -> scroller.last_holder = NULL;
-    self -> scroller.spacer = NULL;
-    self -> scroller.offset = 0;
-    self -> scroller.visibleWidth = 0;
-    self -> scroller.nextVisible = 0;
-    self -> scroller.realCount = 0;
+
+    /* Initialize the queue to only contain the gap with a 0 offset */
+    self -> scroller.glyphs = gap_alloc(self);
+    self -> scroller.left_glyph = self -> scroller.glyphs;
+    self -> scroller.right_glyph = self -> scroller.glyphs;
+    self -> scroller.glyphs_width = 0;
+    self -> scroller.next_glyphs_width = 0;
+    self -> scroller.pending = gap_alloc(self);
+    self -> scroller.left_offset = 0;
+    self -> scroller.right_offset = 0;
 
     /* Make sure we have a width */
     if (self -> core.width == 0)
@@ -642,10 +530,6 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     {
 	self -> core.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
     }
-
-    /* Ensure that we always have at least a blank view holder around */
-    EnqueueViewHolder(self, view_holder_alloc(NULL, self -> core.width));
-    self -> scroller.spacer = self -> scroller.last_holder;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -678,44 +562,236 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
     Paint(self, 0, 0, self -> core.width, self -> core.height);
 
     /* Allocate colors */
+    self -> scroller.separatorPixels = CreateFadedColors(
+	display, colormap, &colors[4], &colors[0], self -> scroller.fadeLevels);
     self -> scroller.groupPixels = CreateFadedColors(
 	display, colormap, &colors[1], &colors[0], self -> scroller.fadeLevels);
     self -> scroller.userPixels = CreateFadedColors(
 	display, colormap, &colors[2], &colors[0], self -> scroller.fadeLevels);
     self -> scroller.stringPixels = CreateFadedColors(
 	display, colormap, &colors[3], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.separatorPixels = CreateFadedColors(
-	display, colormap, &colors[4], &colors[0], self -> scroller.fadeLevels);
 }
 
 
-/* Dequeue a view_holder_t if it is no longer visible */
+
+/*
+ * The Scroller widget operates as follows:
+ *
+ * 1. messages are kept in a circular queue in the order in which they
+ *    are received.
+ *
+ * 2. a message may appear on the scroller in two places, but only no
+ *    overlapping portions may appear.  i.e. if 75% a message appears
+ *    on the left edge the scroller then no more than 25% of that
+ *    message may appear on the right edge of the scroller 
+ *
+ * 3. there is a gap glyph which is always in the circular queue.  The 
+ *    width of this gap may be adjusted in order to accomodate rule 2, 
+ *    but must have at least some minimum width.
+ *
+ * 4. during normal scrolling, there must be no `jumps.'  This means
+ *     that expired messages (but not deleted ones) may not be removed 
+ *     from the circular queue until they are no longer visible.  It
+ *     also means that the width gap may not be adjusted if it is
+ *     visible unless (a) it is either the leftmost or rightmost (or
+ *     both) glyph on the scroller and (b) the adjustment in size can
+ *     be compensated for by adjusting the appropriate offset.
+ *
+ * 5. New messages are not added in the middle of the scroller, but
+ *     are instead scrolled into place between the last message and
+ *     the gap.  Messages which cannot be immediately added to the
+ *     circular queue because of this constraint are kept in a
+ *     separate `pending' queue until they can be added.
+ */
+
+/* Update the left_glyph pointer when appropriate */
+static void adjust_left(ScrollerWidget self, glyph_t right)
+{
+    /* Keep looping until we're down to the gap with nothing else to add */
+    while (! (queue_is_empty(self -> scroller.glyphs) && queue_is_empty(self -> scroller.pending)))
+    {
+	glyph_t left = self -> scroller.left_glyph;
+	int width = left -> get_width(left);
+
+	/* If the left_glyph is too far to the left, then we must find 
+	 * a new left_glyph */
+	if (width <= self -> scroller.left_offset)
+	{
+/*	    printf("L is too far left!\n");*/
+	    self -> scroller.left_glyph = left -> next;
+	    self -> scroller.left_offset -= width;
+#if 0
+	    /* If the old leftmost glyph was the gap and the rightmost 
+	     * glyph is not the gap, then the gap isn't visible and we 
+	     * can freely update the glyphs_width */
+	    if ((left == self -> scroller.glyphs) && (left != right))
+	    {
+		self -> scroller.glyphs_width = self -> scroller.next_glyphs_width;
+	    }
+
+	    /* If the old leftmost glyph has expired and it isn't also 
+	     * the rightmost glyph, then it must no longer be visible, 
+	     * so we'll dequeue it and free it here.  We will already
+	     * have adjusted the glyphs_width when we got the
+	     * expiration callback, so there's no need to update it
+	     * here */
+	    if ((left -> is_expired(left)) && (left != right))
+	    {
+		queue_remove(left);
+		left -> free(left);
+	    }
+
+	    /* If the new leftmost glyph is the gap then we can
+	     * decrease the total glyph width (and thereby increase
+	     * the gap's width).  Also adjust the left_offset to avoid 
+	     * any nasty jumps. */
+	    if ((left -> next == self -> scroller.glyphs) &&
+		(self -> scroller.glyphs_width > self -> scroller.next_glyphs_width))
+	    {
+		width = left -> next -> get_width(left -> next);
+		self -> scroller.glyphs_width = self -> scroller.next_glyphs_width;
+		self -> scroller.left_offset = left -> next -> get_width(left -> next) - width;
+	    }
+#endif /* 0 */
+	}
+	/* If the left_glyph is too far to the right, then we must
+	 * find a new left_glyph */
+	else if (self -> scroller.left_offset < 0)
+	{
+/*	    printf("L is too far right!\n");*/
+
+	    /* If the left_glyph was the gap, then add any pending
+	     * glyphs to the circular queue */
+	    if (left == self -> scroller.glyphs)
+	    {
+		queue_append_queue(self -> scroller.glyphs, self -> scroller.pending);
+	    }
+
+	    /* Locate the new leftmost glyph */
+	    self -> scroller.left_glyph = left -> previous;
+	    self -> scroller.left_offset += left -> previous -> get_width(left -> previous);
+	}
+	/* Otherwise, we're done */
+	else
+	{
+	    return;
+	}
+    }
+}
+
+/* Update the right glyph pointer if appropriate and attempt to
+ * resolve some constraints */
+static void adjust_right(ScrollerWidget self, glyph_t left)
+{
+    /* Keep looping until we're down to the gap with nothing else to add */
+    while (! (queue_is_empty(self -> scroller.glyphs) && queue_is_empty(self -> scroller.pending)))
+    {
+	glyph_t right = self -> scroller.right_glyph;
+	int width = right -> get_width(right);
+
+	/* If the right_glyph is too far to the right then we must
+	 * find ourselves a new right_glyph */
+	if (width <= self -> scroller.right_offset)
+	{
+/*	    printf("R is too far right!\n");*/
+	    self -> scroller.right_glyph = right -> next;
+	    self -> scroller.right_offset -= width;
+	}
+	/* If the right_glyph is too far to the left then we must find
+	 * ourselves a new right_glyph */
+	else if (self -> scroller.right_offset < 0)
+	{
+/*	    printf("R is too far left!\n");*/
+
+	    /* If the right_glyph was the gap then add any pending
+	     * glyphs to the circular queue */
+	    if (right == self -> scroller.glyphs)
+	    {
+		queue_append_queue(self -> scroller.glyphs, self -> scroller.pending);
+	    }
+
+	    /* Locate the new rightmost glyph */
+	    self -> scroller.right_glyph = right -> next;
+	    self -> scroller.right_offset += right -> next -> get_width(right -> next);
+	}
+	/* Otherwise we're done */
+	else
+	{
+	    return;
+	}
+    }
+}
+
+
+
+
+/* Scrolls the glyphs in the widget by offset pixels */
+static void scroll(ScrollerWidget self, int offset)
+{
+    glyph_t left = self -> scroller.left_glyph;
+    glyph_t right = self -> scroller.right_glyph;
+
+    self -> scroller.left_offset += offset;
+    self -> scroller.right_offset -= offset;
+
+    /* Scroll the pixmap */
+    XCopyArea(
+	XtDisplay(self), self -> scroller.pixmap, self -> scroller.pixmap,
+	self -> scroller.backgroundGC,
+	0, 0, self -> core.width, self -> core.height, -offset, 0);
+
+    /* Update the left_glyph and right_glyph pointers */
+    adjust_left(self, right);
+    adjust_right(self, left);
+
+    /* Scroll the display and paint in the missing bits */
+    if (offset < 0)
+    {
+	Paint(self, 0, 0, -offset, self -> core.height);
+    }
+    else
+    {
+	Paint(self, self -> core.width - offset, 0, offset, self -> core.height);
+    }
+}
+
+
+#if 0
 static void OutWithTheOld(ScrollerWidget self)
 {
-    view_holder_t holder;
-
-    while ((holder = self -> scroller.holders) != NULL)
+    /* Keep looping until we're down to just the gap */
+    while (! queue_is_empty(self -> scroller.glyphs))
     {
-	/* See if the first holder has scrolled off the left edge */
-	if (self -> scroller.offset < holder -> width)
+	glyph_t left = self -> scroller.left_glyph;
+	unsigned int width = left -> get_width(left);
+
+	/* FIX THIS: assumes right-to-left scrolling */
+	/* If we haven't scrolled anything off the left edge, then we're done */
+	if (self -> scroller.offset < width)
 	{
 	    return;
 	}
 
-	/* It has -- remove it from the queue */
-	RemoveViewHolder(self, holder);
-
-	/* Update the count of real views */
-	if (holder -> view != NULL)
+	/* If we've just dropped the gap off the left edge, then
+	 * update the total width. */
+	if (left == self -> scroller.glyphs)
 	{
-	    self -> scroller.realCount--;
+	    self -> scroller.glyphs_width = self -> scroller.next_glyphs_width;
 	}
 
-	/* Update the offset */
-	self -> scroller.offset -= holder -> width;
+	/* Move the left_glyph pointer on to the next glyph and update 
+	 * the offset. */
+	self -> scroller.left_glyph = left -> next;
+	self -> scroller.offset -= width;
 
-	/* Free the view_holder_t */
-	view_holder_free(holder);
+	/* If the glyph has expired, then remove it from the queue,
+	 * update the next glyphs_width and free it */
+	if (left -> is_expired(left))
+	{
+	    self -> scroller.next_glyphs_width -= width;
+	    queue_remove(left);
+	    left -> free(left);
+	}
     }
 }
 
@@ -728,7 +804,7 @@ static void InWithTheNew(ScrollerWidget self)
 
 	/* Find a message that hasn't expired */
 	next = List_get(self -> scroller.messages, self -> scroller.nextVisible);
-	while ((next != NULL) && (MessageView_isTimedOut(next)))
+	while ((next != NULL) && (MessageView_isExpired(next)))
 	{
 	    RemoveMessageView(self, next);
 	    next = List_get(self -> scroller.messages, self -> scroller.nextVisible);
@@ -782,7 +858,8 @@ static void InWithTheNew(ScrollerWidget self)
 /* Move the messages along */
 static void Rotate(ScrollerWidget self)
 {
-    self -> scroller.offset += self -> scroller.step;
+    self -> scroller.left_offset += self -> scroller.step;
+    self -> scroller.right_offset -= self -> scroller.step;
 
     /* Scroll the pixmap */
     XCopyArea(
@@ -796,8 +873,8 @@ static void Rotate(ScrollerWidget self)
     OutWithTheOld(self);
     InWithTheNew(self);
 
-    /* If no messages around then stop spinning */
-    if ((self -> scroller.realCount == 0) && List_isEmpty(self -> scroller.messages))
+    /* If no messages showing then pause */
+    if (queue_is_empty(self -> scroller.glyphs))
     {
 	view_holder_t holder;
 	StopClock(self);
@@ -823,47 +900,36 @@ static void Rotate(ScrollerWidget self)
 	self, self -> core.width - self -> scroller.step, 0, 
 	self -> scroller.step, self -> core.height);
 }
+#endif /* 0 */
 
 
 /* Repaints the view of each view_holder_t */
 static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height)
 {
     Widget widget = (Widget)self;
-    view_holder_t holder;
+    Display *display = XtDisplay(widget);
+    glyph_t glyph;
+    long end = x + width;
     long offset;
     long next;
 
     /* Reset this portion of the pixmap to the background color */
     XFillRectangle(
-	XtDisplay(widget), self -> scroller.pixmap, self -> scroller.backgroundGC,
+	display, self -> scroller.pixmap, self -> scroller.backgroundGC,
 	x, y, width, height);
 
-    /* Draw each visible view_holder_t */
-    offset = -self -> scroller.offset;
-    for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
+    /* Draw each visible glyph */
+    glyph = self -> scroller.left_glyph;
+    offset = -self -> scroller.left_offset;
+    while (offset < end)
     {
-	next = offset + holder -> width;
+	next = offset + glyph -> get_width(glyph);
 	if (x <= next)
-	{	
-	    if (holder -> view != NULL)
-	    {
-		MessageView_redisplay(
-		    holder -> view, self -> scroller.pixmap, offset,
-		    x, y, width, height);
-	    }
-
-#ifdef DEBUG
-	    if (self -> scroller.separatorPixels != NULL)
-	    {
-		ScGCForSeparator(self, 0);
-	    }
-
-	    XDrawRectangle(
-		XtDisplay(widget), self -> scroller.pixmap, self -> scroller.gc,
-		offset, 0, holder -> width - 1, self -> core.height - 1);
-#endif /* DEBUG */
+	{
+	    glyph -> paint(glyph, display, self -> scroller.pixmap, offset, x, y, width, height);
 	}
 
+	glyph = glyph -> next;
 	offset = next;
     }
 }
@@ -893,6 +959,7 @@ static void Destroy(Widget widget)
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     view_holder_t spacer;
 
@@ -934,6 +1001,7 @@ static void Resize(Widget widget)
     /* Repaint our offscreen pixmap and copy it to the display*/
     Paint(self, 0, 0, self -> core.width, self -> core.height);
     Redisplay(widget, NULL, 0);
+#endif /* 0 */
 }
 
 /* What should this do? */
@@ -965,6 +1033,7 @@ static XtGeometryResult QueryGeometry(
 
 
 /* Locates the view_holder_t at the given offset (NULL if none) */
+#if 0
 static view_holder_t ViewHolderAtOffset(ScrollerWidget self, int offset)
 {
     long x = offset + self -> scroller.offset;
@@ -989,8 +1058,11 @@ static view_holder_t ViewHolderAtOffset(ScrollerWidget self, int offset)
 
     return NULL;
 }
+#endif /* 0 */
 
-/* Answers the view_holder_t corresponding to the location of the last event */
+/* Answers the view_holder_t corresponding to the location of the last
+ * event */
+#if 0
 static view_holder_t ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
 {
     switch (event -> type)
@@ -1021,8 +1093,10 @@ static view_holder_t ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
 	}
     }
 }
+#endif /* 0 */
 
 /* Answers the message under the mouse in the given event */
+#if 0
 static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
 {
     view_holder_t holder;
@@ -1034,6 +1108,7 @@ static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
 
     return holder -> view;
 }
+#endif /* 0 */
 
 
 /*
@@ -1043,15 +1118,20 @@ static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
 /* Called when the button is pressed */
 void Menu(Widget widget, XEvent *event)
 {
+    printf("menu\n");
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     MessageView view = MessageAtEvent(self, event);
     Message message = view ? MessageView_getMessage(view) : NULL;
     XtCallCallbackList((Widget)self, self -> scroller.callbacks, (XtPointer) message);
+#endif /* 0 */
 }
 
 /* Spawn metamail to decode the Message's MIME attachment */
 static void DecodeMime(Widget widget, XEvent *event)
 {
+    printf("decode mime\n");
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     MessageView view = MessageAtEvent(self, event);
     
@@ -1065,12 +1145,15 @@ static void DecodeMime(Widget widget, XEvent *event)
 	fprintf(stderr, "none\n");
 #endif /* DEBUG */
     }
+#endif /* 0 */
 }
 
 
 /* Expires a Message in short order */
 static void Delete(Widget widget, XEvent *event)
 {
+    printf("delete\n");
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     MessageView view = MessageAtEvent(self, event);
 
@@ -1078,11 +1161,14 @@ static void Delete(Widget widget, XEvent *event)
     {
 	MessageView_expire(view);
     }
+#endif /* 0 */
 }
 
 /* Simple remove the message from the scroller NOW */
 static void Kill(Widget widget, XEvent *event)
 {
+    printf("kill\n");
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
     view_holder_t holder;
     MessageView view;
@@ -1098,6 +1184,7 @@ static void Kill(Widget widget, XEvent *event)
 	view_holder_free(RemoveViewHolder(self, holder));
 	Resize(widget);
     }
+#endif /* 0 */
 }
 
 /* Scroll more quickly */
@@ -1113,10 +1200,7 @@ static void Slower(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     int step = self -> scroller.step -1;
-    if (step >= 0)
-    {
-	self -> scroller.step = step;
-    }
+    self -> scroller.step = step;
 }
 
 
@@ -1130,7 +1214,26 @@ static void Slower(Widget widget, XEvent *event)
 /* Adds a Message to the receiver */
 void ScAddMessage(ScrollerWidget self, Message message)
 {
-    AddMessageView(self, MessageView_alloc(self, message));
+    glyph_t glyph;
+
+    /* Create a glyph for the message */
+    if ((glyph = message_glyph_alloc(self, message)) == NULL)
+    {
+	return;
+    }
+
+    /* Add it to the list of pending glyphs */
+    queue_add(self -> scroller.pending, glyph);
+    self -> scroller.pending_width += glyph -> get_width(glyph);
+/*    queue_add(self -> scroller.glyphs, glyph);*/
+
+    /* Make sure the clock is running */
+    StartClock(self);
 }
 
+/* Answers the width of the gap glyph */
+int ScGapWidth(ScrollerWidget self)
+{
+    return gap_width(self -> core.width, self -> scroller.glyphs_width);
+}
 

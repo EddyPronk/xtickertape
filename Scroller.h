@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.5 1998/12/24 05:48:29 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.6 1999/06/20 12:39:18 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -55,7 +55,7 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.5 1998/12/24 05:48:29 
  separatorPixel	SeparatorPixel	Pixel		Black
  fadeLevels	FadeLevels	Dimension	5
  frequency	Frequency	Dimension	24
- stepSize		StepSize		Dimension	1
+ stepSize		StepSize		Position	1
 
  background	     Background		Pixel		XtDefaultBackground
  border		     BorderColor	Pixel		XtDefaultForeground

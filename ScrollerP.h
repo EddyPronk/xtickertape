@@ -34,17 +34,15 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.5 1999/06/16 04:34:24 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.6 1999/06/20 12:39:18 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
 
 #include "Scroller.h"
 #include "MessageView.h"
+#include "glyph.h"
 #include "List.h"
-
-/* The structure of a view_holder_t */
-typedef struct view_holder *view_holder_t;
 
 
 /* New fields for the Scroller widget record */
@@ -74,25 +72,63 @@ typedef struct
     Pixel separatorPixel;
     Dimension fadeLevels;
     Dimension frequency;
-    Dimension step;
+    Position step;
 
     /* Private state */
     int isStopped;
-    List messages;
-    view_holder_t holders;
-    view_holder_t last_holder;
-    view_holder_t spacer;
-    long offset;
-    long visibleWidth;
-    unsigned int nextVisible;
-    unsigned int realCount;
+
+    /* The circular queue containing all glyphs */
+    glyph_t glyphs;
+
+    /* The leftmost visible glyph */
+    glyph_t left_glyph;
+
+    /* The rightmost visible glyph */
+    glyph_t right_glyph;
+
+    /* The total width of the glyphs (including expired ones) */
+    unsigned long glyphs_width;
+
+    /* The total width of the glyphs (not including recently expired ones) */
+    unsigned long next_glyphs_width;
+
+    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
+    int left_offset;
+
+    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
+    int right_offset;
+
+    /* The queue containing glyphs which need to be added */
+    glyph_t pending;
+
+    /* The total width of the pending glyphs */
+    unsigned long pending_width;
+
+
+    /* The off-screen pixmap */
     Pixmap pixmap;
+
+    /* The GC used to draw the Scroller's background */
     GC backgroundGC;
+
+    /* The GC used to draw various glyphs */
     GC gc;
-    Pixel *groupPixels;
-    Pixel *userPixels;
-    Pixel *stringPixels;
+
+    /* The array of Pixels used to display the separator portion of a
+     * Message at varying degrees of fading */
     Pixel *separatorPixels;
+
+    /* The array of Pixels used to display the group portion of a
+     * Message at varying degrees of fading */
+    Pixel *groupPixels;
+
+    /* The array of Pixels used to display the user portion of a
+     * Message at varying degrees of fading */
+    Pixel *userPixels;
+
+    /* The array of Pixels used to display the string portion of a
+     * Message at varying degrees of fading */
+    Pixel *stringPixels;
 } ScrollerPart;
 
 
@@ -106,6 +142,9 @@ typedef struct _ScrollerRec
 
 
 /* Semi-private methods */
+
+/* Answers the GC for the background */
+GC ScGCForBackground(ScrollerWidget self);
 
 /* Answers a GC to be used for displaying the group */
 GC ScGCForGroup(ScrollerWidget self, int level);
@@ -144,5 +183,11 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer);
 
 /* Repaints the given MessageView (if visible */
 void ScRepaintMessageView(ScrollerWidget self, MessageView view);
+
+/* Callback for when a message_view_t expires */
+void ScMessageViewExpired(ScrollerWidget self, glyph_t view);
+
+/* Answers the width of the gap glyph */
+int ScGapWidth(ScrollerWidget self);
 
 #endif /* SCROLLERP_H */
