@@ -451,7 +451,6 @@ static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
     }
 
     FileStreamTokenizer_free(tokenizer);
-    fclose(file);
 }
 
 
