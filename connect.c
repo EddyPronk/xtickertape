@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: connect.c,v 1.1 1999/09/26 14:00:18 phelps Exp $";
+static const char cvsid[] = "$Id: connect.c,v 1.2 1999/09/29 06:58:25 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -193,7 +193,7 @@ static void (*QuenchCallback)(elvin_t elvin, void *arg, char *quench) = NULL;
  *
  */
 static void read_input(connection_t self);
-static void connect(connection_t self);
+static void do_connect(connection_t self);
 static void error(elvin_t elvin, void *arg, elvin_error_code_t code, char *message);
 
 
@@ -213,7 +213,7 @@ static void read_input(connection_t self)
 }
 
 /* Attempt to connect to the elvin server */
-static void connect(connection_t self)
+static void do_connect(connection_t self)
 {
     subscription_tuple_t tuple;
 
@@ -232,7 +232,7 @@ static void connect(connection_t self)
 
 	XtAppAddTimeOut(
 	    self -> app_context, pause,
-	    (XtTimerCallbackProc)connect, (XtPointer)self);
+	    (XtTimerCallbackProc)do_connect, (XtPointer)self);
 	self -> retry_pause = (pause * 2 > MAX_PAUSE) ? MAX_PAUSE : pause * 2;
 	self -> state = reconnect_failed_state;
 	return;
@@ -287,7 +287,7 @@ static void error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
     (*self -> disconnect_callback)(self -> disconnect_rock, self);
 
     /* Try to reconnect */
-    connect(self);
+    do_connect(self);
 }
 
 
@@ -313,7 +313,7 @@ connection_t connection_alloc(
     self -> reconnect_callback = reconnect_callback;
     self -> reconnect_rock = reconnect_rock;
     self -> subscriptions = NULL;
-    connect(self);
+    do_connect(self);
 
     return self;
 }
