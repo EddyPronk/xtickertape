@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.122 2001/07/04 11:48:46 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.123 2001/07/10 02:19:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -381,13 +381,23 @@ static void glyph_free(glyph_t self)
 	return;
     }
 
-    /* Sanity check */
+    /* Sanity checks */
+#if 0
+    assert(self -> previous = NULL);
+    assert(self -> next == NULL);
+#endif
     assert(self -> visible_count == 0);
 
     /* Free the message_view */
     if (self -> message_view)
     {
 	message_view_free(self -> message_view);
+    }
+
+    /* Cancel any pending timeout */
+    if (self -> timeout != None)
+    {
+	XtRemoveTimeOut(self -> timeout);
     }
 
     /* Free the glyph itself */
