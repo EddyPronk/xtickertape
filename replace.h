@@ -40,7 +40,7 @@ void *memset(void *s, int c, size_t n);
 
 #ifndef HAVE_SNPRINTF
 /* A dodgy hack for platforms without snprintf() */
-#define snprintf sprintf
+int snprintf(char *s, size_t n, const char *format, ...);
 #endif
 
 #ifndef HAVE_STRCASECMP

@@ -61,6 +61,24 @@ void *memset(void *s, int c, size_t n)
 }
 #endif
 
+#ifndef HAVE_SNPRINTF
+/* A dodgy hack to replace a real snprintf implementation */
+#include <stdarg.h>
+
+int snprintf(char *s, size_t n, const char *format, ...)
+{
+    va_list ap;
+    int result;
+
+    va_start(ap, format);
+    result = vsprintf(s, format, ap);
+    va_end(ap);
+
+    return result;
+}
+
+#endif
+
 #ifndef HAVE_STRCASECMP
 /* A slow but correct implementation of strcasecmp */
 int strcasecmp(const char *s1, const char *s2)
