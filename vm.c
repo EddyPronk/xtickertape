@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.5 2000/11/18 01:18:08 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.6 2000/11/18 04:07:16 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -51,22 +51,12 @@ static const char cvsid[] = "$Id: vm.c,v 2.5 2000/11/18 01:18:08 phelps Exp $";
 #define FLAGS_MASK 0x00000FFF
 
 
-/* Objects are just pointers */
-typedef void **object_t;
-
-/* Handles allow us to refer to GC objects from outside GC space */
-struct vm_object
-{
-    vm_object_t next;
-    object_t object;
-};
-
 
 /* The structure of the virtual machine */
 struct vm
 {
     /* All external pointers into the VM */
-    vm_object_t root_set;
+    object_t root_set;
 
     /* The symbol table */
     object_t symbol_table;
@@ -79,6 +69,11 @@ struct vm
 
     /* The bottom of the stack */
     object_t stack;
+
+    /* --- CURRENT STATE --- */
+
+    /* The current environment */
+    object_t env;
 
     /* The current stack frame */
     uint32_t sp;
@@ -108,7 +103,7 @@ vm_t vm_alloc(elvin_error_t error)
     /* Allocate an initial heap */
     if (! (self -> heap = ELVIN_MALLOC(HEAP_BLOCK_SIZE * POINTER_SIZE, error)))
     {
-	ELVIN_FREE(self, NULL);
+	vm_free(self, NULL);
 	return NULL;
     }
     memset(self -> heap, 0, HEAP_BLOCK_SIZE * POINTER_SIZE);
@@ -119,8 +114,7 @@ vm_t vm_alloc(elvin_error_t error)
     /* Allocate a symbol table */
     if (! (self -> symbol_table = ELVIN_MALLOC(SYMTAB_SIZE * POINTER_SIZE, error)))
     {
-	ELVIN_FREE(self -> heap, NULL);
-	ELVIN_FREE(self, NULL);
+	vm_free(self, NULL);
 	return NULL;
     }
     memset(self -> symbol_table, 0, SYMTAB_SIZE * POINTER_SIZE);
@@ -128,9 +122,17 @@ vm_t vm_alloc(elvin_error_t error)
     /* Allocate an initial stack */
     if (! (self -> stack = ELVIN_MALLOC(STACK_SIZE * POINTER_SIZE, error)))
     {
-	ELVIN_FREE(self -> symbol_table, NULL);
-	ELVIN_FREE(self -> heap, NULL);
-	ELVIN_FREE(self, NULL);
+	vm_free(self, NULL);
+	return NULL;
+    }
+
+    /* Make an empty cons cell to be our root environment */
+    if (! vm_push_nil(self, error) ||
+	! vm_push_nil(self, error) ||
+	! vm_make_cons(self, error) ||
+	! vm_pop(self, &self -> env, error))
+    {
+	vm_free(self, NULL);
 	return NULL;
     }
 
@@ -183,13 +185,20 @@ int vm_top(vm_t self, object_t *result, elvin_error_t error)
 /* Pops and returns the top of the stack */
 int vm_pop(vm_t self, object_t *result, elvin_error_t error)
 {
+    /* Make sure the stack doesn't underflow */
     if (self -> top < 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
 	return 0;
     }
 
-    *result = self -> stack[--self -> top];
+    /* Pop the result if there's a place to put it */
+    self -> top--;
+    if (result)
+    {
+	*result = self -> stack[self -> top];
+    }
+
     return 1;
 }
 
@@ -216,6 +225,40 @@ int vm_swap(vm_t self, elvin_error_t error)
     self -> stack[self -> top - 1] = self -> stack[self -> top - 2];
     self -> stack[self -> top - 2] = swap;
     return 1;
+}
+
+/* Rotates the stack so that the top is `count' places back */
+int vm_rotate(vm_t self, uint32_t count, elvin_error_t error)
+{
+    object_t top;
+    uint32_t i;
+
+    if (self -> top < count + 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow");
+	return 0;
+    }
+
+    /* Grab the top of the stack */
+    top = self -> stack[self -> top - 1];
+
+    /* Push the remaining elements down */
+    for (i = 0; i < count; i++)
+    {
+	self -> stack[self -> top - 1 - i] = self -> stack[self -> top - 2 - i];
+    }
+
+    /* Push the top into the appropriate place */
+    self -> stack[self -> top - 1 - count] = top;
+    return 1;
+}
+
+/* Duplicates the top of the stack and puts it onto the stack */
+int vm_dup(vm_t self, elvin_error_t error)
+{
+    object_t top;
+
+    return vm_top(self, &top, error) && vm_push(self, top, error);
 }
 
 
@@ -395,6 +438,53 @@ int vm_make_cons(vm_t self, elvin_error_t error)
     return vm_push(self, cons, error);
 }
 
+/* Pops a cons cell off the top of the stack and pushes its car on instead */
+int vm_car(vm_t self, elvin_error_t error)
+{
+    object_t cons;
+    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[1], error);
+}
+
+/* Sets the car of a cons cell */
+int vm_set_car(vm_t self, elvin_error_t error)
+{
+    object_t cons, car;
+
+    /* Extract the car and cdr */
+    if (! vm_pop(self, &car, error) || ! vm_top(self, &cons, error))
+    {
+	return 0;
+    }
+
+    /* Assign */
+    cons[1] = car;
+    return 1;
+}
+
+/* Sets the cdr of a cons cell */
+int vm_set_cdr(vm_t self, elvin_error_t error)
+{
+    object_t cons, cdr;
+
+    /* Extract the car and cdr */
+    if (! vm_pop(self, &cdr, error) || ! vm_top(self, &cons, error))
+    {
+	return 0;
+    }
+
+    /* Assign */
+    cons[2] = cdr;
+    return 1;
+}
+
+
+/* Pops a cons cell off the top of the stack and pushes its car on instead */
+int vm_cdr(vm_t self, elvin_error_t error)
+{
+    object_t cons;
+    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[2], error);
+}
+
 /* Reverses the pointers in a list that was constructed upside-down */
 int vm_unwind_list(vm_t self, elvin_error_t error)
 {
@@ -427,6 +517,81 @@ int vm_unwind_list(vm_t self, elvin_error_t error)
     return vm_push(self, cdr, error);
 }
 
+
+
+/* Assigns the value on the top of the stack to the variable up one
+ * place, leaving only the value on the stack */
+int vm_assign(vm_t self, elvin_error_t error)
+{
+    /* FIX THIS: this is wrong for non-root environments */
+    /* Duplicate the value and roll it up before the symbol */
+    return
+	vm_dup(self, error) &&
+	vm_rotate(self, 2, error) &&
+	vm_make_cons(self, error) &&
+	vm_push(self, self -> env, error) &&
+	vm_car(self, error) &&
+	vm_make_cons(self, error) &&
+	vm_push(self, self -> env, error) &&
+	vm_swap(self, error) &&
+	vm_set_car(self, error) &&
+	vm_pop(self, NULL, error);
+}
+
+/* Locates a cons cell in an alist */
+static int do_assoc(vm_t self, object_t alist, object_t symbol, elvin_error_t error)
+{
+    object_t cons = alist;
+
+    while (object_type(cons) == SEXP_CONS)
+    {
+	object_t car = (object_t)cons[1];
+
+	/* Make sure we have a cons cell */
+	if (object_type(car) == SEXP_CONS)
+	{
+	    /* Do we have a match? */
+	    if (symbol == (object_t)car[1])
+	    {
+		return vm_push(self, car, error);
+	    }
+	}
+
+	cons = (object_t)cons[2];
+    }
+
+    /* Not found */
+    return 0;
+}
+
+/* Looks up the value of the symbol on the top of the stack in the
+ * current environment */
+static int lookup(vm_t self, elvin_error_t error)
+{
+    object_t symbol;
+    object_t env = self -> env;
+
+    /* Get the symbol from the stack */
+    if (! vm_pop(self, &symbol, error))
+    {
+	return 0;
+    }
+
+    /* Look for it in this environment */
+    while (env)
+    {
+	if (do_assoc(self, (object_t)env[1], symbol, error))
+	{
+	    return vm_cdr(self, error);
+	}
+
+	env = (object_t)env[2];
+    }
+
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "undefined symbol()");
+    return 0;
+}
+
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error)
 {
@@ -456,8 +621,7 @@ int vm_eval(vm_t self, elvin_error_t error)
 	/* Symbols get looked up in the environment */
 	case SEXP_SYMBOL:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[symbol]");
-	    return 0;
+	    return lookup(self, error);
 	}
 
 	/* Cons cells evaluate to function calls */

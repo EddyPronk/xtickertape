@@ -31,11 +31,11 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.4 2000/11/18 01:19:27 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.5 2000/11/18 04:07:44 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
-typedef struct vm_object *vm_object_t;
+typedef void **object_t;
 
 /* The virtual machine type */
 typedef struct vm *vm_t;
@@ -71,6 +71,12 @@ int vm_free(vm_t self, elvin_error_t error);
 /* Swaps the top two elements on the stack */
 int vm_swap(vm_t self, elvin_error_t error);
 
+/* Pops the top of the vm's stack */
+int vm_pop(vm_t self, object_t *result, elvin_error_t error);
+
+/* Rotates the stack so that the top is `count' places back */
+int vm_rotate(vm_t self, uint32_t count, elvin_error_t error);
+
 /* Push nil onto the vm's stack */
 int vm_push_nil(vm_t self, elvin_error_t error);
 
@@ -100,11 +106,12 @@ int vm_make_cons(vm_t self, elvin_error_t error);
 int vm_unwind_list(vm_t self, elvin_error_t error);
 
 
+/* Assigns the value on the top of the stack to the variable up one
+ * place, leaving only the value on the stack */
+int vm_assign(vm_t self, elvin_error_t error);
+
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error);
-
-
-
 
 
 /* Prints the top of the stack onto stdout */
