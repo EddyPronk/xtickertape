@@ -31,30 +31,14 @@
 #define SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_SUBSCRIPTION_H[] = "$Id: subscription.h,v 2.1 2000/07/07 10:42:07 phelps Exp $";
+static const char cvs_SUBSCRIPTION_H[] = "$Id: subscription.h,v 2.2 2000/07/10 07:43:55 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
 typedef struct subscription *subscription_t;
 
 /* Allocates and initializes a new subscription */
-subscription_t subscription_alloc(
-    char *tag,
-    char *name,
-    uchar *subscription,
-    int in_menu,
-    int auto_mime,
-    elvin_keys_t producer_keys,
-    elvin_keys_t consumer_keys,
-    value_t group,
-    value_t user,
-    value_t message,
-    value_t timeout,
-    value_t mime_type,
-    value_t mime_args,
-    value_t message_id,
-    value_t reply_id,
-    elvin_error_t error);
+subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error);
 
 /* Frees the resources consumed by the subscription */
 int subscription_free(subscription_t self, elvin_error_t error);

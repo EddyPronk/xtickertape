@@ -28,13 +28,14 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: subscription.c,v 2.1 2000/07/07 10:42:06 phelps Exp $";
+static const char cvsid[] = "$Id: subscription.c,v 2.2 2000/07/10 07:43:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <elvin/elvin.h>
+#include <elvin/memory.h>
 #include "ast.h"
 #include "subscription.h"
 
@@ -88,32 +89,54 @@ struct subscription
 
 
 /* Allocates and initializes a new subscription */
-subscription_t subscription_alloc(
-    char *tag,
-    char *name,
-    uchar *expression,
-    int in_menu,
-    int auto_mime,
-    elvin_keys_t producer_keys,
-    elvin_keys_t consumer_keys,
-    value_t group,
-    value_t user,
-    value_t message,
-    value_t timeout,
-    value_t mime_type,
-    value_t mime_args,
-    value_t message_id,
-    value_t reply_id,
-    elvin_error_t error)
+/* Allocates and initializes a new subscription */
+subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error)
 {
-    printf("tag: %s\n", tag ? tag : "NULL");
-    printf("name: %s\n", name ? name : "NULL");
-    printf("expression: %s\n", expression ? (char *)expression : "NULL");
-    printf("in-menu: %s\n", in_menu ? "true" : "false");
-    printf("auto-mime: %s\n", auto_mime ? "true" : "false");
-    printf("producer_keys: %p\n", producer_keys);
-    printf("consumer_keys: %p\n\n", consumer_keys);
-    return (subscription_t)-1;
+    subscription_t self;
+    value_t *value;
+
+    /* Allocate some memory for the new subscription */
+    if (! (self = (subscription_t)ELVIN_MALLOC(sizeof(struct subscription), error)))
+    {
+	return NULL;
+    }
+
+    /* Set all of the values to sane things */
+    memset(self, 0, sizeof(struct subscription));
+
+    /* Copy the tag string */
+    if (! (self -> tag = ELVIN_STRDUP(tag, error)))
+    {
+	subscription_free(self, NULL);
+	return NULL;
+    }
+
+    /* Get the name out of the environment */
+    if (! (value = env_get(env, "name", error)))
+    {
+	if (! (self -> name = ELVIN_STRDUP(self -> tag, error)))
+	{
+	    return NULL;
+	}
+    }
+    else
+    {
+	if (! (self -> name = value_to_string(value, error)))
+	{
+	    return NULL;
+	}
+    }
+
+    printf("name=`%s'\n", self -> name);
+
+    /* FIX THIS: we should keep the environment */
+    /* Free the environment */
+    if (! elvin_hash_free(env, error))
+    {
+	return NULL;
+    }
+
+    return self;
 }
 
 /* Frees the resources consumed by the subscription */
