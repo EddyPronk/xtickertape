@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.47 2003/01/22 14:29:51 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.48 2003/01/27 17:50:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -722,43 +722,6 @@ static int notify_cb(
 #error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
-/* Copy the message's Content-Type into the buffer, and return a
- * pointer to the mime arg.  Note: this is a very dodgy hack that only
- * works because we generate the buffer to begin with and can
- * therefore be confident of its format. */
-static void decode_attachment(
-    char *attachment,
-    size_t length,
-    char *buffer, size_t buflen,
-    char **pointer_out)
-{
-    char *point;
-    char *mark;
-    int count;
-    int ch;
-
-    /* The Content-Type field starts a fixed distance from the start */
-    point = attachment + 32;
-    mark = strchr(point, ';');
-    assert(mark != NULL);
-
-    /* Copy the content into the buffer */
-    count = length - 1 < mark - point ? length - 1 : mark - point;
-    strncpy(buffer, point, count);
-    buffer[count] = '\0';
-
-    /* Replace the last byte of the body (a newline) with a null */
-    ch = attachment[length - 1];
-    assert(ch == '\n');
-    attachment[length - 1] = '\0';
-
-    /* The body starts a fixed distance from the semicolon */
-    *pointer_out = strdup(mark + 20);
-
-    /* Put the byte back */
-    attachment[length - 1] = ch;
-}
-
 /* Sends a message_t using the receiver's information */
 static void send_message(group_sub_t self, message_t message)
 {
@@ -770,8 +733,8 @@ static void send_message(group_sub_t self, message_t message)
     char *attachment;
     uint32_t length;
     char *buffer = NULL;
-    char mime_type[BUFFER_SIZE];
-    char *mime_args = NULL;
+    char *mime_type;
+    char *mime_args;
     
     /* Pull information out of the message */
     timeout = message_get_timeout(message);
@@ -779,13 +742,7 @@ static void send_message(group_sub_t self, message_t message)
     reply_id = message_get_reply_id(message);
     thread_id = message_get_thread_id(message);
     length = message_get_attachment(message, &attachment);
-
-    /* If there's an attachment then try to extract the type and body */
-    if (attachment != NULL)
-    {
-	decode_attachment(attachment, length, mime_type, BUFFER_SIZE, &buffer);
-	mime_args = buffer;
-    }
+    message_decode_attachment(message, &mime_type, &mime_args);
 
 #if ! defined(ELVIN_VERSION_AT_LEAST)
     /* Allocate a new notification */
@@ -905,8 +862,10 @@ static void send_message(group_sub_t self, message_t message)
 	    elvin_error_fprintf(stderr, self -> error);
 	    exit(1);
 	}
+    }
 
-	/* Add the hacked-up mime args */
+    if (mime_args != NULL)
+    {
 	if (elvin_notification_add_string(
 		notification,
 		F2_MIME_ARGS,
@@ -918,7 +877,11 @@ static void send_message(group_sub_t self, message_t message)
 	    exit(1);
 	}
 
-	/* And the hacked-up mime type */
+	free(mime_args);
+    }
+
+    if (mime_type != NULL)
+    {
 	if (elvin_notification_add_string(
 		notification,
 		F2_MIME_TYPE,
@@ -929,6 +892,8 @@ static void send_message(group_sub_t self, message_t message)
 	    elvin_error_fprintf(stderr, self -> error);
 	    exit(1);
 	}
+
+	free(mime_type);
     }
 
     /* Add the Message-ID field */

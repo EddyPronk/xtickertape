@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.79 2003/01/27 17:34:06 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.80 2003/01/27 17:50:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1441,30 +1441,6 @@ static char *get_mime_args(control_panel_t self)
     return result;
 }
 
-/* Returns the first line of an attachment's body, complete with NUL
- * termination */
-char *attachment_first_line(char *attachment, size_t length)
-{
-    char *point;
-    char *string;
-
-    /* Find the position of a '\r' or '\n' */
-    for (point = attachment; point < attachment + length; point++)
-    {
-	if (*point == '\r' || *point == '\n')
-	{
-	    break;
-	}
-    }
-
-    /* Allocate memory */
-    string = (char *)malloc(point - attachment + 1);
-    memcpy(string, attachment, point - attachment);
-    string[point - attachment] = 0;
-    return string;
-}
-
-
 /* Generates a universally unique identifier for a message.  Result
  * should point to a buffer of UUID_SIZE bytes. */
 void create_uuid(control_panel_t self, char *result)
@@ -1605,7 +1581,6 @@ static void deconstruct_message(control_panel_t self, message_t message)
     menu_item_tuple_t tuple;
     char *mime_type;
     char *attachment;
-    char *line;
     size_t length;
 
     /* Set the user field */
@@ -1627,7 +1602,7 @@ static void deconstruct_message(control_panel_t self, message_t message)
     }
 
     /* Decode the mime type and mime arg */
-    if (message_decode_attachment(message, &mime_type, &attachment, &length) < 0)
+    if (message_decode_attachment(message, &mime_type, &attachment) < 0)
     {
 	mime_type = NULL;
 	attachment = NULL;
@@ -1645,15 +1620,15 @@ static void deconstruct_message(control_panel_t self, message_t message)
 	free(mime_type);
     }
 
+    /* Set the mime args if any */
     if (attachment == NULL)
     {
 	set_mime_args(self, "");
     }
     else
     {
-	line = attachment_first_line(attachment, length);
-	set_mime_args(self, line);
-	free(line);
+	set_mime_args(self, attachment);
+	free(attachment);
     }
 }
 
@@ -1855,8 +1830,6 @@ void control_panel_set_status_message(
 {
     char *mime_type = NULL;
     char *attachment = NULL;
-    size_t length = 0;
-    char *string;
     int had_attachment = 0;
 
     /* Bail if we're already displaying that message */
@@ -1878,24 +1851,24 @@ void control_panel_set_status_message(
     if (message)
     {
 	self -> status_message = message_alloc_reference(message);
-	message_decode_attachment(message, &mime_type, &attachment, &length);
+	message_decode_attachment(message, &mime_type, &attachment);
     }
 
     /* If there's a MIME type we can display (text/xxx or x-elvin/url)
      * then display it now */
-    if (mime_type)
+    if (mime_type && attachment)
     {
 	/* This is an ugly hack... */
 	if (strcmp(mime_type, mime_types[0]) == 0 || strncmp(mime_type, mime_types[1], 5) == 0)
 	{
-	    string = attachment_first_line(attachment, length);
-	    show_status(self, string);
+	    show_status(self, attachment);
 	    free(mime_type);
-	    free(string);
+	    free(attachment);
 	    return;
 	}
 
 	free(mime_type);
+	free(attachment);
     }
 
     /* Display the status if the previous message had an attachment */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.22 2003/01/27 17:33:14 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.23 2003/01/27 17:50:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -345,11 +345,7 @@ size_t message_get_attachment(message_t self, char **attachment_out)
 }
 
 /* Decodes the attachment into a content type, character set and body */
-int message_decode_attachment(
-    message_t self,
-    char **type_out,
-    char **body_out,
-    size_t *length_out)
+int message_decode_attachment(message_t self, char **type_out, char **body_out)
 {
     unsigned char *point = (unsigned char *)self -> attachment;
     unsigned char *mark = point;
@@ -358,7 +354,6 @@ int message_decode_attachment(
 
     *type_out = NULL;
     *body_out = NULL;
-    *length_out = 0;
 
     /* If no attachment then return lots of NULLs */
     if (self -> attachment == NULL)
@@ -417,8 +412,16 @@ int message_decode_attachment(
 		    point += 1;
 		}
 
-		*body_out = (char *)point;
-		*length_out = end - point;
+		/* Trim any CRs and LFs from the end of the body */
+		while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
+		{
+		    end--;
+		}
+
+		/* Allocate space for a copy of the body and null-terminate it */
+		*body_out = (char *)malloc(end - point + 1);
+		memcpy(*body_out, point, end - point);
+		(*body_out)[end - point] = 0;
 		return 0;
 	    }
 

@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.10 2003/01/27 17:33:14 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.11 2003/01/27 17:50:43 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -93,11 +93,7 @@ int message_has_attachment(message_t self);
 size_t message_get_attachment(message_t self, char **attachment_out);
 
 /* Decodes the attachment into a content type, character set and body */
-int message_decode_attachment(
-    message_t self,
-    char **type_out,
-    char **body_out,
-    size_t *length_out);
+int message_decode_attachment(message_t self, char **type_out, char **body_out);
 
 /* Answers the receiver's tag */
 char *message_get_tag(message_t self);
