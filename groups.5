@@ -1,0 +1,46 @@
+.TH GROUPS 5 "1998 December 23"
+.ds xt \fIxtickertape\fP
+.ds Xt \fIXtickertape\fP
+.UC 4
+.SH NAME
+groups \- groups subscription file for xtickertape
+.SH DESCRIPTION
+The groups file consists of lines containing group subscription
+expressions.  Empty lines and lines beginning with a hash (#) are
+ignored.  Subscription expressions are of the form:
+.TP
+.B <group name>:<menu op>:<auto op>:<min time>:<max time>
+.TP
+.B group name
+is the name of the tickertape group to which the rest of the line
+relates.
+.TP
+.B menu op
+indicates whether the group should appear in the \fIgroups\fP menu.
+This should be one of \fBmenu\fP or \fBno menu\fP.
+.TP
+.B auto op
+determines whether MIME attachments are automatically viewed upon
+receipt of a notification for this group.  This should be one of
+\fBauto\fP or \fBmanual\fP.
+.TP
+.B min time
+indicates the minimum number of minutes to display a notification in
+this group.  This value overrides the notification's timeout value if
+necessary.
+.TP
+.B max time
+sets the maximum number of minutes to display a notification in this
+group.  This value overrides the notification's timeout value if
+necessary.
+.PP
+The order in which the subscription expressions appear in the groups
+file determines the order in which they will appear in the groups
+menu.
+.SH SEE ALSO
+.BR xtickertape (1),
+.BR elvin (1)
+.SH AUTHORS
+This page was stolen by Ted Phelps <phelps@pobox.com> from the
+original tickertape man page, written by Bill Segall
+<bill@segall.net>.
