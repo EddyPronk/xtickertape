@@ -33,6 +33,9 @@ AC_CHECK_LIB(Xt, XtVaAppInitialize)
 # Check for the X extensions library.
 AC_CHECK_LIB(Xmu, _XEditResCheckMessages)
 
+# Check for the X11 extensions library to see if we can make a shaped icon.
+AC_CHECK_LIB(Xext, XShapeCombineMask)
+
 # Check for the Motif library
 AC_CHECK_LIB(Xm, XmCreatePulldownMenu)
 
