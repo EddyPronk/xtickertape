@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.76 1999/11/22 21:52:16 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.77 1999/11/22 23:50:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -452,15 +452,15 @@ static void queue_add(glyph_t head, glyph_t glyph)
     head -> previous = glyph;
 }
 
-/* Replace an existing queue item with a new one with the same tag */
-static int queue_replace(ScrollerWidget self, glyph_t head, glyph_t glyph, char *tag)
+/* Locates the item in the queue with the given tag */
+static glyph_t queue_find(glyph_t head, char *tag)
 {
     glyph_t probe;
 
-    /* Don't replace if there's no tag */
+    /* Bail out now if there is no tag */
     if (tag == NULL)
     {
-	return 0;
+	return NULL;
     }
 
     /* Look for the tag in the queue */
@@ -474,34 +474,56 @@ static int queue_replace(ScrollerWidget self, glyph_t head, glyph_t glyph, char 
 	    (probe_tag = message_get_tag(message)) != NULL &&
 	    strcmp(tag, probe_tag) == 0)
 	{
-	    /* Swap the message into place */
-	    glyph -> previous = probe -> previous;
-	    probe -> previous -> next = glyph;
-	    probe -> previous = NULL;
-
-	    glyph -> next = probe -> next;
-	    probe -> next -> previous = glyph;
-	    probe -> next = NULL;
-
-	    /* Update the left_glyph if appropriate */
-	    if (self -> scroller.left_glyph == probe)
-	    {
-		self -> scroller.left_glyph = glyph;
-	    }
-
-	    /* Update the right_glyph if appropriate */
-	    if (self -> scroller.right_glyph == probe)
-	    {
-		self -> scroller.right_glyph = glyph;
-	    }
-
-	    /* Clean up */
-	    probe -> free(probe);
-	    return 1;
+	    return probe;
 	}
     }
 
-    return 0;
+    /* Not found */
+    return NULL;
+}
+
+/* Replace an existing queue item with a new one with the same tag */
+static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_glyph)
+{
+    glyph_t previous = old_glyph -> previous;
+    glyph_t next = old_glyph -> next;
+
+    /* Swap the message into place */
+    new_glyph -> previous = previous;
+    previous -> next = new_glyph;
+    old_glyph -> previous = NULL;
+
+    new_glyph -> next = next;
+    next -> previous = new_glyph;
+    old_glyph -> next = NULL;
+
+    /* Update the left_glyph if appropriate */
+    if (self -> scroller.left_glyph == old_glyph)
+    {
+	self -> scroller.left_glyph = new_glyph;
+    }
+
+    /* Update the right_glyph if appropriate */
+    if (self -> scroller.right_glyph == old_glyph)
+    {
+	self -> scroller.right_glyph = new_glyph;
+    }
+
+    /* Clean up */
+    old_glyph -> free(old_glyph);
+}
+
+/* Returns the most recent replacement for the given glyph (if any) */
+static glyph_t queue_find_replacement(glyph_t head, glyph_t glyph)
+{
+    /* If the glyph has not been replaced then return the glyph itself */
+    if ((glyph -> next != NULL) && (glyph -> previous != NULL))
+    {
+	return glyph;
+    }
+
+    /* Otherwise hunt through the queue for the replacement glyph */
+    return queue_find(head, message_get_tag(glyph -> get_message(glyph)));
 }
 
 /* Removes an item from a circular queue of glyphs */
@@ -890,7 +912,10 @@ static void remove_left_holder(ScrollerWidget self)
 	{
 	    if (! probe -> glyph -> is_expired(probe -> glyph))
 	    {
-		self -> scroller.left_glyph = probe -> glyph;
+		/* Be careful to use the replacement if there is one */
+		self -> scroller.left_glyph = queue_find_replacement(
+		    self -> scroller.gap,
+		    probe -> glyph);
 		return;
 	    }
 
@@ -923,7 +948,9 @@ static void remove_right_holder(ScrollerWidget self)
 	{
 	    if (! probe -> glyph -> is_expired(probe -> glyph))
 	    {
-		self -> scroller.right_glyph = probe -> glyph;
+		self -> scroller.right_glyph = queue_find_replacement(
+		    self -> scroller.gap,
+		    probe -> glyph);
 		return;
 	    }
 
@@ -1789,6 +1816,7 @@ static void drag(Widget widget, XEvent *event)
 void ScAddMessage(ScrollerWidget self, message_t message)
 {
     glyph_t glyph;
+    glyph_t probe;
     glyph_holder_t holder;
 
     /* Create a glyph for the message */
@@ -1798,10 +1826,13 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     }
 
     /* Try replacing an existing queue element with the same tag as this one */
-    if (! queue_replace(self, self -> scroller.gap, glyph, message_get_tag(message)))
+    if ((probe = queue_find(self -> scroller.gap, message_get_tag(message))) == NULL)
     {
-	/* Otherwise simply add it to the list of viable glyphs */
 	queue_add(self -> scroller.gap, glyph);
+    }
+    else
+    {
+	queue_replace(self, probe, glyph);
     }
 
     /* Adjust the gap width if possible and appropriate */
