@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.23 2002/04/12 21:48:30 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.24 2002/04/24 17:03:14 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -56,7 +56,7 @@ typedef struct _HistoryClassRec
 
 
 /* The type of outstanding movement events */
-typedef struct delta_queue *delta_queue_t;
+typedef struct translation_queue *translation_queue_t;
 
 /* The history is stored as nodes in a tree and list */
 typedef struct node *node_t;
@@ -150,7 +150,10 @@ typedef struct
     short pointer_y;
 
     /* The queue of outstanding movements */
-    delta_queue_t dqueue;
+    translation_queue_t tqueue;
+
+    /* The end of the queue */
+    translation_queue_t tqueue_end;
 
     /* Non-zero if the history should display threads */
     Boolean is_threaded;
