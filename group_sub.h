@@ -34,14 +34,13 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.3 1999/10/05 02:57:29 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.4 1999/11/18 07:14:52 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
 typedef struct group_sub *group_sub_t;
 
 #include "message.h"
-#include "connect.h"
 #include "panel.h"
 
 /* The format for the callback function */
@@ -70,7 +69,7 @@ char *group_sub_expression(group_sub_t self);
 void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription);
 
 /* Sets the receiver's connection */
-void group_sub_set_connection(group_sub_t self, connection_t connection);
+void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, dstc_error_t error);
 
 /* Registers the receiver with the control panel */
 void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel);

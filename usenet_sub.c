@@ -28,12 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.6 1999/10/19 00:52:14 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.7 1999/11/18 07:14:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <elvin/elvin.h>
 #include "usenet_sub.h"
 
 
@@ -57,8 +58,8 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.6 1999/10/19 00:52:14 phelps 
 "ELVIN_CLASS == \"NEWSWATCHER\" && " \
 "ELVIN_SUBCLASS == \"MONITOR\" && (%s)"
 
-#define PATTERN_ONLY "%sNEWSGROUPS matches(\"%s\")"
-#define PATTERN_PLUS "(%sNEWSGROUPS matches(\"%s\"))"
+#define PATTERN_ONLY "%sregex(NEWSGROUPS, \"%s\")"
+#define PATTERN_PLUS "(%sregex(NEWSGROUPS, \"%s\"))"
 
 #define USENET_PREFIX "usenet: %s"
 #define NEWS_URL "news://%s/%s"
@@ -72,11 +73,11 @@ struct usenet_sub
     /* The length of the subscription expression */
     size_t expression_size;
 
-    /* The receiver's elvin connection */
-    connection_t connection;
+    /* The receiver's elvin connection handle */
+    elvin_handle_t handle;
 
-    /* The receiver's connection info */
-    void *connection_info;
+    /* The reciever's subscription id */
+    int64_t subscription_id;
 
     /* The receiver's callback */
     usenet_sub_callback_t callback;
@@ -86,11 +87,18 @@ struct usenet_sub
 };
 
 
-/* Callbacks for matching notifications */
-static void handle_notify(usenet_sub_t self, en_notify_t notification)
+/* Delivers a notification which matches the receiver's subscription expression */
+static void notify_cb(
+    elvin_handle_t handle,
+    int64_t subscription_id,
+    elvin_notification_t notification,
+    int is_secure,
+    void *rock,
+    dstc_error_t error)
 {
+    usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
-    en_type_t type;
+    av_tuple_t tuple;
     char *string;
     char *newsgroups;
     char *name;
@@ -99,9 +107,19 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     char *mime_args;
     char *buffer = NULL;
 
+    /* If we don't have a callback than bail out now */
+    if (self -> callback == NULL)
+    {
+	return;
+    }
+
     /* Get the newsgroups to which the message was posted */
-    if ((en_search(notification, NEWSGROUPS, &type, (void **)&string) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, NEWSGROUPS, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	string = tuple -> value.s;
+    }
+    else
     {
 	string = "news";
     }
@@ -115,16 +133,26 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     sprintf(newsgroups, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
-    if ((en_search(notification, FROM_NAME, &type, (void **)&name) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, FROM_NAME, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
     {
-	/* Otherwise try to use FROM_EMAIL */
-	if ((en_search(notification, FROM_EMAIL, &type, (void **)&name) != 0) ||
-	    (type != EN_STRING))
+	name = tuple -> value.s;
+    }
+    else
+    {
+	tuple = elvin_notification_lookup(notification, FROM_EMAIL, error);
+	if (tuple != NULL && tuple -> type == ELVIN_STRING)
 	{
-	    /* Otherwise try the From field */
-	    if ((en_search(notification, FROM, &type, (void **)&name) != 0) ||
-		(type != EN_STRING))
+	    name = tuple -> value.s;
+	}
+	else
+	{
+	    tuple = elvin_notification_lookup(notification, FROM, error);
+	    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	    {
+		name = tuple -> value.s;
+	    }
+	    else
 	    {
 		name = "anonymous";
 	    }
@@ -132,55 +160,74 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     }
 
     /* Get the SUBJECT field (if provided) */
-    if ((en_search(notification, SUBJECT, &type, (void **)&subject) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, SUBJECT, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	subject = tuple -> value.s;
+    }
+    else
     {
 	subject = "[no subject]";
     }
 
     /* Get the MIME_ARGS field (if provided) */
-    if ((en_search(notification, MIME_ARGS, &type, (void **)&mime_args) == 0) &&
-	(type == EN_STRING))
+    tuple = elvin_notification_lookup(notification, MIME_ARGS, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
     {
+	mime_args = tuple -> value.s;
+
 	/* Get the MIME_TYPE field (if provided) */
-	if ((en_search(notification, MIME_TYPE, &type, (void **)&mime_type) != 0) ||
-	    (type != EN_STRING))
+	tuple = elvin_notification_lookup(notification, MIME_TYPE, error);
+	if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	{
+	    mime_type = tuple -> value.s;
+	}
+	else
 	{
 	    mime_type = URL_MIME_TYPE;
 	}
     }
-    /* No MIME_ARGS provided.  Construct one using the Message-Id field */
-    else if ((en_search(notification, MESSAGE_ID, &type, (void **)&mime_args) == 0) &&
-	     (type == EN_STRING))
+    /* No MIME_ARGS provided.  Construct one using the Message-ID field */
+    else
     {
-	char *newshost;
-
-	if ((en_search(notification, X_NNTP_HOST, &type, (void **)&newshost) != 0) ||
-	    (type != EN_STRING))
+	tuple = elvin_notification_lookup(notification, MESSAGE_ID, error);
+	if (tuple != NULL && tuple -> type == ELVIN_STRING)
 	{
-	    newshost = "news";
-	}
+	    char *message_id = tuple -> value.s;
+	    char *news_host;
 
-	if ((buffer = (char *)malloc(
-	    strlen(NEWS_URL) + strlen(newshost) + strlen(mime_args) - 3)) == NULL)
+	    tuple = elvin_notification_lookup(notification, X_NNTP_HOST, error);
+	    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	    {
+		news_host = tuple -> value.s;
+	    }
+	    else
+	    {
+		news_host = "news";
+	    }
+
+	    if ((buffer = (char *)malloc(
+		strlen(NEWS_URL) +
+		strlen(news_host) +
+		strlen(message_id) - 3)) == NULL)
+	    {
+		mime_type = NULL;
+		mime_args = NULL;
+	    }
+	    else
+	    {
+		sprintf(buffer, NEWS_URL, news_host, message_id);
+		mime_args = buffer;
+		mime_type = NEWS_MIME_TYPE;
+	    }
+	}
+	else
 	{
 	    mime_type = NULL;
 	    mime_args = NULL;
 	}
-	else
-	{
-	    sprintf(buffer, NEWS_URL, newshost, mime_args);
+    }
 
-	    mime_args = buffer;
-	    mime_type = NEWS_MIME_TYPE;
-	}
-    }
-    /* No Message-Id field provided either */
-    else
-    {
-	mime_type = NULL;
-	mime_args = NULL;
-    }
 
     /* Construct a message out of all of that */
     if ((message = message_alloc(
@@ -196,7 +243,7 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     }
 
     /* Clean up */
-    en_free(notification);
+    elvin_notification_free(notification, error);
     free(newsgroups);
     if (buffer != NULL)
     {
@@ -270,14 +317,14 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* matches */
 	case O_MATCHES:
 	{
-	    format = "%s matches(\"%s\")";
+	    format = "regex(%s, \"%s\")";
 	    break;
 	}
 
 	/* not [matches] */
 	case O_NOT:
 	{
-	    format = "!%s matches(\"%s\")";
+	    format = "!regex(%s, \"%s\")";
 	    break;
 	}
 
@@ -429,7 +476,8 @@ usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
     /* Initialize its contents */
     self -> expression = NULL;
     self -> expression_size = 0;
-    self -> connection = NULL;
+    self -> handle = NULL;
+    self -> subscription_id = 0;
     self -> callback = callback;
     self -> rock = rock;
     return self;
@@ -500,10 +548,10 @@ int usenet_sub_add(
     }
 
     /* If we're connected then resubscribe */
-    if (self -> connection != NULL)
+    if (self -> handle != NULL)
     {
 	fprintf(stderr, "*** Hmmm\n");
-	exit(1);
+	abort();
     }
 
     /* Clean up */
@@ -511,21 +559,69 @@ int usenet_sub_add(
     return 0;
 }
 
+/* Callback for a subscribe request */
+static void subscribe_cb(
+    elvin_handle_t handle, int result,
+    int64_t subscription_id, void *rock,
+    dstc_error_t error)
+{
+    usenet_sub_t self = (usenet_sub_t)rock;
+
+    printf("subscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
+    if (self -> subscription_id != 0)
+    {
+	printf("uh oh... self -> subscription_id = %lld\n", self -> subscription_id);
+    }
+
+    self -> subscription_id = subscription_id;
+}
+
+/* Callback for an unsubscribe request */
+static void unsubscribe_cb(
+    elvin_handle_t handle, int result,
+    int64_t subscription_id, void *rock,
+    dstc_error_t error)
+{
+    usenet_sub_t self = (usenet_sub_t)rock;
+
+    printf("unsubscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
+    if (self -> subscription_id != subscription_id)
+    {
+	printf("uh oh... self -> subscription_id = %lld\n", self -> subscription_id);
+    }
+
+    self -> subscription_id = 0;
+}
+
 /* Sets the receiver's elvin connection */
-void usenet_sub_set_connection(usenet_sub_t self, connection_t connection)
+void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, dstc_error_t error)
 {
     /* Disconnect from the old connection */
-    if (self -> connection != NULL)
+    if ((self -> handle != NULL) && (self -> subscription_id != 0))
     {
-	connection_unsubscribe(self -> connection, self -> connection_info);
+	if (elvin_async_delete_subscription(
+	    self -> handle, self -> subscription_id,
+	    unsubscribe_cb, self,
+	    error) == 0)
+	{
+	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    abort();
+	}
     }
 
     /* Connect to the new one */
-    self -> connection = connection;
-    if ((self -> connection != NULL) && (self -> expression != NULL))
+    self -> handle = handle;
+
+    if ((self -> handle != NULL) && (self -> expression != NULL))
     {
-	self -> connection_info = connection_subscribe(
-	    self -> connection, self -> expression,
-	    (notify_callback_t)handle_notify, self);
+	if (elvin_async_add_subscription(
+	    self -> handle, self -> expression, NULL, 1,
+	    notify_cb, self,
+	    subscribe_cb, self,
+	    error) == 0)
+	{
+	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    abort();
+	}
     }
 }

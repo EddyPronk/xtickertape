@@ -9,7 +9,6 @@ xtickertape_SOURCES = \
 	history.h history.c \
 	panel.h panel.c \
 	Scroller.h ScrollerP.h Scroller.c \
-	connect.h connect.c \
 	message.h message.c \
 	groups.h groups_parser.h groups_parser.c \
 	group_sub.h group_sub.c \

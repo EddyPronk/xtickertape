@@ -28,12 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.2 1999/10/05 02:57:29 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.3 1999/11/18 07:14:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <elvin/elvin.h>
 #include "group_sub.h"
 
 #define F_VERSION "xtickertape.version"
@@ -68,11 +69,14 @@ struct group_sub
     /* The maximum number of minutes to display a message in the receiver's group */
     int max_time;
 
-    /* The receiver's connection */
-    connection_t connection;
+    /* The receiver's elvin connection handle */
+    elvin_handle_t handle;
 
-    /* The receiver's connection information (for unsubscribing) */
-    void *connection_info;
+    /* A convenient error context */
+    dstc_error_t error;
+
+    /* The receiver's subscription id (for unsubscribing) */
+    int64_t subscription_id;
 
     /* The receiver's control panel */ 
     control_panel_t control_panel;
@@ -98,14 +102,20 @@ struct group_sub
 
 
 /* Delivers a notification which matches the receiver's subscription expression */
-static void handle_notify(group_sub_t self, en_notify_t notification)
+static void notify_cb(
+    elvin_handle_t handle,
+    int64_t subscription_id,
+    elvin_notification_t notification,
+    int is_secure,
+    void *rock,
+    dstc_error_t error)
 {
+    group_sub_t self = (group_sub_t)rock;
     message_t message;
-    en_type_t type;
+    av_tuple_t tuple;
     char *user;
     char *text;
-    void *value;
-    int32 timeout;
+    int timeout;
     char *mime_type;
     char *mime_args;
     char *message_id;
@@ -118,54 +128,61 @@ static void handle_notify(group_sub_t self, en_notify_t notification)
     }
     
     /* Get the user from the notification (if provided) */
-    if ((en_search(notification, F_USER, &type, (void **)&user) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_USER, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	user = tuple -> value.s;
+    }
+    else
     {
 	user = "anonymous";
     }
 
     /* Get the text of the notification (if provided) */
-    if ((en_search(notification, F_TICKERTEXT, &type, (void **)&text) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_TICKERTEXT, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	text = tuple -> value.s;
+    }
+    else
     {
 	text = "";
     }
 
     /* Get the timeout for the notification (if provided) */
-    if (en_search(notification, F_TIMEOUT, &type, (void **)&value) != 0)
+    timeout = 0;
+    tuple = elvin_notification_lookup(notification, F_TIMEOUT, error);
+    if (tuple != NULL)
     {
-	timeout = 0;
-    }
-    else
-    {
-	switch (type)
+	switch (tuple -> type)
 	{
-	    /* If it's a string, then use atoi to make it into an integer */
-	    case EN_STRING:
+	    case ELVIN_INT32:
 	    {
-		char *string = (char *)value;
-		timeout = atoi(string);
+		timeout = (int)tuple -> value.i;
 		break;
 	    }
 
-	    /* If it's an integer, then just copy the value */
-	    case EN_INT32:
+	    case ELVIN_INT64:
 	    {
-		timeout = *((int32 *) value);
+		timeout = (int)tuple -> value.h;
 		break;
 	    }
 
-	    /* If it's a float, then round it to the nearest integer */
-	    case EN_FLOAT:
+	    case ELVIN_REAL64:
 	    {
-		timeout = (0.5 + *((float *) value));
+		timeout = (int)(0.5 + tuple -> value.d);
 		break;
 	    }
 
-	    /* Just use a default for anything else */
+	    case ELVIN_STRING:
+	    {
+		timeout = atoi(tuple -> value.s);
+		break;
+	    }
+
 	    default:
 	    {
-		timeout = 0;
+		break;
 	    }
 	}
     }
@@ -184,29 +201,45 @@ static void handle_notify(group_sub_t self, en_notify_t notification)
     }
 
     /* Get the MIME type (if provided) */
-    if ((en_search(notification, F_MIME_TYPE, &type, (void **)&mime_type) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_MIME_TYPE, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	mime_type = tuple -> value.s;
+    }
+    else
     {
 	mime_type = NULL;
     }
 
     /* Get the MIME args (if provided) */
-    if ((en_search(notification, F_MIME_ARGS, &type, (void **)&mime_args) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_MIME_ARGS, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	mime_args = tuple -> value.s;
+    }
+    else
     {
 	mime_args = NULL;
     }
 
     /* Get the message id (if provided) */
-    if ((en_search(notification, F_MESSAGE_ID, &type, (void **)&message_id) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_MESSAGE_ID, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	message_id = tuple -> value.s;
+    }
+    else 
     {
 	message_id = NULL;
     }
 
     /* Get the reply id (if provided) */
-    if ((en_search(notification, F_IN_REPLY_TO, &type, (void **)&reply_id) != 0) ||
-	(type != EN_STRING))
+    tuple = elvin_notification_lookup(notification, F_IN_REPLY_TO, error);
+    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    {
+	reply_id = tuple -> value.s;
+    }
+    else
     {
 	reply_id = NULL;
     }
@@ -223,14 +256,14 @@ static void handle_notify(group_sub_t self, en_notify_t notification)
 
     /* Clean up */
     message_free(message);
-    en_free(notification);
+    elvin_notification_free(notification, error);
 }
 
 /* Sends a message_t using the receiver's information */
 static void send_message(group_sub_t self, message_t message)
 {
-    en_notify_t notification;
-    int32 timeout;
+    elvin_notification_t notification;
+    unsigned int timeout;
     char *message_id;
     char *reply_id;
     char *mime_args;
@@ -243,29 +276,122 @@ static void send_message(group_sub_t self, message_t message)
     mime_args = message_get_mime_args(message);
     mime_type = message_get_mime_type(message);
 
-    /* Use it to construct a notification */
-    notification = en_new();
-    en_add_string(notification, F_VERSION, VERSION);
-    en_add_string(notification, F_TICKERTAPE, self -> name);
-    en_add_string(notification, F_USER, message_get_user(message));
-    en_add_int32(notification, F_TIMEOUT, timeout);
-    en_add_string(notification, F_TICKERTEXT, message_get_string(message));
-    en_add_string(notification, F_MESSAGE_ID, message_id);
-
-    if (reply_id != NULL)
+    /* Allocate a new notification */
+    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
     {
-	en_add_string(notification, F_IN_REPLY_TO, reply_id);
+	fprintf(stderr, "elvin_notification_alloc(): failed\n");
+	abort();
+    }
+
+    /* Add an xtickertape version tag */
+    if (elvin_notification_add_string8(
+	notification,
+	F_VERSION,
+	VERSION,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    /* Add the TICKERTAPE field */
+    if (elvin_notification_add_string8(
+	notification,
+	F_TICKERTAPE,
+	self -> name,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    /* Add the USER field */
+    if (elvin_notification_add_string8(
+	notification,
+	F_USER,
+	message_get_user(message),
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    /* Add the TICKERTEXT field */
+    if (elvin_notification_add_string8(
+	notification,
+	F_TICKERTEXT,
+	message_get_string(message),
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    /* Add the TIMEOUT field */
+    if (elvin_notification_add_int32(
+	notification,
+	F_TIMEOUT,
+	timeout,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_int32(): failed\n");
+	abort();
     }
 
     /* Add mime information if both mime_args and mime_type are provided */
     if ((mime_args != NULL) && (mime_type != NULL))
     {
-	en_add_string(notification, F_MIME_ARGS, mime_args);
-	en_add_string(notification, F_MIME_TYPE, mime_type);
+	if (elvin_notification_add_string8(
+	    notification,
+	    F_MIME_ARGS,
+	    mime_args,
+	    self -> error) == 0)
+	{
+	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    abort();
+	}
+
+	if (elvin_notification_add_string8(
+	    notification,
+	    F_MIME_TYPE,
+	    mime_type,
+	    self -> error) == 0)
+	{
+	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    abort();
+	}
     }
 
-    connection_publish(self -> connection, notification);
-    en_free(notification);
+    /* Add the Message-ID field */
+    if (elvin_notification_add_string8(
+	notification,
+	F_MESSAGE_ID,
+	message_id,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+
+    /* Add the In-Reply-To field if relevant */
+    if (reply_id != NULL)
+    {
+	if (elvin_notification_add_string8(
+	    notification,
+	    F_IN_REPLY_TO,
+	    reply_id,
+	    self -> error) == 0)
+	{
+	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    abort();
+	}
+    }
+
+
+    /* No keys support yet */
+    elvin_async_notify(self -> handle, notification, NULL, self -> error);
+    elvin_notification_free(notification, self -> error);
 }
 
 
@@ -317,8 +443,9 @@ group_sub_t group_sub_alloc(
     self -> max_time = max_time;
     self -> control_panel = NULL;
     self -> control_panel_rock = NULL;
-    self -> connection = NULL;
-    self -> connection_info = NULL;
+    self -> handle = NULL;
+    self -> error = NULL;
+    self -> subscription_id = 0;
     self -> callback = callback;
     self -> rock = rock;
 
@@ -340,27 +467,6 @@ void group_sub_free(group_sub_t self)
 
     free(self);
 }
-
-#ifdef DEBUG
-/* Prints debugging information */
-void group_sub_debug(group_sub_t self)
-{
-    printf("group_sub_t (%p)\n", self);
-    printf("  name = \"%s\"\n", self -> name ? self -> name : "<none>");
-    printf("  expression = \"%s\"\n", self -> expression ? self -> expression : "<none>");
-    printf("  in_menu = %s\n", self -> in_menu ? "true" : "false");
-    printf("  has_nazi = %s\n", self -> has_nazi ? "true" : "false");
-    printf("  min_time = %d\n", self -> min_time);
-    printf("  max_time = %d\n", self -> max_time);
-    printf("  connection = %p\n", self -> connection);
-    printf("  connection_info = %p\n", self -> connection_info);
-    printf("  control_panel = %p\n", self -> control_panel);
-    printf("  control_panel_rock = %p\n", self -> control_panel_rock);
-    printf("  callback = %p\n", self -> callback);
-    printf("  rock = %p\n", self -> rock);
-}
-#endif /* DEBUG */
-
 
 /* Answers the receiver's subscription expression */
 char *group_sub_expression(group_sub_t self)
@@ -388,21 +494,70 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 }
 
 
-/* Sets the receiver's connection */
-void group_sub_set_connection(group_sub_t self, connection_t connection)
+/* Callback for a subscribe request */
+static void subscribe_cb(
+    elvin_handle_t handle, int result,
+    int64_t subscription_id, void *rock,
+    dstc_error_t error)
 {
-    if (self -> connection != NULL)
+    group_sub_t self = (group_sub_t)rock;
+
+    printf("subscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
+    if (self -> subscription_id != 0)
     {
-	connection_unsubscribe(self -> connection, self -> connection_info);
+	printf("uh oh... self -> subscription_id = %lld\n", self -> subscription_id);
     }
 
-    self -> connection = connection;
+    self -> subscription_id = subscription_id;
+}
 
-    if (self -> connection != NULL)
+
+/* Callback for an unsubscribe request */
+static void unsubscribe_cb(
+    elvin_handle_t handle, int result,
+    int64_t subscription_id, void *rock,
+    dstc_error_t error)
+{
+    group_sub_t self = (group_sub_t)rock;
+
+    printf("unsubscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
+    if (self -> subscription_id != subscription_id)
     {
-	self -> connection_info = connection_subscribe(
-	    self -> connection, self -> expression,
-	    (notify_callback_t)handle_notify, self);
+	printf("uh oh...  self -> subscription_id = %lld\n", self -> subscription_id);
+    }
+
+    self -> subscription_id = 0;
+}
+
+/* Sets the receiver's connection */
+void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, dstc_error_t error)
+{
+    if ((self -> handle != NULL) && (self -> subscription_id != 0))
+    {
+	if (elvin_async_delete_subscription(
+	    self -> handle, self -> subscription_id,
+	    unsubscribe_cb, self,
+	    error) == 0)
+	{
+	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    abort();
+	}
+    }
+
+    self -> handle = handle;
+    self -> error = error;
+
+    if (self -> handle != NULL)
+    {
+	if (elvin_async_add_subscription(
+	    self -> handle, self -> expression, NULL, 1,
+	    notify_cb, self,
+	    subscribe_cb, self,
+	    error) == 0)
+	{
+	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    abort();
+	}
     }
 }
 

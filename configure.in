@@ -1,25 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 1.6.6)
+AM_INIT_AUTOMAKE(xtickertape, 2.0a1)
 dnl AM_CONFIG_HEADER(config.h)
-
-
-dnl Special elvin-related setup.
-dnl ============================
-
-dnl Make sure we have some value for the DSTCDIR
-if test "x$DSTCDIR" = "x" ; then
-	if test -d /usr/local/dstc ; then
-		AC_MSG_WARN("DSTCDIR is not set.  Using /usr/local/dstc")
-		DSTCDIR=/usr/local/dstc
-	else
-		echo "ERROR: unable to locate the elvin distribution.  Please set DSTCDIR"
-		echo "       to point to the root of that distribution and reconfigure.  Elvin is"
-		echo "       available for free from http://www.dstc.edu.au/elvin/"
-		exit 1
-	fi
-fi
-
 
 dnl Checks for programs.
 dnl ====================
@@ -35,35 +17,8 @@ if test "$SYSTYPE" = "not found" ; then
 	exit 1
 fi
 
-dnl Set the OS define
-systypedef="`$SYSTYPE -_`"
-systype="`$SYSTYPE`"
-AC_DEFINE_UNQUOTED($systypedef)
-dnl AC_SUBST($systypedef)
-
-
 dnl Checks for headers and libraries.
 dnl =================================
-
-dnl The elvin C library requires pthreads
-dnl See if the compiler accepts the -threads flag (DEC cc, egcs)
-AC_MSG_CHECKING(whether $CC accepts -threads)
-ac_save_LIBS="$LIBS"
-LIBS="$LIBS -threads"
-AC_TRY_LINK(, pthread_create();, ok=yes, ok=no)
-AC_MSG_RESULT($ok)
-
-dnl If -threads didn't work, then revert LIBS back to what it used to be
-dnl and see if we can find the pthreads library
-if test "$ok" = "no" ; then
-	LIBS="$ac_save_LIBS"
-	AC_CHECK_LIB(pthread, pthread_create, LIBS="-lpthread $LIBS" ; ok=yes , ok=no)
-	if test "$ok" = "no" ; then
-		echo "ERROR: \`libpthread' is missing on your system.  xtickertape"
-		echo "       cannot be compiled without it.  Sorry."
-		exit 1
-	fi
-fi
 
 dnl Check to see if we need -lnsl -lsocket to use sockets
 dnl and if we need -lcrypt for crypt.
@@ -73,8 +28,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(crypt, crypt)
 
 dnl Make sure that the elvin headers can be found
-CPPFLAGS="-I$DSTCDIR/include $CPPFLAGS"
-AC_CHECK_HEADER(elvin3/elvin.h, ok=yes, ok=no)
+AC_CHECK_HEADER(elvin/elvin.h, ok=yes, ok=no)
 if test "$ok" = "no" ; then
 	echo "ERROR: \`elvin.h' is missing on your system.  Try downloading"
 	echo "       and installing the elvin distribution from"
@@ -82,13 +36,19 @@ if test "$ok" = "no" ; then
 	exit 1
 fi
 
-dnl Make sure that an elvin library can be found
-elvinlibdir=$DSTCDIR/$systype/lib
-LDFLAGS="-L$elvinlibdir $LDFLAGS"
-AC_CHECK_LIB(vin, elvin_connect, LIBS="-lvin -ldstc_std $LIBS" ; ok=yes, ok=no, -ldstc_std)
+dnl Make sure the dstc_std library can be found
+AC_CHECK_LIB(dstc_std, dstc_error_free, LIBS="-ldstc_std $LIBS"; ok=yes, ok=no)
 if test "$ok" = "no" ; then
-	echo "ERROR: \`libvin' is missing on your system.  Try downloading"
-	echo "       it from http://www.dstc.edu.au/elvin/"
+	echo "ERROR: \`libdstc_std' is missing on your system.  This probably"
+	echo "       means that you need to specify where to go look for it."
+	exit 1
+fi
+
+dnl Make sure that an elvin library can be found
+AC_CHECK_LIB(vin4, elvin_notification_alloc, LIBS="-lvin4 -lep $LIBS" ; ok=yes, ok=no, -lep)
+if test "$ok" = "no" ; then
+	echo "ERROR: \`libvin4' is missing on your system.  This probably"
+	echo "       means that you need to specify where to go look for it."
 	exit 1
 fi
 

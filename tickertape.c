@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.35 1999/11/08 08:18:31 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.36 1999/11/18 07:14:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,6 +39,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.35 1999/11/08 08:18:31 phelps
 #include <unistd.h>
 #include <errno.h>
 #include <X11/Intrinsic.h>
+#include <elvin/elvin.h>
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
@@ -51,7 +52,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.35 1999/11/08 08:18:31 phelps
 #include "usenet_parser.h"
 #include "usenet_sub.h"
 #include "mail_sub.h"
-#include "connect.h"
 #ifdef ORBIT
 #include "orbit_sub.h"
 #endif /* ORBIT */
@@ -72,9 +72,18 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.35 1999/11/08 08:18:31 phelps
 #define GROUP_SUB "TICKERTAPE == \"%s\""
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
 
+#define F_TICKERTAPE_STARTUP "tickertape.startup"
+#define F_USER "user"
+
 /* The tickertape data type */
 struct tickertape
 {
+    /* A convenient error context */
+    dstc_error_t error;
+
+    /* The elvin connection handle */
+    elvin_handle_t handle;
+
     /* The user's name */
     char *user;
 
@@ -113,9 +122,6 @@ struct tickertape
     int orbit_sub_count;
 #endif /* ORBIT */
 
-    /* The elvin connection */
-    connection_t connection;
-
     /* The control panel */
     control_panel_t control_panel;
 
@@ -138,8 +144,10 @@ static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(tickertape_t self, message_t message);
 static int parse_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
+#if 0
 static void disconnect_callback(tickertape_t self, connection_t connection);
 static void reconnect_callback(tickertape_t self, connection_t connection);
+#endif /* 0 */
 #ifdef ORBIT
 static void orbit_callback(tickertape_t self, en_notify_t notification);
 static void subscribe_to_orbit(tickertape_t self);
@@ -210,19 +218,44 @@ static int mkdirhier(char *dirname)
 /* Publishes a notification indicating that the receiver has started */
 static void publish_startup_notification(tickertape_t self)
 {
-    en_notify_t notification;
+    elvin_notification_t notification;
 
     /* If we haven't managed to connect, then don't try sending */
-    if (self -> connection == NULL)
+    if (self -> handle == NULL)
     {
 	return;
     }
 
-    notification = en_new();
-    en_add_string(notification, "tickertape.startup", VERSION);
-    en_add_string(notification, "user", self -> user);
-    connection_publish(self -> connection, notification);
-    en_free(notification);
+    /* Create a nice startup notification */
+    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
+    {
+	fprintf(stderr, "elvin_notification_alloc(): failed\n");
+	abort();
+    }
+
+    if (elvin_notification_add_string8(
+	notification,
+	F_TICKERTAPE_STARTUP,
+	VERSION,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    if (elvin_notification_add_string8(
+	notification,
+	F_USER,
+	self -> user,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	abort();
+    }
+
+    /* No keys support yet */
+    elvin_async_notify(self -> handle, notification, NULL, self -> error);
+    elvin_notification_free(notification, self -> error);
 }
 
 /* Callback for a menu() action in the Scroller */
@@ -321,7 +354,10 @@ static int write_default_file(tickertape_t self, FILE *out, char *template)
  * create it and fill it with the default groups file information.
  * Returns the file descriptor of the groups file on success,
  * -1 on failure */
-static int open_subscription_file(tickertape_t self, char *filename, char *template)
+static int open_subscription_file(
+    tickertape_t self,
+    char *filename,
+    char *template)
 {
     int fd;
     FILE *out;
@@ -375,7 +411,8 @@ static int parse_groups_callback(
     group_sub_t subscription;
 
     /* Construct the subscription expression */
-    if ((expression = (char *)malloc(strlen(GROUP_SUB) + strlen(name) - 1)) == NULL)
+    if ((expression = (char *)malloc(
+	strlen(GROUP_SUB) + strlen(name) - 1)) == NULL)
     {
 	return -1;
     }
@@ -409,7 +446,9 @@ static int parse_groups_file(tickertape_t self)
 
     /* Allocate a new groups file parser */
     if ((parser = groups_parser_alloc(
-	(groups_parser_callback_t)parse_groups_callback, self, filename)) == NULL)
+	(groups_parser_callback_t)parse_groups_callback,
+	self,
+	filename)) == NULL)
     {
 	return -1;
     }
@@ -460,7 +499,12 @@ static int parse_usenet_callback(
     struct usenet_expr *expressions, size_t count)
 {
     /* Forward the information to the usenet subscription */
-    return usenet_sub_add(self -> usenet_sub, has_not, pattern, expressions, count);
+    return usenet_sub_add(
+	self -> usenet_sub,
+	has_not,
+	pattern,
+	expressions,
+	count);
 }
 
 /* Parse the usenet file and update the usenet subscription accordingly */
@@ -544,6 +588,8 @@ static int find_group(group_sub_t *groups, int count, char *expression)
 /* Request from the control panel to reload groups file */
 void tickertape_reload_groups(tickertape_t self)
 {
+    printf("tickertape_reload_groups() is not yet implemented\n");
+#if 0
     group_sub_t *old_groups = self -> groups;
     int old_count = self -> groups_count;
     int index;
@@ -566,7 +612,10 @@ void tickertape_reload_groups(tickertape_t self)
 	int old_index;
 
 	/* Look for a match */
-	if ((old_index = find_group(old_groups, old_count, group_sub_expression(group))) < 0)
+	if ((old_index = find_group(
+	    old_groups,
+	    old_count,
+	    group_sub_expression(group))) < 0)
 	{
 	    /* None found.  Set the subscription's connection */
 	    group_sub_set_connection(group, self -> connection);
@@ -604,12 +653,14 @@ void tickertape_reload_groups(tickertape_t self)
     {
 	group_sub_set_control_panel_index(self -> groups[index], self -> control_panel, &count);
     }
+#endif /* 0 */
 }
-
 
 /* Request from the control panel to reload usenet file */
 void tickertape_reload_usenet(tickertape_t self)
 {
+    printf("tickertape_reload_usenet not yet implemented\n");
+#if 0
     /* Release the old usenet subscription */
     usenet_sub_set_connection(self -> usenet_sub, NULL);
     usenet_sub_free(self -> usenet_sub);
@@ -623,6 +674,7 @@ void tickertape_reload_usenet(tickertape_t self)
 
     /* Set its connection */
     usenet_sub_set_connection(self -> usenet_sub, self -> connection);
+#endif /* 0 */
 }
 
 
@@ -661,6 +713,7 @@ static void init_ui(tickertape_t self)
 
 
 
+#if 0
 /* This is called when we get our elvin connection back */
 static void reconnect_callback(tickertape_t self, connection_t connection)
 {
@@ -690,7 +743,9 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
     /* Republish the startup notification */
     publish_startup_notification(self);
 }
+#endif /* 0 */
 
+#if 0
 /* This is called when we lose our elvin connection */
 static void disconnect_callback(tickertape_t self, connection_t connection)
 {
@@ -732,6 +787,7 @@ static void disconnect_callback(tickertape_t self, connection_t connection)
 
     free(buffer);
 }
+#endif /* 0 */
 
 
 
@@ -908,6 +964,38 @@ static void subscribe_to_orbit(tickertape_t self)
 
 #endif /* ORBIT */
 
+/* This is called when our connection request is handled */
+static void connect_cb(
+    elvin_handle_t handle, int result,
+    void *rock, dstc_error_t error)
+{
+    tickertape_t self = (tickertape_t)rock;
+    int index;
+
+    /* Subscribe to the groups */
+    for (index = 0; index < self -> groups_count; index++)
+    {
+	group_sub_set_connection(self -> groups[index], handle, error);
+    }
+
+    /* Subscribe to usenet */
+    if (self -> usenet_sub != NULL)
+    {
+	usenet_sub_set_connection(self -> usenet_sub, handle, error);
+    }
+
+    /* Subscribe to the Mail subscription if we have one */
+    if (self -> mail_sub != NULL)
+    {
+	mail_sub_set_connection(self -> mail_sub, handle, error);
+    }
+
+#ifdef ORBIT
+    /* Listen for Orbit-related notifications and alert */
+    subscribe_to_orbit(self);
+#endif /* ORBIT */
+}
+
 /*
  *
  * Exported function definitions 
@@ -924,22 +1012,35 @@ tickertape_t tickertape_alloc(
     char *host, int port,
     Widget top)
 {
-    int index;
-    tickertape_t self = (tickertape_t) malloc(sizeof(struct tickertape));
-    
+    XtAppContext app_context = XtWidgetToApplicationContext(top);
+    char *elvin_url = "elvin://localhost";
+    tickertape_t self;
+
+    /* Allocate some space for the new tickertape */
+    if ((self = (tickertape_t) malloc(sizeof(struct tickertape))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Initialize its contents to sane values */
+    self -> error = NULL;
+    self -> handle = NULL;
     self -> user = strdup(user);
     self -> domain = strdup(domain);
     self -> ticker_dir = (ticker_dir == NULL) ? NULL : strdup(ticker_dir);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
     self -> top = top;
-
     self -> groups = NULL;
     self -> groups_count = 0;
-
     self -> usenet_sub = NULL;
     self -> mail_sub = NULL;
-    self -> connection = NULL;
+#ifdef ORBIT
+    self -> orbit_subs = NULL;
+    self -> orbit_sub_count = 0;
+#endif /* ORBIT */
+    self -> control_panel = NULL;
+    self -> scroller = NULL;
     self -> history = history_alloc();
 
     /* Read the subscriptions from the groups file */
@@ -960,36 +1061,44 @@ tickertape_t tickertape_alloc(
     /* Draw the user interface */
     init_ui(self);
 
-    /* Connect to elvin and subscribe */
-    self -> connection = connection_alloc(
-	host, port, 	XtWidgetToApplicationContext(top),
-	(disconnect_callback_t)disconnect_callback, self,
-	(reconnect_callback_t)reconnect_callback, self);
-    publish_startup_notification(self);
-
-    for (index = 0; index < self -> groups_count; index++)
+    /* Connect to an elvin server */
+    if ((self -> error = elvin_async_init(
+	"en",
+	app_context,
+	(elvin_add_io_handler_func_t)XtAppAddInput,
+	(void *)XtInputReadMask,
+	(elvin_del_io_handler_func_t)XtRemoveInput,
+	app_context,
+	(elvin_add_timeout_func_t)XtAppAddTimeOut,
+	(elvin_del_timeout_func_t)XtRemoveTimeOut)) == NULL)
     {
-	group_sub_set_connection(self -> groups[index], self -> connection);
+	fprintf(stderr, "*** elvin_async_init_default(): failed\n");
+	exit(1);
     }
 
-    /* Subscribe to the usenet_sub */
-    if (self -> usenet_sub != NULL)
+    /* Create an elvin connection handle */
+    if ((self -> handle = elvin_hdl_alloc(self -> error)) == NULL)
     {
-	usenet_sub_set_connection(self -> usenet_sub, self -> connection);
+	fprintf(stderr, "*** elvin_hdl_alloc(): failed\n");
+	exit(1);
     }
 
-    /* Subscribe to the Mail subscription if we have one */
-    if (self -> mail_sub != NULL)
+    /* Specify the server address if given on the command-line */
+    if (elvin_url != NULL)
     {
-	mail_sub_set_connection(self -> mail_sub, self -> connection);
+	if (elvin_hdl_insert_server(self -> handle, 0, elvin_url, self -> error) == 0)
+	{
+	    printf("Bad URL: no doughnut \"%s\"\n", elvin_url);
+	    exit(1);
+	}
     }
 
-#ifdef ORBIT
-    /* Listen for Orbit-related notifications and alert the world to our presence */
-    self -> orbit_subs = NULL;
-    self -> orbit_sub_count = 0;
-    subscribe_to_orbit(self);
-#endif /* ORBIT */
+    /* Connect to the elvin server */
+    if (elvin_async_connect(self -> handle, connect_cb, self, self -> error) == 0)
+    {
+	fprintf(stderr, "*** elvin_async_connect(): failed\n");
+	exit(1);
+    }
 
     return self;
 }
@@ -1023,7 +1132,7 @@ void tickertape_free(tickertape_t self)
 
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_connection(self -> groups[index], NULL);
+	group_sub_set_connection(self -> groups[index], NULL, self -> error);
 	group_sub_free(self -> groups[index]);
     }
 
@@ -1034,14 +1143,14 @@ void tickertape_free(tickertape_t self)
 
     if (self -> usenet_sub != NULL)
     {
-	usenet_sub_set_connection(self -> usenet_sub, NULL);
+	usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
 	usenet_sub_free(self -> usenet_sub);
     }
 
 #ifdef ORBIT
     for (index = 0; index < self -> orbit_sub_count; index++)
     {
-	orbit_sub_free(self -> orbit_subs[index]);
+	orbit_sub_free(self -> orbit_subs[index], self -> error);
     }
 
     if (self -> orbit_subs != NULL)
@@ -1049,11 +1158,6 @@ void tickertape_free(tickertape_t self)
 	free(self -> orbit_subs);
     }
 #endif /* ORBIT */
-
-    if (self -> connection)
-    {
-	connection_free(self -> connection);
-    }
 
     if (self -> control_panel)
     {
@@ -1069,27 +1173,6 @@ void tickertape_free(tickertape_t self)
 
     free(self);
 }
-
-#ifdef DEBUG
-/* Debugging */
-void tickertape_debug(tickertape_t self)
-{
-    printf("tickertape_t\n");
-    printf("  user = \"%s\"\n", self -> user);
-    printf("  ticker_dir = \"%s\"\n", (self -> ticker_dir == NULL) ? "null" : self -> ticker_dir);
-    printf("  groups_file = \"%s\"\n", (self -> groups_file == NULL) ? "null" : self -> groups_file);
-    printf("  usenet_file = \"%s\"\n", (self -> usenet_file == NULL) ? "null" : self -> usenet_file);
-    printf("  top = 0x%p\n", self -> top);
-    printf("  groups = 0x%p\n", self -> groups);
-    printf("  groups_count = %d\n", self -> groups_count);
-#ifdef ORBIT
-    printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
-#endif /* ORBIT */
-    printf("  connection = 0x%p\n", self -> connection);
-    printf("  control_panel = 0x%p\n", self -> control_panel);
-    printf("  scroller = 0x%p\n", self -> scroller);
-}
-#endif /* DEBUG */
 
 /* Answers the tickertape's user name */
 char *tickertape_user_name(tickertape_t self)

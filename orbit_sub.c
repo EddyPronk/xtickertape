@@ -28,8 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: orbit_sub.c,v 1.3 1999/10/05 02:57:29 phelps Exp $";
+static const char cvsid[] = "$Id: orbit_sub.c,v 1.4 1999/11/18 07:14:53 phelps Exp $";
 #endif /* lint */
+
+#ifdef ORBIT
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -379,3 +381,4 @@ void orbit_sub_set_control_panel(orbit_sub_t self, control_panel_t control_panel
     }
 }
 
+#endif /* ORBIT */
