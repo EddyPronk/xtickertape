@@ -1,6 +1,5 @@
 # First work out the executables
 bin_PROGRAMS = xtickertape
-noinst_PROGRAMS = test-parser
 bin_SCRIPTS = show-url
 
 # Automatically generated sources
@@ -8,13 +7,12 @@ BUILT_SOURCES = errors.h
 
 # xtickertape has many sources
 xtickertape_SOURCES = \
-	mesage_view.h message_view.c \
+	message_view.h message_view.c \
 	tickertape.h tickertape.c \
 	history.h history.c \
 	panel.h panel.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	message.h message.c \
-#	grammar.h parser.h parser.c vm.h vm.c \
 	groups.h groups_parser.h groups_parser.c \
 	group_sub.h group_sub.c \
 	History.h HistoryP.h History.c \
@@ -26,18 +24,12 @@ xtickertape_SOURCES = \
 	getopt.h getopt.c getopt1.c \
 	main.c
 
-#test_parser_SOURCES = \
-#	grammar.h parser.h parser.c \
-#	vm.h vm.c \
-#	test-parser.c
-
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
 # and also the show-url script
-EXTRA_DIST = XTickertape.ad show-url $(man_MANS) \
-	grammar.pcg index en
+EXTRA_DIST = XTickertape.ad show-url $(man_MANS) index en
 
 
 # Put the app-defaults somewhere...
