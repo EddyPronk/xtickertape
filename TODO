@@ -21,6 +21,8 @@ Control Panel:
 - The message in the status bar should include the time when of last
   change.
 
+- Strip CRs from the MIME header of an attachment before handing it
+  over to metamail, which isn't able to cope with such silliness.
 
 Scroller:
 
