@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.7 1999/10/07 00:24:25 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.8 1999/10/07 03:45:06 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -602,28 +602,44 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
 
 
 /* Show a tool-tip window */
-static void show_tool_tip(control_panel_t self, XtIntervalId *ignored)
+static void show_tool_tip(control_panel_t self, char *tip, Position x, Position y)
 {
-    message_t message;
-    char *mime_args;
+    Position absolute_x, absolute_y;
     XmString string;
-    Position x, y;
+    Dimension width;
+    Dimension height;
 
-    self -> timer = 0;
-    message = history_get_at_point(tickertape_history(self -> tickertape), self -> x, self -> y);
-    if ((message == NULL) || ((mime_args = message_get_mime_args(message)) == NULL))
-    {
-	return;
-    }
-
-    /* Set the tool-tip's label */
-    string = XmStringCreateSimple(mime_args);
+    /* Set the tool-tip label's text */
+    string = XmStringCreateSimple(tip);
     XtVaSetValues(self -> tool_tip_label, XmNlabelString, string, NULL);
     XmStringFree(string);
 
-    /* Move the tool-tip window to somewhere near the pointer */
-    XtTranslateCoords(self -> history, self -> x + 10, self -> y + 10, &x, &y);
-    XtVaSetValues(self -> tool_tip, XmNx, x, XmNy, y);
+    /* Figure out how big the tool-tip window is */
+    XtVaGetValues(self -> tool_tip_label, XmNwidth, &width, XmNheight, &height, NULL);
+
+    /* Figure out where the pointer is */
+    XtTranslateCoords(self -> history, x, y, &absolute_x, &absolute_y);
+
+    /* And move the tool-tip somewhere near there without going out of the screen */
+    if (absolute_x + width + 10 < WidthOfScreen(XtScreen(self -> top)))
+    {
+	absolute_x += 10;
+    }
+    else
+    {
+	absolute_x -= (10 + width);
+    }
+
+    if (absolute_y + height + 10 < HeightOfScreen(XtScreen(self -> top)))
+    {
+	absolute_y += 10;
+    }
+    else
+    {
+	absolute_y -= (10 + height);
+    }
+
+    XtVaSetValues(self -> tool_tip, XmNx, absolute_x, XmNy, absolute_y, NULL);
 
     /* Show the tool-tip */
     XtPopup(self -> tool_tip, XtGrabNone);
@@ -633,6 +649,33 @@ static void show_tool_tip(control_panel_t self, XtIntervalId *ignored)
 static void hide_tool_tip(control_panel_t self)
 {
     XtPopdown(self -> tool_tip);
+}
+
+
+/* Show a tool-tip for the selected list item */
+static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
+{
+    message_t message;
+    char *mime_args;
+
+    /* Clear the timer */
+    self -> timer = 0;
+
+    /* Locate the message under the pointer */
+    message = history_get_at_point(tickertape_history(self -> tickertape), self -> x, self -> y);
+    if (message == NULL)
+    {
+	return;
+    }
+
+    /* Get its mime args to use for the tool tip */
+    if ((mime_args = message_get_mime_args(message)) == NULL)
+    {
+	return;
+    }
+
+    /* Show them in a tool-tip */
+    show_tool_tip(self, mime_args, self -> x, self -> y);
 }
 
     
@@ -656,7 +699,7 @@ static void history_motion_callback(
 		self -> timer = XtAppAddTimeOut(
 		    XtWidgetToApplicationContext(widget),
 		    TOOL_TIP_DELAY,
-		    (XtTimerCallbackProc)show_tool_tip,
+		    (XtTimerCallbackProc)history_timer_callback,
 		    (XtPointer)self);
 		self -> x = motion_event -> x;
 		self -> y = motion_event -> y;
@@ -675,7 +718,7 @@ static void history_motion_callback(
 	    self -> timer = XtAppAddTimeOut(
 		XtWidgetToApplicationContext(widget),
 		TOOL_TIP_DELAY,
-		(XtTimerCallbackProc)show_tool_tip,
+		(XtTimerCallbackProc)history_timer_callback,
 		(XtPointer)self);
 	    self -> x = enter_event -> x;
 	    self -> y = enter_event -> y;
