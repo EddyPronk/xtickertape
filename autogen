@@ -1,0 +1,7 @@
+#! /bin/sh -f
+#
+# Run this to generate configure and the Makefile
+#
+
+echo "Generating build environment"
+aclocal -I m4 && autoheader && automake -a && autoconf && echo "done" || echo "failed"
