@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.8 2001/07/10 02:18:26 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.9 2001/07/10 04:44:42 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: message_view.c,v 2.8 2001/07/10 02:18:26 phelp
 #include <stdlib.h>
 #include <string.h>
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include "message.h"
 #include "message_view.h"
 
@@ -186,6 +187,12 @@ struct message_view
     /* The font to use when displaying the message */
     XFontStruct *font;
 
+    /* The thickness of the underline for this message (0 for none) */
+    int underline_thickness;
+
+    /* The position of the underline for this message */
+    int underline_position;
+
     /* Dimensions of the group string */
     struct string_sizes group_sizes;
 
@@ -286,6 +293,7 @@ message_view_t message_view_alloc(
     XFontStruct *font)
 {
     message_view_t self;
+    unsigned long value;
 
     /* Allocate enough memory for the new message view */
     if ((self = (message_view_t)malloc(sizeof(struct message_view))) == NULL)
@@ -305,6 +313,34 @@ message_view_t message_view_alloc(
 
     /* Record the font */
     self -> font = font;
+
+    /* If the message has an attachment then compute the underline info */
+    if (message_has_attachment(message))
+    {
+	/* Is there a font property for the underline thickness? */
+	if (! XGetFontProperty(font, XA_UNDERLINE_THICKNESS, &value))
+	{
+	    /* No luck.  Make up something plausible */
+	    self -> underline_thickness = MAX((font -> ascent + font -> descent + 10) / 20, 1);
+	}
+	else 
+	{
+	    /* Yes!  Use it. */
+	    self -> underline_thickness = MAX((int)value, 1);
+	}
+
+	/* Is there a font property for the underline position? */
+	if (! XGetFontProperty(font, XA_UNDERLINE_POSITION, &value))
+	{
+	    /* No luck.  Make up something plausible */
+	    self -> underline_position = MAX((font -> descent + 4) / 8 , 1);
+	}
+	else
+	{
+	    /* Yes!  Use it. */
+	    self -> underline_position = MAX((int)value, 2);
+	}
+    }
 
     /* Measure the message's strings */
     measure_string(font, message_get_group(message), &self -> group_sizes);
@@ -383,21 +419,11 @@ void message_view_paint(
     long x, long y,
     XRectangle *bbox)
 {
-    int ul_thickness = 0;
-    int ul_position = 0;
 #if (DEBUG_PER_CHAR - 1) == 0
     XGCValues values;
     char *string;
     long px;
 #endif /* DEBUG_PER_CHAR */
-
-    /* Compute how big the underline should be */
-    if (message_has_attachment(self -> message))
-    {
-	/* Just some rules of thumb */
-	ul_thickness = MAX((self -> font -> ascent + self -> font -> descent + 10) / 20, 1);
-	ul_position = MAX((self -> font -> descent + 4) / 8, 1);
-    }
 
 #if (DEBUG_PER_CHAR - 1) == 0
     /* Draw the message the slow way so that we can tell where we're
@@ -443,7 +469,7 @@ void message_view_paint(
 	display, drawable, gc, group_pixel,
 	x, y, bbox, &self -> group_sizes,
 	self -> font, message_get_group(self -> message),
-	ul_thickness, ul_position);
+	self -> underline_thickness, self -> underline_position);
     x += self -> group_sizes.width;
 
     /* Paint the first separator */
@@ -451,7 +477,7 @@ void message_view_paint(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
 	self -> font, SEPARATOR,
-	ul_thickness, ul_position);
+	self -> underline_thickness, self -> underline_position);
     x += self -> separator_sizes.width;
 
     /* Paint the user string */
@@ -459,7 +485,7 @@ void message_view_paint(
 	display, drawable, gc, user_pixel,
 	x, y, bbox, &self -> user_sizes,
 	self -> font, message_get_user(self -> message),
-	ul_thickness, ul_position);
+	self -> underline_thickness, self -> underline_position);
     x += self -> user_sizes.width;
 
     /* Paint the second separator */
@@ -467,7 +493,7 @@ void message_view_paint(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
 	self -> font, SEPARATOR,
-	ul_thickness, ul_position);
+	self -> underline_thickness, self -> underline_position);
     x += self -> separator_sizes.width;
 
     /* Paint the message string */
@@ -475,7 +501,7 @@ void message_view_paint(
 	display, drawable, gc, message_pixel,
 	x, y, bbox, &self -> message_sizes,
 	self -> font, message_get_string(self -> message),
-	ul_thickness, ul_position);
+	self -> underline_thickness, self -> underline_position);
     x += self -> message_sizes.width;
 }
 
