@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.4 2000/11/18 00:58:09 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.5 2000/11/18 01:18:08 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -430,8 +430,50 @@ int vm_unwind_list(vm_t self, elvin_error_t error)
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error)
 {
-    object_t result;
-    return vm_pop(self, &result, error);
+    object_t object;
+
+    /* Find the top item on the stack */
+    if (! vm_top(self, &object, error))
+    {
+	return 1;
+    }
+
+    switch (object_type(object))
+    {
+	/* Most objects evaluate to themselves */
+	case SEXP_NIL:
+	case SEXP_CHAR:
+	case SEXP_INTEGER:
+	case SEXP_LONG:
+	case SEXP_FLOAT:
+	case SEXP_STRING:
+	case SEXP_PRIM:
+	case SEXP_LAMBDA:
+	{
+	    return 1;
+	}
+
+	/* Symbols get looked up in the environment */
+	case SEXP_SYMBOL:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[symbol]");
+	    return 0;
+	}
+
+	/* Cons cells evaluate to function calls */
+	case SEXP_CONS:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[cons]");
+	    return 0;
+	}
+
+	/* Nothing else should be getting put onto the stack */
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[unknown]");
+	    return 0;
+	}
+    }
 }
 
 
