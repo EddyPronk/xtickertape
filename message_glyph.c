@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.31 2000/01/13 00:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.32 2000/03/01 06:52:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,6 +40,7 @@ static const char cvsid[] = "$Id: message_glyph.c,v 1.31 2000/01/13 00:29:48 phe
 #include "ScrollerP.h"
 
 #define SEPARATOR ":"
+#define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x > y) ? x : y)
 
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
@@ -358,7 +359,9 @@ static void paint_string(
     /* Draw the underline based on the string's width to avoid gaps */
     if (do_underline)
     {
-	XDrawLine(display, drawable, gc, offset, baseline + 1, offset + string_width, baseline + 1);
+	XDrawLine(display, drawable, gc,
+		  MAX(offset, x), baseline + 1,
+		  MIN(offset + string_width, x + width), baseline + 1);
     }
 }
 
