@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.41 1999/07/28 00:54:28 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.42 1999/07/29 05:50:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -278,6 +278,7 @@ void glyph_holder_paint(
 	self -> glyph, display, drawable,
 	offset, self -> width, x, y, width, height);
 }
+
 
 
 
@@ -601,13 +602,14 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 	self -> core.width = 400;
     }
 
-    /* Record the width for future reference */
+    /* Record the height and width for future reference */
+    self -> scroller.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
     self -> scroller.width = self -> core.width;
 
     /* Make sure we have a height */
     if (self -> core.height == 0)
     {
-	self -> core.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
+	self -> core.height = self -> scroller.height;
     }
 
     gap = gap_alloc(self);
@@ -648,7 +650,7 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
     /* Create an offscreen pixmap */
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(self), XtWindow(self),
-	self -> core.width, self -> core.height,
+	self -> core.width, self -> scroller.height,
 	self -> core.depth);
 
     /* Clear the offscreen pixmap to the background color */
@@ -711,6 +713,38 @@ static void adjust_left_right(ScrollerWidget self)
     }
 }
 
+/* Remove the glyph_holder at the left edge of the scroller */
+static void remove_left_holder(ScrollerWidget self)
+{
+    glyph_holder_t holder = self -> scroller.left_holder;
+    glyph_t glyph = holder -> glyph;
+
+    /* Clean up the linked list */
+    self -> scroller.left_holder = holder -> next;
+    self -> scroller.left_holder -> previous = NULL;
+    self -> scroller.left_offset -= glyph_holder_width(holder);
+    glyph_holder_free(holder);
+
+    /* Update the left_glyph if appropriate */
+    if (glyph == self -> scroller.left_glyph)
+    {
+	glyph_holder_t probe = self -> scroller.left_holder;
+
+	/* Find an unexpired glyph to become the new left_glyph */
+	while (probe != NULL)
+	{
+	    if (! probe -> glyph -> is_expired(probe -> glyph))
+	    {
+		self -> scroller.left_glyph = probe -> glyph;
+		return;
+	    }
+
+	    probe = probe -> next;
+	}
+
+	self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
+    }
+}
 
 /* Remove glyph_holders from the left edge if appropriate */
 static void adjust_left_left(ScrollerWidget self)
@@ -718,36 +752,7 @@ static void adjust_left_left(ScrollerWidget self)
     /* Keep going until we can do no more damage */
     while (self -> scroller.left_offset >= glyph_holder_width(self -> scroller.left_holder))
     {
-	glyph_holder_t holder;
-
-	holder = self -> scroller.left_holder;
-	self -> scroller.left_holder = holder -> next;
-	self -> scroller.left_holder -> previous = NULL;
-	self -> scroller.left_offset -= glyph_holder_width(holder);
-
-	/* Update the left_glyph if appropriate */
-	if (holder -> glyph == self -> scroller.left_glyph)
-	{
-	    glyph_holder_t probe = self -> scroller.left_holder;
-
-	    /* Find an unexpired glyph to become the next left_glyph */
-	    while (probe != NULL)
-	    {
-		if (! probe -> glyph -> is_expired(probe -> glyph))
-		{
-		    self -> scroller.left_glyph = probe -> glyph;
-		    glyph_holder_free(holder);
-		    return;
-		}
-
-		probe = probe -> next;
-	    }
-
-	    /* All of the visible glyphs have expired! */
-	    self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
-	}
-
-	glyph_holder_free(holder);
+	remove_left_holder(self);
     }
 }
 
@@ -831,41 +836,47 @@ static void adjust_right_left(ScrollerWidget self)
     }
 }
 
+
+/* Remove the glyph_holder at the right edge of the scroller */
+static void remove_right_holder(ScrollerWidget self)
+{
+    glyph_holder_t holder = self -> scroller.right_holder;
+    glyph_t glyph = holder -> glyph;
+
+    /* Clean up the linked list */
+    self -> scroller.right_holder = holder -> previous;
+    self -> scroller.right_holder -> next = NULL;
+    self -> scroller.right_offset -= glyph_holder_width(holder);
+    glyph_holder_free(holder);
+
+    /* Update the right_glyph if appropriate */
+    if (glyph == self -> scroller.right_glyph)
+    {
+	glyph_holder_t probe = self -> scroller.right_holder;
+
+	/* Find an unexpired glyph to become the new right_glyph */
+	while (probe != NULL)
+	{
+	    if (! probe -> glyph -> is_expired(probe -> glyph))
+	    {
+		self -> scroller.right_glyph = probe -> glyph;
+		return;
+	    }
+
+	    probe = probe -> previous;
+	}
+
+	self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
+    }
+}
+
 /* Remove glyph_holders from the right edge if appropriate */
 static void adjust_right_right(ScrollerWidget self)
 {
     /* Keep going until we can do no more damage */
     while (self -> scroller.right_offset >= glyph_holder_width(self -> scroller.right_holder))
     {
-	glyph_holder_t holder;
-
-	holder = self -> scroller.right_holder;
-	self -> scroller.right_holder = holder -> previous;
-	self -> scroller.right_holder -> next = NULL;
-	self -> scroller.right_offset -= glyph_holder_width(holder);
-
-	/* Update the right_glyph if appropriate */
-	if (holder -> glyph == self -> scroller.right_glyph)
-	{
-	    glyph_holder_t probe = self -> scroller.right_holder;
-
-	    /* Find an unexpired glyph to become the next right_glyph */
-	    while (probe != NULL)
-	    {
-		if (! probe -> glyph -> is_expired(probe -> glyph))
-		{
-		    self -> scroller.right_glyph = probe -> glyph;
-		    glyph_holder_free(holder);
-		    return;
-		}
-
-		probe = probe -> previous;
-	    }
-
-	    self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
-	}
-
-	glyph_holder_free(holder);
+	remove_right_holder(self);
     }
 }
 
@@ -911,8 +922,8 @@ static void scroll_left(ScrollerWidget self, int offset)
 	0, 0, self -> core.width, self -> core.height, -offset, 0);
 
     /* Scroll the display and paint in the missing bits */
-/*    Paint(self, self -> core.width - offset, 0, offset, self -> core.height);*/
-    Paint(self, 0, 0, self -> core.width, self -> core.height);
+    Paint(self, self -> core.width - offset, 0, offset, self -> core.height);
+/*    Paint(self, 0, 0, self -> core.width, self -> core.height);*/
 }
 
 /* Scrolls the glyphs in the widget to the right */
@@ -1014,21 +1025,60 @@ static void Destroy(Widget widget)
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
-/*    ScrollerWidget self = (ScrollerWidget) widget;*/
+    ScrollerWidget self = (ScrollerWidget) widget;
 
-    /* Nothing to do if we're not yet realized */
-    if (! XtIsRealized(widget))
+    /* Nothing to do if we're not yet realized or if the width hasn't changed */
+    if ((! XtIsRealized(widget)) || (self -> core.width == self -> scroller.width))
     {
 	return;
     }
-#if 0
+
+    /* If the scroller is stalled, then we simply need to expand the gap */
+    if (self -> scroller.is_stopped)
+    {
+	self -> scroller.left_holder -> width = self -> core.width;
+	self -> scroller.width = self -> core.width;
+	return;
+    }
+
     /* Otherwise we need a new pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(widget), XtWindow(widget),
-	self -> core.width, self -> core.height,
+	self -> core.width, self -> scroller.height,
 	self -> core.depth);
 
+    /* Adjust the glyph_holders and offsets to compensate */
+    if (self -> scroller.step < 0)
+    {
+	printf("resize on L->R scrolling is not yet implemented!\n");
+	exit(1);
+    }
+    else
+    {
+	glyph_holder_t holder = self -> scroller.left_holder;
+	int offset = glyph_holder_width(holder) - self -> scroller.left_offset;
+
+	/* Look for a gap (but not the leading glyph) that we can adjust */
+	holder = holder -> next;
+	while (holder != NULL)
+	{
+	    /* Did we find one? */
+	    if (holder -> glyph == self -> scroller.gap)
+	    {
+		int new_width = gap_width(self, glyph_holder_width(holder -> previous));
+		holder -> width = new_width;
+	    }
+
+	    offset += holder -> width;
+	    holder = holder -> next;
+	}
+
+	self -> scroller.right_offset = offset - self -> core.width;
+	adjust_right_right(self);
+	adjust_left_right(self);
+    }
+#if 0
     /* Adjust the trailing offset and glyph */
     if (self -> scroller.step < 0)
     {
@@ -1072,11 +1122,12 @@ static void Resize(Widget widget)
 	adjust_left_right(self);
     }
 
+#endif /* 0 */
+
     /* Update the display on that pixmap */
     self -> scroller.width = self -> core.width;
-    Paint(self, 0, 0, self -> core.width, self -> core.height);
+    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
     Redisplay(widget, NULL, 0);
-#endif /* 0 */
 }
 
 /* What should this do? */
