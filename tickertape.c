@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.43 1999/12/09 13:21:36 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.44 1999/12/12 23:38:24 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -60,7 +60,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.43 1999/12/09 13:21:36 phelps
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
 
-#define METAMAIL_OPTIONS "-B -q -b -c"
+#define METAMAIL_OPTIONS "-x -B -q -b -c"
 #define METAMAIL_FORMAT "%s %s %s %s"
 
 /* How long to wait before we tell the user we're having trouble connecting */

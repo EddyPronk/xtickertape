@@ -2,7 +2,9 @@ Overview of changes in xtickertape-2.0
 
 * Changed the application class from `Tickertape' to `XTickertape'.
 
-* No longer redirecting the output of `metamail' to /dev/null.
+* No longer redirecting the output of `metamail' to /dev/null, and
+  using the `-x' option so that it doesn't try to talk to the tty.
+  [Thanks David Leonard]
 
 * Fixed a bug in the way the icon was created.  Now the big `e' will
   be read even on 8-bit displays.
