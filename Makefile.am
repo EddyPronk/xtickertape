@@ -1,3 +1,6 @@
+# Tell aclocal to pick up our m4 macros
+ACLOCAL_AMFLAGS = -I m4
+
 # First work out the executables
 bin_PROGRAMS = xtickertape show-url
 
