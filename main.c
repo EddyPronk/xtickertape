@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.56 1999/09/26 07:00:43 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.57 1999/10/04 05:53:12 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -59,8 +59,8 @@ static struct option long_options[] =
     { "host", required_argument, NULL, 'h' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
-    { "groups", required_argument, NULL, 'f' },
-    { "news", required_argument, NULL, 's' },
+    { "groups", required_argument, NULL, 'G' },
+    { "usenet", required_argument, NULL, 'U' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'z' },
     { NULL, no_argument, NULL, '\0' }
@@ -102,8 +102,8 @@ static void usage(int argc, char *argv[])
     fprintf(stderr, "  -h host,     --host=host\n");
     fprintf(stderr, "  -p port,     --port=port\n");
     fprintf(stderr, "  -u username, --user=username\n");
-    fprintf(stderr, "  -f filename, --groups=filename\n");
-    fprintf(stderr, "  -s filename, --news=filename\n");
+    fprintf(stderr, "  -G filename, --groups=filename\n");
+    fprintf(stderr, "  -U filename, --usenet=filename\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
 }
@@ -151,15 +151,15 @@ static void parse_args(
 		break;
 	    }
 
-	    /* --groups= or -f */
-	    case 'f':
+	    /* --groups= or -G */
+	    case 'G':
 	    {
 		*groupsFile_return = optarg;
 		break;
 	    }
 
-	    /* --news= or -s */
-	    case 's':
+	    /* --usenet= or -U */
+	    case 'U':
 	    {
 		*usenetFile_return = optarg;
 		break;

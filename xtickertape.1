@@ -7,8 +7,9 @@ xtickertape \- scrolling text chat tool
 .SH SYNOPSIS
 .nf
 xtickertape [-h host] [--host=host] [-p port] [--port=port]
-            [-u user] [--user=user] [-f groupsfile] [--groups=groupsfile]
-            [-s newsfile] [--news=newsfile] [-v] [--version] [--help]
+            [-u user] [--user=user] [-G groups-file]
+            [--groups=groups-file] [-U usenet-file]
+            [--usenet=usenet-file] [-v] [--version] [--help]
 .fi
 .SH OPTIONS
 In addition to the standard X Toolkit command-line options, \*(xt may
@@ -29,14 +30,14 @@ Connect to the elvin server listening on \fIport\fP.
 .BI --user= user
 Use \fIuser\fP as the default name when sending messages.
 .TP
-.B -f \fIfilename\fP
+.B -G \fIgroups-file\fP
 .TP
-.BI --groups= filename
+.BI --groups= groups-file
 Read the group subscriptions out of \fIfilename\fP.
 .TP
-.B -s \fIfilename\fP
+.B -U \fIusenet-file\fP
 .TP
-.BI --news= filename
+.BI --usenet= usenet-file
 Read the usenet news subscriptions out of \fIfilename\fP.
 .TP
 .B -v
