@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.3 2001/07/13 08:48:57 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.4 2001/07/13 13:02:14 phelps Exp $";
 #endif /* lint */
 
 
@@ -112,11 +112,11 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.3 2001/07/13 08:48:57 ph
 #ifndef XtCMarginHeight
 # define XtCMarginHeight "MarginHeight"
 #endif
-#ifndef XtNmessageCount
-# define XtNmessageCount "messageCount"
+#ifndef XtNmessageCapacity
+# define XtNmessageCapacity "messageCapacity"
 #endif
-#ifndef XtCMessageCount
-# define XtCMessageCount "MessageCount"
+#ifndef XtCMessageCapacity
+# define XtCMessageCapacity "MessageCapacity"
 #endif
 
 

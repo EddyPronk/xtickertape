@@ -14,7 +14,7 @@
 
 *History.marginWidth: 5
 *History.marginHeight: 5
-*History.messageCount: 32
+*History.messageCapacity: 32
 
 !
 ! Color resources
