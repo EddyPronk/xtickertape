@@ -13,58 +13,91 @@
 #define PROTO_VERSION_MINOR 0
 
 
-typedef int (*lexer_state_t)(int ch);
+typedef struct lexer *lexer_t;
+typedef int (*lexer_state_t)(lexer_t self, int ch);
+
+
 
 /* Forward declarations for the state machine states */
-static int lex_error(int ch);
-static int lex_start(int ch);
-static int lex_first_name(int ch);
-static int lex_name(int ch);
-static int lex_dash(int ch);
-static int lex_ws(int ch);
-static int lex_body(int ch);
-static int lex_fold(int ch);
-static int lex_skip_body(int ch);
-static int lex_skip_fold(int ch);
-static int lex_end(int ch);
+static int lex_error(lexer_t self, int ch);
+static int lex_start(lexer_t self, int ch);
+static int lex_first_name(lexer_t self, int ch);
+static int lex_name(lexer_t self, int ch);
+static int lex_dash(lexer_t self, int ch);
+static int lex_ws(lexer_t self, int ch);
+static int lex_body(lexer_t self, int ch);
+static int lex_fold(lexer_t self, int ch);
+static int lex_skip_body(lexer_t self, int ch);
+static int lex_skip_fold(lexer_t self, int ch);
+static int lex_end(lexer_t self, int ch);
 
+struct lexer
+{
+    /* The current lexical state */
+    lexer_state_t state;
 
-static char buffer[MAX_PACKET_SIZE];
-static char *point = buffer;
-static char *end = buffer + MAX_PACKET_SIZE;
-static char *first_name_point = NULL;
-static char *count_point = NULL;
-static char *length_point = NULL;
-static int count = 0;
-static lexer_state_t state = lex_start;
+    /* The packet buffer */
+    char *buffer;
+
+    /* The end of the packet buffer */
+    char *end;
+
+    /* The next character in the packet buffer */
+    char *point;
+
+    /* The number of attributes in the buffer */
+    int count;
+
+    /* The position of the first name in the buffer */
+    char *first_name_point;
+
+    /* The position of the attribute count in the buffer */
+    char *count_point;
+
+    /* The position of the length of the current string */
+    char *length_point;
+};
 
 /* The length-prefixed string `From' */
 static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
 
+/* Initializes a lexer's state */
+static void lexer_init(lexer_t self, char *buffer, ssize_t length)
+{
+    self -> state = lex_start;
+    self -> buffer = buffer;
+    self -> end = buffer + length;
+    self -> point = buffer;
+    self -> count = 0;
+    self -> count_point = NULL;
+    self -> length_point = NULL;
+}
 
 /* Writes an int32 into a buffer */
-static void write_int32(unsigned char *buffer, int value)
+static void write_int32(char *buffer, int value)
 {
-    buffer[0] = (value >> 24) & 0xff;
-    buffer[1] = (value >> 16) & 0xff;
-    buffer[2] = (value >> 8) && 0xff;
-    buffer[3] = (value >> 0) & 0xff;
+    unsigned char *point = (unsigned char *)buffer;
+    point[0] = (value >> 24) & 0xff;
+    point[1] = (value >> 16) & 0xff;
+    point[2] = (value >> 8) & 0xff;
+    point[3] = (value >> 0) & 0xff;
 }
 
 /* Reads an int32 from a buffer */
-static int read_int32(unsigned char *buffer)
+static int read_int32(char *buffer)
 {
-    return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | (buffer[3] << 0);
+    unsigned char *point = (unsigned char *)buffer;
+    return (point[0] << 24) | (point[1] << 16) | (point[2] << 8) | (point[3] << 0);
 }
 
 /* Append an int32 to the outgoing buffer */
-static int append_int32(int value)
+static int append_int32(lexer_t self, int value)
 {
     /* Make sure there's room */
-    if (point + 4 < end)
+    if (self -> point + 4 < self -> end)
     {
-	write_int32(point, value);
-	point += 4;
+	write_int32(self -> point, value);
+	self -> point += 4;
 	return 0;
     }
 
@@ -72,12 +105,12 @@ static int append_int32(int value)
 }
 
 /* Begin writing a string */
-static int begin_string()
+static int begin_string(lexer_t self)
 {
-    if (point + 4 < end)
+    if (self -> point + 4 < self -> end)
     {
-	length_point = point;
-	point += 4;
+	self -> length_point = self -> point;
+	self -> point += 4;
 	return 0;
     }
 
@@ -85,17 +118,17 @@ static int begin_string()
 }
 
 /* Finish writing a string */
-static int end_string()
+static int end_string(lexer_t self)
 {
-    char *string = length_point + 4;
+    char *string = self -> length_point + 4;
 
     /* Write the length */
-    write_int32(length_point, point - string);
+    write_int32(self -> length_point, self -> point - string);
 
     /* Pad the string out to a 4-byte boundary */
-    while ((int)point & 3)
+    while ((int)self -> point & 3)
     {
-	*(point++) = '\0';
+	*(self -> point++) = '\0';
     }
 
     return 0;
@@ -103,11 +136,11 @@ static int end_string()
 
 
 /* Append a character to the current string */
-static int append_char(int ch)
+static int append_char(lexer_t self, int ch)
 {
-    if (point < end)
+    if (self -> point < self -> end)
     {
-	*(point++) = ch;
+	*(self -> point++) = ch;
 	return 0;
     }
 
@@ -143,41 +176,86 @@ static int lstring_eq(char *string1, char *string2)
 }
 
 
+/* Writes a UNotify packet header */
+static int lexer_append_unotify_header(lexer_t self)
+{
+    /* Write the packet type */
+    if (append_int32(self, UNOTIFY_TYPECODE) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the protocol major version number */
+    if (append_int32(self, PROTO_VERSION_MAJOR) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the protocol minor version number */
+    if (append_int32(self, PROTO_VERSION_MINOR) < 0)
+    {
+	return -1;
+    }
+
+    /* The number of attributes will go here */
+    self -> count_point = self -> point;
+    self -> point += 4;
+
+    /* The first name will go next */
+    self -> first_name_point = self -> point;
+    return 0;
+}
+
+/* Writes the UNotify packet footer */
+static int lexer_append_unotify_footer(lexer_t self)
+{
+    /* Record the number of attributes */
+    write_int32(self -> count_point, self -> count);
+
+    /* No keys */
+    return append_int32(self, 0);
+}
+
+
+
+
+
 
 /* Begin an attribute name */
-static int begin_name()
+static int begin_name(lexer_t self)
 {
-    return begin_string();
+    return begin_string(self);
 }
 
 /* End an attribute name */
-static int end_name()
+static int end_name(lexer_t self)
 {
     char *name;
 
     /* Tidy up the string */
-    if (end_string() < 0)
+    if (end_string(self) < 0)
     {
 	return -1;
     }
 
     /* Check if we've already seen this name */
-    name = first_name_point;
-    while (name < length_point)
+    name = self -> first_name_point;
+    while (name < self -> length_point)
     {
 	int length;
 
 	/* Look for a match */
-	if (lstring_eq(length_point, name))
+	if (lstring_eq(name, self -> length_point))
 	{
-	    /* Uh oh!  Discard the new name */
-	    point = length_point;
-	    state = lex_skip_body;
+	    /* Already have this attribute.  Discard the new one. */
+	    self -> point = self -> length_point;
+	    self -> state = lex_skip_body;
 	    return 1;
 	}
 
 	/* Skip to the next name */
 	length = read_int32(name);
+	/* FIX THIS: need a better constant here */
 	name += length + (MAX_PACKET_SIZE - length) % 4 + 8;
 	length = read_int32(name);
 	name += length + (MAX_PACKET_SIZE - length) % 4 + 4;
@@ -188,140 +266,140 @@ static int end_name()
 
 
 /* Begin an attribute string value */
-static int begin_string_value()
+static int begin_string_value(lexer_t self)
 {
-    if (point + 4 < end)
+    if (self -> point + 4 < self -> end)
     {
 	/* Write the string typecode */
-	append_int32(STRING_TYPECODE);
+	append_int32(self, STRING_TYPECODE);
 
-	return begin_string();
+	return begin_string(self);
     }
 
     return -1;
 }
 
 /* End an attribute string value */
-static int end_string_value()
+static int end_string_value(lexer_t self)
 {
-    end_string();
-    count++;
+    end_string(self);
+    self -> count++;
     return 0;
 }
 
 /* Ignore additional input */
-static int lex_error(int ch)
+static int lex_error(lexer_t self, int ch)
 {
     return -1;
 }
 
 /* Get started */
-static int lex_start(int ch)
+static int lex_start(lexer_t self, int ch)
 {
     /* Bitch and moan if we start with a space or a colon */
     if (ch == ':' || isspace(ch))
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Start a name field */
-    if (begin_name() < 0)
+    if (begin_name(self) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Anything else is part of the first field's name */
-    if (append_char(toupper(ch)) < 0)
+    if (append_char(self, toupper(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_first_name;
+    self -> state = lex_first_name;
     return 0;
 }
 
 /* Reading the first field name */
-static int lex_first_name(int ch)
+static int lex_first_name(lexer_t self, int ch)
 {
     /* SPECIAL CASE: the first line of may an out-of-band `From' line
      * in which the `From' doesn't end in a colon. */
     if (ch == ' ')
     {
 	/* Complete the name string */
-	if (end_name() < 0)
+	if (end_name(self) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
 	/* Make sure it matches `From' */
-	if (! lstring_eq(length_point, from_string))
+	if (! lstring_eq(self -> length_point, from_string))
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
 	/* Convert the first character to lowercase */
-	length_point[4] = 'f';
+	self -> length_point[4] = 'f';
 
-	state = lex_ws;
+	self -> state = lex_ws;
 	return 0;
     }
 
     /* Other whitespace is an error */
     if (isspace(ch))
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* A colon is the end of the field name */
     if (ch == ':')
     {
-	if (end_name() < 0)
+	if (end_name(self) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
-	state = lex_ws;
+	self -> state = lex_ws;
 	return 0;
     }
 
     /* Anything else is part of the field name */
-    if (append_char(tolower(ch)) < 0)
+    if (append_char(self, tolower(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for dashes */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_first_name;
+    self -> state = lex_first_name;
     return 0;
 }
 
 /* Reading a field name */
-static int lex_name(int ch)
+static int lex_name(lexer_t self, int ch)
 {
     if (isspace(ch))
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
@@ -330,48 +408,48 @@ static int lex_name(int ch)
     {
 	int result;
 
-	if ((result = end_name()) < 0)
+	if ((result = end_name(self)) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
 	/* Watch for repeated names */
 	if (result)
 	{
-	    state = lex_skip_body;
+	    self -> state = lex_skip_body;
 	    return 0;
 	}
 
-	state = lex_ws;
+	self -> state = lex_ws;
 	return 0;
     }
 
     /* Anything else is part of the field name */
-    if (append_char(tolower(ch)) < 0)
+    if (append_char(self, tolower(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for dashes */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_name;
+    self -> state = lex_name;
     return 0;
 }
 
 /* We've read a `-' in a name */
-static int lex_dash(int ch)
+static int lex_dash(lexer_t self, int ch)
 {
     /* Spaces are bogus in field names */
     if (isspace(ch))
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
@@ -380,244 +458,243 @@ static int lex_dash(int ch)
     {
 	int result;
 
-	if ((result = end_name()) < 0)
+	if ((result = end_name(self)) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
 	/* Watch for repeated names */
 	if (result)
 	{
-	    state = lex_skip_body;
+	    self -> state = lex_skip_body;
 	    return 0;
 	}
 
-	state = lex_ws;
+	self -> state = lex_ws;
 	return 0;
     }
 
     /* Anything else is part of the field name */
-    if (append_char(toupper(ch)) < 0)
+    if (append_char(self, toupper(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for additional dashes */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_name;
+    self -> state = lex_name;
     return 0;
 }
 
 /* Skip over whitespace */
-static int lex_ws(int ch)
+static int lex_ws(lexer_t self, int ch)
 {
     /* Try to fold on a LF */
     if (ch == '\n')
     {
-	if (begin_string_value() < 0)
+	if (begin_string_value(self) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
-	state = lex_fold;
+	self -> state = lex_fold;
 	return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	state = lex_ws;
+	self -> state = lex_ws;
 	return 0;
     }
 
     /* Anything else is part of the body */
-    if (begin_string_value() < 0)
+    if (begin_string_value(self) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
-    return lex_body(ch);
+    return lex_body(self, ch);
 }
 
 /* Read the body */
-static int lex_body(int ch)
+static int lex_body(lexer_t self, int ch)
 {
     /* Try to fold on LF */
     if (ch == '\n')
     {
-	state = lex_fold;
+	self -> state = lex_fold;
 	return 0;
     }
 
     /* Anything else is part of the body */
-    if (append_char(ch) < 0)
+    if (append_char(self, ch) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
-    state = lex_body;
+    self -> state = lex_body;
     return 0;
 }
 
 /* Try to fold */
-static int lex_fold(int ch)
+static int lex_fold(lexer_t self, int ch)
 {
     /* A linefeed means that we're out of headers */
     if (ch == '\n')
     {
-	if (end_string_value() < 0)
+	if (end_string_value(self) < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
-	state = lex_end;
+	self -> state = lex_end;
 	return 0;
     }
 
     /* Other whitespace means a folded body */
     if (isspace(ch))
     {
-	if (append_char(' ') < 0)
+	if (append_char(self, ' ') < 0)
 	{
-	    state = lex_error;
+	    self -> state = lex_error;
 	    return -1;
 	}
 
-	state = lex_body;
+	self -> state = lex_body;
 	return 0;
     }
 
-    if (end_string_value() < 0)
+    if (end_string_value(self) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* A colon here is an error */
     if (ch == ':')
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return 0;
     }
 
     /* Anything else is the start of the next field */
-    if (begin_name() < 0)
+    if (begin_name(self) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Make sure the first letter is always uppercase */
-    if (append_char(toupper(ch)) < 0)
+    if (append_char(self, toupper(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_name;
+    self -> state = lex_name;
     return 0;
 }
 
 /* Discard the body */
-static int lex_skip_body(int ch)
+static int lex_skip_body(lexer_t self, int ch)
 {
     /* Try to fold on LF */
     if (ch == '\n')
     {
-	state = lex_skip_fold;
+	self -> state = lex_skip_fold;
 	return 0;
     }
 
     /* Anything else is part of the body */
-    state = lex_skip_body;
+    self -> state = lex_skip_body;
     return 0;
 }
 
 /* Try to fold */
-static int lex_skip_fold(int ch)
+static int lex_skip_fold(lexer_t self, int ch)
 {
     /* A linefeed means the end of the headers */
     if (ch == '\n')
     {
-	state = lex_end;
+	self -> state = lex_end;
 	return 0;
     }
 
     /* Other whitespace means a folded body */
     if (isspace(ch))
     {
-	state = lex_skip_body;
+	self -> state = lex_skip_body;
 	return 0;
     }
 
     /* Anything else is the beginning of the next name */
-    if (begin_name() < 0)
+    if (begin_name(self) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Make sure the first letter is always uppercase */
-    if (append_char(toupper(ch)) < 0)
+    if (append_char(self, toupper(ch)) < 0)
     {
-	state = lex_error;
+	self -> state = lex_error;
 	return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-')
     {
-	state = lex_dash;
+	self -> state = lex_dash;
 	return 0;
     }
 
-    state = lex_name;
+    self -> state = lex_name;
     return 0;
 }
 
 /* Skip everything after the headers */
-static int lex_end(int ch)
+static int lex_end(lexer_t self, int ch)
 {
-    state = lex_end;
+    self -> state = lex_end;
     return 0;
 }
 
 
 
 /* Run the buffer through the lexer */
-static int lex(char *in, ssize_t length)
+static int lex(lexer_t self, char *buffer, ssize_t length)
 {
     char *point;
 
     /* Watch for the end-of-input marker */
     if (length == 0)
     {
-	return state(EOF);
+	return self -> state(self, EOF);
     }
 
-    for (point = in; point< in + length; point++)
+    for (point = buffer; point < buffer + length; point++)
     {
-	if (state(*point) < 0)
+	if (self -> state(self, *point) < 0)
 	{
-	    state = lex_error;
 	    return -1;
 	}
     }
@@ -625,14 +702,16 @@ static int lex(char *in, ssize_t length)
     return 0;
 }
 
-static void dump_buffer()
+static void dump_buffer(char *buffer, int length)
 {
-    fwrite(buffer, 1, point - buffer, stdout);
+    fwrite(buffer, 1, length, stdout);
     fflush(stdout);
 }
 
 int main(int argc, char *argv[])
 {
+    struct lexer lexer;
+    char packet[MAX_PACKET_SIZE];
     char buffer[BUFFER_SIZE];
     int fd;
 
@@ -649,15 +728,14 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /* Write the header into the outgoing buffer */
-    append_int32(UNOTIFY_TYPECODE);
-    append_int32(PROTO_VERSION_MAJOR);
-    append_int32(PROTO_VERSION_MINOR);
+    /* Initialize the lexer */
+    lexer_init(&lexer, packet, MAX_PACKET_SIZE);
 
-    /* The next 4 bytes is where the number of attributes goes */
-    count_point = point;
-    point += 4;
-    first_name_point = point;
+    /* Write the header */
+    if (lexer_append_unotify_header(&lexer) < 0)
+    {
+	abort();
+    }
 
     /* Read the attributes and add them to the notification */
     while (1)
@@ -673,7 +751,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Run it through the lexer */
-	result = lex(buffer, length);
+	result = lex(&lexer, buffer, length);
 
 	/* Check for end of input */
 	if (length == 0)
@@ -683,14 +761,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	    }
 
-	    /* Write the number of attributes field */
-	    write_int32(count_point, count);
-
-	    /* No keys (yet) */
-	    append_int32(0);
+	    /* Write the footer */
+	    if (lexer_append_unotify_footer(&lexer) < 0)
+	    {
+		abort();
+	    }
 
 	    /* What have we got? */
-	    dump_buffer();
+	    dump_buffer(lexer.buffer, lexer.point - lexer.buffer);
 	    close(fd);
 	    exit(0);
 	}
