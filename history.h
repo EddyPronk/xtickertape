@@ -55,5 +55,8 @@ int history_add(history_t self, Message message);
 /* Answers the Message at the given index */
 Message history_get(history_t self, int index);
 
+/* Answers the index of given Message in the history */
+int history_index(history_t self, Message message);
+
 
 #endif /* HISTORY_H */
