@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.19 1999/08/11 06:12:39 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.20 1999/08/19 11:18:48 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -108,6 +108,9 @@ typedef struct
 
     /* The height of the scrolling text */
     int height;
+
+    /* The initial position of the drag */
+    int start_drag_x;
 
     /* The position of the pointer the last time we noticed a drag */
     int last_x;

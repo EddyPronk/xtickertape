@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.57 1999/08/19 04:40:42 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.58 1999/08/19 11:18:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -45,6 +45,9 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.57 1999/08/19 04:40:42 phelps E
 /* FIX THIS: should compute based on the width of some number of 'n's */
 #define END_SPACING 30
 #define MAX_VISIBLE 8
+
+/* Minimum drag amount (in pixels) before we decide not `click' */
+#define DRAG_DELTA 5
 
 /*
  * Resources
@@ -1617,6 +1620,7 @@ static void slower(Widget widget, XEvent *event)
 static void draginit(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
+    XButtonEvent *button_event = (XButtonEvent *)event;
 
     /* Abort if the pre-action tells us to */
     if (pre_action(self, event) < 0)
@@ -1625,22 +1629,32 @@ static void draginit(Widget widget, XEvent *event)
     }
 
     /* Record the postion of the click for future reference */
-    self -> scroller.last_x = ((XButtonEvent *) event) -> x;
+    self -> scroller.start_drag_x = button_event -> x;
+    self -> scroller.last_x = button_event -> x;
 }
 
 /* Someone is dragging the mouse */
-static void drag(Widget widget, XEvent *ev)
+static void drag(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    XMotionEvent *event = (XMotionEvent *) ev;
+    XMotionEvent *motion_event = (XMotionEvent *) event;
 
     /* Abort if the pre-action tells us to */
-    if (pre_action(self, ev) < 0)
+    if (pre_action(self, event) < 0)
     {
 	return;
     }
 
-    /* Note that we're dragging */
+    /* If we're more than DELTA pixels from the position of the mouse
+     * down event, then we must be dragging */
+    if ((! self -> scroller.is_dragging) &&
+	(motion_event -> x + DRAG_DELTA > self -> scroller.start_drag_x) &&
+	(motion_event -> x - DRAG_DELTA < self -> scroller.start_drag_x))
+    {
+	return;
+    }
+
+    /* Ok, we're definitely dragging */
     self -> scroller.is_dragging = True;
 
     /* If the scroller is stopped then do nothing */
@@ -1650,9 +1664,9 @@ static void drag(Widget widget, XEvent *ev)
     }
 
     /* Otherwise scroll by the difference */
-    scroll(self, self -> scroller.last_x - event -> x);
-    self -> scroller.last_x = event -> x;
-
+    scroll(self, self -> scroller.last_x - motion_event -> x);
+    self -> scroller.last_x = motion_event -> x;
+    
     /* Repaint the widget */
     Redisplay(widget, NULL, 0);
 }
