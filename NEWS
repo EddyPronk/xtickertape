@@ -11,6 +11,8 @@ Overview of changes in xtickertape-2.0a8
 * The show-url command has been completely rewritten to use the
   BROWSER environment variable as defined by ESR.
 
+* xtickertape can now build against verion 4.1b4 of libelvin.
+
 Overview of changes in xtickertape-2.0a7
 
 * The path to metamail is now an X resource.
