@@ -92,6 +92,41 @@ static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_make_cons(vm, error);
 }
 
+/* The `if' special form */
+static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    object_type_t type;
+
+    if (argc != 3)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* Rotate the condition to the top of the stack and evaluate it */
+    if (! vm_unroll(vm, 2, error) || ! vm_eval(vm, error))
+    {
+	return 0;
+    }
+
+    /* Is it nil? */
+    if (! vm_type(vm, &type, error))
+    {
+	return 0;
+    }
+
+    /* If the value is not nil then we need to pop an extra time */
+    if (type != SEXP_NIL)
+    {
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+    }
+
+    return vm_pop(vm, NULL, error) && vm_eval(vm, error);
+}
+
 /* The `lambda' special form */
 static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -230,6 +265,7 @@ int main(int argc, char *argv[])
 	! define_subr(vm, "car", prim_car, error) ||
 	! define_subr(vm, "cdr", prim_cdr, error) ||
 	! define_subr(vm, "cons", prim_cons, error) ||
+	! define_special(vm, "if", prim_if, error) ||
 	! define_special(vm, "lambda", prim_lambda, error) ||
 	! define_special(vm, "quote", prim_quote, error) ||
 	! define_special(vm, "setq", prim_setq, error) ||
