@@ -26,7 +26,7 @@ fi
 
 # Add the X11 stuff to the places it belongs
 CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-LDFLAGS="$LD_FLAGS $X_LIBS"
+LDFLAGS="$LDFLAGS $X_LIBS"
 LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
 
 # Check to see if we can find the X library.
