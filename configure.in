@@ -159,7 +159,6 @@ dnl ==============================================================
 
 dnl Checks for library functions.
 dnl =============================
-AC_FUNC_ALLOCA
 AC_CHECK_FUNCS(strdup)
 
 AC_OUTPUT(Makefile)
