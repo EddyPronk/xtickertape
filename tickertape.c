@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.21 1999/10/04 03:08:15 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.22 1999/10/04 03:18:15 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -480,6 +480,21 @@ static int parse_groups_file(tickertape_t self)
 }
 
 
+/* The callback for the usenet file parser */
+static int parse_usenet_callback(
+    tickertape_t self, char *pattern,
+    struct usenet_expr *expressions, size_t count)
+{
+    struct usenet_expr *pointer;
+
+    printf("===\n%s\n", pattern);
+    for (pointer = expressions; pointer < expressions + count; pointer++)
+    {
+	printf("  %d %d \"%s\"\n", pointer -> field, pointer -> operator, pointer -> pattern);
+    }
+
+    return 0;
+}
 
 /* Parse the usenet file and update the usenet subscription accordingly */
 static int parse_usenet_file(tickertape_t self)
@@ -489,7 +504,9 @@ static int parse_usenet_file(tickertape_t self)
     int fd;
 
     /* Allocate a new usenet file parser */
-    if ((parser = usenet_parser_alloc(filename)) == NULL)
+    if ((parser = usenet_parser_alloc(
+	(usenet_parser_callback_t)parse_usenet_callback,
+	self, filename)) == NULL)
     {
 	return -1;
     }
