@@ -294,6 +294,29 @@ void List_doWith(List self, void (*function)(), void *context)
     }
 }
 
+/* Enumeration with more context */
+void List_doWithWith(List self, void (*function)(), void *arg1, void *arg2)
+{
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	(*function)(link -> value, arg1, arg2);
+    }
+}
+
+/* Enumeration with even more context */
+void List_doWithWithWith(List self, void (*function)(), void *arg1, void *arg2, void *arg3)
+{
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	(*function)(link -> value, arg1, arg2, arg3);
+    }
+}
 
 
 

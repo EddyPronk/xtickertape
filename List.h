@@ -1,5 +1,5 @@
 /*
- * $Id: List.h,v 1.4 1997/02/13 08:13:43 phelps Exp $
+ * $Id: List.h,v 1.5 1998/08/19 06:38:56 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
@@ -56,6 +56,11 @@ void List_do(List self, void (*function)());
 /* Enumeration with context */
 void List_doWith(List self, void (*function)(), void *context);
 
+/* Enumeration with more context */
+void List_doWithWith(List self, void (*function)(), void *arg1, void *arg2);
+
+/* Enumeration with even more context */
+void List_doWithWithWith(List self, void (*function)(), void *arg1, void *arg2, void *arg3);
 
 /* Debugging */
 void List_debug(List self);
