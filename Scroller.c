@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.124 2001/07/17 01:18:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.125 2001/08/25 07:00:44 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1469,11 +1469,8 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	    return;
 	}
 
-	/* Ignore anything that isn't a graphics expose event */
-	if (event -> type != GraphicsExpose)
-	{
-	    return;
-	}
+	/* Sanity check */
+	assert(event -> type == GraphicsExpose);
 
 	/* Coerce the event */
 	g_event = (XGraphicsExposeEvent *)event;
@@ -1482,7 +1479,7 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
 
 	/* Bail if this is the last GraphicsExpose event */
-	if (g_event -> count < 1)
+	if (g_event -> count == 0)
 	{
 	    return;
 	}
