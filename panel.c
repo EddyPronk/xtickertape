@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.53 2001/10/05 14:58:56 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.54 2001/10/16 16:18:18 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -633,28 +633,6 @@ static void history_attachment_callback(Widget widget, XtPointer closure, XtPoin
     tickertape_show_attachment(self -> tickertape, message);
 }
 
-/* Displays a message in the status line */
-static void show_status(
-    control_panel_t self,
-    char *message)
-{
-    XmString string;
-
-
-    /* Bail if we're already displaying that message */
-    if (self -> status == message)
-    {
-	return;
-    }
-
-    /* Create a string to display the message */
-    string = XmStringCreateSimple(message);
-    XtVaSetValues(self -> status_line, XmNlabelString, string, NULL);
-    XmStringFree(string);
-
-    self -> status = message;
-}
-
 #if 0
 /* This is called when the mouse enters, leaves or moves around in the
  * history widget */
@@ -688,7 +666,7 @@ static void history_motion_callback(
 
 	case LeaveNotify:
 	{
-	    show_status(self, " ");
+	    control_panel_show_status(self, " ");
 	    return;
 	}
 
@@ -704,19 +682,19 @@ static void history_motion_callback(
     /* Make sure there is a message */
     if (message == NULL)
     {
-	show_status(self, " ");
+	control_panel_show_status(self, " ");
 	return;
     }
 
     /* See if it has mime args attached */
     if ((mime_length = message_get_mime_args(message, &mime_args)) == 0)
     {
-	show_status(self, " ");
+	control_panel_show_status(self, " ");
 	return;
     }
 
     /* Show the mime_args in the status line */
-    show_status(self, mime_args);
+    control_panel_show_status(self, mime_args);
 }
 #endif
 
@@ -1325,8 +1303,8 @@ char *create_uuid(control_panel_t self)
     char buffer[32];
     time_t now;
     struct tm *tm_gmt;
-    char digest[SHA1DIGESTLEN];
-    char result[SHA1DIGESTLEN * 2 + 1];
+    char digest[ELVIN_SHA1DIGESTLEN];
+    char result[ELVIN_SHA1DIGESTLEN * 2 + 1];
     int index;
 
     /* Get the time */
@@ -1356,13 +1334,13 @@ char *create_uuid(control_panel_t self)
     }
 
     /* Convert those digits into bytes */
-    for (index = 0; index < SHA1DIGESTLEN; index++)
+    for (index = 0; index < ELVIN_SHA1DIGESTLEN; index++)
     {
 	int ch = (uchar)digest[index];
 	result[index * 2] = hex_chars[ch >> 4];
 	result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
-    result[SHA1DIGESTLEN * 2] = '\0';
+    result[ELVIN_SHA1DIGESTLEN * 2] = '\0';
 
     return strdup(result);
 }
@@ -1536,6 +1514,28 @@ void control_panel_free(control_panel_t self)
 }
 
 
+
+/* Displays a message in the status line */
+void control_panel_show_status(
+    control_panel_t self,
+    char *message)
+{
+    XmString string;
+
+    /* Bail if we're already displaying that message */
+    if (self -> status == message)
+    {
+	return;
+    }
+
+    /* Create a string to display the message */
+    string = XmStringCreateSimple(message);
+    XtVaSetValues(self -> status_line, XmNlabelString, string, NULL);
+    XmStringFree(string);
+
+    self -> status = message;
+}
+
 /* This is called when the elvin connection status changes */
 void control_panel_set_connected(
     control_panel_t self,
@@ -1544,7 +1544,6 @@ void control_panel_set_connected(
     /* Enable/disable the `Send' button as appropriate */
     XtSetSensitive(self -> send, is_connected);
 }
-
 
 /* Adds a subscription to the receiver at the end of the groups list */
 void *control_panel_add_subscription(
