@@ -143,20 +143,20 @@
 !
 ! Scroller action translations
 !
-*.scroller.translations: #override \n\
+*.scroller.translations: #override\n\
 	<Btn1Down>: start-drag()\n\
 	<Btn1Motion>: drag()\n\
-	<Btn1Up>: show-menu() \n\
-	<Btn2Up>: show-attachment() \n\
-	<Btn3Up>: expire() \n\
+	<Btn1Up>: show-menu()\n\
+	<Btn2Up>: show-attachment()\n\
+	<Btn3Up>: expire()\n\
 	<Key>d: expire()\n\
 	<Key>x: delete()\n\
 	<Key>k: kill()\n\
-	Meta<Key>q: quit()\n
-	<Key>-: slower() \n\
-	<Key>=: faster() \n\
-	<Key>comma: faster() \n\
-	<Key>.: slower() \n\
+	Meta<Key>q: quit()\n\
+	<Key>-: slower()\n\
+	<Key>=: faster()\n\
+	<Key>comma: faster()\n\
+	<Key>.: slower()\n\
 	<Key>0: set-speed(0)\n\
 	<Key>0: set-speed(0)\n\
 	<Key>1: set-speed(1)\n\
@@ -186,7 +186,7 @@
 	<Btn2Down>: select()\n\
 	<Btn2Motion>: drag()\n\
 	<Btn2Up>: show-attachment()\n\
-	<Key>x: show-attachment()\n\
+	<Key>Return: show-attachment()\n\
 	Ctrl<Key>p: select-previous()\n\
 	Ctrl<Key>n: select-next()\n\
 	<Key>osfUp: select-previous()\n\
