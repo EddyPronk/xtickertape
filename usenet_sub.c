@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.1 1999/10/04 07:04:57 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.2 1999/10/04 10:55:09 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -59,6 +59,9 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.1 1999/10/04 07:04:57 phelps 
 
 #define PATTERN_ONLY "%sNEWSGROUPS matches(\"%s\")"
 #define PATTERN_PLUS "(%sNEWSGROUPS matches(\"%s\"))"
+
+#define USENET_PREFIX "usenet: %s"
+#define NEWS_URL "news://%s/%s"
 
 /* The structure of a usenet subscription */
 struct usenet_sub
@@ -104,8 +107,12 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     }
 
     /* Prepent `usenet:' to the beginning of the group field */
-    newsgroups = (char *)malloc(sizeof("usenet: ") + strlen(string));
-    sprintf(newsgroups, "usenet: %s", string);
+    if ((newsgroups = (char *)malloc(strlen(USENET_PREFIX) + strlen(string) - 1)) == NULL)
+    {
+	return;
+    }
+
+    sprintf(newsgroups, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
     if ((en_search(notification, FROM_NAME, &type, (void **)&name) != 0) ||
@@ -154,8 +161,15 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
 	    newshost = "news";
 	}
 
-	buffer = (char *)malloc(sizeof("news:///") + strlen(newshost) + strlen(mime_args));
-	sprintf(buffer, "news://%s/%s", newshost, mime_args);
+	if ((buffer = (char *)malloc(
+	    strlen(NEWS_URL) + strlen(newshost) + strlen(mime_args) - 3)) == NULL)
+	{
+	    free(newsgroups);
+	    return;
+	}
+
+	sprintf(buffer, NEWS_URL, newshost, mime_args);
+
 	mime_args = buffer;
 	mime_type = NEWS_MIME_TYPE;
     }
@@ -261,7 +275,6 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* not [matches] */
 	case O_NOT:
 	{
-	    printf("NOT\n");
 	    format = "!%s matches(\"%s\")";
 	    break;
 	}
@@ -269,23 +282,32 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* = */
 	case O_EQ:
 	{
-	    printf("EQ\n");
-	    format = "%s == %s";
+	    if (expression -> field == F_XPOSTS)
+	    {
+		format = "%s == %s";
+		break;
+	    }
+
+	    format = "%s == \"%s\"";
 	    break;
 	}
 
 	/* != */
 	case O_NEQ:
 	{
-	    printf("NEQ\n");
-	    format = "%s != %s";
+	    if (expression -> field == F_XPOSTS)
+	    {
+		format = "%s != %s";
+		break;
+	    }
+
+	    format = "%s != \"%s\"";
 	    break;
 	}
 
 	/* < */
 	case O_LT:
 	{
-	    printf("LT\n");
 	    format = "%s < %s";
 	    break;
 	}
@@ -293,7 +315,6 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* > */
 	case O_GT:
 	{
-	    printf("GT\n");
 	    format = "%s > %s";
 	    break;
 	}
@@ -301,7 +322,6 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* <= */
 	case O_LE:
 	{
-	    printf("LE\n");
 	    format = "%s <= %s";
 	    break;
 	}
@@ -323,7 +343,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     /* Allocate space for the result */
     if ((result = (char *)malloc(
- 	strlen(format) + strlen(field_name) + strlen(expression -> pattern) - 3)) == NULL)
+	strlen(format) + strlen(field_name) + strlen(expression -> pattern) - 3)) == NULL)
     {
 	return NULL;
     }
@@ -387,7 +407,6 @@ static char *alloc_sub(
 	size = new_size;
     }
 
-    printf("result='%s'\n", result);
     return result;
 }
 
@@ -447,8 +466,13 @@ int usenet_sub_add(
     /* If we had no previous expression, then simply create one */
     if (self -> expression == NULL)
     {
-	self -> expression_size = sizeof(ONE_SUB + entry_length - 2);
-	self -> expression = (char *)malloc(self -> expression_size);
+	self -> expression_size = sizeof(ONE_SUB) + entry_length - 2;
+	if ((self -> expression = (char *)malloc(self -> expression_size)) == NULL)
+	{
+	    free(entry_sub);
+	    return -1;
+	}
+
 	sprintf(self -> expression, ONE_SUB, entry_sub);
     }
     /* Otherwise we need to extend the existing expression */
@@ -493,15 +517,11 @@ void usenet_sub_set_connection(usenet_sub_t self, connection_t connection)
     }
 
     /* Connect to the new one */
-    printf("setting connection...\n");
     self -> connection = connection;
     if ((self -> connection != NULL) && (self -> expression != NULL))
     {
-	printf("expression is %s\n", self -> expression);
-#if 0
 	self -> connection_info = connection_subscribe(
 	    self -> connection, self -> expression,
 	    (notify_callback_t)handle_notify, self);
-#endif /* 0 */
     }
 }
