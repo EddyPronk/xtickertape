@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.h,v 1.3 1998/10/23 03:32:13 phelps Exp $
+ * $Id: Ticker.h,v 1.4 1998/10/25 07:16:37 phelps Exp $
  * COPYRIGHT!
  *
  * Tickertape represents a scroller and control panel and manages the
@@ -33,8 +33,5 @@ void Tickertape_handleNotify(Tickertape self, Widget widget);
 
 /* Handles the quit action */
 void Tickertape_handleQuit(Tickertape self, Widget widget);
-
-/* Prints out debugging information about the receiver */
-void Tickertape_debug(Tickertape self);
 
 #endif /* TICKER_H */
