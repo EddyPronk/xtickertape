@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.h,v 1.1 1998/10/22 07:07:24 phelps Exp $
+/* $Id: FileStreamTokenizer.h,v 1.2 1998/10/23 10:03:31 phelps Exp $
  * COPYRIGHT!
  *
  * Reads tokens from a FILE, coping with whitespace, linefeeds
@@ -14,7 +14,7 @@ typedef struct FileStreamTokenizer_t *FileStreamTokenizer;
 #include <stdio.h>
 
 /* Answers a new FileStreamTokenizer */
-FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *special);
+FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *whitespace, char *special);
 
 /* Frees the resources consumed by a FileStreamTokenizer */
 void FileStreamTokenizer_free(FileStreamTokenizer self);

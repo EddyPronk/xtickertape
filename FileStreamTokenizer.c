@@ -1,12 +1,10 @@
-/* $Id: FileStreamTokenizer.c,v 1.1 1998/10/22 07:07:24 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.2 1998/10/23 10:03:29 phelps Exp $ */
 
 #include "FileStreamTokenizer.h"
 #include <stdlib.h>
-#include <alloca.h>
 #include <string.h>
+#include "StringBuffer.h"
 #include "sanity.h"
-
-#define INITIAL_BUFFER_SIZE 256
 
 #ifdef SANITY
 static char *sanity_value = "FileStreamTokenizer";
@@ -24,6 +22,12 @@ struct FileStreamTokenizer_t
     /* The receiver's FILE */
     FILE *file;
 
+    /* The receiver's StringBuffer */
+    StringBuffer buffer;
+
+    /* The receiver's whitespace characters (not to be included as part of tokens) */
+    char *whitespace;
+
     /* The receiver's "special" characters (tokens all by themselves) */
     char *special;
 
@@ -37,12 +41,35 @@ struct FileStreamTokenizer_t
 
 /*
  *
+ * Static functions
+ *
+ */
+
+/* Skips all whitespace characters */
+static void SkipWhitespace(FileStreamTokenizer self)
+{
+    char ch;
+
+    while ((ch = fgetc(self -> file)) != EOF)
+    {
+	/* If we encounter a non-whitespace character, then put it back and return */
+	if (strchr(self -> whitespace, ch) == NULL)
+	{
+	    ungetc(ch, self -> file);
+	    return;
+	}
+    }
+}
+
+
+/*
+ *
  * Exported functions
  *
  */
 
 /* Answers a new FileStreamTokenizer */
-FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *special)
+FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *whitespace, char *special)
 {
     FileStreamTokenizer self;
 
@@ -58,6 +85,8 @@ FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *special)
 #endif SANITY
 
     self -> file = file;
+    self -> buffer = StringBuffer_alloc();
+    self -> whitespace = strdup(whitespace);
     self -> special = strdup(special);
     self -> hasBacktrack = 0;
     self -> backtrack = '\0';
@@ -101,10 +130,6 @@ void FileStreamTokenizer_debug(FileStreamTokenizer self)
  * if at the end of the file */
 char *FileStreamTokenizer_next(FileStreamTokenizer self)
 {
-    int bufferSize = INITIAL_BUFFER_SIZE;
-    char *buffer;
-    char *end;
-    char *pointer;
     int ch;
 
     /* If we're at the end of the file, then simply exit */
@@ -114,71 +139,41 @@ char *FileStreamTokenizer_next(FileStreamTokenizer self)
 	return NULL;
     }
 
-    /* Skip whitespace (but don't skip special characters) */
-    while ((ch == EOF) || (ch == ' ') || (ch == '\t') || (ch == '\n'))
-    {
-	/* If the whitespace character is a special character, then return it */
-	if (strchr(self -> special, ch) != NULL)
-	{
-	    char *result = (char *)malloc(2);
-	    result[0] = ch;
-	    result[1] = '\0';
-	    return result;
-	}
+    /* Put the character back */
+    ungetc(ch, self -> file);
 
-	ch = fgetc(self -> file);
-    }
+    /* Skip over whitespace */
+    SkipWhitespace(self);
 
-    /* If the whitespace character is a special character, then return it */
+    /* Clear out the StringBuffer */
+    StringBuffer_clear(self -> buffer);
+
+    /* See if the next character is a special character */
+    ch = fgetc(self -> file);
     if (strchr(self -> special, ch) != NULL)
     {
-	char *result = (char *)malloc(2);
-	result[0] = ch;
-	result[1] = '\0';
-	return result;
+	StringBuffer_appendChar(self -> buffer, ch);
+	return StringBuffer_getBuffer(self -> buffer);
     }
 
-    /* Ok, we've got a real token here.  Make a buffer for it and start copying it */
-    bufferSize = INITIAL_BUFFER_SIZE;
-    buffer = (char *)alloca(bufferSize);
-    end = buffer + bufferSize;
-    pointer = buffer;
+    /* Put the character back */
+    ungetc(ch, self -> file);
 
-    /* Copy the first character into the buffer */
-    *pointer = ch;
-    pointer++;
-
-    /* Keep going until we get the whole token */
-    while (1)
+    /* Ok, so we're reading a real token.  Keep going until we hit whitespace or special */
+    while ((ch = fgetc(self -> file)) != EOF)
     {
-	char *newBuffer;
-
-	/* Keep going until we run out of space */
-	while (pointer < end)
+	/* If we get a special character or whitespace, then put it back and return */
+	if ((strchr(self -> whitespace, ch) != NULL) || (strchr(self -> special, ch) != NULL))
 	{
-	    ch = fgetc(self -> file);
-
-	    /* If we run into whitespace or a special character, then we're done */
-	    if ((ch == EOF) || (ch == ' ') || (ch == '\t') || (ch == '\n') || (ch == '\0') ||
-		(strchr(self -> special, ch) != NULL))
-	    {
-		ungetc(ch, self -> file);
-		*pointer = '\0';
-		return strdup(buffer);
-	    }
-
-	    *pointer = ch;
-	    pointer++;
+	    ungetc(ch, self -> file);
+	    return StringBuffer_getBuffer(self -> buffer);
 	}
 
-	/* Copy the buffer into a larger buffer */
-	newBuffer = (char *)alloca(bufferSize * 2);
-	strncpy(newBuffer, buffer, bufferSize);
-	bufferSize *= 2;
-	pointer = newBuffer + (pointer - buffer);
-	buffer = newBuffer;
-	end = buffer + bufferSize;
+	StringBuffer_appendChar(self -> buffer, ch);
     }
+
+    /* If we get here, then we've reached the end of the file */
+    return StringBuffer_getBuffer(self -> buffer);
 }
 
 
