@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.17 1998/10/21 04:03:45 arnold Exp $ */
+/* $Id: Control.c,v 1.18 1998/10/21 04:13:26 arnold Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -496,7 +496,6 @@ static int GetTimeout(ControlPanel self)
     return atoi(GetLabel(self -> timeout));
 }
 
-
 /*
  *
  * Actions
@@ -675,18 +674,18 @@ void ControlPanel_show(ControlPanel self, Message message)
 
     if (message != NULL)
     {
-      tuple = (MenuItemTuple) Message_getInfo(message);
+	tuple = (MenuItemTuple) Message_getInfo(message);
 
-      if (tuple != NULL)
-      {
-	SetSelection(self, tuple);
-      }
+	if (tuple != NULL)
+	{
+	    SetSelection(self, tuple);
+	}
 
-      self -> reply_thread_id = Message_getThreadID(message);
+	self -> reply_thread_id = Message_getThreadID(message);
     }
     else
     {
-      self -> reply_thread_id = -1;
+	self -> reply_thread_id = -1;
     }
 
     XtPopup(self -> top, XtGrabNone);
