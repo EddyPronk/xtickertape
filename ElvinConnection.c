@@ -1,5 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.28 1998/10/29 03:38:59 phelps Exp $ */
-
+/* $Id: ElvinConnection.c,v 1.29 1998/10/29 06:16:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -249,6 +248,7 @@ void ElvinConnection_free(ElvinConnection self)
 #endif /* SANITY */
 }
 
+
 /* Answers the receiver's host */
 char *ElvinConnection_host(ElvinConnection self)
 {
@@ -262,32 +262,54 @@ int ElvinConnection_port(ElvinConnection self)
 }
 
 
-
 /* Registers a callback for when the given expression is matched */
 void *ElvinConnection_subscribe(
     ElvinConnection self, char *expression,
     NotifyCallback callback, void *context)
 {
     SubscriptionTuple tuple;
-    es_ptree_t parseTree;
-    char *error;
     SANITY_CHECK(self);
 
-    /* Check the expression to see if it's valid before we make a tuple for it */
-    if ((parseTree = sub_parse(expression, &error)) == NULL)
-    {
-	fprintf(stderr, "*** Error %s\n", error);
-	return NULL;
-    }
-    es_free_ptree(parseTree);
-
-    tuple = malloc(sizeof(struct SubscriptionTuple_t));
+    /* Create a tuple and hope we have a valid expression */
+    tuple = (SubscriptionTuple)malloc(sizeof(struct SubscriptionTuple_t));
     tuple -> expression = strdup(expression);
     tuple -> callback = callback;
     tuple -> context = context;
-    Resubscribe(tuple, self);
-    List_addLast(self -> subscriptions, tuple);
 
+    /* If we're connected, then try to subscribe */
+    if (self -> state == Connected)
+    {
+	if ((tuple -> id = elvin_add_subscription(self -> elvin, expression, Notify, tuple, 0)) == 0)
+	{
+	    /* If we're still connected, then we had a bogus expression.
+	     * If not, fall through to the disconnected case */
+	    if (self -> state == Connected)
+	    {
+		free(tuple);
+		return NULL;
+	    }
+	}
+    }
+
+    /* If we're not connected, then check to see that the expression is valid
+     * so that we can resubscribe to it later */
+    if (self -> state != Connected)
+    {
+	es_ptree_t parseTree;
+	char *error;
+
+	/* See if we can parse the expression */
+	if ((parseTree = sub_parse(expression, &error)) == NULL)
+	{
+	    free(tuple);
+	    return NULL;
+	}
+
+	/* Set our subscription id to something reasonable */
+	tuple -> id = 0;
+    }
+
+    List_addLast(self -> subscriptions, tuple);
     return tuple;
 }
 
