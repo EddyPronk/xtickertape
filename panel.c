@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.47 2001/07/04 11:51:23 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.48 2001/07/06 04:11:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -735,9 +735,10 @@ static void create_history_box(control_panel_t self, Widget parent)
 	XmNscrollingPolicy, XmAPPLICATION_DEFINED,
 	XmNvisualPolicy, XmVARIABLE,
 	XmNscrollBarDisplayPolicy, XmSTATIC,
-	XmNshadowThickness, 0,
+	XmNshadowThickness, 2,
 	NULL);
 
+    /* Create the History widget itself */
     self -> history = XtVaCreateManagedWidget(
 	"history", historyWidgetClass, scroll_window,
 	NULL);
@@ -790,7 +791,7 @@ static void create_status_line(control_panel_t self, Widget parent)
     Widget frame;
 
     /* Create a frame for the status line */
-    frame = XtVaCreateManagedWidget(
+    frame = XtVaCreateWidget(
 	"statusFrame", xmFrameWidgetClass, parent,
 	XmNshadowType, XmSHADOW_IN,
 	XmNleftAttachment, XmATTACH_FORM,
@@ -806,6 +807,9 @@ static void create_status_line(control_panel_t self, Widget parent)
 	XmNlabelString, string,
 	NULL);
     XmStringFree(string);
+
+    /* Manage the frame now that its child has been created */
+    XtManageChild(frame);
 }
 
 
