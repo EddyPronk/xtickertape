@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.19 2002/04/14 22:33:16 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.20 2002/04/15 08:42:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -46,7 +46,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.19 2002/04/14 22:33:16 phe
 #define MENU_ERROR_MSG "expecting `menu' or `no menu', got `%s'"
 #define NAZI_ERROR_MSG "expecting `auto' or `manual', got `%s'"
 #define TIMEOUT_ERROR_MSG "illegal timeout value `%s'"
-#define PRODUCER_KEYS_MSG "illegal producer key: `%s'"
+#define KEY_ERROR_MSG "unknown key: `%s'"
 #define EXTRA_ERROR_MSG "superfluous characters: `%s'"
 
 
@@ -303,6 +303,12 @@ static int accept_subscription(groups_parser_t self)
     return result;
 }
 
+/* Prints a consistent error message */
+static void parse_error(groups_parser_t self, char *message)
+{
+    fprintf(stderr, "%s: parse error line %d: %s\n", self -> tag, self -> line_num, message);
+}
+
 /* Adds a key to the current list */
 static int accept_key(groups_parser_t self, char *name)
 {
@@ -318,7 +324,16 @@ static int accept_key(groups_parser_t self, char *name)
 	    self -> key_table, name,
 	    &data, &length, &is_private) < 0)
     {
-	/* FIX THIS: report that the key is unknown */
+	int len = strlen(KEY_ERROR_MSG) + strlen(name) + 1;
+	char *buffer;
+
+	if ((buffer = (char *)malloc(len)) != NULL)
+	{
+	    snprintf(buffer, len, KEY_ERROR_MSG, name);
+	    parse_error(self, buffer);
+	    free(buffer);
+	}
+
 	return -1;
     }
 
@@ -396,12 +411,6 @@ static int accept_key(groups_parser_t self, char *name)
     self -> public_key_lengths[self -> public_key_count] = length;
     self -> public_key_count++;
     return 0;
-}
-
-/* Prints a consistent error message */
-static void parse_error(groups_parser_t self, char *message)
-{
-    fprintf(stderr, "%s: parse error line %d: %s\n", self -> tag, self -> line_num, message);
 }
 
 /* Appends a character to the end of the token */
