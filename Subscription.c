@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.27 1999/05/21 05:30:32 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.28 1999/05/21 05:59:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -37,6 +37,8 @@ static const char cvsid[] = "$Id: Subscription.c,v 1.27 1999/05/21 05:30:32 phel
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */
+#include <sys/utsname.h>
+#include <netdb.h>
 #include "sanity.h"
 #include "groups.h"
 #include "Subscription.h"
@@ -99,6 +101,7 @@ struct Subscription_t
  *
  */
 
+static char *GetDomainName();
 static int CreateGroupsFile(char *filename, char *username);
 static int TranslateMenu(char *token);
 static int TranslateMime(char *token);
@@ -116,6 +119,42 @@ static void SendMessage(Subscription self, Message message);
  *
  */
 
+/* Answers the local domain name.  This is a hideous hack in which we
+ * grab the hostname and then use gethostbyname to guarantee that we
+ * have the hostname + domain.  We then strip off the hostname... */
+static char *GetDomainName()
+{
+    static char *domainname = NULL;
+    if (domainname == NULL)
+    {
+	struct utsname name;
+	struct hostent *host;
+	char *pointer;
+
+	/* Grab the node name */
+	if (uname(&name) < 0)
+	{
+	    return domainname = "no.domain.name";
+	}
+
+	/* Look up the host with gethostbyname */
+	host = gethostbyname(name.nodename);
+
+	/* Strip everything up to and including the first '.' */
+	for (pointer = host -> h_name; *pointer != '\0'; pointer++)
+	{
+	    if (*pointer == '.')
+	    {
+		return domainname = pointer + 1;
+	    }
+	}
+
+	domainname = "no.domain.name";
+    }
+
+    return domainname;
+}
+
 /* Create a default groups file and write it to the named file */
 static int CreateGroupsFile(char *filename, char *username)
 {
@@ -129,21 +168,35 @@ static int CreateGroupsFile(char *filename, char *username)
 	return -1;
     }
 
-    /* Copy the string into the file, substituting the username for %u
-     * and x for %x for any other character */
+    /* Copy the string into the file, substituting the user name for
+     * %u, domainname for %d and x for %x for any other character */
     for (pointer = defaultGroupsFile; *pointer != '\0'; pointer++)
     {
 	/* Watch for escape characters */
 	if (*pointer == '%')
 	{
-	    pointer++;
-	    if (*pointer == 'u')
+	    switch (*(++pointer))
 	    {
-		fputs(username, file);
-	    }
-	    else
-	    {
-		fputc(*pointer, file);
+		/* user name */
+		case 'u':
+		{
+		    fputs(username, file);
+		    break;
+		}
+
+		/* domain name */
+		case 'd':
+		{
+		    fputs(GetDomainName(), file);
+		    break;
+		}
+
+		/* Just a normal character */
+		default:
+		{
+		    fputc(*pointer, file);
+		    break;
+		}
 	    }
 	}
 	else
