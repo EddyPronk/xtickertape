@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.6 1999/09/09 14:29:49 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.7 1999/11/23 00:10:24 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -80,8 +80,19 @@ static int get_is_expired(gap_t self)
 }
 
 /* Nothing to do here... */
-void do_expire(gap_t self)
+static void do_expire(gap_t self)
 {
+}
+
+/* Nothing to do here... */
+static void do_set_replacement(gap_t self, glyph_t replacement)
+{
+}
+
+/* Return the gap */
+static glyph_t do_get_replacement(gap_t self)
+{
+    return (glyph_t)self;
 }
 
 
@@ -106,8 +117,9 @@ glyph_t gap_alloc(ScrollerWidget widget)
     self -> paint = (paint_method_t)do_paint;
     self -> is_expired = (is_expired_method_t)get_is_expired;
     self -> expire = (expire_method_t)do_expire;
+    self -> set_replacement = (set_replacement_method_t)do_set_replacement;
+    self -> get_replacement = (get_replacement_method_t)do_get_replacement;
 
     self -> widget = widget;
-
     return (glyph_t) self;
 }

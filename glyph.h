@@ -31,7 +31,7 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.4 1999/09/09 14:29:49 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.5 1999/11/23 00:10:24 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
@@ -87,6 +87,21 @@ typedef int (*is_expired_method_t)(glyph_t glyph);
  */
 typedef void (*expire_method_t)(glyph_t glyph);
 
+/*
+ * The signature of a function which alerts the glyph that it has been
+ * replaced with another glyph.
+ */
+typedef void (*set_replacement_method_t)(glyph_t glyph, glyph_t replacement);
+
+/*
+ * The signature of a function which returns the most up-to-date
+ * version of the glyph.  If the glyph has not been replaced then this 
+ * returns the glyph itself.
+ */
+typedef glyph_t (*get_replacement_method_t)(glyph_t glyph);
+
+
+
 /* The common fields shared by all glyphs */
 #define GLYPH_PREFIX \
     glyph_t previous; \
@@ -97,7 +112,9 @@ typedef void (*expire_method_t)(glyph_t glyph);
     width_method_t get_width; \
     paint_method_t paint; \
     is_expired_method_t is_expired; \
-    expire_method_t expire;
+    expire_method_t expire; \
+    set_replacement_method_t set_replacement; \
+    get_replacement_method_t get_replacement;
 
 /* The basic glyph structure */
 struct glyph

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.28 1999/11/19 04:08:21 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.29 1999/11/23 00:10:24 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -53,6 +53,9 @@ struct message_glyph
 
     /* The message which the receiver represents */
     message_t message;
+
+    /* The receiver's replacement */
+    glyph_t replacement;
 
     /* The receiver's reference count */
     int ref_count;
@@ -194,6 +197,12 @@ static void do_free(message_glyph_t self)
 
     /* Free the message */
     message_free(self -> message);
+
+    /* Free our replacement if we have one */
+    if (self -> replacement != NULL)
+    {
+	self -> replacement -> free(self -> replacement);
+    }
 
     free(self);
 }
@@ -463,6 +472,26 @@ static void do_expire(message_glyph_t self)
     }
 }
 
+/* Sets the receiver's replacement */
+static void do_set_replacement(message_glyph_t self, glyph_t replacement)
+{
+    self -> replacement = replacement;
+    replacement -> alloc(replacement);
+}
+
+/* Returns the receiver's (possibly nested) replacement */
+static glyph_t do_get_replacement(message_glyph_t self)
+{
+    /* If we haven't been replaced then return ourself */
+    if (self -> replacement == NULL)
+    {
+	return (glyph_t)self;
+    }
+
+    /* Otherwise return our replacement's replacement */
+    return self -> replacement -> get_replacement(self -> replacement);
+}
+
 
 /* Allocates and initializes a new message_glyph glyph */
 glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message)
@@ -486,9 +515,12 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message)
     self -> paint = (paint_method_t)do_paint;
     self -> is_expired = (is_expired_method_t)get_is_expired;
     self -> expire = (expire_method_t)do_expire;
+    self -> set_replacement = (set_replacement_method_t)do_set_replacement;
+    self -> get_replacement = (get_replacement_method_t)do_get_replacement;
 
     self -> widget = widget;
     self -> message = message_alloc_reference(message);
+    self -> replacement = NULL;
     self -> ref_count = 1;
     self -> has_expired = False;
     self -> fade_level = 0;
