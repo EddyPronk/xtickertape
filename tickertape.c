@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.78 2001/07/04 11:51:23 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.79 2001/07/13 08:51:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -261,7 +261,7 @@ static void receive_callback(void *rock, message_t message, int show_attachment)
     tickertape_t self = (tickertape_t)rock;
 
 #if 1
-    printf("receive_callback(): where do we put the message?\n");
+    control_panel_add_message(self -> control_panel, message);
     ScAddMessage(self -> scroller, message);
 #else
     /* Add the message to the history */
