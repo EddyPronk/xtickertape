@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.20 1999/08/22 06:22:40 phelps Exp $";
+static const char cvsid[] = "$Id: Message.c,v 1.21 1999/08/26 01:42:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -42,6 +42,10 @@ static const char cvsid[] = "$Id: Message.c,v 1.20 1999/08/22 06:22:40 phelps Ex
 static char *sanity_value = "Message";
 static char *sanity_freed = "Freed Message";
 #endif /* SANITY */
+
+#ifdef DEBUG
+static long message_count;
+#endif /* DEBUG */
 
 struct Message_t
 {
@@ -104,6 +108,10 @@ Message Message_alloc(
     self -> user = strdup(user);
     self -> string = strdup(string);
 
+#ifdef DEBUG
+    printf("allocated Message %p (%ld)\n", self, ++message_count);
+#endif /* DEBUG */
+
     if (mimeType == NULL)
     {
 	self -> mimeType = NULL;
@@ -162,6 +170,10 @@ void Message_free(Message self)
     {
 	return;
     }
+
+#ifdef DEBUG
+    printf("freed Message %p (%ld)\n", self, --message_count);
+#endif /* DEBUG */
 
     /* Out of references -- release the hounds! */
     if (self -> group != NULL)
