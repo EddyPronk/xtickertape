@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.20 1999/09/13 12:51:23 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.21 1999/09/14 15:06:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -65,7 +65,7 @@ struct message_glyph
     int ascent;
 
     /* The width of the receiver's separator string */
-    unsigned int separator_width;
+    int separator_width;
 
     /* The separator's left bearing */
     int separator_lbearing;
@@ -75,7 +75,7 @@ struct message_glyph
 
 
     /* The width of the receiver's group string */
-    unsigned int group_width;
+    int group_width;
 
     /* The group string's left bearing */
     int group_lbearing;
@@ -85,7 +85,7 @@ struct message_glyph
 
 
     /* The width of the receiver's user string */
-    unsigned int user_width;
+    int user_width;
 
     /* The user string's left bearing */
     int user_lbearing;
@@ -95,7 +95,7 @@ struct message_glyph
 
 
     /* The width of the receiver's message string */
-    unsigned int string_width;
+    int string_width;
 
     /* The message string's left bearing */
     int string_lbearing;
@@ -105,7 +105,7 @@ struct message_glyph
 
 
     /* The width of the whitepspace after the message */
-    unsigned int spacing;
+    int spacing;
 
     /* The receiver's timer id */
     XtIntervalId timer;
@@ -308,7 +308,7 @@ static void paint_string(
     first = (unsigned char *)string;
     char_info = per_char(font, *first);
 
-    while (left + char_info -> rbearing < x)
+    while ((left + char_info -> rbearing < x) && (*first != '\0'))
     {
 	left += char_info -> width;
 	first++;
@@ -335,16 +335,16 @@ static void paint_string(
     }
 #endif /* DEBUG */
 
-    /* Draw all of the characters of the string */
-    XDrawString(display, drawable, gc, left, baseline, first, last - first);
+    /* Draw all of the characters of the string if there are any */
+    if (*first != '\0')
+    {
+	XDrawString(display, drawable, gc, left, baseline, first, last - first);
+    }
 
     /* Draw the underline based on the string's width to avoid gaps */
     if (do_underline)
     {
-	XDrawLine(
-	    display, drawable, gc,
-	    x < offset ? offset : x, baseline + 1,
-	    offset + string_width < x + width ? offset + string_width : x + width, baseline + 1);
+	XDrawLine(display, drawable, gc, offset, baseline + 1, offset + string_width, baseline + 1);
     }
 }
 
@@ -359,7 +359,8 @@ static void do_paint(
     int left = offset;
 
     /* Draw the group string if appropriate */
-    if ((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width))
+    if (((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width)) ||
+	((x <= left + self -> group_width) && (left <= x + width)))
     {
 	paint_string(
 	    self, display, drawable, ScGCForGroup(self -> widget, level, x, y, width, height),
@@ -372,7 +373,8 @@ static void do_paint(
     left += self -> group_width;
 
     /* Draw the separator if appropriate */
-    if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
+    if (((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width)) ||
+	((x <= left + self -> separator_rbearing) && (left <= x + width)))
     {
 	paint_string(
 	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
@@ -385,7 +387,8 @@ static void do_paint(
     left += self -> separator_width;
 
     /* Draw the user string if appropriate */
-    if ((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width))
+    if (((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width)) ||
+	((x <= left + self -> user_width) && (left <= x + width)))
     {
 	paint_string(
 	    self, display, drawable, ScGCForUser(self -> widget, level, x, y, width, height),
@@ -398,7 +401,8 @@ static void do_paint(
     left += self -> user_width;
 
     /* Draw the separator if appropriate */
-    if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
+    if (((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width)) ||
+	((x <= left + self -> separator_width) && (left <= x + width)))
     {
 	paint_string(
 	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
@@ -411,7 +415,8 @@ static void do_paint(
     left += self -> separator_width;
 
     /* Draw the message string if appropriate */
-    if ((x <= left + self -> string_rbearing) && (left + self -> string_lbearing <= x + width))
+    if (((x <= left + self -> string_rbearing) && (left + self -> string_lbearing <= x + width)) ||
+	((x <= left + self -> string_width) && (left <= x + width)))
     {
 	paint_string(
 	    self, display, drawable, ScGCForString(self -> widget, level, x, y, width, height),
