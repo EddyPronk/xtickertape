@@ -1,3 +1,9 @@
+Overview of changes in xtickertape-2.0
+
+* Message replacement now works!
+
+* Updated to use the elvin-4 client library instead of the elvin-3 client library
+
 Overview of changes in xtickertape-1.6.6
 
 * Minimum size of the control panel now takes into account the height

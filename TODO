@@ -1,16 +1,17 @@
 Things that would be nice to have in future versions of xtickertape:
 
-- A way of sending a message without closing the control panel
+- A way of sending a message without closing the control panel.  This
+  appears to be a good trap for jtickertape users.  Perhaps not.
 
 - You should be able to traverse the list of messages you have sent by 
-  using C-p and C-n like you can with every GNU program
+  using C-p and C-n like you can with every GNU program.  It's
+  probably not that useful to keep history information around,
+  especially since the *last* message is still available when you
+  click on the tickertape.
 
 - It should be possible to have the scrolling speed change when the
   mouse enters/leaves the scroller.  I'm not sure yet how '=' and '-'
   should affect this...
-
-- Support for message replacement (useful for monitoring automated
-  stuff like cricket scores).
 
 - Get the history to behave properly when the control panel is
   resized.  It seems to think that it's more important to keep the
