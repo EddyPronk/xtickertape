@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.33 2000/04/04 06:57:35 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.34 2000/04/04 07:03:07 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -326,7 +326,7 @@ static void paint_string(
     {
 	left += char_info -> width;
 	first++;
-	char_info = per_char(font, *first);
+	char_info = per_char(font, (unsigned char)*first);
     }
 
     /* Find the character *after* the last visible character */
