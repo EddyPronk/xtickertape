@@ -28,8 +28,8 @@
 !
 ! Fonts
 !
-*fontList: -*-helvetica-medium-r-*-*-12-*-*-*-*-*-*-*
-*scroller.font: -*-times-medium-r-*-*-18-*-*-*-*-*-*-*
+*fontList: -adobe-helvetica-medium-r-normal--12-120-75-75-p-*-iso8859-1
+*scroller.font: -adobe-times-medium-r-normal--18-180-75-75-p-*-iso8859-1
 
 !
 ! Labels
