@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.26 1998/10/24 04:54:00 phelps Exp $ */
+/* $Id: MessageView.c,v 1.27 1998/10/25 02:56:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -334,12 +334,13 @@ void MessageView_free(MessageView self)
 {
     ClearClock(self);
 
-#ifdef SANITY
-    self -> sanity_check = sanity_freed;
-#endif /* SANITY */
     Message_free(self -> message);
     XFreePixmap(XtDisplay(self -> widget), self -> pixmap);
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#else /* SANITY */
     free(self);
+#endif /* SANITY */
 }
 
 
