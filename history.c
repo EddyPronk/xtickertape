@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.15 1999/08/25 08:09:13 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.16 1999/08/27 08:30:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -36,8 +36,11 @@ static const char cvsid[] = "$Id: history.c,v 1.15 1999/08/25 08:09:13 phelps Ex
 #include <Xm/List.h>
 #include "history.h"
 
+#ifdef DEBUG
+#define MAX_LIST_COUNT 5
+#else /* DEBUG */
 #define MAX_LIST_COUNT 30
-/*#define MAX_LIST_COUNT 5*/
+#endif /* DEBUG */
 
 /* Helpful macro */
 #define MIN(x, y) ((x) < (y) ? (x) : (y))

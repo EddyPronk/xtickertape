@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.21 1999/08/26 01:42:55 phelps Exp $";
+static const char cvsid[] = "$Id: Message.c,v 1.22 1999/08/27 08:30:34 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -172,7 +172,8 @@ void Message_free(Message self)
     }
 
 #ifdef DEBUG
-    printf("freed Message %p (%ld)\n", self, --message_count);
+    printf("freeing Message %p (%ld):\n", self, --message_count);
+    Message_debug(self);
 #endif /* DEBUG */
 
     /* Out of references -- release the hounds! */
