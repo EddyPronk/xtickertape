@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.8 1997/02/12 07:33:31 phelps Exp $ */
+/* $Id: MessageView.c,v 1.9 1997/02/12 12:36:31 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,8 @@
 #define SPACING 10
 #define SEPARATOR ":"
 
-#define SANITY_CHECK
+#define SANITY_CHECK(x) SanityCheck(x)
+/*#define SANITY_CHECK(x)*/
 
 struct MessageView_t
 {
@@ -29,6 +30,7 @@ struct MessageView_t
     XtIntervalId timer;
     Pixmap pixmap;
     unsigned int ascent;
+    unsigned int height;
     unsigned int groupWidth;
     unsigned int userWidth;
     unsigned int stringWidth;
@@ -59,7 +61,7 @@ static void paint(MessageView self, Drawable drawable, int x, int y)
     char *string;
     GC gc;
 
-    SanityCheck(self);
+    SANITY_CHECK(self);
     level = self -> fadeLevel;
     gc = TtGCForGroup(self -> widget, level);
     string = Message_getGroup(self -> message);
@@ -92,7 +94,7 @@ static void tick();
 /* Set a timer to call tick when the colors should fade */
 static void setClock(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
 
     self -> timer = TtStartTimer(
 	self -> widget,
@@ -106,7 +108,7 @@ static void tick(MessageView self, XtIntervalId *ignored)
 {
     unsigned int maxLevels;
 
-    SanityCheck(self);
+    SANITY_CHECK(self);
     self -> timer = 0;
     maxLevels = TtGetFadeLevels(self -> widget);
 
@@ -127,7 +129,7 @@ static unsigned int getAscent(MessageView self)
     XFontStruct *font;
     unsigned int ascent;
 
-    SanityCheck(self);
+    SANITY_CHECK(self);
     font = TtFontForGroup(self -> widget);
     ascent = font -> ascent;
 
@@ -142,6 +144,29 @@ static unsigned int getAscent(MessageView self)
 
     return ascent;
 }
+
+/* Answers the number of pixels below the baseline we need */
+static unsigned int getDescent(MessageView self)
+{
+    XFontStruct *font;
+    unsigned int descent;
+
+    SANITY_CHECK(self);
+    font = TtFontForGroup(self -> widget);
+    descent = font -> descent;
+
+    font = TtFontForUser(self -> widget);
+    descent = (descent > font -> descent) ? descent : font -> descent;
+
+    font = TtFontForString(self -> widget);
+    descent = (descent > font -> descent) ? descent : font -> descent;
+    
+    font = TtFontForSeparator(self -> widget);
+    descent = (descent > font -> descent) ? descent : font -> descent;
+
+    return descent;
+}
+
 
 /* Computes the number of pixels used to display string using font */
 static unsigned long getStringWidth(XFontStruct *font, char *string)
@@ -190,7 +215,7 @@ static unsigned long getStringWidth(XFontStruct *font, char *string)
 /* Computes the widths of the various components of the MessageView */
 static void computeWidths(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
     self -> groupWidth = getStringWidth(
 	TtFontForGroup(self -> widget),
 	Message_getGroup(self -> message));
@@ -218,7 +243,7 @@ static void computeWidths(MessageView self)
 /* Prints debugging information */
 void MessageView_debug(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
     printf("MessageView (0x%p)\n", self);
     printf("  refcount = %u\n", self -> refcount);
     printf("  widget = 0x%p\n", self -> widget);
@@ -232,6 +257,7 @@ void MessageView_debug(MessageView self)
     printf("  timer = 0x%lx\n", self -> timer);
     printf("  pixmap = 0x%lx\n", self -> pixmap);
     printf("  ascent = %u\n", self -> ascent);
+    printf("  height = %u\n", self -> height);
     printf("  groupWidth = %u\n", self -> groupWidth);
     printf("  userWidth = %u\n", self -> userWidth);
     printf("  stringWidth = %u\n", self -> stringWidth);
@@ -251,6 +277,7 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
     self -> message = message;
     self -> fadeLevel = 0;
     self -> ascent = getAscent(self);
+    self -> height = self -> ascent + getDescent(self);
     computeWidths(self);
     self -> timer = 0;
     self -> pixmap = TtCreatePixmap(self -> widget, MessageView_getWidth(self));
@@ -281,7 +308,7 @@ void MessageView_free(MessageView self)
 /* Adds another reference to the count */
 MessageView MessageView_allocReference(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
     self -> refcount++;
     return self;
 }
@@ -289,7 +316,7 @@ MessageView MessageView_allocReference(MessageView self)
 /* Removes a reference from the count */
 void MessageView_freeReference(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
 
     if (self -> refcount > 1)
     {
@@ -308,7 +335,7 @@ void MessageView_freeReference(MessageView self)
 /* Answers the width (in pixels) of the receiver */
 unsigned int MessageView_getWidth(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
 
     return (self -> groupWidth) +
 	(self -> userWidth) +
@@ -320,19 +347,16 @@ unsigned int MessageView_getWidth(MessageView self)
 /* Redisplays the receiver on the drawable */
 void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 {
-    /* FIX THIS: height should be computed somehow */
-    unsigned int height = 1000;
-
-    SanityCheck(self);
+    SANITY_CHECK(self);
     XCopyArea(XtDisplay(self -> widget), self -> pixmap,
 	      drawable, TtGCForBackground(self -> widget),
-	      0, 0, MessageView_getWidth(self), height, x, y);
+	      0, 0, MessageView_getWidth(self), self -> height, x, y);
 }
 
 
 /* Answers non-zero if the receiver has outstayed its welcome */
 int MessageView_isTimedOut(MessageView self)
 {
-    SanityCheck(self);
+    SANITY_CHECK(self);
     return ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
 }
