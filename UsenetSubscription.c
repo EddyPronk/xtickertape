@@ -1,4 +1,4 @@
-/* $Id: UsenetSubscription.c,v 1.10 1998/12/18 07:56:46 phelps Exp $ */
+/* $Id: UsenetSubscription.c,v 1.11 1998/12/23 06:21:16 phelps Exp $ */
 
 #include <config.h>
 #include <stdlib.h>
@@ -56,6 +56,7 @@ struct UsenetSubscription_t
  * Static function headers
  *
  */
+static void DeleteTrailingWhitespace(char *string, char *whitespace);
 static char *TranslateField(char *field);
 static Operation TranslateOperation(char *operation);
 static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer);
@@ -68,6 +69,41 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification);
  * Static functions
  *
  */
+
+/* Inserts a '\0' in the string at the beginning of the final bit of whitespace */
+static void DeleteTrailingWhitespace(char *string, char *whitespace)
+{
+    char *marker = NULL;
+    char *pointer;
+
+    /* Beware the NULL pointer */
+    if (string == NULL)
+    {
+	return;
+    }
+
+    /* Find the beginning of the last bit of whitespace */
+    for (pointer = string; *pointer != '\0'; pointer++)
+    {
+	/* Are we looking at a whitespace character? */
+	if (strchr(whitespace, *pointer) == NULL)
+	{
+	    /* No.  Clear the marker */
+	    marker = NULL;
+	}
+	else
+	{
+	    /* Yes.  Update the marker if this is the start of some whitespace */
+	    marker = (marker == NULL) ? pointer : marker;
+	}
+    }
+
+    /* Kill the trailing whitespace */
+    if (marker != NULL)
+    {
+	*marker = '\0';
+    }
+}
 
 /* Answers the Elvin field which matches the field from the usenet file */
 static char *TranslateField(char *field)
@@ -251,6 +287,8 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
     char *field;
     Operation operation;
     char *pattern;
+    char *pointer;
+    char *marker;
 
     /* Read the field */
     token = FileStreamTokenizer_next(tokenizer);
@@ -269,7 +307,10 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
     }
 
     /* Read the pattern */
-    pattern = FileStreamTokenizer_next(tokenizer);
+    FileStreamTokenizer_skipWhitespace(tokenizer);
+    pattern = FileStreamTokenizer_nextWithSpec(tokenizer, "", "/\n");
+    DeleteTrailingWhitespace(pattern, " \t");
+
     if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
     {
 	fprintf(stderr, "*** Unexpected end of usenet file line\n");
