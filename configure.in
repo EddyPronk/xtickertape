@@ -155,4 +155,10 @@ fi
 
 
 AM_CONFIG_HEADER(config.h)
-AC_OUTPUT(Makefile)
+AC_OUTPUT([
+    Makefile
+    packages/Makefile
+    packages/rpm/Makefile
+    packages/rpm/SOURCES/Makefile
+    packages/rpm/SPECS/Makefile
+    packages/rpm/SPECS/xtickertape.spec])
