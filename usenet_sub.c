@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.27 2002/02/14 18:29:37 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.28 2002/02/25 16:22:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -279,8 +279,6 @@ static void notify_cb(
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
-    elvin_basetypes_t type;
-    elvin_value_t value;
     char *string;
     char *newsgroups;
     char *name;
@@ -297,24 +295,15 @@ static void notify_cb(
     }
 
     /* Get the newsgroups to which the message was posted */
-    if (! elvin_notification_get(
-	    notification,
-	    NEWSGROUPS,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, NEWSGROUPS, &found, &string, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	string = value.s;
-    }
-    else
-    {
-	string = "news";
-    }
+    /* Use a reasonable default */
+    string = found ? string : "news";
 
     /* Prepend `usenet:' to the beginning of the group field */
     if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
@@ -325,152 +314,103 @@ static void notify_cb(
     sprintf(newsgroups, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    FROM_NAME,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, FROM_NAME, &found, &name, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
+    if (! found)
     {
-	name = value.s;
-    }
-    else
-    {
-	/* If no FROM_NAME field then try FROM_EMAIL */
-	if (! elvin_notification_get(
-		notification,
-		FROM_EMAIL,
-		&found, &type, &value,
-		error))
+	/* No FROM_NAME field, so try FROM_EMAIL */
+	if (! elvin_notification_get_string(notification, FROM_EMAIL, &found, &name, error))
 	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	    elvin_error_fprintf(stderr, error);
 	    exit(1);
 	}
 
-	if (found && type == ELVIN_STRING)
+	if (! found)
 	{
-	    name = value.s;
-	}
-	else
-	{
-	    /* If no FROM_EMAIL then try FROM */
-	    if (! elvin_notification_get(
-		    notification,
-		    FROM,
-		    &found, &type, &value,
-		    error))
+	    /* No FROM_EMAIL, so try FROM */
+	    if (! elvin_notification_get_string(notification, FROM, &found, &name, error))
 	    {
+		fprintf(stderr, "elvin_notification_get_string(): failed\n");
 		elvin_error_fprintf(stderr, error);
 		exit(1);
 	    }
 
-	    if (found && type == ELVIN_STRING)
+	    if (! found)
 	    {
-		name = value.s;
-	    }
-	    else
-	    {
+		/* Give up */
 		name = "anonymous";
 	    }
 	}
     }
 
     /* Get the SUBJECT field (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    SUBJECT,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, SUBJECT, &found, &subject, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	subject = value.s;
-    }
-    else
-    {
-	subject = "[no subject]";
-    }
+    /* Use a default if none found */
+    subject = found ? subject : "[no subject]";
 
     /* Get the MIME_ARGS field (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    MIME_ARGS,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, MIME_ARGS, &found, &mime_args, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
+    /* Was the MIME_ARGS field provided? */
+    if (found)
     {
-	mime_args = value.s;
-
 	/* Get the MIME_TYPE field (if provided) */
-	if (! elvin_notification_get(
-		notification,
-		MIME_TYPE,
-		&found, &type, &value,
-		error))
+	if (! elvin_notification_get_string(notification, MIME_TYPE, &found, &mime_type, error))
 	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	    elvin_error_fprintf(stderr, error);
 	    exit(1);
 	}
 
-	if (found && type == ELVIN_STRING)
-	{
-	    mime_type = value.s;
-	}
-	else
-	{
-	    mime_type = URL_MIME_TYPE;
-	}
+	/* Use a default if none found */
+	mime_type = found ? mime_type : URL_MIME_TYPE;
     }
-    /* No MIME_ARGS provided.  Construct one using the Message-ID field */
     else
     {
-	if (! elvin_notification_get(
-		notification,
-		MESSAGE_ID,
-		&found, &type, &value,
-		error))
+	char *message_id;
+
+	/* No MIME_ARGS.  Look for a message-id */
+	if (! elvin_notification_get_string( notification, MESSAGE_ID, &found, &message_id, error))
 	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	    elvin_error_fprintf(stderr, error);
 	    exit(1);
 	}
 
-	if (found && type == ELVIN_STRING)
+	if (found)
 	{
-	    char *message_id = value.s;
 	    char *news_host;
 
-	    if (! elvin_notification_get(
+	    /* Look up the news host field */
+	    if (! elvin_notification_get_string(
 		    notification,
 		    X_NNTP_HOST,
-		    &found, &type, &value,
+		    &found, &news_host,
 		    error))
 	    {
+		fprintf(stderr, "elvin_notification_get_string(): failed\n");
 		elvin_error_fprintf(stderr, error);
 		exit(1);
 	    }
 
-	    if (found && type == ELVIN_STRING)
-	    {
-		news_host = value.s;
-	    }
-	    else
-	    {
-		news_host = "news";
-	    }
+	    news_host = found ? news_host : "news";
 
 	    if ((buffer = (char *)malloc(
 		sizeof(NEWS_URL) +

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.30 2002/02/14 18:29:35 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.31 2002/02/25 16:22:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -320,42 +320,30 @@ static void notify_cb(
 	return;
     }
 
-    /* Get the user from the notification (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_USER,
-	    &found, &type, &value,
-	    error))
+    /* Get the user from the notification */
+    if (! elvin_notification_get_string(notification, F_USER, &found, &user, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	user = value.s;
-    }
-    else
+    /* Use a default user if none was provided in the notification */
+    if (! found)
     {
 	user = "anonymous";
     }
 
     /* Get the text of the notification (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_TICKERTEXT,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_TICKERTEXT, &found, &text, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	text = value.s;
-    }
-    else
+    /* Default to an empty message if none provided */
+    if (! found)
     {
 	text = "";
     }
@@ -424,23 +412,11 @@ static void notify_cb(
     }
 
     /* Get the MIME type (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_MIME_TYPE,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_MIME_TYPE, NULL, &mime_type, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
-    }
-
-    if (found && type == ELVIN_STRING)
-    {
-	mime_type = value.s;
-    }
-    else
-    {
-	mime_type = NULL;
     }
 
     /* Get the MIME args (if provided) */
@@ -471,63 +447,26 @@ static void notify_cb(
     }
 
     /* Get the replacement tag (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_REPLACEMENT,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_REPLACEMENT, NULL, &tag, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
-    }
-
-    if (found && type == ELVIN_STRING)
-    {
-	tag = value.s;
-    }
-    else
-    {
-	tag = NULL;
     }
 
     /* Get the message id (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_MESSAGE_ID,
-	    &found, &type, &value,
-	    error))
-    {
+    if (! elvin_notification_get_string(notification, F_MESSAGE_ID, NULL, &message_id, error)) {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
-    }
-
-    if (found && type == ELVIN_STRING)
-    {
-	message_id = value.s;
-    }
-    else 
-    {
-	message_id = NULL;
     }
 
     /* Get the reply id (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_IN_REPLY_TO,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_IN_REPLY_TO, NULL, &reply_id, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
-    }
-
-    if (found && type == ELVIN_STRING)
-    {
-	reply_id = value.s;
-    }
-    else
-    {
-	reply_id = NULL;
     }
 
     /* Construct a message */

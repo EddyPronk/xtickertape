@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.26 2002/02/14 18:29:36 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.27 2002/02/25 16:22:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -174,8 +174,6 @@ static void notify_cb(
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
-    elvin_basetypes_t type;
-    elvin_value_t value;
     char *from;
     char *folder;
     char *subject;
@@ -183,51 +181,31 @@ static void notify_cb(
     int found;
 
     /* Get the name from the `From' field */
-    if (elvin_notification_get(
-	    notification,
-	    F_FROM,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_FROM, &found, &from, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	from = value.s;
+    /* Default to an anonymous sender */
+    from = found ? from : "anonymous";
 
-	/* Split the user name from the address. */
-	if ((mbox_parser_parse(self -> parser, from)) == 0)
-	{
-	    from = mbox_parser_get_name(self -> parser);
-	    if (*from == '\0')
-	    {
-		/* Otherwise resort to the e-mail address */
-		from = mbox_parser_get_email(self -> parser);
-	    }
-	}
+    /* Get the folder field */
+    if (! elvin_notification_get_string(notification, F_FOLDER, NULL, &folder, error))
+    {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* If no folder provided then just call it `mail' */
+    if (folder == NULL)
+    {
+	folder = "mail";
     }
     else
     {
-	from = "anonymous";
-    }
-
-    /* Get the folder field */
-    if (! elvin_notification_get(
-	    notification,
-	    F_FOLDER,
-	    &found, &type, &value,
-	    error))
-    {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-
-    if (found && type == ELVIN_STRING)
-    {
-	folder = value.s;
-
 	/* Format the folder name to use as the group */
 	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
 	{
@@ -235,30 +213,17 @@ static void notify_cb(
 	    folder = buffer;
 	}
     }
-    else
-    {
-	folder = "mail";
-    }
 
     /* Get the subject field */
-    if (! elvin_notification_get(
-	    notification,
-	    F_SUBJECT,
-	    &found, &type, &value,
-	    error))
+    if (! elvin_notification_get_string(notification, F_SUBJECT, &found, &subject, error))
     {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    if (found && type == ELVIN_STRING)
-    {
-	subject = value.s;
-    }
-    else
-    {
-	subject = "No subject";
-    }
+    /* Have a default subject */
+    subject = found ? subject : "[No subject]";
 
     /* Construct a message_t out of all of that */
     message = message_alloc(
