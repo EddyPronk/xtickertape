@@ -1,5 +1,6 @@
 # First work out the executables
-bin_PROGRAMS = xtickertape test-parser
+bin_PROGRAMS = xtickertape
+noinst_PROGRAMS = test-parser
 bin_SCRIPTS = show-url
 
 # Automatically generated sources
