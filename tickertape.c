@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.19 1999/10/02 16:07:27 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.20 1999/10/02 16:46:10 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,6 +39,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.19 1999/10/02 16:07:27 phelps
 #include <unistd.h>
 #include <errno.h>
 #include <X11/Intrinsic.h>
+#include <sys/utsname.h>
 #include "sanity.h"
 #include "message.h"
 #include "history.h"
@@ -49,7 +50,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.19 1999/10/02 16:07:27 phelps
 #include "Control.h"
 #include "groups.h"
 #include "groups_parser.h"
-#include "Subscription.h"
+#include "group_sub.h"
 #include "UsenetSubscription.h"
 #include "mail_sub.h"
 #include "connect.h"
@@ -65,6 +66,7 @@ static char *sanity_freed = "Freed Ticker";
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
+#define DEFAULT_DOMAIN "no.domain.name"
 
 #define METAMAIL_OPTIONS "-B -q -b -c"
 
@@ -92,7 +94,7 @@ struct tickertape
     Widget top;
 
     /* The receiver's groups subscriptions (from the groups file) */
-    Subscription *groups;
+    group_sub_t *groups;
 
     /* The number of groups subscriptions the receiver has */
     int groups_count;
@@ -150,6 +152,34 @@ static FILE *tickertape_usenet_file(tickertape_t self);
  * Static functions
  *
  */
+
+/* Looks up the domain name of the host */
+static char *get_domain()
+{
+    struct utsname name;
+    struct hostent *host;
+    char *pointer;
+
+    /* Grab the node name */
+    if (uname(&name) < 0)
+    {
+	return DEFAULT_DOMAIN;
+    }
+
+    /* Look up the host with gethostbyname */
+    host = gethostbyname(name.nodename);
+
+    /* Skip everything up to and including the first `.' */
+    for (pointer = host -> h_name; *pointer != '\0'; pointer++)
+    {
+	if (*pointer == '.')
+	{
+	    return pointer + 1;
+	}
+    }
+
+    return DEFAULT_DOMAIN;
+}
 
 /* Makes the named directory and any parent directories needed */
 static int mkdirhier(char *dirname)
@@ -257,7 +287,7 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
     history_kill_thread(self -> history, self -> scroller, message);
 }
 
-/* Receive a message_t matched by Subscription */
+/* Receive a message_t matched by a subscription */
 static void receive_callback(tickertape_t self, message_t message)
 {
     SANITY_CHECK(self);
@@ -373,21 +403,23 @@ static int parse_groups_callback(
     int in_menu, int has_nazi,
     int min_time, int max_time)
 {
-    Subscription subscription;
-    char *expression = (char *)malloc(sizeof("TICKERTAPE == \"\"") + strlen(name));
+    char *expression;
+    group_sub_t subscription;
+
+    expression = (char *)malloc(sizeof("TICKERTAPE == \"\"") + strlen(name));
     sprintf(expression, "TICKERTAPE == \"%s\"", name);
 
     /* Allocate us a subscription */
-    if ((subscription = Subscription_alloc(
+    if ((subscription = group_sub_alloc(
 	    name, expression, in_menu, has_nazi, min_time, max_time,
-	    (SubscriptionCallback)receive_callback, self)) == NULL)
+	    (group_sub_callback_t)receive_callback, self)) == NULL)
     {
 	return -1;
     }
 
     /* Add it to the end of the array */
-    self -> groups = (Subscription *)realloc(
-	self -> groups, sizeof(Subscription) * (self -> groups_count + 1));
+    self -> groups = (group_sub_t *)realloc(
+	self -> groups, sizeof(group_sub_t) * (self -> groups_count + 1));
     self -> groups[self -> groups_count++] = subscription;
 
     return 0;
@@ -459,7 +491,7 @@ static UsenetSubscription read_usenet_file(tickertape_t self)
 
     /* Read the file */
     subscription = UsenetSubscription_readFromUsenetFile(
-	file, (SubscriptionCallback)receive_callback, self);
+	file, (UsenetSubscriptionCallback)receive_callback, self);
     fclose(file);
 
     return subscription;
@@ -467,13 +499,13 @@ static UsenetSubscription read_usenet_file(tickertape_t self)
 
 
 /* Returns the index of the group with the given expression (-1 it none) */
-static int find_group(Subscription *groups, int count, char *expression)
+static int find_group(group_sub_t *groups, int count, char *expression)
 {
-    Subscription *pointer;
+    group_sub_t *pointer;
 
     for (pointer = groups; pointer < groups + count; pointer++)
     {
-	if ((*pointer != NULL) && (strcmp(Subscription_expression(*pointer), expression) == 0))
+	if ((*pointer != NULL) && (strcmp(group_sub_expression(*pointer), expression) == 0))
 	{
 	    return pointer - groups;
 	}
@@ -485,7 +517,7 @@ static int find_group(Subscription *groups, int count, char *expression)
 /* Request from the ControlPanel to reload groups file */
 void tickertape_reload_groups(tickertape_t self)
 {
-    Subscription *old_groups = self -> groups;
+    group_sub_t *old_groups = self -> groups;
     int old_count = self -> groups_count;
     int index;
     int count;
@@ -499,25 +531,25 @@ void tickertape_reload_groups(tickertape_t self)
     /* Reuse elvin subscriptions whenever possible */
     for (index = 0; index < self -> groups_count; index++)
     {
-	Subscription group = self -> groups[index];
+	group_sub_t group = self -> groups[index];
 	int old_index;
 
 	/* Look for a match */
-	if ((old_index = find_group(old_groups, old_count, Subscription_expression(group))) < 0)
+	if ((old_index = find_group(old_groups, old_count, group_sub_expression(group))) < 0)
 	{
 	    /* None found.  Set the subscription's connection */
-	    Subscription_setConnection(group, self -> connection);
+	    group_sub_set_connection(group, self -> connection);
 	}
 	else
 	{
-	    Subscription old_group = old_groups[old_index];
+	    group_sub_t old_group = old_groups[old_index];
 
 	    printf("match: %s and %s\n", 
-		   Subscription_expression(old_group),
-		   Subscription_expression(group));
+		   group_sub_expression(old_group),
+		   group_sub_expression(group));
 
-	    Subscription_updateFromSubscription(old_group, group);
-	    Subscription_free(group);
+	    group_sub_update_from_sub(old_group, group);
+	    group_sub_free(group);
 	    self -> groups[index] = old_group;
 	    old_groups[old_index] = NULL;
 	}
@@ -526,13 +558,13 @@ void tickertape_reload_groups(tickertape_t self)
     /* Free the remaining old subscriptions */
     for (index = 0; index < old_count; index++)
     {
-	Subscription old_group = old_groups[index];
+	group_sub_t old_group = old_groups[index];
 
 	if (old_group != NULL)
 	{
-	    Subscription_setConnection(old_group, NULL);
-	    Subscription_setControlPanel(old_group, NULL);
-	    Subscription_free(old_group);
+	    group_sub_set_connection(old_group, NULL);
+	    group_sub_set_control_panel(old_group, NULL);
+	    group_sub_free(old_group);
 	}
     }
 
@@ -543,7 +575,7 @@ void tickertape_reload_groups(tickertape_t self)
     count = 0;
     for (index = 0; index < self -> groups_count; index++)
     {
-	Subscription_setControlPanelIndex(self -> groups[index], self -> control_panel, &count);
+	group_sub_set_control_panel_index(self -> groups[index], self -> control_panel, &count);
     }
 }
 
@@ -583,7 +615,7 @@ static void init_ui(tickertape_t self)
 
     for (index = 0; index < self -> groups_count; index++)
     {
-	Subscription_setControlPanel(self -> groups[index], self -> control_panel);
+	group_sub_set_control_panel(self -> groups[index], self -> control_panel);
     }
 
     self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
@@ -800,7 +832,7 @@ tickertape_t tickertape_alloc(
     tickertape_t self = (tickertape_t) malloc(sizeof(struct tickertape));
     
     self -> user = strdup(user);
-    self -> domain = "this.domain.name";
+    self -> domain = strdup(get_domain());
     self -> tickerDir = (tickerDir == NULL) ? NULL : strdup(tickerDir);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
@@ -831,7 +863,7 @@ tickertape_t tickertape_alloc(
 
     for (index = 0; index < self -> groups_count; index++)
     {
-	Subscription_setConnection(self -> groups[index], self -> connection);
+	group_sub_set_connection(self -> groups[index], self -> connection);
     }
 
     /* Subscribe to the Usenet subscription if we have one */
@@ -875,7 +907,7 @@ void tickertape_free(tickertape_t self)
 
     for (index = 0; index < self -> groups_count; index++)
     {
-	Subscription_free(self -> groups[index]);
+	group_sub_free(self -> groups[index]);
     }
 
     free(self -> groups);
