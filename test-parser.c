@@ -28,16 +28,17 @@ static int parsed(void *rock, uint32_t count, subscription_t *subs, elvin_error_
 	{
 	    return 0;
 	}
+    }
 
-	/* Clean up */
-	if (! subscription_free(subs[i], error))
-	{
-	    return 0;
-	}
+    /* Clean up */
+    for (i = 0; i < count; i++)
+    {
+	subscription_free(subs[i], error);
     }
 
     /* Free the subscription array */
-    return ELVIN_FREE(subs, error);
+    ELVIN_FREE(subs, error);
+    return 1;
 }
 
 /* Constructs a simple notification */
@@ -62,20 +63,27 @@ static elvin_notification_t notification_alloc(elvin_error_t error)
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
-    elvin_error_t error = elvin_error_alloc();
+    elvin_error_t error;
     elvin_notification_t notification;
     parser_t parser;
     int i;
 
-    /* Allocate a new parser */
-    if ((parser = parser_alloc(parsed, notification, error)) == NULL)
+    /* Grab an error context */
+    if (! (error = elvin_error_alloc()))
     {
-	fprintf(stderr, "parser_alloc(): failed\n");
-	abort();
+	fprintf(stderr, "elvin_error_alloc(): failed\n");
+	exit(1);
     }
 
     /* Construct a notification to play with */
     if (! (notification = notification_alloc(error)))
+    {
+	elvin_error_fprintf(stderr, "en", error);
+	exit(1);
+    }
+
+    /* Allocate a new parser */
+    if ((parser = parser_alloc(parsed, notification, error)) == NULL)
     {
 	elvin_error_fprintf(stderr, "en", error);
 	exit(1);
