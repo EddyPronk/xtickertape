@@ -1,4 +1,4 @@
-/* $Id: Scroller.c,v 1.2 1997/02/05 09:15:52 phelps Exp $ */
+/* $Id: Scroller.c,v 1.3 1997/02/05 09:22:06 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -141,8 +141,6 @@ void Scroller_resume(Scroller self)
     printf("resuming...\n");
     self -> isSuspended = 0;
 }
-
-
 
 
 /* Adds a MessageView to the receiver */
