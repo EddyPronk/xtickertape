@@ -428,50 +428,21 @@ static env_t root_env_alloc(elvin_error_t error)
 	return NULL;
     }
 
-    /* Register the constant `pi' */
-    if (env_set_float(env, "pi", M_PI, error) == 0)
+    /* Register some constants */
+    if (env_set_symbol(env, "t", "t", error) == 0 ||
+	env_set_float(env, "pi", M_PI, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
     }
 
-    /* Register the built-in function `car' */
-    if (env_set_builtin(env, "car", prim_car, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register the built-in function `cdr' */
-    if (env_set_builtin(env, "cdr", prim_cdr, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register the built-in function `cons' */
-    if (env_set_builtin(env, "cons", prim_cons, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register the built-in function `lambda' */
-    if (env_set_builtin(env, "lambda", prim_lambda, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register the built-in function `quote' */
-    if (env_set_builtin(env, "quote", prim_quote, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register the built-in function `setq' */
-    if (env_set_builtin(env, "setq", prim_setq, error) == 0)
+    /* Register the built-in functions */
+    if (env_set_builtin(env, "car", prim_car, error) == 0 ||
+	env_set_builtin(env, "cdr", prim_cdr, error) == 0 ||
+	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
+	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
+	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
+	env_set_builtin(env, "setq", prim_setq, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
