@@ -19,6 +19,11 @@ int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
     {
 	elvin_error_fprintf(stdout, error);
 	elvin_error_clear(error);
+
+	if (! vm_gc(vm, error))
+	{
+	    return 0;
+	}
     }
 
     printf("> "); fflush(stdout);
@@ -55,17 +60,7 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
     }
 }
 
-/* The `car' subroutine */
-static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
-{
-    if (argc != 1)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
-	return 0;
-    }
 
-    return vm_car(vm, error);
-}
 
 /* The `and' special form */
 static int prim_and(vm_t vm, uint32_t argc, elvin_error_t error)
@@ -106,6 +101,30 @@ static int prim_and(vm_t vm, uint32_t argc, elvin_error_t error)
 
     /* Return whatever the last evaluates to */
     return vm_eval(vm, error);
+}
+
+/* The `car' subroutine */
+static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_car(vm, error);
+}
+
+/* The `catch' subroutine */
+static int prim_catch(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 3)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_catch(vm, error);
 }
 
 /* The `cdr' subroutine */
@@ -178,6 +197,19 @@ static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
     }
 
     return vm_pop(vm, NULL, error) && vm_eval(vm, error);
+}
+
+/* The `format' subroutine*/
+static int prim_format(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc < 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number or args");
+	return 0;
+    }
+
+    vm_print_state(vm, error);
+    exit(1);
 }
 
 /* The `gc' subroutine */
@@ -396,10 +428,12 @@ int main(int argc, char *argv[])
 
 	! define_special(vm, "and", prim_and, error) ||
 	! define_subr(vm, "car", prim_car, error) ||
+	! define_special(vm, "catch", prim_catch, error) ||
 	! define_subr(vm, "cdr", prim_cdr, error) ||
 	! define_subr(vm, "cons", prim_cons, error) ||
 	! define_subr(vm, "eq", prim_eq, error) ||
 	! define_special(vm, "if", prim_if, error) ||
+	! define_subr(vm, "format", prim_format, error) ||
 	! define_subr(vm, "gc", prim_gc, error) ||
 	! define_special(vm, "lambda", prim_lambda, error) ||
 	! define_special(vm, "or", prim_or, error) ||
