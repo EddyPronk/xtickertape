@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.142 2003/01/27 00:10:02 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.143 2003/01/27 10:36:05 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2107,11 +2107,25 @@ static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *npar
 static void faster(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
+    int value = 1;
 
     DPRINTF((stderr, "faster()\n"));
 
+    /* If there's an argument then try to convert it to a number */
+    if (*nparams > 0)
+    {
+	if ((value = atoi(params[0])) == 0)
+	{
+	    fprintf(stderr, "Unable to convert argument %s to a number\n", params[0]);
+	    value = 1;
+	}
+    }
+
+    /* Increase the step size */
+    self -> scroller.step += value;
+
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
-    if (++self -> scroller.step != 0)
+    if (self -> scroller.step != 0)
     {
 	enable_clock(self);
     }
@@ -2125,11 +2139,25 @@ static void faster(Widget widget, XEvent *event, String *params, Cardinal *npara
 static void slower(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
+    int value = 1;
 
     DPRINTF((stderr, "slower()\n"));
 
+    /* If there's an argument then try to convert it to a number */
+    if (*nparams > 0)
+    {
+	if ((value = atoi(params[0])) == 0)
+	{
+	    fprintf(stderr, "Unable to convert argument %s to a number\n", params[0]);
+	    value = 1;
+	}
+    }
+
+    /* Decrease the step size */
+    self -> scroller.step -= value;
+
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
-    if (--self -> scroller.step != 0)
+    if (self -> scroller.step != 0)
     {
 	enable_clock(self);
     }
