@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.4 2001/07/06 05:02:07 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.5 2001/07/06 06:56:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -46,6 +46,10 @@ static const char cvsid[] = "$Id: message_view.c,v 2.4 2001/07/06 05:02:07 phelp
 #if ! defined(MAX)
 # define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
+
+
+/* Uncomment this line to debug the per_char() function */
+/* #define DEBUG_PER_CHAR 1 */
 
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
@@ -372,7 +376,8 @@ void message_view_paint(
     XRectangle *bbox)
 {
     int do_underline = message_has_attachment(self -> message);
-#ifdef DEBUG_PER_CHAR
+#if (DEBUG_PER_CHAR - 1) == 0
+    XGCValues values;
     char *string;
     long px;
 
@@ -380,7 +385,7 @@ void message_view_paint(
      * diverging from the server's interpretation of the font */ 
     values.foreground = separator_pixel;
     XChangeGC(display, gc, GCForeground, &values);
-    px = x;
+    px = x + 1;
 
     /* Draw the group string */
     string = message_get_group(self -> message);
@@ -393,7 +398,7 @@ void message_view_paint(
     px += self -> separator_sizes.width;
 
     /* Then the user string */
-    string = message_get_group(self -> message);
+    string = message_get_user(self -> message);
     XDrawString(display, drawable, gc, px, y, string, strlen(string));
     px += self -> user_sizes.width;
 
@@ -401,6 +406,11 @@ void message_view_paint(
     string = SEPARATOR;
     XDrawString(display, drawable, gc, px, y, string, strlen(string));
     px += self -> separator_sizes.width;
+
+    /* Then the message itself */
+    string = message_get_string(self -> message);
+    XDrawString(display, drawable, gc, px, y, string, strlen(string));
+    px += self -> message_sizes.width;
 
     /* And finally draw the underline */
     if (do_underline)
