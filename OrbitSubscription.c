@@ -1,4 +1,4 @@
-/* $Id: OrbitSubscription.c,v 1.11 1998/10/24 15:35:05 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.12 1998/11/05 01:51:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,7 +111,6 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 	    char *timeoutString;
 	    en_search(notification, "TIMEOUT", &type, (void **)&timeoutString);
 	    timeout = atoi(timeoutString);
-	    printf("timeout=%d\n", timeout);
 	}
 
 	timeout = (timeout == 0) ? 10 : timeout;
