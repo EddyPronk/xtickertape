@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.8 1999/12/16 07:52:08 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.9 2001/05/05 07:42:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -111,6 +111,7 @@ glyph_t gap_alloc(ScrollerWidget widget)
     /* Initialize its fields to sane values */
     self -> previous = (glyph_t)self;
     self -> next = (glyph_t)self;
+    self -> visible_count = 0;
     self -> alloc = (alloc_method_t)do_alloc;
     self -> free = (free_method_t)do_free;
     self -> get_message = (message_method_t)get_message;

@@ -31,7 +31,7 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.5 1999/11/23 00:10:24 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.6 2001/05/05 07:42:37 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
@@ -106,6 +106,7 @@ typedef glyph_t (*get_replacement_method_t)(glyph_t glyph);
 #define GLYPH_PREFIX \
     glyph_t previous; \
     glyph_t next; \
+    int visible_count; \
     alloc_method_t alloc; \
     free_method_t free; \
     message_method_t get_message; \

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.108 2001/05/04 03:18:07 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.109 2001/05/05 07:42:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -452,35 +452,54 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 }
 
 
+/* Returns the tail of the queue */
+static glyph_t get_tail(ScrollerWidget self)
+{
+    glyph_t glyph = self -> scroller.gap -> previous;
 
-/*
- * Answers the width of the gap for the given scroller width and sum
- * of the widths of all glyphs
- */
+    /* Skip the left and right markers */
+    while (glyph -> is_expired(glyph))
+    {
+	glyph = glyph -> previous;
+    }
+
+    return glyph;
+}
+
+/* Answers the width of the gap for the given scroller width and sum
+  of the widths of all glyphs */
 static int gap_width(ScrollerWidget self, int last_width)
 {
     return (self -> core.width < last_width + self -> scroller.min_gap_width) ?
 	self -> scroller.min_gap_width : self -> core.width - last_width;
 }
 
-
-/* Answers True if the queue contains only the gap */
+/* Returns true if the queue contains no unexpired messages */
 static int queue_is_empty(glyph_t head)
 {
-    /* If the last element of the queue is also the first, then the
-     * queue is empty */
-    return head == head -> previous;
+    glyph_t glyph = head -> next;
+
+    while (glyph != head)
+    {
+	if (glyph -> is_expired(glyph))
+	{
+	    return 0;
+	}
+
+	glyph = glyph -> next;
+    }
+
+    return 1;
 }
 
 /* Adds an item to a circular queue of glyphs */
-static void queue_add(glyph_t head, glyph_t glyph)
+static void queue_add(glyph_t tail, glyph_t glyph)
 {
-    glyph_t tail = head -> previous;
-
     glyph -> previous = tail;
-    glyph -> next = head;
+    glyph -> next = tail -> next;
+
+    tail -> next -> previous = glyph;
     tail -> next = glyph;
-    head -> previous = glyph;
 }
 
 /* Locates the item in the queue with the given tag */
@@ -514,7 +533,7 @@ static glyph_t queue_find(glyph_t head, char *tag)
 }
 
 /* Replace an existing queue item with a new one with the same tag */
-static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_glyph)
+static void queue_replace(glyph_t old_glyph, glyph_t new_glyph)
 {
     glyph_t previous = old_glyph -> previous;
     glyph_t next = old_glyph -> next;
@@ -530,18 +549,6 @@ static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_gl
 
     old_glyph -> set_replacement(old_glyph, new_glyph);
 
-    /* Update the left_glyph if appropriate */
-    if (self -> scroller.left_glyph == old_glyph)
-    {
-	self -> scroller.left_glyph = new_glyph;
-    }
-
-    /* Update the right_glyph if appropriate */
-    if (self -> scroller.right_glyph == old_glyph)
-    {
-	self -> scroller.right_glyph = new_glyph;
-    }
-
     /* Clean up */
     old_glyph -> free(old_glyph);
 }
@@ -549,11 +556,21 @@ static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_gl
 /* Removes an item from a circular queue of glyphs */
 static void queue_remove(glyph_t glyph)
 {
+    /* Don't dequeue if the glyph isn't queued */
+    if (glyph -> next == NULL)
+    {
+	return;
+    }
+
+    /* Remove it from the list */
     glyph -> previous -> next = glyph -> next;
     glyph -> next -> previous = glyph -> previous;
 
     glyph -> previous = NULL;
     glyph -> next = NULL;
+
+    /* Lose our reference to the glyph */
+    glyph -> free(glyph);
 }
 
 
@@ -745,7 +762,6 @@ static int compute_min_gap_width(XFontStruct *font)
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t gap;
     glyph_holder_t holder;
 
     /* Make sure we have a width */
@@ -766,8 +782,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 	self -> core.height = self -> scroller.height;
     }
 
-    gap = gap_alloc(self);
-    holder = glyph_holder_alloc(gap, self -> core.width);
+    /* Allocate a glyph to represent the gap */
+    self -> scroller.gap = gap_alloc(self);
+    holder = glyph_holder_alloc(self -> scroller.gap, self -> core.width);
 
     /* Initialize the queue to only contain the gap with 0 offsets */
     self -> scroller.timer = 0;
@@ -778,9 +795,6 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.right_holder = holder;
     self -> scroller.left_offset = 0;
     self -> scroller.right_offset = 0;
-    self -> scroller.gap = gap;
-    self -> scroller.left_glyph = gap;
-    self -> scroller.right_glyph = gap;
     self -> scroller.last_width = 0;
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
@@ -848,25 +862,27 @@ static void add_left_holder(ScrollerWidget self)
     glyph_holder_t holder;
     int width;
 
-    /* Find the next glyph to show */
-    self -> scroller.left_glyph = self -> scroller.left_glyph -> previous;
-    glyph = self -> scroller.left_glyph;
+    /* Find the first unexpired glyph to the left of the scroller */
+    glyph = self -> scroller.left_holder -> glyph -> previous;
+    while (glyph -> is_expired(glyph))
+    {
+	glyph = glyph -> previous;
+    }
 
     /* We need to do magic for the gap */
     if (glyph == self -> scroller.gap)
     {
 	glyph_holder_t left = self -> scroller.left_holder;
-	glyph_t previous = glyph -> previous;
+	glyph_t tail = get_tail(self);
 
-	/* Determine the width of the last glyph (or the width of
-	 * the scroller if there are no glyphs to scroll on) */
-	if (previous == self -> scroller.gap)
+	/* Determine the width of the tail glyph */
+	if (tail == self -> scroller.gap)
 	{
 	    width = gap_width(self, self -> core.width);
 	}
 	else
 	{
-	    width = gap_width(self, previous -> get_width(previous));
+	    width = gap_width(self, tail -> get_width(tail));
 	}
 	    
 	/* If the next glyph is also the gap then just expand it */
@@ -876,15 +892,15 @@ static void add_left_holder(ScrollerWidget self)
 	    self -> scroller.left_offset += width;
 	    return;
 	}
-
-	holder = glyph_holder_alloc(glyph, width);
     }
     else
     {
+	glyph -> visible_count++;
 	width = glyph -> get_width(glyph);
-	holder = glyph_holder_alloc(glyph, width);
     }
 
+    /* Create a glyph holder and add it to the list */
+    holder = glyph_holder_alloc(glyph, width);
     self -> scroller.left_holder -> previous = holder;
     holder -> next = self -> scroller.left_holder;
     self -> scroller.left_holder = holder;
@@ -899,9 +915,12 @@ static void add_right_holder(ScrollerWidget self)
     glyph_holder_t holder;
     int width;
 
-    /* Find the next glyph to show */
-    self -> scroller.right_glyph = self -> scroller.right_glyph -> next;
-    glyph = self -> scroller.right_glyph;
+    /* Find the first unexpired glyph to the right of the scroller */
+    glyph = self -> scroller.right_holder -> glyph -> next;
+    while (glyph -> is_expired(glyph))
+    {
+	glyph = glyph -> next;
+    }
 
     /* We need to do some magic for the gap */
     if (glyph == self -> scroller.gap)
@@ -919,6 +938,7 @@ static void add_right_holder(ScrollerWidget self)
     }
     else
     {
+	glyph -> visible_count++;
 	width = glyph -> get_width(glyph);
     }
 
@@ -943,25 +963,10 @@ static void remove_left_holder(ScrollerWidget self)
     self -> scroller.left_offset -= glyph_holder_width(holder);
     glyph_holder_free(holder);
 
-    /* Update the left_glyph if appropriate */
-    if (glyph == self -> scroller.left_glyph)
+    /* Excise the glyph if it's no longer visible and viable */
+    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
     {
-	glyph_holder_t probe = self -> scroller.left_holder;
-
-	/* Find an unexpired glyph to become the new left_glyph */
-	while (probe != NULL)
-	{
-	    if (! probe -> glyph -> is_expired(probe -> glyph))
-	    {
-		/* Be careful to use the replacement if there is one */
-		self -> scroller.left_glyph = probe -> glyph -> get_replacement(probe -> glyph);
-		return;
-	    }
-
-	    probe = probe -> next;
-	}
-
-	self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
+	queue_remove(glyph);
     }
 }
 
@@ -977,24 +982,10 @@ static void remove_right_holder(ScrollerWidget self)
     self -> scroller.right_offset -= glyph_holder_width(holder);
     glyph_holder_free(holder);
 
-    /* Update the right_glyph if appropriate */
-    if (glyph == self -> scroller.right_glyph)
+    /* Excise the glyph if it's no longer visible and viable */
+    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
     {
-	glyph_holder_t probe = self -> scroller.right_holder;
-
-	/* Find an unexpired glyph to become the new right_glyph */
-	while (probe != NULL)
-	{
-	    if (! probe -> glyph -> is_expired(probe -> glyph))
-	    {
-		self -> scroller.right_glyph = probe -> glyph -> get_replacement(probe -> glyph);
-		return;
-	    }
-
-	    probe = probe -> previous;
-	}
-
-	self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
+	queue_remove(glyph);
     }
 }
 
@@ -1310,6 +1301,8 @@ static void Destroy(Widget widget)
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
+    DPRINTF((stderr, "Resize()\n"));
+#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
 
     /* Nothing to do if we're not yet realized or if the width hasn't changed */
@@ -1418,6 +1411,7 @@ static void Resize(Widget widget)
 	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
 	Redisplay(self, NULL);
     }
+#endif
 }
 
 /* What should this do? */
@@ -1560,6 +1554,8 @@ void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 	return;
     }
 
+    DPRINTF((stderr, "show-menu()\n"));
+
     /* Pop up the menu and select the message that was clicked on */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph -> get_message(glyph));
@@ -1576,6 +1572,8 @@ static void show_attachment(Widget widget, XEvent *event, String *params, Cardin
     {
 	return;
     }
+
+    DPRINTF((stderr, "show-attachment()\n"));
 
     /* Deliver the chosen message to the callbacks */
     glyph = glyph_at_event(self, event);
@@ -1597,36 +1595,11 @@ static void expire(Widget widget, XEvent *event, String *params, Cardinal *npara
 	return;
     }
 
+    DPRINTF((stderr, "expire()\n"));
+
     /* Expire the glyph under the pointer */
     glyph = glyph_at_event(self, event);
     glyph -> expire(glyph);
-}
-
-/* Remove a glyph from the circular queue */
-static void dequeue(ScrollerWidget self, glyph_t glyph)
-{
-    /* If the glyph is already dequeued, then don't do anything */
-    if (glyph -> next == NULL)
-    {
-	return;
-    }
-
-    /* Make sure left_glyph is safe */
-    if (self -> scroller.left_glyph == glyph)
-    {
-	self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
-    }
-
-    /* Make sure that right_glyph is safe */
-    if (self -> scroller.right_glyph == glyph)
-    {
-	self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
-    }
-
-    queue_remove(glyph);
-
-    /* Free our reference to the glyph */
-    glyph -> free(glyph);
 }
 
 /* Delete a message when scrolling left to right (backwards) */
@@ -1858,6 +1831,8 @@ static void delete(Widget widget, XEvent *event, String *params, Cardinal *npara
 	return;
     }
     
+    DPRINTF((stderr, "delete()\n"));
+
     /* Figure out which glyph to delete */
     glyph = glyph_at_event(self, event);
 
@@ -1882,6 +1857,8 @@ static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *npar
 	return;
     }
 
+    DPRINTF((stderr, "kill()\n"));
+
     /* Figure out which glyph to kill */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(
@@ -1900,6 +1877,8 @@ static void faster(Widget widget, XEvent *event, String *params, Cardinal *npara
     {
 	return;
     }
+
+    DPRINTF((stderr, "faster()\n"));
 
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
     if (++self -> scroller.step != 0)
@@ -1922,6 +1901,8 @@ static void slower(Widget widget, XEvent *event, String *params, Cardinal *npara
     {
 	return;
     }
+
+    DPRINTF((stderr, "slower()\n"));
 
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
     if (--self -> scroller.step != 0)
@@ -1950,6 +1931,8 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
     {
 	return;
     }
+
+    DPRINTF((stderr, "set-speed()\n"));
 
     /* Set the speed.  Disable the clock for a speed of 0 */
     if ((self -> scroller.step = atoi(params[0])) == 0)
@@ -1981,6 +1964,8 @@ static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *n
 	return;
     }
 
+    DPRINTF((stderr, "start_drag()\n"));
+
     /* Record the postion of the click for future reference */
     self -> scroller.start_drag_x = button_event -> x;
     self -> scroller.last_x = button_event -> x;
@@ -2002,6 +1987,8 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     /* Aren't we officially dragging yet? */
     if (! self -> scroller.is_dragging)
     {
+	DPRINTF((stderr, "drag()\n"));
+
 	/* Give a little leeway so that a wobbly click doesn't become a drag */
 	if (self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x &&
 	    motion_event -> x < self -> scroller.start_drag_x + self -> scroller.drag_delta)
@@ -2043,13 +2030,13 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     }
 
     /* Try replacing an existing queue element with the same tag as this one */
-    if ((probe = queue_find(self -> scroller.gap, message_get_tag(message))) == NULL)
+    if ((probe = queue_find(self -> scroller.gap, message_get_tag(message))) != NULL)
     {
-	queue_add(self -> scroller.gap, glyph);
+	queue_replace(probe, glyph);
     }
     else
     {
-	queue_replace(self, probe, glyph);
+	queue_add(self -> scroller.gap -> previous, glyph);
     }
 
     /* Adjust the gap width if possible and appropriate */
@@ -2083,8 +2070,13 @@ void ScAddMessage(ScrollerWidget self, message_t message)
 /* Callback for expiring glyphs */
 void ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
-    DPRINTF((stderr, "expired...\n"));
-    dequeue(self, glyph);
+    DPRINTF((stderr, "[ScGlyphExpired]\n"));
+
+    /* Dequeue the glyph if it's not visible */
+    if (glyph -> visible_count == 0)
+    {
+	queue_remove(glyph);
+    }
 }
 
 /* Answers the width of the gap glyph */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.34 2000/04/04 07:03:07 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.35 2001/05/05 07:42:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -512,6 +512,7 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message)
     /* Initialize its fields to sane values */
     self -> previous = NULL;
     self -> next = NULL;
+    self -> visible_count = 0;
     self -> alloc = (alloc_method_t)do_alloc;
     self -> free = (free_method_t)do_free;
     self -> get_message = (message_method_t)get_message;

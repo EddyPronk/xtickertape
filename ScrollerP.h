@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.37 2001/05/01 07:58:43 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.38 2001/05/05 07:42:37 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -124,12 +124,6 @@ typedef struct
 
     /* The gap in the scroller's circular queue of glyphs */
     glyph_t gap;
-
-    /* The index into the visible array of the current leftmost visible glyph */
-    glyph_t left_glyph;
-
-    /* The index into the visible array of the current rightmost visible glyph */
-    glyph_t right_glyph;
 
     /* The minimum width for the gap */
     int min_gap_width;
