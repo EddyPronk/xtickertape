@@ -1,18 +1,13 @@
-# xtickertape errors
+facility lisp 256
 
-# Randomly assign a facility number
-facility xtickertape 42
-
-# Parser stuff
-00400	PARSE_ERROR	string(tag) int32(line) string(token)
-00401	INVALID_TOKEN	string(tag) int32(line) string(token)
-00402	UNTERM_STRING	string(tag) int32(line)
-00403	UNTERM_ID	string(tag) int32(line)
-00404	UNKNOWN_FUNC	string(tag) int32(line) string(name)
-00405	OVERFLOW	string(tag) int32(line) string(token)
-00406	TYPE_MISMATCH	string(tag) int32(line) string(exp) string(type)
-00407	TOO_FEW_ARGS	string(tag) int32(line) string(function)
-00408	TOO_MANY_ARGS	string(tag) int32(line) string(function)
-
-# Internal stuff
-00900	NOT_YET_IMPL	string(function)
+00001 PARSE_ERROR string(token)
+00002 INVALID_TOKEN string(token)
+00003 UNTERM_STRING
+00004 UNTERM_SYMBOL
+00005 UNTERM_OPAQUE
+00006 OVERFLOW string(token)
+00007 INVALID_FUNC string(name)
+00008 TOO_FEW_ARGS string(function)
+00009 TOO_MANY_ARGS string(function)
+00010 ARGS_NOT_LIST
+00011 TYPE_MISMATCH string(value) string(type)
