@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.1 2001/06/15 12:20:14 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.2 2001/07/04 11:20:17 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -119,6 +119,10 @@ static XtResource resources[] =
  */
 
 static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args);
+static void realize(
+    Widget widget,
+    XtValueMask *value_mask,
+    XSetWindowAttributes *attributes);
 static void redisplay(Widget self, XEvent *event, Region region);
 static void destroy(Widget self);
 static void resize(Widget self);
@@ -152,7 +156,7 @@ HistoryClassRec historyClassRec =
 	False, /* class_inited */
 	init, /* initialize */
 	NULL, /* initialize_hook */
-	XtInheritRealize, /* realize */
+	realize, /* realize */
 	NULL, /* actions */
 	0, /* num_actions */
 	resources, /* resources */
@@ -164,7 +168,7 @@ HistoryClassRec historyClassRec =
 	False, /* visible_interest */
 	destroy, /* destroy */
 	resize, /* resize */
-	redisplay , /* expose */
+	redisplay, /* expose */
 	set_values, /* set_values */
 	NULL, /* set_values_hook */
 	XtInheritSetValuesAlmost, /* set_values_almost */
@@ -423,6 +427,26 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     printf("History: init()\n");
 }
 
+/* Realize the widget by creating a window in which to display it */
+static void realize(
+    Widget widget,
+    XtValueMask *value_mask,
+    XSetWindowAttributes *attributes)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    Display *display = XtDisplay(self);
+    XGCValues values;
+
+    printf("History: realize() w=%d, h=%d\n", self -> core.width, self -> core.height);
+
+    /* Create our window */
+    XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
+
+    /* Create a GC for our own nefarious purposes */
+    values.background = self -> core.background_pixel;
+    self -> history.gc = XCreateGC(display, XtWindow(widget), GCBackground, &values);
+}
+
 /* Draws the highlights and shadows */
 static void draw_highlights(Display *display,
 		       Drawable drawable,
@@ -566,9 +590,9 @@ static Boolean set_values(
 }
 
 
-/* What should this do? */
+/* We're always happy */
 static XtGeometryResult query_geometry(
-    Widget self,
+    Widget widget,
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred)
 {
