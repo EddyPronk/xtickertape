@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.129 2002/04/12 13:39:25 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.130 2002/04/12 14:38:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -461,6 +461,32 @@ static void glyph_set_clock(glyph_t self, int level_count)
 	duration, glyph_tick, self);
 }
 
+/* Returns the glyph's message */
+static message_t glyph_get_message(glyph_t self)
+{
+    /* Watch for the gap */
+    if (self -> message_view == NULL)
+    {
+	return NULL;
+    }
+
+    return message_view_get_message(self -> message_view);
+}
+
+/* Returns non-zero if the glyph has been killed */
+static int glyph_is_killed(glyph_t self)
+{
+    message_t message;
+
+    /* Get the glyph's message */
+    if ((message = glyph_get_message(self)) == NULL)
+    {
+	return False;
+    }
+
+    return message_is_killed(message);
+}
+
 /* Draw the glyph */
 static void glyph_paint(
     Display *display, Drawable drawable, GC gc,
@@ -483,18 +509,6 @@ static void glyph_paint(
 	self -> widget -> scroller.separator_pixels[self -> fade_level],
 	x - MIN(self -> sizes.lbearing, 0), y,
 	bbox);
-}
-
-/* Returns the glyph's message */
-static message_t glyph_get_message(glyph_t self)
-{
-    /* Watch for the gap */
-    if (self -> message_view == NULL)
-    {
-	return NULL;
-    }
-
-    return message_view_get_message(self -> message_view);
 }
 
 /* Returns the total width of the glyph */
@@ -529,7 +543,6 @@ static void glyph_expire(glyph_t self, ScrollerWidget widget)
     /* Otherwise get gone */
     self -> is_expired = True;
     ScRepaintGlyph(widget, self);
-    ScGlyphExpired(widget, self);
 
     /* Restart the timer so that we can quickly fade */
     if (self -> timeout != None)
@@ -539,6 +552,7 @@ static void glyph_expire(glyph_t self, ScrollerWidget widget)
     }
 
     glyph_set_clock(self, widget -> scroller.fade_levels);
+    ScGlyphExpired(widget, self);
 }
 
 
@@ -2370,16 +2384,14 @@ void ScPurgeKilled(Widget widget)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph, next;
 
-    /* Go through all of the messages in the scroller, and delete the
-     * ones which have been killed */
+    /* Go through and delete the killed nodes */
     glyph = self -> scroller.gap -> next;
     while (glyph != self -> scroller.gap)
     {
-	/* Remember the next glyph in the list */
 	next = glyph -> next;
-	
+
 	/* Get the glyph's message */
-	if (message_is_killed(glyph_get_message(glyph)))
+	if (glyph_is_killed(glyph))
 	{
 	    delete_glyph(self, glyph);
 	}
@@ -2397,37 +2409,6 @@ void ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
     if (glyph -> visible_count == 0)
     {
 	queue_remove(glyph);
-    }
-}
-
-/* Answers the width of the gap glyph */
-int ScGapWidth(ScrollerWidget self)
-{
-    return gap_width(self, self -> scroller.last_width);
-}
-
-/* Delete a message from the receiver */
-void ScDeleteMessage(ScrollerWidget self, message_t message)
-{
-    glyph_t glyph;
-
-    /* Make sure there is a message */
-    if (message == NULL)
-    {
-	return;
-    }
-
-    /* Locate the message's glyph and delete it */
-    glyph = self -> scroller.gap -> next;
-    while (glyph != self -> scroller.gap)
-    {
-	if (glyph_get_message(glyph) == message)
-	{
-	    delete_glyph(self, glyph);
-	    return;
-	}
-
-	glyph = glyph -> next;
     }
 }
 
