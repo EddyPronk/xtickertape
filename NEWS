@@ -1,3 +1,18 @@
+Overview of changes in xtickertape-1.6.6
+
+* Minor configure fix for machines which don't have a separate include
+  file for crypt().
+
+* Check environment variables ELVIN_HOST and ELVIN_PORT if no
+  command-line option given before using defaults (thanks David
+  Leonard).
+
+* Keyboard activity now makes tool-tips go away.
+
+* Chased down some more memory leaks.
+
+* The SIGHUP handler failed to re-register itself.  This is now fixed.
+
 Overview of changes in xtickertape-1.6.5
 
 * Items in the history window which have an attachment (by default
