@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.30 1999/03/19 06:52:24 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.31 1999/04/13 10:14:38 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -651,10 +651,7 @@ static void SetGroupSelection(ControlPanel self, MenuItemTuple tuple)
     else
     {
 	/* Tell Motif that the menu item was selected, which will call SelectGroup for us */
-	XtCallActionProc(
-	    tuple -> widget,
-	    "ArmAndActivate", NULL,
-	    NULL, 0);
+	XtCallActionProc(tuple -> widget, "ArmAndActivate", NULL, NULL, 0);
     }
 }
 
