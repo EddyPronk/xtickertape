@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.10 1998/10/22 07:06:27 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.11 1998/10/28 07:50:02 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -8,16 +8,17 @@ typedef struct ElvinConnection_t *ElvinConnection;
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
 #include <X11/Intrinsic.h>
-#include "Message.h"
 
-/* The format of the error callback function */
-typedef void (*ErrorCallback)(void *context, char *message);
+/* Callback types */
 typedef void (*NotifyCallback)(void *context, en_notify_t notification);
+typedef void (*DisconnectCallback)(void *context, char *message);
+typedef void (*ReconnectCallback)(void *context, char *message);
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
     char *hostname, int port, XtAppContext app_context,
-    ErrorCallback callback, void *context);
+    DisconnectCallback disconnectCallback, void *disconnectContext,
+    ReconnectCallback callback, void *reconnectContext);
 
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self);

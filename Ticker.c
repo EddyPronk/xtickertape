@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.14 1998/10/26 03:40:01 phelps Exp $
+ * $Id: Ticker.c,v 1.15 1998/10/28 07:50:14 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -79,7 +79,8 @@ static void ReceiveMessage(Tickertape self, Message message);
 static void InitializeUserInterface(Tickertape self);
 static List ReadGroupsFile(Tickertape self);
 static void PublishStartupNotification(Tickertape self);
-static void Error(Tickertape self, char *message);
+static void Disconnect(Tickertape self, char *string);
+static void Reconnect(Tickertape self, char *string);
 #ifdef ORBIT
 static void OrbitCallback(Tickertape self, en_notify_t notification);
 static void SubscribeToOrbit(Tickertape self);
@@ -193,20 +194,26 @@ static void PublishStartupNotification(Tickertape self)
     en_free(notification);
 }
 
-/* Handle an Error */
-static void Error(Tickertape self, char *message)
+/* This is called when we lose our elvin connection */
+static void Disconnect(Tickertape self, char *string)
 {
+    Message message;
     SANITY_CHECK(self);
 
-    /* Publish error messages onto the special group tickertape */
-    ReceiveMessage(
-	self,
-	Message_alloc(
-	    NULL,
-	    "internal", "tickertape",
-	    message, 10,
-	    NULL, NULL,
-	    0, 0));
+    /* Display the message on the scroller */
+    message = Message_alloc(NULL, "internal", "tickertape", string, 10, NULL, NULL, 0, 0);
+    ReceiveMessage(self, message);
+}
+
+/* This is called when we get our elvin connection back */
+static void Reconnect(Tickertape self, char *string)
+{
+    Message message;
+    SANITY_CHECK(self);
+
+    /* Display the message on the scroller */
+    message = Message_alloc(NULL, "internal", "tickertape", string, 10, NULL, NULL, 0, 0);
+    ReceiveMessage(self, message);
 
     /* Republish the startup notification */
     PublishStartupNotification(self);
@@ -342,7 +349,8 @@ Tickertape Tickertape_alloc(
     /* Connect to elvin and subscribe */
     self -> connection = ElvinConnection_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
-	(ErrorCallback) Error, self);
+	(DisconnectCallback)Disconnect, self,
+	(ReconnectCallback)Reconnect, self);
     List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
 
     /* Subscribe to the Usenet subscription if we have one */
