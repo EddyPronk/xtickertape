@@ -4,8 +4,8 @@ Misc
 
 - Avoid adding the same status message to the scroller over and over
   again.  Perhaps use the tag to just replace the existing status
-  message?  What about the history?  Perhaps these messages only go
-  into the status box?
+  message?  Perhaps messages that don't indicate a change in
+  connection state should only go into the status box?
 
 
 Documentation
@@ -28,6 +28,14 @@ Control Panel:
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program.
 
+- We need to translate from the current locale to UTF-8 before sending
+  messages or the server will dump us when we try to send any
+  non-ASCII characters.
+
+- Get the status line to display connection information when the mouse
+  isn't over a message with an attachment.  Get it to display
+  something useful if it is over such a message.
+
 
 Scroller:
 
@@ -36,13 +44,18 @@ Scroller:
   would affect this...
 
 - Deletion has less than satisfactory results on the scroller's state.
+  It is not entirely clear what the `correct' behavior is in certain
+  circumstances.
+
+- Messages containing non-ASCII characters appear garbled because we
+  don't do anything intelligent with the UTF-8 encoding.
 
 
 History Widget
 
 - We should have resources for the colors to use when drawing the
-  selected line so that people on black and white machines can still
-  read it.
+  selected message so that people on black and white machines can
+  still read it.
 
 - The history window should scroll messages up when the visible window
   is full rather than waiting until the history buffer is full.
@@ -50,16 +63,17 @@ History Widget
 - It should be possible to scroll horizontally from the keyboard.
 
 - The highlight around the selection which indicates that the widget
-  has focus should acknowledget the highlight_thickness resource,
-  which should affect the spacing between lines.
+  has focus should acknowledge the highlight_thickness resource, which
+  should affect the spacing between lines.
 
 - Dragging should not occur until a threshold has been crossed.  This
   should make it less annoying to deselect an item as dragging
   automatically selects.
 
-- The timestamp should optionally include the date as well
-  as HH:MM(am|pm), and should be internationalized.  Perhaps this
-  should be done via the Scheme interpreter?
+- The timestamp should optionally include the date as well as simply
+  HH:MM(am|pm), and should be internationalized.  It should be
+  possible to switch between date formats at runtime.  Perhaps this
+  could be done via the Scheme interpreter via a lambda expression?
 
 - Messages should be indented to indicate threading.  This will expose
   a bit of unimplemented functionality in regards to inserting a
@@ -68,11 +82,16 @@ History Widget
 - Keyboard initiated scrolling should make the margin visible when the
   user attempts to select before the first message or after the last one.
 
-- It should be possible to view the attachment of the selected message
-  from the keyboard.
+- Attempting to scroll up or down (via keyboard or pointer) should
+  make the margin visible in up to but not more than the size of a
+  line at a time for the cases where the margin is actually larger
+  than a single line.
+
+- Messages containing non-ASCII characters appear garbled because we
+  don't do anything intelligent with the UTF-8 encoding.
 
 
-Scheme Interpreter:
+Scheme Interpreter [POSTPONED until v2.1]:
 
 - This needs to be connected to everything so that we can do
   amusing things.
