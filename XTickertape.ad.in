@@ -135,13 +135,11 @@ XTickertape.metamailPath: @METAMAIL@
 	~Meta ~Alt Ctrl<Key>d: delete-next-character()\n\
 	~Meta ~Alt Ctrl<Key>e: end-of-line()\n\
 	~Meta ~Alt Ctrl<Key>f: forward-character()\n\
-	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line()
-
-*XmList.translations: #override\
-	~Meta ~Alt Ctrl<Key>a: ListBeginLine()\n\
-	~Meta ~Alt Ctrl<Key>e: ListEndLine()\n\
-	~Meta ~Alt Ctrl<Key>p: ListPrevItem()\n\
-	~Meta ~Alt Ctrl<Key>n: ListNextItem()
+	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line()\n\
+	<Key>osfUp: history-prev()\n\
+	Ctrl<Key>p: history-prev()\n\
+	<Key>osfDown: history-next()\n\
+	Ctrl<Key>n: history-next()\n
 
 !
 ! Scroller action translations
