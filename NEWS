@@ -1,7 +1,11 @@
-Overview of changes in xtickertape-2.0a9
+Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed
   correctly.
+
+* Reworked the way dragging is handled by the Scroller widget so that
+  you can perform actions on a message while dragging the scroller
+  without cancelling the drag.
 
 Overview of changes in xtickertape-2.0a8
 

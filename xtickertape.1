@@ -287,13 +287,19 @@ The Scroller widget recognizes the following actions:
 .TP
 .B start-drag()
 Records the current pointer position for reference during an ensuing
-drag.  Since a drag action cancels any other action (show-menu, for
-example), the pointer must move a minimum distance away from this
+drag.  The pointer must move a minimum distance away from this
 reference position before a drag officially begins.
 .TP
 .B drag()
 Moves the Scroller's horizontal position to match the pointer's
 motion.  This should be used in conjunction with start-drag above.
+.TP
+.B stop-drag([action [, arg]...])
+Stop dragging the Scroller.  If one or more arguments are supplied to
+this function, then the first is invoked if the Scroller wasn't being
+dragged or the pointer hadn't moved a minimum distance away from the
+reference position.  Additional arguments are forwarded to the action
+as its arguments.
 .TP
 .B show-menu()
 Pops up the \fIcontrol panel\fP window and uses the notification under 
