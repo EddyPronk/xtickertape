@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.99 2000/05/01 02:43:41 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.100 2000/05/05 03:54:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -721,6 +721,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 		    glyph_holder_paint(
 			holder, display, XtWindow((Widget)self),
 			offset, 0, 0, self -> core.width, self -> scroller.height);
+		    holder -> is_pending = False;
 		}
 		else
 		{
@@ -1241,6 +1242,48 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     }
 }
 
+/* Process events that were postponed until the GraphicsExpose (or
+ * NoExpose) events were received */
+static void pending_recover(ScrollerWidget self)
+{
+    Display *display = XtDisplay((Widget)self);
+    glyph_holder_t holder;
+    int offset = 0 - self -> scroller.left_offset;
+
+    /* Don't bother repainting if we're not visible */
+    if (self -> scroller.state != SS_READY)
+    {
+	return;
+    }
+
+    /* Update any glyphs which need to be repainted */
+    for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
+    {
+	int width = glyph_holder_width(holder);
+
+	if (holder -> is_pending)
+	{
+	    if (self -> scroller.use_pixmap)
+	    {
+		glyph_holder_paint(
+		    holder, display, self -> scroller.pixmap,
+		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		Redisplay(self, NULL);
+	    }
+	    else
+	    {
+		glyph_holder_paint(
+		    holder, display, XtWindow((Widget)self),
+		    offset, 0, 0, self -> core.width, self -> scroller.height);
+	    }
+
+	    holder -> is_pending = False;
+	}
+
+	offset += width;
+    }
+}
+
 /* Processes events that were postponed until the GraphicsExpose (or
  * NoExpose) events were received */
 static void overflow_recover(ScrollerWidget self)
@@ -1249,35 +1292,8 @@ static void overflow_recover(ScrollerWidget self)
     glyph_holder_t holder;
     int offset = 0 - self -> scroller.left_offset;
 
-    if (self -> scroller.state == SS_READY)
-    {
-	/* Update any glyphs which need to be repainted */
-	for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
-	{
-	    int width = glyph_holder_width(holder);
-
-	    if (holder -> is_pending)
-	    {
-		if (self -> scroller.use_pixmap)
-		{
-		    glyph_holder_paint(
-			holder, display, self -> scroller.pixmap,
-			offset, 0, 0, self -> core.width, self -> scroller.height);
-		    Redisplay(self, NULL);
-		}
-		else
-		{
-		    glyph_holder_paint(
-			holder, display, XtWindow((Widget)self),
-			offset, 0, 0, self -> core.width, self -> scroller.height);
-		}
-
-		holder -> is_pending = False;
-	    }
-
-	    offset += width;
-	}
-    }
+    /* Do the pending recovery stuff first */
+    pending_recover(self);
 
     /* What we do now depends on whether or not we were dragging */
     switch (self -> scroller.drag_state)
@@ -1303,6 +1319,27 @@ static void overflow_recover(ScrollerWidget self)
 	}
     }
 }
+
+/* Recover from an old state */
+static void recover(ScrollerWidget self, scroller_state_t old_state)
+{
+    switch (old_state)
+    {
+	case SS_PENDING:
+	{
+	    pending_recover(self);
+	    break;
+	}
+
+	case SS_OVERFLOW:
+	{
+	    pending_recover(self);
+	    overflow_recover(self);
+	    break;
+	}
+    }
+}
+
 
 
 /* Repaints the scroller */
@@ -1336,11 +1373,7 @@ static void do_expose(Widget widget, XEvent *event, Region region)
 
     /* Should we postpone the expose event until we're ready? */
     self -> scroller.state = SS_READY;
-    if (old_state == SS_OVERFLOW)
-    {
-	overflow_recover(self);
-    }
-
+    recover(self, old_state);
     Redisplay(self, region);
 }
 
@@ -1363,12 +1396,7 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     if (event -> type == NoExpose)
     {
 	self -> scroller.state = SS_OBSCURED;
-
-	/* Do we need to recover from an overflow? */
-	if (old_state == SS_OVERFLOW)
-	{
-	    overflow_recover(self);
-	}
+	recover(self, old_state);
 
 	return;
     }
@@ -1412,13 +1440,8 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	if (g_event -> count < 1)
 	{
 	    self -> scroller.state = SS_READY;
-
-	    /* Do we need to restart the timer? */
-	    if (old_state == SS_OVERFLOW)
-	    {
-		overflow_recover(self);
-	    }
-
+	    recover(self, old_state);
+	    
 	    return;
 	}
 
