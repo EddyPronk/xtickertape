@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.69 2000/12/08 04:09:27 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.70 2000/12/08 06:54:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1088,6 +1088,221 @@ static void interp_cb(void *rock, message_t message)
 }
 
 
+/* The `and' special form */
+static int prim_and(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No args evaluates to `t' */
+    if (argc == 0)
+    {
+	return vm_push_symbol(vm, "t", error);
+    }
+
+    /* Look for any nil arguments */
+    while (argc > 1)
+    {
+	object_type_t type;
+
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_type(vm, &type, error))
+	{
+	    return 0;
+	}
+
+	/* If the arg evaluated to nil then return that */
+	if (type == SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Otherwise pop it and go on to the next arg */
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last arg evaluates to */
+    return vm_eval(vm, error);
+}
+
+/* The `car' subroutine */
+static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "car", argc);
+	return 0;
+    }
+
+    return vm_car(vm, error);
+}
+
+/* The `cdr' subroutine */
+static int prim_cdr(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cdr", argc);
+	return 0;
+    }
+
+    return vm_cdr(vm, error);
+}
+
+/* The `cons' subroutine */
+static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cons", argc);
+	return 0;
+    }
+
+    return vm_make_cons(vm, error);
+}
+
+/* The `eq' subroutine */
+static int prim_eq(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "eq", argc);
+	return 0;
+    }
+
+    return vm_eq(vm, error);
+}
+
+/* The `if' special form */
+static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    object_type_t type;
+
+    /* Make sure we have a test and a true form */
+    if (argc < 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "if", argc);
+	return 0;
+    }
+
+    /* Rotate the condition to the top of the stack and evaluate it */
+    if (! vm_unroll(vm, argc - 1, error) || ! vm_eval(vm, error))
+    {
+	return 0;
+    }
+
+    /* Is it nil? */
+    if (! vm_type(vm, &type, error))
+    {
+	return 0;
+    }
+
+    /* If the value is not nil then evaluate the true form */
+    if (type != SEXP_NIL)
+    {
+	return vm_unroll(vm, argc - 1, error) && vm_eval(vm, error);
+    }
+
+    /* If there is no false form then return nil */
+    if (argc == 2)
+    {
+	return vm_push_nil(vm, error);
+    }
+
+    /* Evaluate all args before the last */
+    while (argc > 3)
+    {
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 2, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last arg evaluates to */
+    return vm_unroll(vm, 1, error) && vm_eval(vm, error);
+}
+
+/* The `gc' subroutine */
+static int prim_gc(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 0)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "gc", argc);
+	return 0;
+    }
+
+    return vm_gc(vm, error);
+}
+
+/* The `lambda' special form */
+static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* Make sure we at least have an argument list */
+    if (argc < 1)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "lambda", argc);
+	return 0;
+    }
+
+    /* Turn the body forms into a progn */
+    return
+	vm_push_symbol(vm, "progn", error) &&
+	vm_roll(vm, argc - 1, error) &&
+	vm_make_list(vm, argc, error) &&
+	vm_make_lambda(vm, error);
+}
+
+/* The `or' special form */
+static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No arguments evaluates to `nil' */
+    if (argc == 0)
+    {
+	return vm_push_nil(vm, error);
+    }
+
+    /* Look for any true arguments */
+    while (argc > 1)
+    {
+	object_type_t type;
+
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_type(vm, &type, error))
+	{
+	    return 0;
+	}
+
+	/* If the argument evaluated to non-nil then return that */
+	if (type != SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Otherwise pop it and go on to the next arg */
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last argument evalutes to */
+    return vm_eval(vm, error);
+}
+
+
 /* The `quote' special form */
 static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -1101,27 +1316,83 @@ static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
     return 1;
 }
 
+/* The `progn' special form */
+static int prim_progn(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No args evaluates to nil */
+    if (argc == 0)
+    {
+	return vm_push_nil(vm, error);
+    }
+
+    /* Evaluate all but the last argument */
+    while (argc > 1)
+    {
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Evaluate the last argument and return its value */
+    return vm_eval(vm, error);
+}
+
 /* The `setq' special form */
 static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 {
+    uint32_t i;
+
+    /* Zero arguments evaluates to `nil' */
+    if (argc == 0)
+    {
+	return vm_push_nil(vm, error);
+    }
+
     /* FIX THIS: setq should allow any even number of args */
-    if (argc != 2)
+    if (argc % 2 != 0)
     {
 	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "setq", argc);
 	return 0;
     }
 
-    /* Evaluate the top of the stack and perform assignment */
+    /* Evaluate all args but the last two */
+    for (i = argc - 1; i > 1; i -= 2)
+    {
+	if (! vm_unroll(vm, i, error) ||
+	    ! vm_unroll(vm, i, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_assign(vm, error) ||
+	    ! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Evaluate the last two arguments */
     return vm_eval(vm, error) && vm_assign(vm, error);
 }
 
+
+/* Defines a subroutine in the root environment */
+static int define_subr(vm_t vm, char *name, prim_t func, elvin_error_t error)
+{
+    return
+	vm_push_symbol(vm, name, error) &&
+	vm_push_subr(vm, func, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error);
+}
 
 /* Defines a special form */
 static int define_special(vm_t vm, char *name, prim_t func, elvin_error_t error)
 {
     return
-	vm_push_string(vm, name, error) &&
-	vm_make_symbol(vm, error) &&
+	vm_push_symbol(vm, name, error) &&
 	vm_push_special_form(vm, func, error) &&
 	vm_assign(vm, error) &&
 	vm_pop(vm, NULL, error);
@@ -1146,21 +1417,25 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 	vm_assign(vm, error) &&
 	vm_pop(vm, NULL, error) &&
 
-#if 0
 	define_special(vm, "and", prim_and, error) &&
 	define_subr(vm, "car", prim_car, error) &&
+#if 0
 	define_special(vm, "catch", prim_catch, error) &&
+#endif
 	define_subr(vm, "cdr", prim_cdr, error) &&
 	define_subr(vm, "cons", prim_cons, error) &&
 	define_subr(vm, "eq", prim_eq, error) &&
 	define_special(vm, "if", prim_if, error) &&
+#if 0
 	define_subr(vm, "format", prim_format, error) &&
+#endif
 	define_subr(vm, "gc", prim_gc, error) &&
 	define_special(vm, "lambda", prim_lambda, error) &&
 	define_special(vm, "or", prim_or, error) &&
+#if 0
 	define_subr(vm, "+", prim_plus, error) &&
-	define_special(vm, "progn", prim_progn, error) &&
 #endif
+	define_special(vm, "progn", prim_progn, error) &&
 	define_special(vm, "quote", prim_quote, error) &&
 	define_special(vm, "setq", prim_setq, error) &&
 #if 0
