@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.9 2000/11/20 14:45:54 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.10 2000/11/22 12:54:22 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -115,6 +115,12 @@ int vm_make_symbol(vm_t self, elvin_error_t error);
 
 /* Creates a cons cell out of the top two elements on the stack */
 int vm_make_cons(vm_t self, elvin_error_t error);
+
+/* Replaces the top of the stack with its car */
+int vm_car(vm_t self, elvin_error_t error);
+
+/* Replaces the top of the stack with its cdr */
+int vm_cdr(vm_t self, elvin_error_t error);
 
 /* Reverses the pointers in a list that was constructed upside-down */
 int vm_unwind_list(vm_t self, elvin_error_t error);
