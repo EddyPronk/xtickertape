@@ -1,8 +1,9 @@
-/* $Id: MessageView.c,v 1.24 1998/10/21 02:44:52 phelps Exp $ */
+/* $Id: MessageView.c,v 1.25 1998/10/21 05:36:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <alloca.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>

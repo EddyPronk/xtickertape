@@ -1,5 +1,6 @@
-/* $Id: OrbitSubscription.c,v 1.5 1998/10/21 05:24:22 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.6 1998/10/21 05:36:52 phelps Exp $ */
 
+#include <alloca.h>
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
 #include "OrbitSubscription.h"
