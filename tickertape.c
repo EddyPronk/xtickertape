@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.108 2003/02/03 03:07:08 croy Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.109 2003/05/15 20:23:02 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -60,7 +60,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.108 2003/02/03 03:07:08 croy 
 #include <fcntl.h> /* open */
 #endif
 #ifdef HAVE_UNISTD_H
-#include <unistd.h> /* close, dup2, execl, fork, pipe, read, stat, write */
+#include <unistd.h> /* close, dup2, execlp, fork, pipe, read, stat, write */
 #endif
 #ifdef HAVE_ERRNO_H
 #include <errno.h> /* errno */
@@ -2305,8 +2305,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     int status;
 
     /* If metamail is not defined then we're done */
-    if (self -> resources -> metamail_path == NULL ||
-	*self -> resources -> metamail_path == '\0')
+    if (self -> resources -> metamail == NULL ||
+	*self -> resources -> metamail == '\0')
     {
 #if defined(DEBUG)
 	printf("metamail not defined\n");
@@ -2348,9 +2348,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 	close(fds[0]);
 
 	/* Invoke metamail */
-	execl(
-	    self -> resources -> metamail_path,
-	    self -> resources -> metamail_path,
+	execlp(
+	    self -> resources -> metamail,
 	    METAMAIL_OPTIONS,
 	    NULL);
 
@@ -2407,7 +2406,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     if (WIFEXITED(status))
     {
 	fprintf(stderr, "%s exit status: %d\n",
-		self -> resources -> metamail_path,
+		self -> resources -> metamail,
 		WEXITSTATUS(status));
 	return -1;
     }

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.118 2003/01/28 16:07:39 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.119 2003/05/15 20:23:01 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -163,8 +163,8 @@ static void usage(int argc, char *argv[])
 
 #define XtNversionTag "versionTag"
 #define XtCVersionTag "VersionTag"
-#define XtNmetamailPath "metamailPath"
-#define XtCMetamailPath "MetamailPath"
+#define XtNmetamail "metamail"
+#define XtCMetamail "Metamail"
 #define XtNsendHistoryCapacity "sendHistoryCapacity"
 #define XtCSendHistoryCapacity "SendHistoryCapacity"
 
@@ -178,10 +178,10 @@ static XtResource resources[] =
 	offset(version_tag), XtRString, (XtPointer)NULL
     },
 
-    /* Char *metamail_path */
+    /* Char *metamail */
     {
-	XtNmetamailPath, XtCMetamailPath, XtRString, sizeof(char *),
-	offset(metamail_path), XtRString, (XtPointer)NULL
+	XtNmetamail, XtCMetamail, XtRString, sizeof(char *),
+	offset(metamail), XtRString, (XtPointer)NULL
     },
 
     /* Cardinal sendHistoryCapacity */

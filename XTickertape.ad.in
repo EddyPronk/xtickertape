@@ -5,7 +5,7 @@
 !
 
 XTickertape.versionTag: @PACKAGE@-@VERSION@
-XTickertape.metamailPath: @METAMAIL@
+XTickertape.metamail: metamail
 XTickertape.sendHistoryCapacity: 32
 
 !

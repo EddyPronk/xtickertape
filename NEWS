@@ -7,6 +7,11 @@ Overview of changes in xtickertape-2.0b2
   specify the URL on the command-line rather than writing it to a file
   first.
 
+* Changed the metamail invocation to use execlp instead of execl,
+  which means that the PATH environment variable is consulted.  The
+  corresponding app-default has changed name from [Mm]etamailPath to
+  simply [Mm]etamail.
+
 Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed

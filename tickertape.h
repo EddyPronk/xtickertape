@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.19 2003/01/28 15:58:48 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.20 2003/05/15 20:23:03 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -49,8 +49,8 @@ typedef struct
     /* The version tag from the app-defaults file */
     char *version_tag;
 
-    /* The path to the metamail executable */
-    char *metamail_path;
+    /* The name of the metamail executable */
+    char *metamail;
 
     /* The number of messages to record in the send history */
     int send_history_count;
