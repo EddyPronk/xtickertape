@@ -141,7 +141,7 @@ XTickertape.sendHistoryCapacity: 32
 ! VERSION compile-time variables
 *titleLabel.fontList: -adobe-helvetica-bold-r-normal--18-180-75-75-p-*-iso8859-1
 *copyrightLabel.labelString: Copyright © 1997-2004 Mantara Software
-*authorLabel.labelString: Ted Phelps (phelps@dstc.edu.au)
+*authorLabel.labelString: Ted Phelps (phelps@mantara.com)
 *dismiss.labelString: Dismiss
 
 !
