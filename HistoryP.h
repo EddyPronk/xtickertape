@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.12 2001/07/19 08:09:08 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.13 2001/07/19 10:09:39 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -57,6 +57,12 @@ typedef struct _HistoryClassRec
 
 /* The type of outstanding movement events */
 typedef struct delta_queue *delta_queue_t;
+
+typedef enum
+{
+    DRAG_UP,
+    DRAG_DOWN
+} drag_direction_t;
 
 /* New fields for the History widget record */
 typedef struct
@@ -137,6 +143,12 @@ typedef struct
 
     /* The index of the selection ((unsigned int)-1 if none) */
     unsigned int selection_index;
+
+    /* The dragging timeout */
+    XtIntervalId drag_timeout;
+
+    /* The direction in which to drag */
+    drag_direction_t drag_direction;
 } HistoryPart;
 
 /* Full instance record declaration */
