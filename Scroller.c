@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.119 2001/06/17 00:48:56 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.120 2001/07/04 08:41:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -39,9 +39,8 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.119 2001/06/17 00:48:56 phelps 
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
-
 #include "ScrollerP.h"
-#include "glyph.h"
+#include "message_view.h"
 
 #ifdef DEBUG
 #define DPRINTF(x) fprintf x
@@ -49,8 +48,11 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.119 2001/06/17 00:48:56 phelps 
 #define DPRINTF(x)
 #endif
 
-#ifndef MAX
-#define MAX(x, y) (((x) < (y)) ? (y) : (x))
+#if ! defined(MIN)
+# define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#endif
+#if ! defined(MAX)
+# define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
 /*
@@ -87,31 +89,31 @@ static XtResource resources[] =
     /* Pixel groupPixel */
     {
 	XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
-	offset(scroller.groupPixel), XtRString, "Blue"
+	offset(scroller.group_pixel), XtRString, "Blue"
     },
 
     /* Pixel userPixel */
     {
 	XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
-	offset(scroller.userPixel), XtRString, "Green"
+	offset(scroller.user_pixel), XtRString, "Green"
     },
 
     /* Pixel stringPixel */
     {
 	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
-	offset(scroller.stringPixel), XtRString, "Red"
+	offset(scroller.string_pixel), XtRString, "Red"
     },
 
     /* Pixel separatorPixel */
     {
 	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
-	offset(scroller.separatorPixel), XtRString, XtDefaultForeground
+	offset(scroller.separator_pixel), XtRString, XtDefaultForeground
     },
 
     /* Dimension fadeLevels */
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
-	offset(scroller.fadeLevels), XtRImmediate, (XtPointer)5
+	offset(scroller.fade_levels), XtRImmediate, (XtPointer)5
     },
 
     /* Position drag_delta (in pixels) */
@@ -283,6 +285,254 @@ WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
 
 
 
+/* The structure of a glyph */
+struct glyph
+{
+    /* The previous glyph in the circular queue */
+    glyph_t previous;
+
+    /* The next glyph in the circular queue */
+    glyph_t next;
+
+    /* The glyph which supersedes this one */
+    glyph_t successor;
+
+    /* The widget which display's this glyph */
+    ScrollerWidget widget;
+
+    /* The number of external references to this glyph */
+    short ref_count;
+
+    /* The number of glyph_holders pointing to this glyph */
+    short visible_count;
+
+    /* The glyph's message_view or NULL if this is the gap */
+    message_view_t message_view;
+
+    /* The sizes of the message view */
+    struct string_sizes sizes;
+
+    /* The current degree of fading (0 is none) */
+    int fade_level;
+
+    /* Is this glyph expired? */
+    Bool is_expired;
+
+    /* Our timeout's id or None */
+    XtIntervalId timeout;
+};
+
+/* Forward declaration */
+static void glyph_free(glyph_t self);
+static void glyph_set_clock(glyph_t self, int level_count);
+
+/* Allocates and initializes a new glyph holder for the given message */
+static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
+{
+    glyph_t self;
+    XFontStruct *font;
+
+    /* Allocate memory for a new glyph */
+    if ((self = malloc(sizeof(struct glyph))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Initialize its fields to sane values */
+    memset(self, 0, sizeof(struct glyph));
+
+    /* Increment the reference count */
+    self -> widget = widget;
+    self -> ref_count++;
+
+    /* Bail out now if we're the gap */
+    if (message == NULL)
+    {
+	return self;
+    }
+
+    /* Allocate a message view for display */
+    font = widget -> scroller.font;
+    if ((self -> message_view = message_view_alloc(message, font)) == NULL)
+    {
+	glyph_free(self);
+	return NULL;
+    }
+
+    /* Figure out how big the glyph should be */
+    message_view_get_sizes(self -> message_view, &self -> sizes);
+
+    /* Add a little space on the end */
+    /* FIX THIS: compute the per_char info for a space */
+    self -> sizes.width += font -> ascent;
+
+    /* Start the clock */
+    self -> timeout = None;
+    glyph_set_clock(self, widget -> scroller.fade_levels);
+    return self;
+}
+
+/* Frees the resources consumed by the receiver */
+static void glyph_free(glyph_t self)
+{
+    /* Check the reference count */
+    if (--self -> ref_count > 0)
+    {
+	return;
+    }
+
+    /* Sanity check */
+    assert(self -> visible_count == 0);
+
+    /* Free the message_view */
+    if (self -> message_view)
+    {
+	message_view_free(self -> message_view);
+    }
+
+    /* Free the glyph itself */
+    free(self);
+}
+
+/* This is called each time the glyph should fade */
+static void glyph_tick(XtPointer closure, XtIntervalId *id)
+{
+    glyph_t self = (glyph_t)closure;
+    int level_count = self -> widget -> scroller.fade_levels;
+
+    /* We don't have a timeout */
+    assert(self -> timeout == *id);
+    self -> timeout = None;
+
+    /* Have we faded through all of the levels yet? */
+    if (! (self -> fade_level + 1 < level_count))
+    {
+	/* Don't expire more than once */
+	if (! self -> is_expired)
+	{
+	    /* FIX THIS: we can do this ourselves */
+	    ScGlyphExpired(self -> widget, self);
+	}
+
+	return;
+    }
+
+    /* Go to the next level */
+    self -> fade_level++;
+    glyph_set_clock(self, level_count);
+
+    /* Redraw this glyph */
+    ScRepaintGlyph(self -> widget, self);
+}
+
+/* Set the clock for the next time we need to fade this widget */
+static void glyph_set_clock(glyph_t self, int level_count)
+{
+    int duration;
+
+    /* Sanity check */
+    assert(self -> timeout == None);
+
+    /* Has the glyph expired? */
+    if (self -> is_expired)
+    {
+	/* Yes: fade very quickly (20 times/sec) */
+	duration = 50;
+    }
+    else
+    {
+	/* No: fade according to the timeout of the message */
+	message_t message = message_view_get_message(self -> message_view);
+	duration = 60 * 1000 * message_get_timeout(message) / level_count;
+    }
+
+    self -> timeout = XtAppAddTimeOut(
+	XtWidgetToApplicationContext((Widget)self -> widget),
+	duration, glyph_tick, self);
+}
+
+/* Draw the glyph */
+static void glyph_paint(
+    Display *display, Drawable drawable, GC gc,
+    glyph_t self, int x, int y, XRectangle *bbox)
+{
+    /* If we're the gap then there's nothing to do */
+    if (self -> message_view == NULL)
+    {
+	return;
+    }
+
+    /* Delegate to the message_view */
+    /* FIX THIS: get some *real* colors */
+    message_view_paint(
+	self -> message_view,
+	display, drawable, gc,
+	self -> widget -> scroller.group_pixels[self -> fade_level],
+	self -> widget -> scroller.user_pixels[self -> fade_level],
+	self -> widget -> scroller.string_pixels[self -> fade_level],
+	self -> widget -> scroller.separator_pixels[self -> fade_level],
+	x - MIN(self -> sizes.lbearing, 0), y,
+	bbox);
+}
+
+/* Returns the glyph's message */
+static message_t glyph_get_message(glyph_t self)
+{
+    /* Watch for the gap */
+    if (self -> message_view == NULL)
+    {
+	return NULL;
+    }
+
+    return message_view_get_message(self -> message_view);
+}
+
+/* Returns the total width of the glyph */
+static long glyph_get_width(glyph_t self)
+{
+    /* Sanity check */
+    assert(self -> message_view != NULL);
+    return MAX(self -> sizes.rbearing, self -> sizes.width) - MIN(self -> sizes.lbearing, 0);
+}
+
+/* Returns the glyph which supersedes this one */
+static glyph_t glyph_get_successor(glyph_t self)
+{
+    /* Locate the successor with no successor */
+    while (self -> successor != NULL)
+    {
+	self = self -> successor;
+    }
+
+    return self;
+}
+
+/* Expires the glyph */
+static void glyph_expire(glyph_t self, ScrollerWidget widget)
+{
+    /* Don't expire the gap and don't expire more than once*/
+    if (self -> message_view == NULL || self -> is_expired)
+    {
+	return;
+    }
+
+    /* Otherwise get gone */
+    self -> is_expired = True;
+    ScRepaintGlyph(widget, self);
+    ScGlyphExpired(widget, self);
+
+    /* Restart the timer so that we can quickly fade */
+    if (self -> timeout != None)
+    {
+	XtRemoveTimeOut(self -> timeout);
+	self -> timeout = None;
+    }
+
+    glyph_set_clock(self, widget -> scroller.fade_levels);
+}
+
+
+
 /* Returns true if the queue contains no unexpired messages */
 static int queue_is_empty(glyph_t head)
 {
@@ -290,7 +540,7 @@ static int queue_is_empty(glyph_t head)
 
     while (glyph != head)
     {
-	if (! glyph -> is_expired(glyph))
+	if (! glyph -> is_expired)
 	{
 	    return 0;
 	}
@@ -329,7 +579,7 @@ static glyph_t queue_find(glyph_t head, char *tag)
 	char *probe_tag;
 
 	/* Check for a match */
-	if ((message = probe -> get_message(probe)) != NULL &&
+	if ((message = glyph_get_message(probe)) != NULL &&
 	    (probe_tag = message_get_tag(message)) != NULL &&
 	    strcmp(tag, probe_tag) == 0)
 	{
@@ -356,10 +606,12 @@ static void queue_replace(glyph_t old_glyph, glyph_t new_glyph)
     next -> previous = new_glyph;
     old_glyph -> next = NULL;
 
-    old_glyph -> set_replacement(old_glyph, new_glyph);
+    /* Tell the old glyph that it's been superseded */
+    new_glyph -> ref_count++;
+    old_glyph -> successor = new_glyph;
 
     /* Clean up */
-    old_glyph -> free(old_glyph);
+    glyph_free(old_glyph);
 }
 
 /* Removes an item from a circular queue of glyphs */
@@ -379,7 +631,7 @@ static void queue_remove(glyph_t glyph)
     glyph -> next = NULL;
 
     /* Lose our reference to the glyph */
-    glyph -> free(glyph);
+    glyph_free(glyph);
 }
 
 
@@ -419,8 +671,11 @@ static glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> previous = NULL;
     self -> next = NULL;
     self -> width = width;
-    self -> glyph = glyph -> alloc(glyph);
-    self -> glyph -> visible_count++;
+
+    /* Record the glyph and tell it that it's visible */
+    self -> glyph = glyph;
+    glyph -> ref_count++;
+    glyph -> visible_count++;
     return self;
 }
 
@@ -430,27 +685,23 @@ static void glyph_holder_free(glyph_holder_t self)
     glyph_t glyph = self -> glyph;
 
     /* Unqueue the glyph if it's expired and invisible */
-    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
+    if (--glyph -> visible_count == 0 && glyph -> is_expired)
     {
 	queue_remove(glyph);
     }
 
-    glyph -> free(glyph);
+    /* Lose our reference to the glyph */
+    glyph_free(glyph);
     free(self);
 }
 
 /* Paints the holder's glyph */
 static void glyph_holder_paint(
-    glyph_holder_t self, Display *display, Drawable drawable,
-    int offset, int x, int y, unsigned int width, unsigned int height)
+    Display *display, Drawable drawable, GC gc,
+    glyph_holder_t self, int x, int y, XRectangle *bbox)
 {
-    XRectangle bbox;
-
-    bbox.x = x;
-    bbox.y = y;
-    bbox.width = width;
-    bbox.height = height;
-    self -> glyph -> paint(self -> glyph, display, drawable, offset, 0, &bbox); 
+    /* Delegate to the glyph */
+    glyph_paint(display, drawable, gc, self -> glyph, x, y, bbox);
 }
 
 
@@ -463,7 +714,7 @@ static void glyph_holder_paint(
 static void create_gc(ScrollerWidget self);
 static Pixel *create_faded_colors(
     Display *display, Colormap colormap,
-    XColor *first, XColor *last, unsigned int levels);
+    XColor *first, XColor *last, unsigned int level_count);
 static void enable_clock(ScrollerWidget self);
 static void disable_clock(ScrollerWidget self);
 static void set_clock(ScrollerWidget self);
@@ -488,16 +739,16 @@ static void create_gc(ScrollerWidget self)
 /* Answers an array of colors fading from first to last */
 static Pixel *create_faded_colors(
     Display *display, Colormap colormap,
-    XColor *first, XColor *last, unsigned int levels)
+    XColor *first, XColor *last, unsigned int level_count)
 {
-    Pixel *result = calloc(levels, sizeof(Pixel));
+    Pixel *result = calloc(level_count, sizeof(Pixel));
     long redNumerator = (long)last -> red - first -> red;
     long greenNumerator = (long)last -> green - first -> green;
     long blueNumerator = (long)last -> blue - first -> blue;
-    long denominator = levels;
+    long denominator = level_count;
     long index;
 
-    for (index = 0; index < levels; index++)
+    for (index = 0; index < level_count; index++)
     {
 	XColor color;
 
@@ -569,7 +820,7 @@ static glyph_t get_tail(ScrollerWidget self)
     glyph_t glyph = self -> scroller.gap -> previous;
 
     /* Skip the left and right markers */
-    while (glyph -> is_expired(glyph))
+    while (glyph -> is_expired)
     {
 	glyph = glyph -> previous;
     }
@@ -632,25 +883,25 @@ static GC SetUpGC(ScrollerWidget self, Pixel foreground, XRectangle *bbox)
 /* Answers a GC for displaying the Group field of a message at the given fade level */
 GC ScGCForGroup(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.groupPixels[level], bbox);
+    return SetUpGC(self, self -> scroller.group_pixels[level], bbox);
 }
 
 /* Answers a GC for displaying the User field of a message at the given fade level */
 GC ScGCForUser(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.userPixels[level], bbox);
+    return SetUpGC(self, self -> scroller.user_pixels[level], bbox);
 }
 
 /* Answers a GC for displaying the String field of a message at the given fade level */
 GC ScGCForString(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.stringPixels[level], bbox);
+    return SetUpGC(self, self -> scroller.string_pixels[level], bbox);
 }
 
 /* Answers a GC for displaying the field separators at the given fade level */
 GC ScGCForSeparator(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.separatorPixels[level], bbox);
+    return SetUpGC(self, self -> scroller.separator_pixels[level], bbox);
 }
 
 /* Answers the XFontStruct to be use for displaying the group */
@@ -686,7 +937,7 @@ XFontStruct *ScFontForSeparator(ScrollerWidget self)
 /* Answers the number of fade levels */
 Dimension ScGetFadeLevels(ScrollerWidget self)
 {
-    return self -> scroller.fadeLevels;
+    return self -> scroller.fade_levels;
 }
 
 /* Sets a timer to go off in interval milliseconds */
@@ -710,6 +961,19 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
     Display *display = XtDisplay((Widget)self);
     glyph_holder_t holder = self -> scroller.left_holder;
     int offset = 0 - self -> scroller.left_offset;
+    XGCValues values;
+    XRectangle bbox;
+
+    /* Construct a clipping rectangle */
+    bbox.x = 0;
+    bbox.y = 0;
+    bbox.width = self -> core.width;
+    bbox.height = self -> core.height;
+
+    /* No clip mask for the scroller */
+    values.clip_mask = None;
+    XChangeGC(display, self -> scroller.gc, GCClipMask, &values);
+    self -> scroller.clip_width = 0;
 
     /* Go through the visible glyphs looking for the one to paint */
     while (holder != NULL)
@@ -719,15 +983,15 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 	    if (self -> scroller.use_pixmap)
 	    {
 		glyph_holder_paint(
-		    holder, display, self -> scroller.pixmap,
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		    display, self -> scroller.pixmap, self -> scroller.gc,
+		    holder, offset, self -> scroller.font -> ascent, &bbox);
 		redisplay(self, NULL);
 	    }
 	    else
 	    {
 		glyph_holder_paint(
-		    holder, display, XtWindow((Widget)self),
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		    display, XtWindow((Widget)self), self -> scroller.gc,
+		    holder, offset, self -> scroller.font -> ascent, &bbox);
 	    }
 	}
 
@@ -797,7 +1061,11 @@ static void initialize(
     }
 
     /* Allocate a glyph to represent the gap */
-    self -> scroller.gap = gap_alloc(self);
+    self -> scroller.gap = glyph_alloc(self, NULL);
+    self -> scroller.gap -> next = self -> scroller.gap;
+    self -> scroller.gap -> previous = self -> scroller.gap;
+
+    /* Allocate a glyph holder to wrap the gap */
     holder = glyph_holder_alloc(self -> scroller.gap, self -> core.width);
 
     /* Initialize the queue to only contain the gap with 0 offsets */
@@ -831,10 +1099,10 @@ static void realize(
 
     /* Initialize colors */
     colors[0].pixel = self -> core.background_pixel;
-    colors[1].pixel = self -> scroller.groupPixel;
-    colors[2].pixel = self -> scroller.userPixel;
-    colors[3].pixel = self -> scroller.stringPixel;
-    colors[4].pixel = self -> scroller.separatorPixel;
+    colors[1].pixel = self -> scroller.group_pixel;
+    colors[2].pixel = self -> scroller.user_pixel;
+    colors[3].pixel = self -> scroller.string_pixel;
+    colors[4].pixel = self -> scroller.separator_pixel;
     XQueryColors(display, colormap, colors, 5);
 
     /* Create a window and a couple of graphics contexts */
@@ -859,14 +1127,14 @@ static void realize(
     }
 
     /* Allocate colors */
-    self -> scroller.separatorPixels = create_faded_colors(
-	display, colormap, &colors[4], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.groupPixels = create_faded_colors(
-	display, colormap, &colors[1], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.userPixels = create_faded_colors(
-	display, colormap, &colors[2], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.stringPixels = create_faded_colors(
-	display, colormap, &colors[3], &colors[0], self -> scroller.fadeLevels);
+    self -> scroller.separator_pixels = create_faded_colors(
+	display, colormap, &colors[4], &colors[0], self -> scroller.fade_levels);
+    self -> scroller.group_pixels = create_faded_colors(
+	display, colormap, &colors[1], &colors[0], self -> scroller.fade_levels);
+    self -> scroller.user_pixels = create_faded_colors(
+	display, colormap, &colors[2], &colors[0], self -> scroller.fade_levels);
+    self -> scroller.string_pixels = create_faded_colors(
+	display, colormap, &colors[3], &colors[0], self -> scroller.fade_levels);
 }
 
 
@@ -881,8 +1149,8 @@ static void add_left_holder(ScrollerWidget self)
 
     /* Find the first unexpired glyph to the left of the scroller */
     glyph = self -> scroller.left_holder -> glyph;
-    glyph = glyph -> get_replacement(glyph) -> previous;
-    while (glyph -> is_expired(glyph))
+    glyph = glyph_get_successor(glyph) -> previous;
+    while (glyph -> is_expired)
     {
 	glyph = glyph -> previous;
     }
@@ -900,7 +1168,7 @@ static void add_left_holder(ScrollerWidget self)
 	}
 	else
 	{
-	    width = gap_width(self, tail -> get_width(tail));
+	    width = gap_width(self, glyph_get_width(tail));
 	}
 	    
 	/* If the next glyph is also the gap then just expand it */
@@ -913,7 +1181,7 @@ static void add_left_holder(ScrollerWidget self)
     }
     else
     {
-	width = glyph -> get_width(glyph);
+	width = glyph_get_width(glyph);
     }
 
     /* Create a glyph holder and add it to the list */
@@ -934,8 +1202,8 @@ static void add_right_holder(ScrollerWidget self)
 
     /* Find the first unexpired glyph to the right of the scroller */
     glyph = self -> scroller.right_holder -> glyph;
-    glyph = glyph -> get_replacement(glyph) -> next;
-    while (glyph -> is_expired(glyph))
+    glyph = glyph_get_successor(glyph) -> next;
+    while (glyph -> is_expired)
     {
 	glyph = glyph -> next;
     }
@@ -956,7 +1224,7 @@ static void add_right_holder(ScrollerWidget self)
     }
     else
     {
-	width = glyph -> get_width(glyph);
+	width = glyph_get_width(glyph);
     }
 
     /* Create a glyph_holder and add it to the list */
@@ -1175,8 +1443,44 @@ static void paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     glyph_holder_t holder = self -> scroller.left_holder;
     int offset = 0 - self -> scroller.left_offset;
     int end = self -> core.width;
-    int delta = self -> scroller.local_delta;
+    XGCValues values;
+    XRectangle bbox;
 
+    /* Compensate for unprocessed CopyArea requests */
+    if (self -> scroller.local_delta)
+    {
+	abort();
+    }
+
+    x += self -> scroller.local_delta;
+
+    /* Record the width an height of the bounding box */
+    bbox.width = width;
+    bbox.height = height;
+
+    /* Has the width changed since our last paint call? */
+    if (self -> scroller.clip_width == width)
+    {
+	/* Yes.  We can reuse the clip mask and just change the origin */
+	values.clip_x_origin = x;
+	XChangeGC(display, self -> scroller.gc, GCClipXOrigin, &values);
+    }
+    else
+    {
+	/* No.  Set up a new clip mask */
+	bbox.x = 0;
+	bbox.y = 0;
+
+	/* Create the clip mask as a single rectangle */
+	XSetClipRectangles(display, self -> scroller.gc, x, y, &bbox, 1, Unsorted);
+	self -> scroller.clip_width = width;
+    }
+
+    /* Set the origin of the bounding box */
+    bbox.x = x;
+    bbox.y = y;
+
+    /* Are we using an offscreen pixmap? */
     if (self -> scroller.use_pixmap)
     {
 	/* Reset this portion of the pixmap to the background color */
@@ -1190,11 +1494,15 @@ static void paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     {
 	if (self -> scroller.use_pixmap)
 	{
-	    glyph_holder_paint(holder, display, self -> scroller.pixmap, offset, x, y, width, height);
+	    glyph_holder_paint(
+		display, self -> scroller.pixmap, self -> scroller.gc,
+		holder, offset, self -> scroller.font -> ascent, &bbox);
 	}
 	else
 	{
-	    glyph_holder_paint(holder, display, XtWindow(self), offset, x + delta, y, width, height);
+	    glyph_holder_paint(
+		display, XtWindow(self), self -> scroller.gc,
+		holder, offset, self -> scroller.font -> ascent, &bbox);
 	}
 
 	offset += holder -> width;
@@ -1219,11 +1527,12 @@ static void redisplay(ScrollerWidget self, Region region)
 	return;
     }
 
-    /* Repaint each of the regions */
+    /* Repaint the region */
     if (region != NULL)
     {
 	XRectangle rectangle;
 
+	/* Find the smallest enclosing rectangle and repaint within it */
 	XClipBox(region, &rectangle);
 	paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
     }
@@ -1358,7 +1667,7 @@ static void resize(Widget widget)
 		else
 		{
 		    glyph_t glyph = holder -> glyph -> previous;
-		    while (glyph -> is_expired(glyph))
+		    while (glyph -> is_expired)
 		    {
 			glyph = glyph -> previous;
 		    }
@@ -1370,7 +1679,7 @@ static void resize(Widget widget)
 		    }
 		    else
 		    {
-			holder -> width = gap_width(self, glyph -> get_width(glyph));
+			holder -> width = gap_width(self, glyph_get_width(glyph));
 		    }
 		}
 	    }
@@ -1561,7 +1870,7 @@ void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 
     /* Pop up the menu and select the message that was clicked on */
     glyph = glyph_at_event(self, event);
-    XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph -> get_message(glyph));
+    XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph_get_message(glyph));
 }
 
 /* Spawn metamail to decode the message's attachment */
@@ -1582,7 +1891,7 @@ static void show_attachment(Widget widget, XEvent *event, String *params, Cardin
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(
 	widget, self -> scroller.attachment_callbacks,
-	(XtPointer)glyph -> get_message(glyph));
+	(XtPointer)glyph_get_message(glyph));
 }
 
 
@@ -1602,7 +1911,7 @@ static void expire(Widget widget, XEvent *event, String *params, Cardinal *npara
 
     /* Expire the glyph under the pointer */
     glyph = glyph_at_event(self, event);
-    glyph -> expire(glyph);
+    glyph_expire(glyph, self);
 }
 
 /* Delete a message when scrolling left to right (backwards) */
@@ -1888,7 +2197,7 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
     }
 
     /* Mark the glyph as expired */
-    glyph -> expire(glyph);
+    glyph_expire(glyph, self);
 
     /* Delete the glyph and any holders for that glyph.
      * Keep the leading edge of the text in place */
@@ -1962,7 +2271,7 @@ static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *npar
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(
 	widget, self -> scroller.kill_callbacks,
-	(XtPointer)glyph -> get_message(glyph));
+	(XtPointer)glyph_get_message(glyph));
 }
 
 
@@ -2123,7 +2432,7 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     glyph_holder_t holder;
 
     /* Create a glyph for the message */
-    if ((glyph = message_glyph_alloc(self, message)) == NULL)
+    if ((glyph = glyph_alloc(self, message)) == NULL)
     {
 	return;
     }
@@ -2142,7 +2451,7 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     holder = self -> scroller.left_holder;
     if ((self -> scroller.step < 0) && (holder -> glyph == self -> scroller.gap))
     {
-	int width = gap_width(self, glyph -> get_width(glyph));
+	int width = gap_width(self, glyph_get_width(glyph));
 
 	/* If the effect is invisible, then just do it */
 	if (holder -> width - self -> scroller.left_offset < width)
@@ -2199,7 +2508,7 @@ void ScDeleteMessage(ScrollerWidget self, message_t message)
     glyph = self -> scroller.gap -> next;
     while (glyph != self -> scroller.gap)
     {
-	if (glyph -> get_message(glyph) == message)
+	if (glyph_get_message(glyph) == message)
 	{
 	    delete_glyph(self, glyph);
 	    return;

@@ -34,13 +34,12 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.40 2001/06/17 00:48:56 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.41 2001/07/04 08:41:57 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
 
 #include "Scroller.h"
-#include "glyph.h"
 
 
 /* New fields for the Scroller widget record */
@@ -58,6 +57,7 @@ typedef struct _ScrollerClassRec
 } ScrollerClassRec;
 
 
+typedef struct glyph *glyph_t;
 typedef struct glyph_holder *glyph_holder_t;
 
 /* New fields for the Scroller widget record */
@@ -68,11 +68,11 @@ typedef struct
     XtCallbackList attachment_callbacks;
     XtCallbackList kill_callbacks;
     XFontStruct *font;
-    Pixel groupPixel;
-    Pixel userPixel;
-    Pixel stringPixel;
-    Pixel separatorPixel;
-    Dimension fadeLevels;
+    Pixel group_pixel;
+    Pixel user_pixel;
+    Pixel string_pixel;
+    Pixel separator_pixel;
+    Dimension fade_levels;
     Boolean use_pixmap;
     Position drag_delta;
     Dimension frequency;
@@ -154,21 +154,21 @@ typedef struct
     /* The GC used to draw various glyphs */
     GC gc;
 
-    /* The array of Pixels used to display the separator portion of a
-     * message at varying degrees of fading */
-    Pixel *separatorPixels;
-
     /* The array of Pixels used to display the group portion of a
      * message at varying degrees of fading */
-    Pixel *groupPixels;
+    Pixel *group_pixels;
 
     /* The array of Pixels used to display the user portion of a
      * message at varying degrees of fading */
-    Pixel *userPixels;
+    Pixel *user_pixels;
 
     /* The array of Pixels used to display the string portion of a
      * message at varying degrees of fading */
-    Pixel *stringPixels;
+    Pixel *string_pixels;
+
+    /* The array of Pixels used to display the separator portion of a
+     * message at varying degrees of fading */
+    Pixel *separator_pixels;
 } ScrollerPart;
 
 
