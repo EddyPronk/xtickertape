@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.53 2002/04/08 14:54:29 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.54 2002/04/09 11:01:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1103,14 +1103,14 @@ static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ign
     HistoryWidget self = (HistoryWidget)widget;
     XMotionEvent *mevent;
     unsigned int index;
-    message_t message;
+    message_view_t view;
 
     /* Sanity check */
     assert(event->type == MotionNotify);
     mevent = (XMotionEvent *)event;
 
     /* Assume that nothing is under the pointer */
-    message = NULL;
+    view = NULL;
 
     /* Make sure the pointer is within the bounds of the widget */
     if (0 <= mevent -> y && mevent -> y < self -> core.height)
@@ -1120,12 +1120,15 @@ static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ign
 	/* Make sure it's over a message */
 	if (index < self -> history.message_count)
 	{
-	    message = self -> history.messages[index];
+	    view = self -> history.message_views[index];
 	}
     }
 
     /* Call the callbacks */
-    XtCallCallbackList(widget, self -> history.motion_callbacks, (XtPointer)message);
+    XtCallCallbackList(
+	widget,
+	self -> history.motion_callbacks,
+	(XtPointer)(view ? message_view_get_message(view) : NULL));
 }
 
 /* Repaint the bits of the widget that didn't get copied */
