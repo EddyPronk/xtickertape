@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.16 1999/09/15 03:33:48 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.17 1999/09/26 14:05:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.16 1999/09/15 03:33:48 phelps
 #include "Subscription.h"
 #include "UsenetSubscription.h"
 #include "mail_sub.h"
-#include "ElvinConnection.h"
+#include "connect.h"
 #ifdef ORBIT
 #include "OrbitSubscription.h"
 #endif /* ORBIT */
@@ -100,7 +100,7 @@ struct tickertape
 #endif /* ORBIT */
 
     /* The elvin connection */
-    ElvinConnection connection;
+    connection_t connection;
 
     /* The control panel */
     ControlPanel control_panel;
@@ -124,8 +124,8 @@ static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(tickertape_t self, message_t message);
 static List read_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
-static void disconnect_callback(tickertape_t self, ElvinConnection connection);
-static void reconnect_callback(tickertape_t self, ElvinConnection connection);
+static void disconnect_callback(tickertape_t self, connection_t connection);
+static void reconnect_callback(tickertape_t self, connection_t connection);
 #ifdef ORBIT
 static void orbit_callback(tickertape_t self, en_notify_t notification);
 static void subscribe_to_orbit(tickertape_t self);
@@ -209,7 +209,7 @@ static void publish_startup_notification(tickertape_t self)
     notification = en_new();
     en_add_string(notification, "tickertape.startup", VERSION);
     en_add_string(notification, "user", self -> user);
-    ElvinConnection_send(self -> connection, notification);
+    connection_publish(self -> connection, notification);
     en_free(notification);
 }
 
@@ -431,7 +431,7 @@ static void init_ui(tickertape_t self)
 
 
 /* This is called when we get our elvin connection back */
-static void reconnect_callback(tickertape_t self, ElvinConnection connection)
+static void reconnect_callback(tickertape_t self, connection_t connection)
 {
     char *host;
     int port;
@@ -440,8 +440,8 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
     SANITY_CHECK(self);
 
     /* Construct a reconnect message */
-    host = ElvinConnection_host(connection);
-    port = ElvinConnection_port(connection);
+    host = connection_host(connection);
+    port = connection_port(connection);
     buffer = (char *) malloc(sizeof("Connected to elvin server at :.") + strlen(host) + 5);
     sprintf(buffer, "Connected to elvin server at %s:%d.", host, port);
 
@@ -458,7 +458,7 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
 }
 
 /* This is called when we lose our elvin connection */
-static void disconnect_callback(tickertape_t self, ElvinConnection connection)
+static void disconnect_callback(tickertape_t self, connection_t connection)
 {
     StringBuffer buffer;
     message_t message;
@@ -467,7 +467,7 @@ static void disconnect_callback(tickertape_t self, ElvinConnection connection)
     /* Construct a disconnect message */
     buffer = StringBuffer_alloc();
 
-    /* If this is called in the middle of ElvinConnection_alloc, then
+    /* If this is called in the middle of connection_alloc, then
      * self -> connection will be NULL.  Let the user know that we've
      * never managed to connect. */
     if (self -> connection == NULL)
@@ -479,9 +479,9 @@ static void disconnect_callback(tickertape_t self, ElvinConnection connection)
 	StringBuffer_append(buffer, "Lost connection to elvin server at ");
     }
 
-    StringBuffer_append(buffer, ElvinConnection_host(connection));
+    StringBuffer_append(buffer, connection_host(connection));
     StringBuffer_appendChar(buffer, ':');
-    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
+    StringBuffer_appendInt(buffer, connection_port(connection));
 
     if (self -> connection == NULL)
     {
@@ -565,7 +565,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	    (OrbitSubscriptionCallback)receive_callback, self);
 	Hashtable_put(self -> orbitSubscriptionsById, id, subscription);
 
-	/* Register the subscription with the ElvinConnection and the ControlPanel */
+	/* Register the subscription with the connection and the ControlPanel */
 	OrbitSubscription_setConnection(subscription, self -> connection);
 	OrbitSubscription_setControlPanel(subscription, self -> control_panel);
     }
@@ -599,9 +599,9 @@ static void subscribe_to_orbit(tickertape_t self)
     StringBuffer_append(buffer, "\"");
 
     /* Subscribe to the meta-subscription */
-    ElvinConnection_subscribe(
+    connection_subscribe(
 	self -> connection, StringBuffer_getBuffer(buffer),
-	(NotifyCallback)orbit_callback, self);
+	(notify_callback_t)orbit_callback, self);
 
     StringBuffer_free(buffer);
 }
@@ -642,10 +642,10 @@ tickertape_t tickertape_alloc(
     init_ui(self);
 
     /* Connect to elvin and subscribe */
-    self -> connection = ElvinConnection_alloc(
+    self -> connection = connection_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
-	(DisconnectCallback)disconnect_callback, self,
-	(ReconnectCallback)reconnect_callback, self);
+	(disconnect_callback_t)disconnect_callback, self,
+	(reconnect_callback_t)reconnect_callback, self);
     List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
 
     /* Subscribe to the Usenet subscription if we have one */
@@ -700,7 +700,7 @@ void tickertape_free(tickertape_t self)
 
     if (self -> connection)
     {
-	ElvinConnection_free(self -> connection);
+	connection_free(self -> connection);
     }
 
     if (self -> control_panel)

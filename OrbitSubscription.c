@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: OrbitSubscription.c,v 1.18 1999/09/09 14:29:47 phelps Exp $";
+static const char cvsid[] = "$Id: OrbitSubscription.c,v 1.19 1999/09/26 14:05:13 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -56,10 +56,10 @@ struct OrbitSubscription_t
     /* The receiver's zone id */
     char *id;
 
-    /* The receiver's ElvinConnection */
-    ElvinConnection connection;
+    /* The receiver's connection */
+    connection_t connection;
 
-    /* The receiver's ElvinConnection information */
+    /* The receiver's connection information */
     void *connectionInfo;
 
     /* The receiver's ControlPanel */
@@ -223,7 +223,7 @@ void SendMessage(OrbitSubscription self, message_t message)
 	en_add_string(notification, "MIME_TYPE", mime_type);
     }
 
-    ElvinConnection_send(self -> connection, notification);
+    connection_publish(self -> connection, notification);
     en_free(notification);
 }
 
@@ -331,8 +331,8 @@ char *OrbitSubscription_getTitle(OrbitSubscription self)
 }
 
 
-/* Sets the receiver's ElvinConnection */
-void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection connection)
+/* Sets the receiver's connection */
+void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connection)
 {
     SANITY_CHECK(self);
 
@@ -345,7 +345,7 @@ void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection con
     /* Unsubscribe from old connection */
     if (self -> connection != NULL)
     {
-	ElvinConnection_unsubscribe(self -> connection, self -> connectionInfo);
+	connection_unsubscribe(self -> connection, self -> connectionInfo);
     }
 
     self -> connection = connection;
@@ -357,9 +357,9 @@ void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection con
 	StringBuffer_append(buffer, "exists(TICKERTEXT) && zone.id == \"");
 	StringBuffer_append(buffer, self -> id);
 	StringBuffer_append(buffer, "\"");
-	self -> connectionInfo = ElvinConnection_subscribe(
+	self -> connectionInfo = connection_subscribe(
 	    self -> connection, StringBuffer_getBuffer(buffer),
-	    (NotifyCallback)HandleNotify, self);
+	    (notify_callback_t)HandleNotify, self);
 	StringBuffer_free(buffer);
     }
 }

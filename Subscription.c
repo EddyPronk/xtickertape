@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.34 1999/09/15 03:33:47 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.35 1999/09/26 14:05:13 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -76,10 +76,10 @@ struct Subscription_t
     /* The maximum number of minutes to display a message in the receiver's group */
     int maxTime;
 
-    /* The receiver's ElvinConnection */
-    ElvinConnection connection;
+    /* The receiver's connection */
+    connection_t connection;
 
-    /* The receiver's ElvinConnection information (for unsubscribing) */
+    /* The receiver's connection information (for unsubscribing) */
     void *connectionInfo;
 
     /* The receiver's ControlPanel */ 
@@ -491,7 +491,7 @@ static void SendMessage(Subscription self, message_t message)
 	en_add_string(notification, "MIME_TYPE", mime_type);
     }
 
-    ElvinConnection_send(self -> connection, notification);
+    connection_publish(self -> connection, notification);
     en_free(notification);
 }
 
@@ -677,23 +677,23 @@ void Subscription_updateFromSubscription(Subscription self, Subscription subscri
 }
 
 
-/* Sets the receiver's ElvinConnection */
-void Subscription_setConnection(Subscription self, ElvinConnection connection)
+/* Sets the receiver's connection */
+void Subscription_setConnection(Subscription self, connection_t connection)
 {
     SANITY_CHECK(self);
 
     if (self -> connection != NULL)
     {
-	ElvinConnection_unsubscribe(self -> connection, self -> connectionInfo);
+	connection_unsubscribe(self -> connection, self -> connectionInfo);
     }
 
     self -> connection = connection;
 
     if (self -> connection != NULL)
     {
-	self -> connectionInfo = ElvinConnection_subscribe(
+	self -> connectionInfo = connection_subscribe(
 	    self -> connection, self -> expression,
-	    (NotifyCallback)HandleNotify, self);
+	    (notify_callback_t)HandleNotify, self);
     }
 }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.4 1999/09/26 07:02:41 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.5 1999/09/26 14:05:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -42,11 +42,11 @@ struct mail_sub
     /* The receiver's user name */
     char *user;
 
-    /* The receiver's ElvinConnection */
-    ElvinConnection connection;
+    /* The receiver's connection */
+    connection_t connection;
 
-    /* The receiver's ElvinConnection information */
-    void *connectionInfo;
+    /* The receiver's connection information */
+    void *connection_info;
 
     /* The receiver's rfc822 mailbox parser */
     mbox_parser_t parser;
@@ -147,7 +147,7 @@ mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
 
     self -> user = strdup(user);
     self -> connection = NULL;
-    self -> connectionInfo = NULL;
+    self -> connection_info = NULL;
     self -> callback = callback;
     self -> rock = rock;
     return self;
@@ -174,14 +174,14 @@ void mail_subscription_debug(mail_sub_t self)
 {
     printf("mail_sub_t (%p)\n", self);
     printf("  connection = %p\n", self -> connection);
-    printf("  connectionInfo = %p\n", self -> connectionInfo);
+    printf("  connection_info = %p\n", self -> connection_info);
     printf("  callback = %p\n", self -> callback);
     printf("  rock = %p\n", self -> rock);
 }
 
 
-/* Sets the receiver's ElvinConnection */
-void mail_sub_set_connection(mail_sub_t self, ElvinConnection connection)
+/* Sets the receiver's connection */
+void mail_sub_set_connection(mail_sub_t self, connection_t connection)
 {
     /* Shortcut if we're already subscribed */
     if (self -> connection == connection)
@@ -192,7 +192,7 @@ void mail_sub_set_connection(mail_sub_t self, ElvinConnection connection)
     /* Unsubscribe from the old connection */
     if (self -> connection != NULL)
     {
-	ElvinConnection_unsubscribe(self -> connection, self -> connectionInfo);
+	connection_unsubscribe(self -> connection, self -> connection_info);
     }
 
     self -> connection = connection;
@@ -204,9 +204,9 @@ void mail_sub_set_connection(mail_sub_t self, ElvinConnection connection)
 	sprintf(buffer, "exists(elvinmail) && user == \"%s\"", self -> user);
 
 	/* Subscribe to elvinmail notifications */
-	self -> connectionInfo = ElvinConnection_subscribe(
+	self -> connection_info = connection_subscribe(
 	    self -> connection, buffer,
-	    (NotifyCallback)handle_notify, self);
+	    (notify_callback_t)handle_notify, self);
 
 	free(buffer);
     }

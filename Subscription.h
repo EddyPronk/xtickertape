@@ -35,7 +35,7 @@
 #define SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.11 1999/09/09 14:29:49 phelps Exp $";
+static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.12 1999/09/26 14:05:14 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -50,7 +50,7 @@ typedef struct Subscription_t *Subscription;
 #include <elvin3/element.h>
 #include "List.h"
 #include "message.h"
-#include "ElvinConnection.h"
+#include "connect.h"
 #include "Control.h"
 
 /* The format for the callback function */
@@ -92,8 +92,8 @@ char *Subscription_expression(Subscription self);
  * but NOT expression */
 void Subscription_updateFromSubscription(Subscription self, Subscription subscription);
 
-/* Sets the receiver's ElvinConnection */
-void Subscription_setConnection(Subscription self, ElvinConnection connection);
+/* Sets the receiver's connection */
+void Subscription_setConnection(Subscription self, connection_t connection);
 
 /* Registers the receiver with the ControlPanel */
 void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel);

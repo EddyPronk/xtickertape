@@ -35,7 +35,7 @@
 #define USENET_SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_USENET_SUBSCRIPTION_H[] = "$Id: UsenetSubscription.h,v 1.5 1999/09/09 14:29:49 phelps Exp $";
+static const char cvs_USENET_SUBSCRIPTION_H[] = "$Id: UsenetSubscription.h,v 1.6 1999/09/26 14:05:14 phelps Exp $";
 #endif /* lint */
 
 /* The UsenetSubscription data type */
@@ -43,7 +43,7 @@ typedef struct UsenetSubscription_t *UsenetSubscription;
 
 #include <stdio.h>
 #include "message.h"
-#include "ElvinConnection.h"
+#include "connect.h"
 
 typedef void (*UsenetSubscriptionCallback)(void *context, message_t message);
 
@@ -66,7 +66,7 @@ void UsenetSubscription_free(UsenetSubscription self);
 /* Prints debugging information */
 void UsenetSubscription_debug(UsenetSubscription self);
 
-/* Sets the receiver's ElvinConnection */
-void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection connection);
+/* Sets the receiver's connection */
+void UsenetSubscription_setConnection(UsenetSubscription self, connection_t connection);
 
 #endif /* USENET_SUBSCRIPTION_H */

@@ -34,14 +34,14 @@
 #define ORBIT_SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_ORBIT_SUBSCRIPTION_H[] = "$Id: OrbitSubscription.h,v 1.4 1999/09/09 14:29:48 phelps Exp $";
+static const char cvs_ORBIT_SUBSCRIPTION_H[] = "$Id: OrbitSubscription.h,v 1.5 1999/09/26 14:05:13 phelps Exp $";
 #endif /* lint */
 
 /* The OrbitSubscription data type */
 typedef struct OrbitSubscription_t *OrbitSubscription;
 
 #include "message.h"
-#include "ElvinConnection.h"
+#include "connect.h"
 #include "Control.h"
 
 typedef void (*OrbitSubscriptionCallback)(void *context, message_t message);
@@ -65,8 +65,8 @@ void OrbitSubscription_setTitle(OrbitSubscription self, char *title);
 /* Sets the receiver's title */
 char *OrbitSubscription_getTitle(OrbitSubscription self);
 
-/* Sets the receiver's ElvinConnection */
-void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection connection);
+/* Sets the receiver's connection */
+void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connection);
 
 /* Sets the receiver's ControlPanel */
 void OrbitSubscription_setControlPanel(OrbitSubscription self, ControlPanel controlPanel);

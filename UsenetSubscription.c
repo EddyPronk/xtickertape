@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.23 1999/09/15 03:33:48 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.24 1999/09/26 14:05:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -88,10 +88,10 @@ struct UsenetSubscription_t
     /* The receiver's subscription expression */
     char *expression;
 
-    /* The receiver's ElvinConnection */
-    ElvinConnection connection;
+    /* The receiver's connection */
+    connection_t connection;
 
-    /* The receiver's ElvinConnection information */
+    /* The receiver's connection information */
     void *connectionInfo;
 
     /* The receiver's callback function */
@@ -774,8 +774,8 @@ void UsenetSubscription_debug(UsenetSubscription self)
     printf("  context = %p\n", self -> context);
 }
 
-/* Sets the receiver's ElvinConnection */
-void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection connection)
+/* Sets the receiver's connection */
+void UsenetSubscription_setConnection(UsenetSubscription self, connection_t connection)
 {
     SANITY_CHECK(self);
 
@@ -788,7 +788,7 @@ void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection c
     /* Unsubscribe from the old connection */
     if (self -> connection != NULL)
     {
-	ElvinConnection_unsubscribe(self -> connection, self -> connectionInfo);
+	connection_unsubscribe(self -> connection, self -> connectionInfo);
     }
 
     self -> connection = connection;
@@ -796,9 +796,9 @@ void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection c
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
-	self -> connectionInfo = ElvinConnection_subscribe(
+	self -> connectionInfo = connection_subscribe(
 	    self -> connection, self -> expression,
-	    (NotifyCallback)HandleNotify, self);
+	    (notify_callback_t)HandleNotify, self);
     }
 }
 
