@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.8 2001/07/13 06:35:33 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.9 2001/07/13 08:48:57 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -90,6 +90,9 @@ typedef struct
     /* The height of the margin */
     Dimension margin_height;
 
+    /* The maximum number of messages to display in the history */
+    unsigned int message_count;
+
     
     /* Private state */
 
@@ -117,8 +120,8 @@ typedef struct
     /* The queue of outstanding movements */
     delta_queue_t dqueue;
 
-    /* A message view for playing with */
-    message_view_t mv;
+    /* An array of message_views in display order */
+    message_view_t *message_views;
 } HistoryPart;
 
 /* Full instance record declaration */

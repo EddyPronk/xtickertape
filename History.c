@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.9 2001/07/13 06:35:32 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.10 2001/07/13 08:48:57 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -131,6 +131,12 @@ static XtResource resources[] =
     {
 	XtNmarginHeight, XtCMarginHeight, XtRDimension, sizeof(Dimension),
 	offset(history.margin_height), XtRImmediate, (XtPointer)5
+    },
+
+    /* unsigned int message_count */
+    {
+	XtNmessageCount, XtCMessageCount, XtRDimension, sizeof(unsigned int),
+	offset(history.message_count), XtRImmediate, (XtPointer)32
     }
 };
 #undef offset
@@ -186,6 +192,8 @@ static XtGeometryResult query_geometry(
     Widget self,
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred);
+static void update_scrollbars(Widget widget);
+static void paint(HistoryWidget self, XRectangle *bbox);
 
 
 /*
@@ -279,8 +287,8 @@ static void set_origin(HistoryWidget self, long x, long y)
 	item = malloc(sizeof(struct delta_queue));
 	item -> next = self -> history.dqueue;
 	item -> request_id = NextRequest(display);
-	item -> dx = x - self -> history.x;
-	item -> dy = y - self -> history.y;
+	item -> dx = self -> history.x - x;
+	item -> dy = self -> history.y - y;
 	self -> history.dqueue = item;
 
 	/* Remove our clip mask */
@@ -290,8 +298,7 @@ static void set_origin(HistoryWidget self, long x, long y)
 	/* Copy to the new location */
 	XCopyArea(
 	    display, XtWindow((Widget)self), XtWindow((Widget)self), gc,
-	    item -> dx, item -> dy, self -> core.width, self -> core.height,
-	    0, 0);
+	    -item -> dx, -item -> dy, self -> core.width, self -> core.height, 0, 0);
     }
 
     self -> history.x = x;
@@ -335,7 +342,73 @@ Boolean HistoryIsShowingTimestamps(Widget widget)
 /* Adds a new message to the History */
 void HistoryAddMessage(Widget widget, message_t message)
 {
-    dprintf(("HistoryAddMessage(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)widget;
+    message_view_t view, old;
+    struct string_sizes sizes;
+    long width, height;
+    int flag = 0;
+    unsigned int i;
+    XRectangle bbox;
+
+    /* FIX THIS: this is fairly bogus */
+
+    /* If there's a first view then free it */
+    if (self -> history.message_views[0])
+    {
+	message_view_free(self -> history.message_views[0]);
+	flag = 1;
+    }
+
+    /* Recompute the widget's width and height and shift everything up */
+    width = 0;
+    height = 0;
+    for (i = 1; i < self -> history.message_count; i++)
+    {
+	if ((view = self -> history.message_views[i]) != NULL)
+	{
+	    /* Measure the view */
+	    message_view_get_sizes(view, &sizes);
+
+	    /* Update our dimensions */
+	    width = MAX(width, sizes.width);
+	    height += sizes.ascent + sizes.descent;
+	}
+
+	/* Bump it up one position */
+	self -> history.message_views[i - 1] = view;
+    }
+
+    /* Create a message view for the message */
+    view = message_view_alloc(message, self -> history.font);
+    self -> history.message_views[self -> history.message_count - 1] = view;
+
+    /* Adjust the width and height one last time */
+    message_view_get_sizes(view, &sizes);
+    width = MAX(width, sizes.width);
+    height += sizes.ascent + sizes.descent;
+
+    /* Record our new measurements */
+    self -> history.width = width + (long)self -> history.margin_width * 2;
+    self -> history.height = height + (long)self -> history.margin_height * 2;
+
+    /* Update the widget's scrollbars */
+    update_scrollbars(widget);
+
+    /* Bail if the widget hasn't been realized */
+    if (self -> history.gc == None)
+    {
+	return;
+    }
+
+    /* Figure out what needs to be repainted */
+    /* FIX THIS: we should be able to do a CopyArea trick here */
+    bbox.x = 0;
+    bbox.y = 0;
+    bbox.width = self -> core.width;
+    bbox.height = self -> core.height;
+
+    /* Repaint the widget */
+    paint(self, &bbox);
 }
 
 /* Kills the thread of the given message */
@@ -507,6 +580,10 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     /* Start with an empty delta queue */
     self -> history.dqueue = NULL;
 
+    /* Allocate enough room for all of our message views */
+    self -> history.message_views =
+	calloc(self -> history.message_count, sizeof(message_view_t));
+
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
 	"HorizScrollBar", xmScrollBarWidgetClass,
@@ -619,8 +696,6 @@ static void realize(
     HistoryWidget self = (HistoryWidget)widget;
     Display *display = XtDisplay(self);
     XGCValues values;
-    message_t message;
-    struct string_sizes sizes;
 
     printf("History: realize() w=%d, h=%d\n", self -> core.width, self -> core.height);
 
@@ -634,49 +709,25 @@ static void realize(
 
     /* Register to receive GraphicsExpose events */
     XtAddEventHandler(widget, 0, True, gexpose, NULL);
-
-
-    /* Create a message */
-    message = message_alloc(
-	NULL,
-	"ÆgroupÆ", "ÆuserÆ", "ÆstringÆ", 10,
-	"x-elvin/url", "http://www.woolfit.com/",
-	strlen("http://www.woolfit.com/"), "tag",
-	"id", "reply_id");
-
-    /* Create a mesage view */
-    self -> history.mv = message_view_alloc(message, self -> history.font);
-    message_view_get_sizes(self -> history.mv, &sizes);
-
-    /* Record our sizes */
-    self -> history.width = sizes.width + (long)self -> history.margin_width * 2;
-    self -> history.height = sizes.ascent + sizes.descent +
-	(long)self -> history.margin_height * 2;
-
-    /* Update the scrollbars */
-    update_scrollbars(widget);
 }
 
-/* Repaint the widget */
-static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
+/* Translate the bounding box to compensate for unprocessed CopyArea
+ * requests */
+static void compensate_bbox(
+    HistoryWidget self,
+    unsigned long request_id,
+    XRectangle *bbox)
 {
-    Display *display = XtDisplay((Widget)self);
-    Window window = XtWindow((Widget)self);
-    delta_queue_t previous, item;
-    long xmargin = (long)self -> history.margin_width;
-    long ymargin = (long)self -> history.margin_height;
-#ifdef DEBUG_DELTA_QUEUE
-    int flag = 0;
-#endif /* DEBUG_DELTA_QUEUE */
+    delta_queue_t previous = NULL;
+    delta_queue_t item = self -> history.dqueue;
 
-    /* Clean the queue and compensate for unprocessed CopyArea
-     * requests and use it to adjust the origin of the bounding box */
-    previous = NULL;
-    item = self -> history.dqueue;
+    /* Go through each outstanding delta item */
     while (item != NULL)
     {
-	if (item -> request_id < id)
+	/* Has the request for this item been processed? */
+	if (item -> request_id < request_id)
 	{
+	    /* Yes.  Throw it away. */
 	    if (previous == NULL)
 	    {
 		self -> history.dqueue = item -> next;
@@ -692,68 +743,52 @@ static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
 	}
 	else
 	{
-	    bbox -> x -= item -> dx;
-	    bbox -> y -= item -> dy;
+	    /* No.  Translate the bounding box accordingly. */
+	    bbox -> x += item -> dx;
+	    bbox -> y += item -> dy;
 	    previous = item;
 	    item = item -> next;
-#ifdef DEBUG_DELTA_QUEUE
-	    flag = 1;
-#endif /* DEBUG_DELTA_QUEUE */
 	}
     }
+}
+
+/* Repaint the widget */
+static void paint(HistoryWidget self, XRectangle *bbox)
+{
+    Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
+    long xmargin = (long)self -> history.margin_width;
+    long ymargin = (long)self -> history.margin_height;
+    message_view_t view;
+    unsigned int i;
+    long x, y;
 
     /* Set that as our bounding box */
     XSetClipRectangles(display, self -> history.gc, 0, 0, bbox, 1, YXSorted);
 
-#ifdef DEBUG_DELTA_QUEUE
-    /* Fill the background */
+    /* Start at the top margin */
+    x = xmargin - self -> history.x;
+    y = ymargin - self -> history.y;
+
+    /* Draw all visible message views */
+    for (i = 0; i < self -> history.message_count; i++)
     {
-	XGCValues values;
-
-	/* Fill the bounding box with gray */
-	values.foreground = 0xc0c0c0;
-	XChangeGC(display, self -> history.gc, GCForeground, &values);
-	XFillRectangle(
-	    display, window, self -> history.gc,
-	    xmargin - self -> history.x, ymargin - self -> history.y,
-	    self -> history.width - xmargin * 2, self -> history.height - ymargin * 2);
-
-	/* If we've been shifted then draw the bounding box */
-	if (flag)
+	/* Skip NULL message views */
+	if ((view = self -> history.message_views[i]) == NULL)
 	{
-	    values.foreground = 0xc0ffff;
-	    XChangeGC(display, self -> history.gc, GCForeground, &values);
-	    XFillRectangle(
-		display, window, self -> history.gc,
-		0, 0, self -> core.width, self -> core.height);
-
-	    values.foreground = 0x0000;
-	    XChangeGC(display, self -> history.gc, GCForeground, &values);
-	    XDrawRectangle(
-		display, window, self -> history.gc,
-		bbox -> x, bbox -> y,
-		bbox -> width - 1, bbox -> height - 1);
+	    continue;
 	}
 
-	/* Draw the outline of the bounding box */
-	values.foreground = 0x000000;
-	XChangeGC(display, self -> history.gc, GCForeground, &values);
-	XDrawRectangle(
-	    display, window, self -> history.gc,
-	    xmargin - self -> history.x, ymargin - self -> history.y,
-	    self -> history.width - xmargin * 2 - 1,
-	    self -> history.height - ymargin * 2 - 1);
-    }
-#endif /* DEBUG_DELTA_QUEUE */
+	/* Draw the view */
+	message_view_paint(
+	    view, display, window, self -> history.gc,
+	    self -> history.group_pixel, self -> history.user_pixel,
+	    self -> history.string_pixel, self -> history.separator_pixel,
+	    x, y + self -> history.font -> ascent, bbox);
 
-    /* Draw something.  I don't know */
-    message_view_paint(
-	self -> history.mv, display, window, self -> history.gc,
-	self -> history.group_pixel, self -> history.user_pixel,
-	self -> history.string_pixel, self -> history.separator_pixel,
-	xmargin - self -> history.x,
-	ymargin - self -> history.y + self -> history.font -> ascent,
-	bbox);
+	/* FIX THIS: should we allow more/less spacing? */
+	y += self -> history.font -> ascent + self -> history.font -> descent;
+    }
 }
 
 /* Redisplay the given region */
@@ -766,8 +801,11 @@ static void redisplay(Widget widget, XEvent *event, Region region)
     /* Find the smallest rectangle which contains the region */
     XClipBox(region, &bbox);
 
+    /* Compensate for unprocessed CopyArea requests */
+    compensate_bbox(self, x_event -> serial, &bbox);
+
     /* Repaint the region */
-    paint(self, x_event -> serial, &bbox);
+    paint(self, &bbox);
 }
 
 /* Repaint the bits of the widget that didn't get copied */
@@ -802,8 +840,11 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	bbox.width = g_event -> width;
 	bbox.height = g_event -> height;
 
+	/* Compensate for unprocessed CopyArea requests */
+	compensate_bbox(self, g_event -> serial, &bbox);
+
 	/* Update this portion of the history */
-	paint(self, g_event -> serial,  &bbox);
+	paint(self,  &bbox);
 
 	/* Bail out if this is the last GraphicsExpose event */
 	if (g_event -> count < 1)
