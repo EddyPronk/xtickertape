@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.6 1999/10/06 09:00:02 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.7 1999/10/07 00:24:25 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -76,8 +76,11 @@ char *timeouts[] =
     NULL
 };
 
-/* The default timeout */
+/* The default message timeout */
 #define DEFAULT_TIMEOUT "5"
+
+/* The number of milliseconds to wait before showing a tool-tip */
+#define TOOL_TIP_DELAY 1000
 
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
@@ -147,6 +150,21 @@ struct control_panel
 
     /* The receiver's history list widget */
     Widget history;
+
+    /* The tool-tip timer */
+    XtIntervalId timer;
+
+    /* The tool-tip's shell widget */
+    Widget tool_tip;
+
+    /* The tool-tip's label widget */
+    Widget tool_tip_label;
+
+    /* The x position of the pointer when the timer was last set */
+    Position x;
+
+    /* The y position of the pointer when the timer was last set */
+    Position y;
 
     /* The uuid counter */
     int uuid_count;
@@ -570,7 +588,9 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
     message_t message;
 
     /* Figure out which message was selected */
-    if ((message = history_get(tickertape_history(self -> tickertape), info -> item_position)) == NULL)
+    if ((message = history_get(
+	tickertape_history(self -> tickertape),
+	info -> item_position)) == NULL)
     {
 	return;
     }
@@ -580,6 +600,42 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
 }
 
 
+
+/* Show a tool-tip window */
+static void show_tool_tip(control_panel_t self, XtIntervalId *ignored)
+{
+    message_t message;
+    char *mime_args;
+    XmString string;
+    Position x, y;
+
+    self -> timer = 0;
+    message = history_get_at_point(tickertape_history(self -> tickertape), self -> x, self -> y);
+    if ((message == NULL) || ((mime_args = message_get_mime_args(message)) == NULL))
+    {
+	return;
+    }
+
+    /* Set the tool-tip's label */
+    string = XmStringCreateSimple(mime_args);
+    XtVaSetValues(self -> tool_tip_label, XmNlabelString, string, NULL);
+    XmStringFree(string);
+
+    /* Move the tool-tip window to somewhere near the pointer */
+    XtTranslateCoords(self -> history, self -> x + 10, self -> y + 10, &x, &y);
+    XtVaSetValues(self -> tool_tip, XmNx, x, XmNy, y);
+
+    /* Show the tool-tip */
+    XtPopup(self -> tool_tip, XtGrabNone);
+}
+
+/* Hide the tool-tip window */
+static void hide_tool_tip(control_panel_t self)
+{
+    XtPopdown(self -> tool_tip);
+}
+
+    
 /* This is called when the mouse enters or leaves or moves around
  * inside the history widget */
 static void history_motion_callback(
@@ -591,20 +647,53 @@ static void history_motion_callback(
     {
 	case MotionNotify:
 	{
-	    printf("motion\n");
-	    break;
+	    /* If we have a timer then reset it */
+	    if (self -> timer != 0)
+	    {
+		XMotionEvent *motion_event = (XMotionEvent *)event;
+
+		XtRemoveTimeOut(self -> timer);
+		self -> timer = XtAppAddTimeOut(
+		    XtWidgetToApplicationContext(widget),
+		    TOOL_TIP_DELAY,
+		    (XtTimerCallbackProc)show_tool_tip,
+		    (XtPointer)self);
+		self -> x = motion_event -> x;
+		self -> y = motion_event -> y;
+		return;
+	    }
+
+	    hide_tool_tip(self);
 	}
 
+	/* When the mouse enters the window we set the timer */
 	case EnterNotify:
 	{
-	    printf("enter\n");
-	    break;
+	    XEnterWindowEvent *enter_event = (XEnterWindowEvent *)event;
+
+	    /* Set the timer for a short pause before we show the tool-tip */
+	    self -> timer = XtAppAddTimeOut(
+		XtWidgetToApplicationContext(widget),
+		TOOL_TIP_DELAY,
+		(XtTimerCallbackProc)show_tool_tip,
+		(XtPointer)self);
+	    self -> x = enter_event -> x;
+	    self -> y = enter_event -> y;
+	    return;
 	}
 
 	case LeaveNotify:
 	{
-	    printf("leave\n");
-	    break;
+	    /* If we have a timer cancel it.  Otherwise just hide the tool-tip */
+	    if (self -> timer != 0)
+	    {
+		XtRemoveTimeOut(self -> timer);
+		self -> timer = 0;
+		return;
+	    }
+
+	    hide_tool_tip(self);
+	    return;
 	}
     }
 }
@@ -989,6 +1078,19 @@ static void init_ui(control_panel_t self, Widget parent)
     /* Manage the form widget */
     XtManageChild(form);
 
+
+    /* Create the tool-tip widget */
+    self -> tool_tip = XtVaCreatePopupShell(
+	"toolTipShell", transientShellWidgetClass, self -> top,
+	XmNoverrideRedirect, True,
+	XmNallowShellResize, True,
+	NULL);
+
+    /* And set its child widget to be a label */
+    self -> tool_tip_label = XtVaCreateManagedWidget(
+	"toolTip", xmLabelWidgetClass, self -> tool_tip,
+	NULL);
+
     /* Make sure that we can use Editres */
     XtAddEventHandler(self -> top, (EventMask)0, True, _XEditResCheckMessages, NULL);
 }
@@ -1308,6 +1410,9 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     self -> text = NULL;
     self -> send = NULL;
     self -> history = NULL;
+    self -> timer = 0;
+    self -> x = 0;
+    self -> y = 0;
     self -> uuid_count = 0;
     self -> selection = NULL;
     self -> timeouts = timeouts;
