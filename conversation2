@@ -15,6 +15,8 @@ TIMEOUT: 5
 TICKERTEXT: "I'm thinking `The Cure' even though it screws up alphabetization"
 Message-Id: "59253759"
 In-Reply-To: "(bignum 109 168 52 22)"
+MIME_TYPE: "x-elvin/url"
+MIME_ARGS: "http://www.thecure.com/"
 ---
 xtickertape.version: "1.6b3"
 TICKERTAPE: "phelps"
