@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.6 2000/11/06 07:56:08 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.7 2000/11/06 12:33:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -39,7 +39,7 @@ static const char cvsid[] = "$Id: atom.c,v 2.6 2000/11/06 07:56:08 phelps Exp $"
 #include <elvin/memory.h>
 #include <elvin/error.h>
 #include <elvin/errors/elvin.h>
-#include <math.h>
+#include "errors.h"
 #include "atom.h"
 
 /* A cons cell has two values */
@@ -112,7 +112,6 @@ static int hashcopy(elvin_hashtable_t table,
 /* Frees a reference to an atom */
 static int hashfree(elvin_hashdata_t data, elvin_error_t error)
 {
-    atom_t atom = (atom_t)data;
     return atom_free((atom_t)data, error);
 }
 
@@ -432,7 +431,7 @@ int atom_print(atom_t atom)
 
 	case ATOM_FLOAT:
 	{
-	    printf("%e", atom -> value.d);
+	    printf("%f", atom -> value.d);
 	    return 1;
 	}
 
@@ -513,7 +512,6 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 
 	default:
 	{
-	    /* FIX THIS: set a better error */
 	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"atom_eval");
 	    return 0;
 	}
@@ -521,7 +519,7 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 }
 
 /* Allocates and initializes an environment */
-static env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
+env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
 {
     env_t env;
 
@@ -540,43 +538,6 @@ static env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
     }
 
     env -> parent = parent;
-    return env;
-}
-
-/* Initializes the Lisp evaluation engine */
-env_t root_env_alloc(elvin_error_t error)
-{
-    env_t env;
-    atom_t pi;
-
-    if ((env = env_alloc(40, NULL, error)) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Create the value for pi */
-    if ((pi = float_alloc(M_PI, error)) == NULL)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Register th constant `pi' */
-    if (env_set_string(env, "pi", pi, error) == 0)
-    {
-	atom_free(pi, NULL);
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* Lose our reference to the constant */
-    if (atom_free(pi, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
-    /* FIX THIS: define some built-in functions */
     return env;
 }
 
@@ -619,7 +580,7 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 	env = env -> parent;
     }
 
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"env_get");
+    ELVIN_ERROR_LISP_SYM_UNDEF(error, (uchar *)name);
     return 0;
 }
 
@@ -635,7 +596,11 @@ int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
     }
 
     /* Use it to register the value in the map (automatically increases the ref_count) */
-    if (elvin_hash_add(env -> map, (elvin_hashkey_t)name, (elvin_hashdata_t)value, error) == 0)
+    if (elvin_hash_add(
+	    env -> map,
+	    (elvin_hashkey_t)name,
+	    (elvin_hashdata_t)value,
+	    error) == 0)
     {
 	return 0;
     }
@@ -643,8 +608,8 @@ int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
     return 1;
 }
 
-/* Sets the named symbol's value in the environment */
-int env_set_string(env_t env, char *name, atom_t value, elvin_error_t error)
+/* Sets the named symbol's value */
+int env_set_value(env_t env, char *name, atom_t value, elvin_error_t error)
 {
     atom_t symbol;
     int result;
@@ -660,4 +625,82 @@ int env_set_string(env_t env, char *name, atom_t value, elvin_error_t error)
 
     /* Lose our reference to the symbol */
     return atom_free(symbol, result ? error : NULL) && result;
+}
+
+/* Sets the named symbol's value to the int32 value in env */
+int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error)
+{
+    atom_t atom;
+    int result;
+
+    /* Create an int32 atom */
+    if ((atom = int32_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, atom, error);
+
+    /* Lose our reference to it */
+    return atom_free(atom, result ? error : NULL) && result;
+}
+
+
+/* Sets the named symbol's value to the int64 value in env */
+int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error)
+{
+    atom_t atom;
+    int result;
+
+    /* Create an int64 atom */
+    if ((atom = int64_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, atom, error);
+
+    /* Lose our reference to it */
+    return atom_free(atom, result ? error : NULL) && result;
+}
+
+/* Sets the named symbol's value to the float value in env */
+int env_set_float(env_t env, char *name, double value, elvin_error_t error)
+{
+    atom_t atom;
+    int result;
+
+    /* Create a float atom */
+    if ((atom = float_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, atom, error);
+
+    /* Lose our reference to it */
+    return atom_free(atom, result ? error : NULL) && result;
+}
+
+
+/* Sets the named symbol's value in the environment */
+int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
+{
+    atom_t atom;
+    int result;
+
+    /* Create a string */
+    if ((atom = string_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, atom, error);
+
+    /* Lose our reference to it */
+    return atom_free(atom, result ? error : NULL) && result;
 }

@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.4 2000/11/05 08:40:57 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.5 2000/11/06 12:33:47 phelps Exp $";
 #endif /* lint */
 
 /* The types of atoms */
@@ -116,8 +116,8 @@ atom_t cons_cdr(atom_t atom, elvin_error_t error);
 atom_t cons_reverse(atom_t atom, atom_t end, elvin_error_t error);
 
 
-/* Allocates and returns a fully-populated root environment */
-env_t root_env_alloc(elvin_error_t error);
+/* Allocates and returns an evalutaion environment */
+env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error);
 
 /* Frees an environment and all of its references */
 int env_free(env_t env, elvin_error_t error);
@@ -128,5 +128,18 @@ int env_get(env_t env, atom_t atom, atom_t *result, elvin_error_t error);
 /* Sets a symbol's value in the environment */
 int env_set(env_t env, atom_t atom, atom_t value, elvin_error_t error);
 
-#endif /* ATOM_H */
 
+/* Sets the named symbol's value to the int32 value in env */
+int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error);
+
+/* Sets the named symbol's value to the int64 value in env */
+int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error);
+
+/* Sets the named symbol's value to the float value in env */
+int env_set_float(env_t env, char *name, double value, elvin_error_t error);
+
+/* Sets the named symbol's value to the string value in env */
+int env_set_string(env_t env, char *name, char *value, elvin_error_t error);
+
+
+#endif /* ATOM_H */
