@@ -27,7 +27,7 @@
 
 ****************************************************************/
 
-static char *defaultGroupsFile =
+static char *default_groups_file =
 "# Tickertape groups file - $HOME/.ticker/groups\n"
 "#\n"
 "# empty lines and those beginning with a hash are ignored\n"
