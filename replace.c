@@ -30,7 +30,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <stdio.h>
+#include <stdio.h> /* snprintf, vsprintf */
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h> /* NULL */
 #endif
@@ -38,7 +38,7 @@
 #include <ctype.h> /* toupper */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h>
+#include <string.h> /* memcpy */
 #endif
 #include "replace.h"
 
