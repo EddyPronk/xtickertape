@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.11 2000/11/22 12:50:30 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.12 2000/11/22 22:57:42 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -325,6 +325,22 @@ int vm_new(
 
     /* Push the object onto the stack */
     return vm_push(self, object, error);
+}
+
+/* Returns the type of the object on the top of the stack */
+int vm_type(vm_t self, object_type_t *result, elvin_error_t error)
+{
+    object_t object;
+
+    /* Grab the top of the stack */
+    if (! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Return its type */
+    *result = object_type(object);
+    return 1;
 }
 
 /* Push nil onto the vm's stack */

@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.10 2000/11/22 12:54:22 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.11 2000/11/22 22:57:43 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -85,6 +85,9 @@ int vm_unroll(vm_t self, uint32_t count, elvin_error_t error);
 
 /* Duplicates the top of the stack and puts it onto the stack */
 int vm_dup(vm_t self, elvin_error_t error);
+
+/* Returns the type of the top item on the stack (without popping it) */
+int vm_type(vm_t self, object_type_t *result, elvin_error_t error);
 
 /* Push nil onto the vm's stack */
 int vm_push_nil(vm_t self, elvin_error_t error);
