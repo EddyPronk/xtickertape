@@ -174,4 +174,6 @@
 	<Btn1Down>: select()\n\
 	<Btn1Motion>: drag()\n\
 	<Btn1Up>: drag-done()\n\
-	<Btn2Up>: show-attachment() \n
+	<Btn2Up>: show-attachment()\n\
+	Ctrl<Key>p: select-previous()\n\
+	Ctrl<Key>n: select-next()\n

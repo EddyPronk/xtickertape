@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.17 2001/07/19 10:09:38 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.18 2001/07/19 12:51:00 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -153,13 +153,17 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 static void drag_done(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void select_previous(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 
 static XtActionsRec actions[] =
 {
     { "drag", drag },
     { "drag-done", drag_done },
     { "select", do_select },
-    { "show-attachment", show_attachment }
+    { "show-attachment", show_attachment },
+    { "select-previous", select_previous },
+    { "select-next", select_next }
 };
 
 
@@ -476,6 +480,11 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.message_count = 0;
     self -> history.message_views =
 	calloc(self -> history.message_capacity, sizeof(message_view_t));
+
+    /* Nothing is selected yet */
+    self -> history.selection = NULL;
+    self -> history.selection_index = (unsigned int)-1;
+    self -> history.drag_timeout = None;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
@@ -904,6 +913,36 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     update_scrollbars((Widget)self);
 }
 
+
+/* Make sure the given index is visible */
+static void make_index_visible(HistoryWidget self, unsigned int index)
+{
+    long y;
+
+    /* Sanity check */
+    assert(index < self -> history.message_count);
+
+    /* Figure out where the index would appear */
+    y = self -> history.selection_index * self -> history.line_height;
+
+    /* If it's above then scroll up to it */
+    if (y < self -> history.y)
+    {
+	set_origin(self, self -> history.x, y + self -> history.margin_height);
+	return;
+    }
+
+    /* If it's below then scroll down to it */
+    if (self -> history.y + self -> core.height < y + self -> history.line_height)
+    {
+	set_origin(
+	    self, self -> history.x,
+	    y + self -> history.line_height - self -> core.height +
+	    self -> history.margin_height);
+	return;
+    }
+}
+
 /* Selects the given message at the given index */
 static void set_selection(HistoryWidget self, unsigned int index, message_t message)
 {
@@ -940,7 +979,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    self -> history.y + self -> history.margin_height;
 
 	/* Is it visible? */
-	if (0 <= y + self -> history.line_height && y < self -> history.height)
+	if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
 	{
 	    /* Clear the clip mask */
 	    values.clip_mask = None;
@@ -982,7 +1021,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    self -> history.y + self -> history.margin_height;
 
 	/* Is it visible? */
-	if (0 <= y + self -> history.line_height && y < self -> history.height)
+	if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
 	{
 	    /* Clear the clip mask */
 	    values.clip_mask = None;
@@ -1078,7 +1117,29 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     HistoryWidget self = (HistoryWidget)closure;
 
     /* Scroll in the appropriate direction */
-    printf("scroll %s\n", self -> history.drag_direction == DRAG_UP ? "up" : "down");
+    switch (self -> history.drag_direction)
+    {
+	/* We're dragging upwards */
+	case DRAG_UP:
+	{
+	    select_previous((Widget)self, NULL, NULL, NULL);
+	    break;
+	}
+
+	/* We're dragging downwards */
+	case DRAG_DOWN:
+	{
+	    select_next((Widget)self, NULL, NULL, NULL);
+	    break;
+	}
+
+	/* We're in trouble */
+	default:
+	{
+	    printf("unlikely drag direction: %d\n", self -> history.drag_direction);
+	    abort();
+	}
+    }
 
     /* Arrange to scroll again after a judicious pause */
     /* FIX THIS: use a resource to specify the delay */
@@ -1157,6 +1218,12 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     index = (self -> history.y + button_event -> y - self -> history.margin_height) /
 	self -> history.line_height;
 
+    /* Do we have that many messages? */
+    if (! (index < self -> history.message_count))
+    {
+	index = self -> history.message_count - 1;
+    }
+
     /* Select it */
     set_selection_index(self, index);
 }
@@ -1185,6 +1252,12 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
     index = (self -> history.y + button_event -> y - self -> history.margin_height) /
 	self -> history.line_height;
 
+    /* Are we selecting past the end of the list? */
+    if (! (index < self -> history.message_count))
+    {
+	index = self -> history.message_count - 1;
+    }
+
     /* Is this our current selection? */
     if (self -> history.selection_index == index)
     {
@@ -1199,6 +1272,60 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     printf("action: show-attachment()\n");
+}
+
+
+/* Select the previous item in the history */
+static void select_previous(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    unsigned int index;
+
+    /* Is anything selected? */
+    if (self -> history.selection_index == (unsigned int)-1)
+    {
+	/* No.  Prepare to select the last item in the list */
+	index = self -> history.message_count;
+    }
+    else
+    {
+	/* Yes.  Prepare to select the one before it */
+	index = self -> history.selection_index;
+    }
+
+    /* Bail if there is no previous item */
+    if (index == 0)
+    {
+	return;
+    }
+
+    /* Select the previous item */
+    set_selection_index(self, index - 1);
+
+    /* Make sure it's visible */
+    make_index_visible(self, index);
+}
+
+/* Select the next item in the history */
+static void select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    unsigned int index;
+
+    /* Prepare to select the next item */
+    index = self -> history.selection_index + 1;
+
+    /* Bail if there is no next item */
+    if (! (index < self -> history.message_count))
+    {
+	return;
+    }
+
+    /* Select the next item */
+    set_selection_index(self, index);
+
+    /* Make sure it's visible */
+    make_index_visible(self, index);
 }
 
 
