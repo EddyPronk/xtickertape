@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.11 2000/07/11 02:29:21 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.12 2000/07/11 07:11:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: ast.c,v 1.11 2000/07/11 02:29:21 phelps Exp $"
 #include <stdlib.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
+#include "errors.h"
 #include "ast.h"
 #include "subscription.h"
 
@@ -313,10 +314,22 @@ env_t env_alloc(elvin_error_t error)
     return elvin_string_hash_create(17, value_hash_copy, value_hash_free, error);
 }
 
+/* Frees an env */
+int env_free(env_t env, elvin_error_t error)
+{
+    return elvin_hash_free(env, error);
+}
+
 /* Looks up a value in the environment */
 value_t *env_get(env_t self, char *name, elvin_error_t error)
 {
     return (value_t *)elvin_hash_get(self, (elvin_hashkey_t)name, error);
+}
+
+/* Adds a value to the environment */
+int env_put(env_t self, char *name, value_t *value, elvin_error_t error)
+{
+    return elvin_hash_add(self, (elvin_hashkey_t)name, (elvin_hashdata_t)value, error);
 }
 
 
@@ -678,7 +691,7 @@ ast_t ast_block_alloc(ast_t body, elvin_error_t error)
 ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 {
     ast_t self, ast;
-    elvin_hashtable_t env;
+    env_t env;
     subscription_t subscription;
 
     /* Make sure the tag is an ID */
@@ -891,7 +904,7 @@ ast_t ast_append(ast_t list, ast_t item, elvin_error_t error)
 /* Evaluates an int32 ast in the given environment */
 static int eval_int32(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -903,7 +916,7 @@ static int eval_int32(
 /* Evaluates an int64 ast in the given environment */
 static int eval_int64(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -915,7 +928,7 @@ static int eval_int64(
 /* Evaluates a float ast in the given environment */
 static int eval_float(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -927,7 +940,7 @@ static int eval_float(
 /* Evaluates a string ast in the given environment */
 static int eval_string(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -947,7 +960,7 @@ static int eval_string(
 /* Evaluates a list ast in the given environment */
 static int eval_list(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1000,18 +1013,27 @@ static int eval_list(
 /* Evaluates an id ast in the given environment */
 static int eval_id(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
-    fprintf(stderr, "eval_id(): not yet implemented\n");
-    abort();
+    value_t *result;
+
+    /* Look for the value in the environment */
+    if (! (result = env_get(env, self -> value.id, error)))
+    {
+	value_out -> type = VALUE_NONE;
+	return 1;
+    }
+
+    /* Copy the result */
+    return value_copy(result, value_out, error);
 }
 
 /* Evaluates a unary operation ast in the given environment */
 static int eval_unary(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1059,7 +1081,7 @@ static int eval_unary(
 static int eval_assign(
     ast_t lvalue,
     ast_t rvalue,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1099,10 +1121,483 @@ static int eval_assign(
     return 1;
 }
 
+/* Evaluates a disjunction */
+static int eval_or(
+    ast_t lvalue,
+    ast_t rvalue,
+    env_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    /* Evaluate the left-hand child */
+    if (! ast_eval(lvalue, env, value_out, error))
+    {
+	return 0;
+    }
+
+    /* If it's not NONE, then that's our value */
+    if (value_out -> type != VALUE_NONE)
+    {
+	return 1;
+    }
+
+    /* Otherwise our value is the evaluation of the rvalue */
+    return ast_eval(rvalue, env, value_out, error);
+}
+
+/* Evaluates a conjunction */
+static int eval_and(
+    ast_t lvalue,
+    ast_t rvalue,
+    env_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    /* Evaluate the left-hand child */
+    if (! ast_eval(lvalue, env, value_out, error))
+    {
+	return 0;
+    }
+
+    /* If it's NONE, then that's our result */
+    if (value_out -> type == VALUE_NONE)
+    {
+	return 1;
+    }
+
+    /* Throw that away */
+    if (! value_free(value_out, error))
+    {
+	return 0;
+    }
+
+    /* Return the result of the evaluation of the right-hand child */
+    return ast_eval(rvalue, env, value_out, error);
+}
+
+/* Evaluates an equality comparison */
+static int eval_eq(
+    ast_t lvalue,
+    ast_t rvalue,
+    env_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    ELVIN_ERROR_XTICKERTAPE_NOT_YET_IMPL(error, "eval_eq");
+    return 0;
+}
+
+/* Evaluates an inequality */
+static int eval_lt(
+    ast_t lvalue,
+    ast_t rvalue,
+    env_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_t left;
+    value_t right;
+
+    /* Evaluate the left-hand child */
+    if (! ast_eval(lvalue, env, &left, error))
+    {
+	return 0;
+    }
+
+    /* Determine what to next based on its type */
+    switch (left.type)
+    {
+	/* Left-hand child is an int32 */
+	case VALUE_INT32:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.int32 < right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.int32 < right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.int32 < right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+	}
+
+	/* Left-hand child is an int64 */
+	case VALUE_INT64:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.int64 < right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.int64 < right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.int64 < right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+
+	}
+
+	/* Left-hand child is a float */
+	case VALUE_FLOAT:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.real64 < right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.real64 < right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.real64 < right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+	}
+
+	default:
+	{
+	    value_out -> type = VALUE_NONE;
+	    return value_free(&left, error);
+	}
+    }
+}
+
+/* Evaluates an inequality */
+static int eval_gt(
+    ast_t lvalue,
+    ast_t rvalue,
+    env_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_t left;
+    value_t right;
+
+    /* Evaluate the left-hand child */
+    if (! ast_eval(lvalue, env, &left, error))
+    {
+	return 0;
+    }
+
+    /* Determine what to next based on its type */
+    switch (left.type)
+    {
+	/* Left-hand child is an int32 */
+	case VALUE_INT32:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.int32 > right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.int32 > right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.int32 > right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+	}
+
+	/* Left-hand child is an int64 */
+	case VALUE_INT64:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.int64 > right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.int64 > right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.int64 > right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+
+	}
+
+	/* Left-hand child is a float */
+	case VALUE_FLOAT:
+	{
+	    if (! ast_eval(rvalue, env, &right, error))
+	    {
+		return 0;
+	    }
+
+	    /* Decide what to do based on the type of the right-hand child */
+	    switch (right.type)
+	    {
+		case VALUE_INT32:
+		{
+		    if (left.value.real64 > right.value.int32)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    if (left.value.real64 > right.value.int64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    if (left.value.real64 > right.value.real64)
+		    {
+			value_out -> type = VALUE_INT32;
+			value_out -> value.int32 = 1;
+			return 1;
+		    }
+
+		    value_out -> type = VALUE_NONE;
+		    return 1;
+		}
+
+		default:
+		{
+		    value_out -> type = VALUE_NONE;
+		    return value_free(&right, error);
+		}
+	    }
+	}
+
+	default:
+	{
+	    value_out -> type = VALUE_NONE;
+	    return value_free(&left, error);
+	}
+    }
+}
+
+
 /* Evaluates a binary operation ast in the given environment */
 static int eval_binary(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1121,14 +1616,30 @@ static int eval_binary(
 	    return eval_assign(lvalue, rvalue, env, value_out, error);
 	}
 
+	/* Disjunction */
 	case AST_OR:
+	{
+	    return eval_or(lvalue, rvalue, env, value_out, error);
+	}
+
 	case AST_AND:
+	{
+	    return eval_and(lvalue, rvalue, env, value_out, error);
+	}
+
 	case AST_EQ:
+	{
+	    return eval_eq(lvalue, rvalue, env, value_out, error);
+	}
+
 	case AST_LT:
+	{
+	    return eval_lt(lvalue, rvalue, env, value_out, error);
+	}
+
 	case AST_GT:
 	{
-	    fprintf(stderr, "eval_binary(): type %d not yet supported\n", self -> value.binary.op);
-	    return 0;
+	    return eval_gt(lvalue, rvalue, env, value_out, error);
 	}
 
 	default:
@@ -1142,7 +1653,7 @@ static int eval_binary(
 /* Evaluates a function operation ast in the given environment */
 static int eval_function(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1153,12 +1664,12 @@ static int eval_function(
 /* Evaluates a block ast in the given environment */
 static int eval_block(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
     value_out -> type = VALUE_BLOCK;
-    if (! (value_out -> value.block = ast_clone(self, error))) {
+    if (! (value_out -> value.block = ast_clone(self -> value.block, error))) {
 	return 0;
     }
 
@@ -1169,7 +1680,7 @@ static int eval_block(
 /* Evaluates an AST with the given notification */
 int ast_eval(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -1237,7 +1748,7 @@ int ast_eval(
 /* Evaluates a list of subscriptions */
 int ast_eval_sub_list(
     ast_t self,
-    elvin_hashtable_t env,
+    env_t env,
     uint32_t *count_out,
     subscription_t **subs_out,
     elvin_error_t error)
