@@ -1,5 +1,5 @@
 /*
- * $Id: List.h,v 1.2 1997/02/05 09:25:56 phelps Exp $
+ * $Id: List.h,v 1.3 1997/02/10 14:42:20 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
@@ -38,6 +38,9 @@ void *List_last(List self);
 
 /* Answers the number of elements in the receiver */
 unsigned long List_size(List self);
+
+/* Answers non-zero if the list has no elements */
+int List_isEmpty(List self);
 
 /* Answers 0 if the receiver contains the value, 1 otherwise */
 int List_includes(List self, void *value);

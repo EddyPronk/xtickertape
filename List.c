@@ -203,6 +203,12 @@ unsigned long List_size(List self)
     return count;
 }
 
+/* Answers non-zero if the list has no elements */
+int List_isEmpty(List self)
+{
+    return self -> head == NULL;
+}
+
 
 /* Answers 0 if the receiver contains the value, 1 otherwise */
 int List_includes(List self, void *value)
