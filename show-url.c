@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.13 2003/03/10 10:29:00 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.14 2003/04/23 16:46:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -47,6 +47,18 @@ static const char cvsid[] = "$Id: show-url.c,v 1.13 2003/03/10 10:29:00 phelps E
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 
 #ifndef WEXITSTATUS
 #define WEXITSTATUS(stat_val) ((unsigned int)(stat_val) >> 8)
@@ -57,15 +69,17 @@ static const char cvsid[] = "$Id: show-url.c,v 1.13 2003/03/10 10:29:00 phelps E
 #define DEF_BROWSER "netscape -raise -remote \"openURL(%s,new-window)\":lynx"
 #define MAX_URL_SIZE 4095
 #define INIT_CMD_SIZE 128
+#define FILE_URL_PREFIX "file://"
 
 /* Options */
-#define OPTIONS "b:dhv"
+#define OPTIONS "b:dhu:v"
 
 #if defined(HAVE_GETOPT_LONG)
 /* The list of long options */
 static struct option long_options[] =
 {
     { "browser", required_argument, NULL, 'b' },
+    { "url", required_argument, NULL, 'u' },
     { "debug", optional_argument, NULL, 'd' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
@@ -113,6 +127,9 @@ static char sq_esc[] =
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 2,  /* 0x70 */
 };
 
+/* The program name */
+static char *progname = NULL;
+
 /* The buffer used to construct the command */
 static char *cmd_buffer = NULL;
 
@@ -126,15 +143,35 @@ static size_t cmd_length = 0;
 static int verbosity = 0;
 
 
+/* Debugging printf */
+void dprintf(int level, const char *format, ...)
+{
+    va_list ap;
+
+    /* Bail if the statement is below the debugging threshold */
+    if (verbosity < level) {
+        return;
+    }
+
+    /* Do the varargs thing */
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+
+    fflush(stderr);
+}
+
 /* Print out a usage message */
-static void usage(int argc, char *argv[])
+static void usage()
 {
     fprintf(stderr,
 	    "usage: %s [OPTION]... filename\n"
+	    "usage: %s [OPTION]... -u URL\n"
 	    "  -b browser,     --browser=browser\n"
 	    "  -d,             --debug[=level]\n"
+	    "  -u,             --url=url\n"
 	    "  -v,             --version\n"
-	    "  -h,             --help\n", argv[0]);
+	    "  -h,             --help\n", progname, progname);
 }
 
 /* Appends a character to the command buffer */
@@ -143,10 +180,7 @@ static void append_char(int ch)
     /* Make sure there's enough room */
     if (! (cmd_index < cmd_length))
     {
-	if (2 < verbosity)
-	{
-	    printf("growing buffer\n");
-	}
+	dprintf(3, "growing buffer\n");
 
 	/* Double the buffer size */
 	cmd_length *= 2;
@@ -279,11 +313,7 @@ char *invoke(char *browser, char *url)
 		append_char('\0');
 
 		/* Invoke the command */
-		if (0 < verbosity)
-		{
-		    printf("exec: %s\n", cmd_buffer);
-		    fflush(stdout);
-		}
+		dprintf(1, "exec: %s\n", cmd_buffer);
 
 		if ((status = system(cmd_buffer)) < 0)
 		{
@@ -294,19 +324,11 @@ char *invoke(char *browser, char *url)
 		/* If successful return NULL */
 		if (WEXITSTATUS(status) == 0)
 		{
-		    if (1 < verbosity)
-		    {
-			printf("ok\n");
-		    }
-
+		    dprintf(2, "ok\n");
 		    return NULL;
 		}
 
-		if (1 < verbosity)
-		{
-		    printf("failed: %d\n", WEXITSTATUS(status));
-		}
-
+		dprintf(2, "failed: %d\n", WEXITSTATUS(status));
 		return ch == '\0' ? point : point + 1;
 	    }
 
@@ -390,10 +412,22 @@ int main(int argc, char *argv[])
 {
     char *browser;
     char buffer[MAX_URL_SIZE + 1];
-    char *filename;
+    struct stat statbuf;
+    char *url = NULL;
+    char *filename = NULL;
     FILE *file;
     size_t length;
     char *point;
+
+    /* Extract the program name from argv[0] */
+    if ((progname = strrchr(argv[0], '/')) == NULL)
+    {
+	progname = argv[0];
+    }
+    else
+    {
+	progname++;
+    }
 
     /* Get the browser string from the environment */
     if ((browser = getenv(ENV_BROWSER)) == NULL)
@@ -445,8 +479,60 @@ int main(int argc, char *argv[])
 	    /* --help or -h */
 	    case 'h':
 	    {
-		usage(argc, argv);
+		usage();
 		exit(0);
+	    }
+
+	    /* --url= or -u */
+	    case 'u':
+	    {
+		/* Determine if we should view a local file or a remote one */
+		if (stat(optarg, &statbuf) < 0)
+		{
+		    dprintf(2, "%s: unable to stat file: %s\n", progname, optarg);
+		    url = strdup(optarg);
+		}
+		else if ((statbuf.st_mode & S_IRUSR) == 0)
+		{
+		    dprintf(2, "%s: unable to read file: %s\n", progname, optarg);
+		    url = strdup(optarg);
+		}
+		else
+		{
+		    dprintf(3, "%s: creating file URL: %s\n", progname, optarg);
+		    if (optarg[0] == '/')
+		    {
+			length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
+			if ((url = (char *)malloc(length)) == NULL)
+			{
+			    perror("malloc() failed");
+			    exit(1);
+			}
+
+			snprintf(url, length, FILE_URL_PREFIX "%s", optarg);
+		    }
+		    else
+		    {
+			/* Construct an absolute path */
+			if (getcwd(buffer, MAX_URL_SIZE) == NULL)
+			{
+			    perror("Unable to determine current directory");
+			    exit(1);
+			}
+
+			length = sizeof(FILE_URL_PREFIX) + strlen(buffer) + 1 + strlen(optarg);
+			if ((url = (char *)malloc(length)) == NULL)
+			{
+			    perror("malloc() failed");
+			    exit(1);
+			}
+
+			snprintf(url, length, FILE_URL_PREFIX "%s/%s", buffer, optarg);
+		    }
+		}
+
+		dprintf(2, "%s: raw URL: %s\n", progname, url);
+		break;
 	    }
 
 	    /* --version or -v */
@@ -459,7 +545,7 @@ int main(int argc, char *argv[])
 	    /* Unsupported option */
 	    case '?':
 	    {
-		usage(argc, argv);
+		usage();
 		exit(1);
 	    }
 
@@ -471,62 +557,30 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /* Make sure there's a filename */
-    if (! (optind < argc))
+    /* If no URL provided then make sure there's a filename */
+    if (url == NULL)
     {
-	usage(argc, argv);
-	exit(1);
-    }
+	if (! (optind < argc))
+	{
+	    usage();
+	    exit(1);
+	}
 
-    /* Record the filename */
-    filename = argv[optind++];
+	/* Get the filename */
+	filename = argv[optind++];
+    }
 
     /* Make sure there are no more arguments */
     if (optind < argc)
     {
-	usage(argc, argv);
+	usage();
 	exit(1);
     }
 
-    /* Check the filename to see if it looks like a URL.  Use the
-     * heuristic of `:' before `/' indicates an URL */
-    for (point = filename; *point != 0; point++)
+    /* Extract the URL from the file */
+    if (filename != NULL)
     {
-	/* Looks like a URL? */
-	if (*point == ':')
-	{
-	    if (1 < verbosity)
-	    {
-		printf("Using URL from command-line: %s\n", filename);
-	    }
-
-	    /* Make sure the URL isn't obscenely long */
-	    length = strlen(filename);
-	    if (! (length < MAX_URL_SIZE))
-	    {
-		fprintf(stderr, "URL exceeds maximum URL size of %d\n", MAX_URL_SIZE);
-		exit(1);
-	    }
-
-	    /* Copy it into the buffer */
-	    memcpy(buffer, filename, length + 1);
-	    break;
-	}
-
-	/* Looks like a filename? */
-	if (*point == '/')
-	{
-	    point = NULL;
-	    break;
-	}
-    }
-
-    if (point == NULL || *point == 0)
-    {
-	if (1 < verbosity)
-	{
-	    printf("reading URL from %s\n", filename);
-	}
+	dprintf(3, "%s: reading URL from %s\n", progname, filename);
 
 	/* Read the URL from the file */
 	if ((file = fopen(filename, "r")) == NULL)
@@ -539,13 +593,19 @@ int main(int argc, char *argv[])
 	length = fread(buffer, 1, MAX_URL_SIZE, file);
 	buffer[length] = 0;
 
-	if (1 < verbosity)
-	{
-	    printf("raw URL: %s\n", buffer);
-	}
+	dprintf(2, "%s: raw URL: %s\n", progname, buffer);
 
 	/* Clean up */
 	fclose(file);
+
+	/* Duplicate its contents */
+	if ((url = strdup(buffer)) == NULL)
+	{
+	    perror("malloc() failed");
+	    exit(1);
+	}
+
+	strcpy(url, buffer);
     }
 
     /* Initialize the command buffer */
@@ -560,12 +620,14 @@ int main(int argc, char *argv[])
     point = browser;
     while (*point != '\0')
     {
-	point = invoke(point, buffer);
+	point = invoke(point, url);
 	if (point == NULL)
 	{
 	    exit(0);
 	}
     }
 
+    /* Clean up */
+    free(url);
     exit(1);
 }
