@@ -10,10 +10,6 @@ AC_PROG_LN_S
 
 dnl Checks for libraries.
 
-# Check to see if we need -lnsl and/or -lsocket to use sockets.
-AC_SEARCH_LIBS(connect, socket)
-AC_SEARCH_LIBS(gethostbyname, nsl)
-
 # See if we need -lcrypt for the crypt library
 AC_SEARCH_LIBS(crypt, crypt)
 
@@ -28,8 +24,10 @@ if test "$no_x" = yes ; then
     exit 1
 fi
 
+# Add the X11 stuff to the places it belongs
 CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-LIBS="$LIBS $X_LIBS"
+LDFLAGS="$LD_FLAGS $X_LIBS"
+LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
 
 # Check to see if we can find the X library.
 AC_CHECK_LIB(X11, XOpenDisplay)
