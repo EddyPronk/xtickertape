@@ -94,7 +94,9 @@
 ! Scroller action translations
 !
 Tickertape.scroller.translations: #override \n\
-	<Btn1Down>: menu() \n\
+	<Btn1Down>: draginit()\n\
+	<Btn1Motion>: drag()\n\
+	<Btn1Up>: menu() \n\
 	<Btn2Down>: decodeMime() \n\
 	<Btn3Down>: expire() \n\
 	<Key>d: expire()\n\
