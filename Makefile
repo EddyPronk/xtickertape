@@ -31,7 +31,7 @@
 # History:
 #           08-Feb-1996  Bill Segall (bill) : created
 #
-# "@(#)$RCSfile: Makefile,v $ $Revision: 1.14 $"
+# "@(#)$RCSfile: Makefile,v $ $Revision: 1.15 $"
 #
 #############################################################################
 
@@ -64,7 +64,7 @@ MAN_FILES = ""
 
 # Dependency stuff. The include file needs to exist first
 depend: config
-	makedepend -f $(ARCHITECTURE)/include/depend.inc $(MAKEDEPFLAGS) $(C_SOURCE)
+	-$(MAKEDEPEND) $(MAKEDEPFLAGS) -DPYTHON1_5 $(PYTHON1_5_INCLUDES) $(C_SOURCE) > $(ARCHITECTURE)/include/depend.inc
 
 undepend:
 	@$(RM) $(ARCHITECTURE)/include/depend.inc
