@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.8 1998/02/10 23:40:33 phelps Exp $ */
+/* $Id: Control.c,v 1.9 1998/08/26 06:00:25 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -467,6 +467,25 @@ void setTimeout(ControlPanel self, int timeout)
     setLabel(self -> timeout, buffer);
 }
 
+
+/* Helper function for subscriptionForGroup */
+static void MatchSubscription(Subscription self, char *group, Subscription *result)
+{
+    if (strcmp(Subscription_getGroup(self), group) == 0)
+    {
+	*result = self;
+    }
+}
+
+/* Answers the subscription matching the given group */
+static Subscription subscriptionForGroup(ControlPanel self, char *group)
+{
+    Subscription result = NULL;
+    List_doWithWith(self -> subscriptions, MatchSubscription, group, &result);
+    return result;
+}
+
+
 /*
  * Actions
  */
@@ -552,9 +571,20 @@ void ControlPanel_free(ControlPanel self)
 
 
 /* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self)
+void ControlPanel_show(ControlPanel self, Message message)
 {
     SANITY_CHECK(self);
+
+    /* If a Message has been provided then select its group in the menu */
+    if (message)
+    {
+	Subscription subscription = subscriptionForGroup(self, Message_getGroup(message));
+	if (Subscription_isInMenu(subscription))
+	{
+	    setGroup(self, Subscription_getGroup(subscription));
+	}
+    }
+
     XtPopup(self -> top, XtGrabNone);
 }
 

@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.3 1997/02/16 07:05:17 phelps Exp $ */
+/* $Id: Control.h,v 1.4 1998/08/26 06:00:40 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -22,7 +22,7 @@ ControlPanel ControlPanel_alloc(
 void ControlPanel_free(ControlPanel self);
 
 /* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self);
+void ControlPanel_show(ControlPanel self, Message view);
 
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self);
