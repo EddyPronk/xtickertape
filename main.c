@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.112 2002/07/02 15:19:22 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.113 2002/07/03 12:17:54 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -133,7 +133,7 @@ static tickertape_t tickertape;
 #if defined(ELVIN_VERSION_AT_LEAST)
 #if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* The global elvin client information */
-elvin_client_t client;
+elvin_client_t client = NULL;
 #else
 #error "Unsupported Elvin library version"
 #endif
