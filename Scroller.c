@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.85 2000/04/04 07:00:06 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.86 2000/04/05 12:43:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1198,10 +1198,6 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 	XClipBox(region, &rectangle);
 	Paint(self, rectangle.x, 0, rectangle.width, self -> core.height);
     }
-    else
-    {
-	printf("*"); fflush(stdout);
-    }
 #endif
 }
 
@@ -1218,8 +1214,24 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	return;
     }
 
-    /* Repaint the exposed rectangle */
+    /* Coerce the event and paint it */
     g_event = (XGraphicsExposeEvent *)event;
+
+#ifdef DEBUG_GLYPH
+    {
+	XGCValues values;
+
+	values.foreground = random();
+	values.clip_mask = None;
+	XChangeGC(g_event ->display, self -> scroller.gc, GCForeground | GCClipMask, &values);
+	XFillRectangle(g_event -> display,
+		       g_event -> drawable,
+		       self -> scroller.gc,
+		       g_event -> x, g_event -> y,
+		       g_event -> width, g_event -> height);
+    }
+#endif
+
     Paint(self, g_event -> x, 0, g_event -> width, self -> core.height);
 #endif
 }
