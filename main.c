@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.81 2000/05/01 09:04:24 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.82 2000/07/06 00:24:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -56,6 +56,7 @@ static const char cvsid[] = "$Id: main.c,v 1.81 2000/05/01 09:04:24 phelps Exp $
 #include "mask.xbm"
 
 #define DEFAULT_DOMAIN "no.domain"
+#define DEFAULT_SCOPE "DEFAULT"
 
 /* The list of long options */
 static struct option long_options[] =
@@ -175,6 +176,7 @@ static void parse_args(
     int choice;
 
     /* Initialize arguments to sane values */
+    handle -> scope = DEFAULT_SCOPE;
     *user_return = NULL;
     *domain_return = NULL;
     *ticker_dir_return = NULL;
