@@ -1,3 +1,7 @@
+1999-09-01  Ted Phelps <phelps@pobox.com>
+
+	* history.c: fixed an obscure threading bug.
+
 1999-08-30  Ted Phelps  <phelps@pobox.com>
 
 	* Version-1.6 released
