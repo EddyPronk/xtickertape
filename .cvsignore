@@ -5,6 +5,7 @@
 .pure
 Makefile
 Makefile.in
+XTickertape.ad
 aclocal.m4
 alpha-dec-osfV3.2
 alpha-dec-osfV4.0
