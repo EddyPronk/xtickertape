@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.4 1998/10/21 04:03:47 arnold Exp $
+ * $Id: Ticker.c,v 1.5 1998/10/21 05:24:39 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -15,10 +15,10 @@
 #include "ElvinConnection.h"
 
 #ifdef ORBIT
-#define VERSION "1.3.0 (orbit)"
+#define VERSION "1.3.1 (orbit)"
 #include "OrbitSubscription.h"
 #else /* ORBIT */
-#define VERSION "1.3.0"
+#define VERSION "1.3.1"
 #endif /* ORBIT */
 
 
@@ -174,7 +174,12 @@ static void Error(Tickertape self, char *message)
     /* Publish error messages onto the special group tickertape */
     ReceiveMessage(
 	self,
-	Message_alloc(NULL, "internal", "tickertape", message, 10, NULL, NULL, 0, 0));
+	Message_alloc(
+	    NULL,
+	    "internal", "tickertape",
+	    message, 10,
+	    NULL, NULL,
+	    0, 0));
 
     /* Republish the startup notification */
     PublishStartupNotification(self);
