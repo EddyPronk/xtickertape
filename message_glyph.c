@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.2 1999/06/21 04:44:54 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.3 1999/06/21 12:02:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -76,12 +76,72 @@ struct message_glyph
 
     /* The width of the receiver's message string */
     unsigned int string_width;
+
+    /* The receiver's timer id */
+    XtIntervalId timer;
 };
 
+
+/* Static function headers */
+static void set_clock(message_glyph_t self);
+
+
+/* This is called when the colors should fade */
+static void tick(message_glyph_t self, XtIntervalId *ignored)
+{
+    unsigned int max_levels;
+
+    self -> timer = 0;
+    max_levels = ScGetFadeLevels(self -> widget);
+
+    /* Don't get older than we have to */
+    if (self -> fade_level + 1 < max_levels)
+    {
+	self -> fade_level++;
+	set_clock(self);
+    }
+    else
+    {
+	self -> has_expired = 1;
+    }
+
+    /* Tell the scroller to repaint this glyph */
+    ScRepaintGlyph(self -> widget, (glyph_t) self);
+}
+
+/* Sets the timer to call tick() when the colors should fade */
+static void set_clock(message_glyph_t self)
+{
+    int duration;
+
+    /* Default to 1/20th of a second delay on expired messages */
+    if (self -> has_expired)
+    {
+	duration = 50;
+    }
+    else
+    {
+	duration = 60 * 1000 * Message_getTimeout(self -> message) / 
+	    ScGetFadeLevels(self -> widget);
+    }
+
+    self -> timer = ScStartTimer(self -> widget, duration, (XtTimerCallbackProc)tick, (XtPointer)self);
+}
+
+/* Clears the timer */
+static void clear_clock(message_glyph_t self)
+{
+    if ((self -> timer) != 0)
+    {
+	ScStopTimer(self -> widget, self -> timer);
+	self -> timer = 0;
+    }
+}
 
 /* Free everything except the message */
 static void do_free(message_glyph_t self)
 {
+    clear_clock(self);
     free(self);
 }
 
@@ -188,7 +248,11 @@ static void do_expire(message_glyph_t self)
     if (! self -> has_expired)
     {
 	self -> has_expired = True;
-	ScGlyphExpired(self -> widget, (glyph_t) self);
+	ScRepaintGlyph(self -> widget, (glyph_t) self);
+
+	/* Restart the timer so that we quickly fade */
+	clear_clock(self);
+	set_clock(self);
     }
 }
 
@@ -281,6 +345,8 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
 	self -> separator_width +
 	self -> string_width +
 	SPACING;
+
+    set_clock(self);
 
     return (glyph_t) self;
 }
