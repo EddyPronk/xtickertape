@@ -72,8 +72,18 @@ static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 /* The `+' subroutine */
 static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
 {
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "prim_plus");
-    return 0;
+    uint32_t i;
+
+    /* Add up all of the args */
+    for (i = 1; i < argc; i++)
+    {
+	if (! vm_add(vm, error))
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
 }
 
 /* Prints out the stack */
