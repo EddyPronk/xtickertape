@@ -112,6 +112,8 @@
 # Values can be lists
 <value> ::= LBRACKET <values> RBRACKET
 	[function]
+<value> ::= LBRACKET RBRACKET
+	[function]
 
 # Values are also returned from functions
 <value> ::= ID LPAREN <values> RPAREN
