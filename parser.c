@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.26 2000/11/09 01:28:06 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.27 2000/11/17 09:48:13 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,8 +40,9 @@ static const char cvsid[] = "$Id: parser.c,v 2.26 2000/11/09 01:28:06 phelps Exp
 #include <elvin/elvin.h>
 #include <elvin/convert.h>
 #include <elvin/memory.h>
+#include <elvin/errors/elvin.h>
 #include "errors.h"
-#include "sexp.h"
+#include "vm.h"
 #include "parser.h"
 
 #define INITIAL_BUFFER_SIZE 256
@@ -143,10 +144,10 @@ struct parser
     int *state_top;
 
     /* The receiver's value stack */
-    sexp_t *value_stack;
+    vm_object_t value_stack;
 
     /* The top of the value stack */
-    sexp_t *value_top;
+    int value_top;
 
     /* The receiver's lexical state */
     lexer_state_t state;
@@ -166,16 +167,16 @@ struct parser
 
 
 /* The reduction function type */
-typedef sexp_t (*reduction_t)(parser_t self, elvin_error_t error);
+typedef int (*reduction_t)(parser_t self, vm_object_t *result, elvin_error_t error);
 
 /* The reduction functions */
-static sexp_t make_list(parser_t self, elvin_error_t error);
-static sexp_t make_dot_list(parser_t self, elvin_error_t error);
-static sexp_t make_nil(parser_t self, elvin_error_t error);
-static sexp_t make_quote(parser_t self, elvin_error_t error);
-static sexp_t identity(parser_t self, elvin_error_t error);
-static sexp_t extend_cons(parser_t self, elvin_error_t error);
-static sexp_t make_cons(parser_t self, elvin_error_t error);
+static int make_list(parser_t self, vm_object_t *object, elvin_error_t error);
+static int make_dot_list(parser_t self, vm_object_t *object, elvin_error_t error);
+static int make_nil(parser_t self, vm_object_t *object, elvin_error_t error);
+static int make_quote(parser_t self, vm_object_t *object, elvin_error_t error);
+static int identity(parser_t self, vm_object_t *object, elvin_error_t error);
+static int extend_cons(parser_t self, vm_object_t *object, elvin_error_t error);
+static int make_cons(parser_t self, vm_object_t *object, elvin_error_t error);
 
 #include "grammar.h"
 
@@ -211,9 +212,10 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error);
 /* Increase the size of the stack */
 static int grow_stack(parser_t self, elvin_error_t error)
 {
+#if 0
     size_t length = (self -> state_end - self -> state_stack) * 2;
     int *state_stack;
-    sexp_t *value_stack;
+    vm_object_t *value_stack;
 
     /* Allocate memory for the new state stack */
     if ((state_stack = (int *)ELVIN_REALLOC(
@@ -223,8 +225,8 @@ static int grow_stack(parser_t self, elvin_error_t error)
     }
 
     /* Allocate memory for the new value stack */
-    if ((value_stack = (sexp_t *)ELVIN_REALLOC(
-	self -> value_stack, length * sizeof(sexp_t), error)) == NULL)
+    if ((value_stack = (vm_object_t *)ELVIN_REALLOC(
+	self -> value_stack, length * sizeof(vm_object_t), error)) == NULL)
     {
 	return 0;
     }
@@ -238,10 +240,13 @@ static int grow_stack(parser_t self, elvin_error_t error)
     self -> value_top = self -> value_top - self -> value_stack + value_stack;
     self -> value_stack = value_stack;
     return 1;
+#endif
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "grow_stack()");
+    return 0;
 }
 
 /* Push a state and value onto the stack */
-static int push(parser_t self, int state, sexp_t value, elvin_error_t error)
+static int push(parser_t self, int state, vm_object_t value, elvin_error_t error)
 {
     /* Grow the stack if necessary */
     if (! (self -> state_top < self -> state_end))
@@ -256,7 +261,10 @@ static int push(parser_t self, int state, sexp_t value, elvin_error_t error)
     *(++self -> state_top) = state;
 
     /* The value stack is post-increment */
-    *(self -> value_top++) = value;
+    if (! array_set(self -> value_stack, self -> value_top++, value, error))
+    {
+	return 0;
+    }
 
     return 1;
 }
@@ -291,40 +299,34 @@ static int top(parser_t self)
 /* Free everything on the stack */
 static void clean_stack(parser_t self, elvin_error_t error)
 {
-    sexp_t *pointer;
-
-    /* Go through everything on the stack */
-    for (pointer = self -> value_stack; pointer < self -> value_top; pointer++)
-    {
-	if (*pointer != NULL)
-	{
-	    sexp_free(*pointer, error);
-	}
-    }
-
     /* Reset the stack pointers */
     self -> state_top = self -> state_stack;
-    self -> value_top = self -> value_stack;
+    self -> value_top = 0;
 }
 
 /* This is called when we have an actual expression */
 static int accept_input(parser_t self, elvin_error_t error)
 {
-    sexp_t sexp = self -> value_top[0];
-    int result;
+    vm_object_t result;
+
+    /* Look up the top of the stack */
+    if (! array_get(self -> value_stack, 0, result, error))
+    {
+	return 0;
+    }
 
     /* Call the callback */
-    result = self -> callback(self -> rock, self, sexp, error);
-
-    /* Free the sexp */
-    result = sexp_free(sexp, result ? error : NULL) && result;
-    return result;
+    return self -> callback(self -> rock, self, result, error);
 }
 
 
 /* Move the parser state along as far as it can go with the addition
  * of another token */
-static int shift_reduce(parser_t self, terminal_t terminal, sexp_t value, elvin_error_t error)
+static int shift_reduce(
+    parser_t self,
+    terminal_t terminal,
+    vm_object_t value,
+    elvin_error_t error)
 {
     int action = sr_table[top(self)][terminal];
 
@@ -361,7 +363,7 @@ static int shift_reduce(parser_t self, terminal_t terminal, sexp_t value, elvin_
     {
 	struct production *production;
 	int reduction;
-	sexp_t result;
+	vm_object_t result;
 
 	/* Locate the production rule to use to do the reduction */
 	reduction = REDUCTION(action);
@@ -371,7 +373,7 @@ static int shift_reduce(parser_t self, terminal_t terminal, sexp_t value, elvin_
 	pop(self, production -> count, error);
 
 	/* Reduce by calling the production rule's function */
-	if ((result = production -> reduction(self, error)) == NULL)
+	if (! production -> reduction(self, &result, error))
 	{
 	    /* Put the args back onto the stack */
 	    unpop(self, production -> count, error);
@@ -424,31 +426,31 @@ static int accept_eof(parser_t self, elvin_error_t error)
 /* Update the parser state to reflect the reading of a STRING token */
 static int accept_string(parser_t self, char *string, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Construct a string from the token */
-    if ((sexp = string_alloc(string, error)) == NULL)
+    if (! string_alloc(string, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 /* Update the parser state to reflect the reading of a CHAR token */
 static int accept_char(parser_t self, int ch, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Construct a character sexp from the character */
-    if ((sexp = char_alloc(ch, error)) == NULL)
+    if (! char_alloc(ch, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 /* Update the parser state to reflect the reading of a DOT token */
@@ -460,16 +462,16 @@ static int accept_dot(parser_t self, elvin_error_t error)
 /* Update the parser state to reflect the reading of an INT32 token */
 static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Construct an sexp from the token */
-    if ((sexp = int32_alloc(value, error)) == NULL)
+    if (! integer_alloc(value, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 /* Transform a string into an integer and accept it */
@@ -488,16 +490,16 @@ static int accept_int32_string(parser_t self, char *string, elvin_error_t error)
 /* Update the parser state to reflect the reading of an INT64 token */
 static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Construct an sexp from the token */
-    if ((sexp = int64_alloc(value, error)) == NULL)
+    if (! long_alloc(value, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 /* Transform a string into an int64 and accept it */
@@ -517,16 +519,16 @@ static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
 /* Update the parser state to reflect the reading of an REAL64 token */
 static int accept_real64(parser_t self, double value, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Construct an sexp from the token */
-    if ((sexp = float_alloc(value, error)) == NULL)
+    if (! float_alloc(value, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 /* Translate the string into a double-precision floating point number and accept it */
@@ -555,24 +557,24 @@ static int accept_real64_string(parser_t self, char *string, elvin_error_t error
 /* Update the parser state to reflect the reading of an SYMBOL token */
 static int accept_symbol(parser_t self, char *string, elvin_error_t error)
 {
-    sexp_t sexp;
+    vm_object_t object;
 
     /* Check for the magic `nil' token */
     if (strcmp(string, "nil") == 0)
     {
-	if ((sexp = nil_alloc(error)) == NULL)
+	if (! nil_alloc(object, error))
 	{
 	    return 0;
 	}
     }
     /* Otherwise construct an sexp from the token */
-    else if ((sexp = symbol_alloc(string, error)) == NULL)
+    else if (! symbol_alloc(string, object, error))
     {
 	return 0;
     }
 
     /* Do the parser thing */
-    return shift_reduce(self, TT_ATOM, sexp, error);
+    return shift_reduce(self, TT_ATOM, object, error);
 }
 
 
@@ -1255,39 +1257,40 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error)
 
 
 /* Make a list out of cons cells by reversing them */
-static sexp_t make_list(parser_t self, elvin_error_t error)
+static int make_list(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    sexp_t nil;
-
     /* Allocate a nil for the end of the list */
-    if ((nil = nil_alloc(error)) == NULL)
+    if (! nil_alloc(*object, error))
     {
-	return NULL;
+	return 0;
     }
 
-    return cons_reverse(self -> value_top[1], nil, error);
+/*    return cons_reverse(self -> value_top[1], object, error);*/
+    return 1;
 }
 
 /* Make a list out of cons cells by reversing them */
-static sexp_t make_dot_list(parser_t self, elvin_error_t error)
+static int make_dot_list(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    return cons_reverse(self -> value_top[1], self -> value_top[3], error);
+/*    return cons_reverse(self -> value_top[1], self -> value_top[3], error);*/
+    return nil_alloc(*object, error);
 }
 
 /* `LPAREN RPAREN' reduces to `nil' */
-static sexp_t make_nil(parser_t self, elvin_error_t error)
+static int make_nil(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    return nil_alloc(error);
+    return nil_alloc(*object, error);
 }
 
 /* QUOTE <expression> is (quote <expr>) */
-static sexp_t make_quote(parser_t self, elvin_error_t error)
+static int make_quote(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    sexp_t quote, nil;
-    sexp_t cons;
+#if 0
+    vm_object_t quote, nil;
+    vm_object_t cons;
 
     /* Grab nil */
-    if ((nil = nil_alloc(error)) == NULL)
+    if (! nil_alloc(nil, error))
     {
 	return NULL;
     }
@@ -1299,38 +1302,62 @@ static sexp_t make_quote(parser_t self, elvin_error_t error)
     }
 
     /* Allocate the `quote' symbol */
-    if ((quote = symbol_alloc("quote", error)) == NULL)
+    if (! symbol_alloc("quote", quote, error))
     {
 	return NULL;
     }
 
     /* Prepend it to the list */
     return cons_alloc(quote, cons, error);
+#endif
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "make_quote");
+    return 0;
 }
 
 /* No transformation required for this reduction */
-static sexp_t identity(parser_t self, elvin_error_t error)
+static int identity(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    return self -> value_top[0];
+    return array_get(self -> value_stack, self -> value_top, *object, error);
 }
 
 /* Build a list backwards (it's more efficient that way :-P) */
-static sexp_t extend_cons(parser_t self, elvin_error_t error)
+static int extend_cons(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    return cons_alloc(self -> value_top[0], self -> value_top[1], error);
+    vm_object_t car, cdr;
+
+    /* Get the car of the cons cell from the stack */
+    if (! array_get(self -> value_stack, self -> value_top, car, error))
+    {
+	return 0;
+    }
+
+    /* Get the cdr of the cons cell from the stack */
+    if (! array_get(self -> value_stack, self -> value_top + 1, cdr, error))
+    {
+	return 0;
+    }
+
+    return cons_alloc(*object, car, cdr, error);
 }
 
 /* Create a cons cell which only has a car so far */
-static sexp_t make_cons(parser_t self, elvin_error_t error)
+static int make_cons(parser_t self, vm_object_t *object, elvin_error_t error)
 {
-    sexp_t nil;
+    vm_object_t nil, cdr;
 
-    if ((nil = nil_alloc(error)) == NULL)
+    /* Look up nil */
+    if (! nil_alloc(nil, error))
     {
-	return NULL;
+	return 0;
     }
 
-    return cons_alloc(nil, self -> value_top[0], error);
+    /* Get the cdr of the cons cell from the stack */
+    if (! array_get(self -> value_stack, self -> value_top, cdr, error))
+    {
+	return 0;
+    }
+
+    return cons_alloc(*object, nil, cdr, error);
 }
 
 
@@ -1362,7 +1389,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t erro
     self -> state_end = NULL;
     self -> state_top = NULL;
     self -> value_stack = NULL;
-    self -> value_top = NULL;
+    self -> value_top = 0;
     self -> state = lex_start;
     self -> token = NULL;
     self -> token_end = NULL;
@@ -1385,8 +1412,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t erro
     }
 
     /* Allocate memory for the value stack */
-    if ((self -> value_stack = (sexp_t *)ELVIN_CALLOC(
-	INITIAL_STACK_SIZE, sizeof(sexp_t), error)) == NULL)
+    if (! array_alloc(INITIAL_STACK_SIZE, self -> value_stack, error))
     {
 	parser_free(self, error);
 	return NULL;
@@ -1398,7 +1424,6 @@ parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t erro
     self -> state_top = self -> state_stack;
     (*self -> state_top) = 0;
 
-    self -> value_top = self -> value_stack;
     return self;
 }
 
