@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.1 2001/06/15 12:20:14 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.2 2001/07/13 06:35:33 phelps Exp $";
 #endif /* lint */
 
 
@@ -51,6 +51,8 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.1 2001/06/15 12:20:14 ph
  userPixel	     UserPixel		Pixel		Green
  stringPixel	     StringPixel	Pixel		Red
  separatorPixel	     SeparatorPixel	Pixel		Black
+ marginWidth	     MarginWidth	Dimension	5
+ marginHeight	     MarginHeight	Dimension	5
 
  background	     Background		Pixel		XtDefaultBackground
  border		     BorderColor	Pixel		XtDefaultForeground
@@ -96,6 +98,18 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.1 2001/06/15 12:20:14 ph
 #endif
 #ifndef XtCSeparatorPixel
 # define XtCSeparatorPixel "SeparatorPixel"
+#endif
+#ifndef XtNmarginWidth
+# define XtNmarginWidth "marginWidth"
+#endif
+#ifndef XtCMarginWidth
+# define XtCMarginWidth "MarginWidth"
+#endif
+#ifndef XtNmarginHeight
+# define XtNmarginHeight "marginHeight"
+#endif
+#ifndef XtCMarginHeight
+# define XtCMarginHeight "MarginHeight"
 #endif
 
 

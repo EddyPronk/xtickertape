@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.8 2001/07/12 08:45:49 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.9 2001/07/13 06:35:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -119,6 +119,18 @@ static XtResource resources[] =
     {
 	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
 	offset(history.separator_pixel), XtRString, XtDefaultForeground
+    },
+
+    /* Dimension margin_width */
+    {
+	XtNmarginWidth, XtCMarginWidth, XtRDimension, sizeof(Dimension),
+	offset(history.margin_width), XtRImmediate, (XtPointer)5
+    },
+
+    /* Dimension margin_height */
+    {
+	XtNmarginHeight, XtCMarginHeight, XtRDimension, sizeof(Dimension),
+	offset(history.margin_height), XtRImmediate, (XtPointer)5
     }
 };
 #undef offset
@@ -483,15 +495,14 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 {
     HistoryWidget self = (HistoryWidget)widget;
     Widget scrollbar;
-    int margin = 10;
 
     /* Set the initial width/height if none are supplied */
     self -> core.width = 400;
     self -> core.height = 80;
 
     /* Set our initial dimensions to be the margin width */
-    self -> history.width = 2 * margin;
-    self -> history.height = 2 * margin;
+    self -> history.width = (long)self -> history.margin_width * 2;
+    self -> history.height = (long)self -> history.margin_height * 2;
 
     /* Start with an empty delta queue */
     self -> history.dqueue = NULL;
@@ -638,8 +649,9 @@ static void realize(
     message_view_get_sizes(self -> history.mv, &sizes);
 
     /* Record our sizes */
-    self -> history.width = sizes.width + 2 * 10;
-    self -> history.height = sizes.ascent + sizes.descent + 2 * 10;
+    self -> history.width = sizes.width + (long)self -> history.margin_width * 2;
+    self -> history.height = sizes.ascent + sizes.descent +
+	(long)self -> history.margin_height * 2;
 
     /* Update the scrollbars */
     update_scrollbars(widget);
@@ -651,6 +663,8 @@ static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
     Display *display = XtDisplay((Widget)self);
     Window window = XtWindow((Widget)self);
     delta_queue_t previous, item;
+    long xmargin = (long)self -> history.margin_width;
+    long ymargin = (long)self -> history.margin_height;
 #ifdef DEBUG_DELTA_QUEUE
     int flag = 0;
 #endif /* DEBUG_DELTA_QUEUE */
@@ -701,8 +715,8 @@ static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
 	XChangeGC(display, self -> history.gc, GCForeground, &values);
 	XFillRectangle(
 	    display, window, self -> history.gc,
-	    10 - self -> history.x, 10 - self -> history.y,
-	    self -> history.width - 20, self -> history.height - 20);
+	    xmargin - self -> history.x, ymargin - self -> history.y,
+	    self -> history.width - xmargin * 2, self -> history.height - ymargin * 2);
 
 	/* If we've been shifted then draw the bounding box */
 	if (flag)
@@ -726,8 +740,9 @@ static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
 	XChangeGC(display, self -> history.gc, GCForeground, &values);
 	XDrawRectangle(
 	    display, window, self -> history.gc,
-	    10 - self -> history.x, 10 - self -> history.y,
-	    self -> history.width - 20, self -> history.height - 20);
+	    xmargin - self -> history.x, ymargin - self -> history.y,
+	    self -> history.width - xmargin * 2 - 1,
+	    self -> history.height - ymargin * 2 - 1);
     }
 #endif /* DEBUG_DELTA_QUEUE */
 
@@ -736,8 +751,8 @@ static void paint(HistoryWidget self, unsigned long id, XRectangle *bbox)
 	self -> history.mv, display, window, self -> history.gc,
 	self -> history.group_pixel, self -> history.user_pixel,
 	self -> history.string_pixel, self -> history.separator_pixel,
-	10 - self -> history.x,
-	10 - self -> history.y + self -> history.font -> ascent,
+	xmargin - self -> history.x,
+	ymargin - self -> history.y + self -> history.font -> ascent,
 	bbox);
 }
 
@@ -767,9 +782,6 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     while (1)
     {
 	XGraphicsExposeEvent *g_event;
-
-	/* See if the server has synced with our local state */
-	/* FIX THIS: this is still necessary */
 
 	/* Stop drawing stuff if the widget is obscured */
 	if (event -> type == NoExpose)

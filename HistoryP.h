@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.7 2001/07/12 08:45:21 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.8 2001/07/13 06:35:33 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -62,13 +62,34 @@ typedef struct delta_queue *delta_queue_t;
 typedef struct
 {
     /* Resources */
+
+    /* When are these called? */
     XtCallbackList callbacks;
+
+    /* The functions to call when an attachment is to be displayed */
     XtCallbackList attachment_callbacks;
+
+    /* The font to use when displaying the history messages */
     XFontStruct *font;
+
+    /* The color to use when drawing group strings */
     Pixel group_pixel;
+
+    /* The color to use when drawing user strings */
     Pixel user_pixel;
+
+    /* The color to use when drawing message strings */
     Pixel string_pixel;
+
+    /* The color to use when drawing the separator */
     Pixel separator_pixel;
+
+    /* The width of the margin */
+    Dimension margin_width;
+
+    /* The height of the margin */
+    Dimension margin_height;
+
     
     /* Private state */
 
