@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.72 1999/12/16 07:52:10 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.73 2000/01/11 02:31:38 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -379,6 +379,8 @@ int main(int argc, char *argv[])
 	context,
 	(elvin_add_io_handler_func_t)XtAppAddInput,
 	(void *)XtInputReadMask,
+	(void *)XtInputWriteMask,
+	(void *)XtInputExceptMask,
 	(elvin_del_io_handler_func_t)XtRemoveInput,
 	context,
 	(elvin_add_timeout_func_t)XtAppAddTimeOut,
