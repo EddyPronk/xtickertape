@@ -33,9 +33,9 @@
 
 # A subscription list is one or more subscriptions
 <subscription-list> ::= <subscription-list> <subscription>
-	[extend_sub_list]
+	[append]
 <subscription-list> ::= <subscription>
-	[make_sub_list]
+	[identity]
 
 # Subscriptions are a tagged sub definition
 <subscription> ::= <tag> LBRACE <statements> RBRACE SEMI
@@ -45,18 +45,18 @@
 
 # A tag is simply an ID followed by a COLON
 <tag> ::= ID COLON
-	[make_tag]
+	[identity]
 
 # A list of statements
 <statements> ::= <statements> <statement>
-	[extend_statements]
+	[append]
 <statements> ::= <statement>
-	[make_statements]
+	[identity]
 
 
 # So far we only support assignment statements
 <statement> ::= ID ASSIGN <disjunction> SEMI
-	[make_statement]
+	[make_assignment]
 
 
 # Disjunctions have the lowest precedence
@@ -95,7 +95,7 @@
 <values> ::= <values> COMMA <value>
 	[extend_values]
 <values> ::= <value>
-	[make_values]
+	[identity]
 
 # A value can be many things, including basetypes
 <value> ::= ID
