@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.10 2000/07/10 00:12:55 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.11 2000/07/10 07:43:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -276,7 +276,7 @@ static ast_t make_default_sub(parser_t self, elvin_error_t error)
 /* <statement> ::= ID ASSIGN <disjunction> SEMI */
 static ast_t make_assignment(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_ASSIGN,
 	self -> value_top[0],
 	self -> value_top[2],
@@ -286,7 +286,7 @@ static ast_t make_assignment(parser_t self, elvin_error_t error)
 /* <disjunction> ::= <disjunction> OR <conjunction> */
 static ast_t extend_disjunction(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_OR,
 	self -> value_top[0],
 	self -> value_top[2],
@@ -296,7 +296,7 @@ static ast_t extend_disjunction(parser_t self, elvin_error_t error)
 /* <conjunction> ::= <conjunction> AND <term> */
 static ast_t extend_conjunction(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_AND,
 	self -> value_top[0],
 	self -> value_top[2],
@@ -306,7 +306,7 @@ static ast_t extend_conjunction(parser_t self, elvin_error_t error)
 /* <term> ::= <term> EQ <value> */
 static ast_t make_eq(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_EQ,
 	self -> value_top[0],
 	self -> value_top[2],
@@ -323,7 +323,7 @@ static ast_t make_neq(parser_t self, elvin_error_t error)
 /* <term> ::= <term> LT <value> */
 static ast_t make_lt(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_LT,
 	self -> value_top[0],
 	self -> value_top[2],
@@ -340,7 +340,7 @@ static ast_t make_le(parser_t self, elvin_error_t error)
 /* <term> ::= <term> GT <value> */
 static ast_t make_gt(parser_t self, elvin_error_t error)
 {
-    return ast_binop_alloc(
+    return ast_binary_alloc(
 	AST_GT,
 	self -> value_top[0],
 	self -> value_top[2],
