@@ -34,7 +34,7 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.1 1999/10/02 16:45:10 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.2 1999/10/04 07:05:30 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -60,9 +60,6 @@ group_sub_t group_sub_alloc(
 
 /* Releases resources used by the receiver */
 void group_sub_free(group_sub_t self);
-
-/* Prints debugging information */
-void group_sub_debug(group_sub_t self);
 
 /* Answers the receiver's subscription expression */
 char *group_sub_expression(group_sub_t self);
