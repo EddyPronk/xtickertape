@@ -1,5 +1,9 @@
 1999-09-26  Ted Phelps  <phelps@pobox.com>
 
+	* INSTALL: put in the default text from automake
+
+	* README: wrote some text
+
 	* mail_sub.c: Removed the trailing '\n' from the subscription
 		  expression since it's not needed and it wasn't accounted 
 		  for in the malloc and could cause core dumps!
