@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.2 2000/11/17 13:17:49 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.3 2000/11/18 00:57:35 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -100,8 +100,18 @@ int vm_make_cons(vm_t self, elvin_error_t error);
 int vm_unwind_list(vm_t self, elvin_error_t error);
 
 
+/* Evaluates the top of the stack, leaving the result in its place */
+int vm_eval(vm_t self, elvin_error_t error);
+
+
+
+
+
+/* Prints the top of the stack onto stdout */
+int vm_print(vm_t self, elvin_error_t error);
 
 /* For debugging only */
 int vm_print_stack(vm_t self, elvin_error_t error);
+
 
 #endif
