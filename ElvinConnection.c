@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.13 1998/09/30 08:43:46 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.14 1998/10/15 04:21:09 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -35,7 +35,7 @@ struct ElvinConnection_t
 static void (*quenchCallback)(elvin_t connection, void *arg, char *quench) = NULL;
 
 /* Callback for subscription thingo */
-static void receiveCallback(elvin_t connection, void *object, uint32 id, en_notify_t notify)
+static void ReceiveCallback(elvin_t connection, void *object, uint32 id, en_notify_t notify)
 {
     Subscription subscription = (Subscription)object;
     en_type_t type;
@@ -81,7 +81,7 @@ static void receiveCallback(elvin_t connection, void *object, uint32 id, en_noti
 }
 
 /* Callback for elvin errors */
-static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
+static void ErrorCallback(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
 {
     fprintf(stderr, "*** Elvin error %d (%s): exiting\n", code, message);
     exit(0);
@@ -89,12 +89,12 @@ static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code
 
 
 /* Add the subscription info for an 'group' to the buffer */
-void subscribeToItem(Subscription subscription, ElvinConnection self)
+static void SubscribeToItem(Subscription subscription, ElvinConnection self)
 {
     SANITY_CHECK(self);
     elvin_add_subscription(
 	self -> connection, Subscription_getExpression(subscription),
-	receiveCallback, subscription, 0);
+	ReceiveCallback, subscription, 0);
 }
 
 
@@ -116,7 +116,7 @@ ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptio
     if ((self -> connection = elvin_connect(
 	EC_NAMEDHOST, hostname, port,
 	quenchCallback, NULL,
-	errorCallback, NULL,
+	ErrorCallback, NULL,
 	1)) == NULL)
     {
 	fprintf(stderr, "*** Unable to connect to elvin server at %s:%d\n", hostname, port);
@@ -126,7 +126,7 @@ ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptio
     fprintf(stderr, "  done\n");
 #endif /* DEBUG */
     self -> subscriptions = subscriptions;
-    List_doWith(self -> subscriptions, subscribeToItem, self);
+    List_doWith(self -> subscriptions, SubscribeToItem, self);
     return self;
 }
 
@@ -161,25 +161,24 @@ int ElvinConnection_getFD(ElvinConnection self)
 void ElvinConnection_send(ElvinConnection self, Message message)
 {
     int32 timeout;
-    en_notify_t notify;
+    en_notify_t notification;
 
     SANITY_CHECK(self);
     timeout = Message_getTimeout(message);
-    notify = en_new();
-    en_add_string(notify, "TICKERTAPE", Message_getGroup(message));
-    en_add_string(notify, "USER", Message_getUser(message));
-    en_add_int32(notify, "TIMEOUT", timeout);
-    en_add_string(notify, "TICKERTEXT", Message_getString(message));
+    notification = en_new();
+    en_add_string(notification, "TICKERTAPE", Message_getGroup(message));
+    en_add_string(notification, "USER", Message_getUser(message));
+    en_add_int32(notification, "TIMEOUT", timeout);
+    en_add_string(notification, "TICKERTEXT", Message_getString(message));
 
-    if (elvin_notify(self -> connection, notify) < 0)
+    if (elvin_notify(self -> connection, notification) < 0)
     {
 	fprintf(stderr, "*** Unable to send message\n");
 	exit(0);
     }
 
-    /* FIX THIS: do we need to en_free()? */
+    en_free(notification);
 }
-
 
 /* Call this when the connection has data available */
 void ElvinConnection_read(ElvinConnection self)
