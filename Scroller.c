@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.82 2000/03/27 01:46:02 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.83 2000/03/30 06:36:29 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -169,7 +169,7 @@ static char defaultTranslations[] =
     "<Key>k: kill()\n"
     "<Key>q: quit()\n"
     "<Key>-: slower()\n"
-    "<Key>+: faster()\n"
+    "<Key>=: faster()\n"
     "<Key>comma: faster()\n"
     "<Key>.: slower()\n"
     "<Key>0: set-speed(0)\n"
