@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.7 1997/02/17 01:21:54 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.8 1997/02/17 01:53:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -161,7 +161,9 @@ BridgeConnection BridgeConnection_alloc(
     }
 
     /* Construct files from the fd */
+#ifdef DEBUG    
     fprintf(stderr, "  streams"); fflush(stderr);
+#endif /* DEBUG */
     self -> in = fdopen(self -> fd, "r");
     self -> out = fdopen(self -> fd, "a");
 #else /* CONNECTING */
