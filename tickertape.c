@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.107 2003/01/28 15:58:47 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.108 2003/02/03 03:07:08 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1232,7 +1232,11 @@ static int status_cb(
 	    }
 	    
 	    /* Print the error message into it */
+#if !defined(ELVIN_VERSION_AT_LEAST)
 	    elvin_error_snprintf(buffer, BUFFER_SIZE, event -> details.connection_warn.error);
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+	    elvin_error_snprintf(buffer, BUFFER_SIZE, NULL, event -> details.connection_warn.error);
+#endif
 	    string = buffer;
 
 	    /* Display it on the status line */
