@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.18 2003/01/10 11:57:24 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.19 2003/01/11 11:04:18 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -145,7 +145,7 @@ static void measure_string(
     size_t out_length;
     int is_first;
 
-    /* Measure the number of bytes in the string */
+    /* Count the number of bytes in the string */
     in_length = strlen(string);
 
     /* Keep going until we get the whole string */
@@ -367,7 +367,6 @@ code_set_info_t code_set_info_alloc(
 
     /* Construct the code set name */
     sprintf(string, "%s-%s", names[0], names[1]);
-    printf("guessing code set %s\n", string);
 
     /* Clean up a bit */
     XFree(names[0]);
@@ -392,7 +391,6 @@ code_set_info_t code_set_info_alloc(
     }
 
     /* Successful guess! */
-    printf("success!\n");
     self -> cd = cd;
     self -> dimension = dimension;
     return self;
@@ -410,44 +408,121 @@ static void draw_string(
     XRectangle *bbox,
     char *string)
 {
+    char buffer[BUFFER_SIZE];
     XCharStruct *info;
-    char *first, *last;
     long left, right;
-    int ch;
+    char *out_point;
+    size_t in_length;
+    size_t out_length;
 
-    /* FIX THIS: convert to the correct code set before printing! */
-    /* Find the first visible character */
-    first = string;
+    /* Count the number of bytes in the string */
+    in_length = strlen(string);
+
+    /* Skip over characters outside the bounding box */
     left = x;
-    info = per_char(cs_info -> font, *(unsigned char *)first);
-    while (left + info -> rbearing < bbox -> x)
+    while (in_length != 0)
     {
-	left += info -> width;
-
-	/* Bail if the we reach the end of the string without finding
-	 * any visible characters */
-	if ((ch = (unsigned char)*(++first)) == 0)
+	/* Convert the string into the font's code set */
+	out_length = BUFFER_SIZE;
+	out_point = buffer;
+	if (iconv(cs_info -> cd, &string, &in_length, &out_point, &out_length) == (size_t)-1 && errno != E2BIG)
 	{
-	    return;
+	    /* This shouldn't fail */
+	    abort();
 	}
 
-	info = per_char(cs_info -> font, ch);
-    }
+	/* Are characters in this code set one byte wide? */
+	if (cs_info -> dimension == 1)
+	{
+	    unsigned char *first;
+	    unsigned char *last;
 
-    /* Find the character after the last visible one */
-    last = first;
-    right = left;
-    while (*last != '\0' && right + info -> lbearing < bbox -> x + bbox -> width)
-    {
-	right += info -> width;
-	last++;
-	info = per_char(cs_info -> font, (unsigned char)*last);
-    }
+	    /* Look for visible characters in the buffer */
+	    first = (unsigned char *)buffer;
+	    while (first < (unsigned char *)out_point)
+	    {
+		info = per_char(cs_info -> font, *first);
 
-    /* Draw the visible characters */
-    XDrawString(display, drawable, gc, left, y, first, last - first);
+		/* Skip anything to the left of the bounding box */
+		if (left + info -> rbearing < bbox -> x)
+		{
+		    left = left + (long)info -> width;
+		    first++;
+		}
+		else
+		{
+		    /* Look for the last visible character */
+		    last = first;
+		    right = left;
+		    while (last < (unsigned char *)out_point)
+		    {
+			info = per_char(cs_info -> font, *last);
+
+			if (right + info -> lbearing < bbox -> x + bbox -> width)
+			{
+			    right = right + (long)info -> width;
+			    last++;
+			}
+			else
+			{
+			    XDrawString(display, drawable, gc, left, y, first, last - first);
+			    return;
+			}
+		    }
+
+		    /* Still visible at the end of the buffer */
+		    XDrawString(display, drawable, gc, left, y, first, last - first);
+		    first = last;
+		    left = right;
+		}
+	    }
+	}
+	else
+	{
+	    XChar2b *first;
+	    XChar2b *last;
+
+	    /* Look for visible characters in the buffer */
+	    first = (XChar2b *)buffer;
+	    while (first < (XChar2b *)out_point)
+	    {
+		info = per_char(cs_info -> font, (first -> byte1 << 8) | first -> byte2);
+
+		if (left + info -> rbearing < bbox -> x)
+		{
+		    left = left + (long)info -> width;
+		    first++;
+		}
+		else
+		{
+		    /* Look for the last visible character */
+		    last = first;
+		    right = left;
+		    while (last < (XChar2b *)out_point)
+		    {
+			info = per_char(cs_info -> font, (last -> byte1 << 8) | last -> byte2);
+
+			if (right + info -> lbearing < bbox -> x + bbox -> width)
+			{
+			    right = right + (long)info -> width;
+			    last++;
+			}
+			else
+			{
+			    XDrawString16(display, drawable, gc, left, y, first, last - first);
+			    return;
+			}
+		    }
+
+		    /* Still visible at the end of the buffer */
+		    XDrawString16(display, drawable, gc, left, y, first, last - first);
+		    first = last;
+		    left = right;
+		}
+	    }
+	}
+    }
 }
-
 
 
 /* The structure of a message view */
