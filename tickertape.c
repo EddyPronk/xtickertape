@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.28 1999/10/05 02:57:30 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.29 1999/10/05 05:30:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -71,6 +71,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.28 1999/10/05 02:57:30 phelps
 #define LOST_CONNECT_MSG \
 "Lost connection to elvin server at %s:%d.  Attempting to reconnect..."
 
+#define GROUP_SUB "TICKERTAPE == \"%s\""
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
 
 /* The tickertape data type */
@@ -402,8 +403,13 @@ static int parse_groups_callback(
     char *expression;
     group_sub_t subscription;
 
-    expression = (char *)malloc(sizeof("TICKERTAPE == \"\"") + strlen(name));
-    sprintf(expression, "TICKERTAPE == \"%s\"", name);
+    /* Construct the subscription expression */
+    if ((expression = (char *)malloc(strlen(GROUP_SUB) + strlen(name) - 1)) == NULL)
+    {
+	return -1;
+    }
+
+    sprintf(expression, GROUP_SUB, name);
 
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
@@ -418,6 +424,8 @@ static int parse_groups_callback(
 	self -> groups, sizeof(group_sub_t) * (self -> groups_count + 1));
     self -> groups[self -> groups_count++] = subscription;
 
+    /* Clean up */
+    free(expression);
     return 0;
 }
 
@@ -467,6 +475,8 @@ static int parse_groups_file(tickertape_t self)
 	/* Watch for end-of-file */
 	if (length == 0)
 	{
+	    close(fd);
+	    groups_parser_free(parser);
 	    return 0;
 	}
     }
@@ -537,6 +547,8 @@ static int parse_usenet_file(tickertape_t self)
 	/* Watch for end-of-file */
 	if (length == 0)
 	{
+	    close(fd);
+	    usenet_parser_free(parser);
 	    return 0;
 	}
     }
@@ -570,7 +582,11 @@ void tickertape_reload_groups(tickertape_t self)
     self -> groups_count = 0;
 
     /* Read the new-and-improved groups file */
-    parse_groups_file(self);
+    if (parse_groups_file(self) < 0)
+    {
+	perror("trouble reading groups file");
+	return;
+    }
 
     /* Reuse elvin subscriptions whenever possible */
     for (index = 0; index < self -> groups_count; index++)
