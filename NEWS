@@ -1,3 +1,30 @@
+Overview of changes in xtickertape-1.5.9
+
+* Using configure to find metamail so that it doesn't have to be in
+  the user's path at runtime
+
+* Fixed a bug in show-url for the case where the URL is provided on
+  the command-line
+
+Overview of changes in xtickertape-1.5.8
+
+* add the actions to the scroller widget to speed up/slow down the
+  scrolling speed.  Lots of fun, but probably not too useful
+
+Overview of changes in xtickertape-1.5.7
+
+* Fixed the way notifications get their timeout so that xtickertape
+  doesn't dump core if a notification with a matching TICKERTAPE
+  arrives without a TIMEOUT entry.  Can also take a FLOAT timeout
+  (although this is simply rounded off to the nearest integer)
+
+* Added estore.c to the distribution.  This is a hacked version of
+  mh's rcvstore which generates a notification from e-mail headers
+  after it files a the e-mail message
+
+* Fixed a really stupid bug which caused xtickertape to dump core if
+  the user's TICKERDIR environment variable wasn't set.
+
 Overview of changes in xtickertape-1.5.6
 
 * show-url now converts troublesome characters (comma, right paren) to 
