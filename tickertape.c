@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.73 2000/12/09 04:54:22 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.74 2000/12/09 08:46:19 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1092,6 +1092,15 @@ static void interp_cb(XtPointer rock, int *source, XtInputId *id)
 	elvin_error_fprintf(stderr, self -> error);
     }
 
+    /* Watch for end of input */
+    if (length == 0)
+    {
+	XtRemoveInput(*id);
+	printf("[EOF]\n");
+	fclose(stdin);
+	return;
+    }
+
     printf("> "); fflush(stdout);
 }
 
@@ -1159,6 +1168,52 @@ static int prim_cdr(vm_t vm, uint32_t argc, elvin_error_t error)
     }
 
     return vm_cdr(vm, error);
+}
+
+/* The `cond' special form */
+static int prim_cond(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* Find a clause with a non-nil condition */
+    while (argc > 0)
+    {
+	object_type_t type;
+
+	vm_print_state(vm, error);
+
+	/* Evaluate the condition of the next clause */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_dup(vm, error) ||
+	    ! vm_car(vm, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_type(vm, &type, error) ||
+	    ! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	/* If it evaluates to non-nil then evaluate the clause as if it
+	 * were part of a progn statement */
+	if (type != SEXP_NIL)
+	{
+	    return
+		vm_cdr(vm, error) &&
+		vm_push_symbol(vm, "progn", error) &&
+		vm_swap(vm, error) &&
+		vm_make_cons(vm, error) &&
+		vm_eval(vm, error);
+	}
+
+	/* Dump this clause and move on to the next one */
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Nothing matched so we return nil */
+    return vm_push_nil(vm, error);
 }
 
 /* The `cons' subroutine */
@@ -1495,6 +1550,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 	define_special(vm, "catch", prim_catch, error) &&
 #endif
 	define_subr(vm, "cdr", prim_cdr, error) &&
+	define_special(vm, "cond", prim_cond, error) &&
 	define_subr(vm, "cons", prim_cons, error) &&
 	define_special(vm, "defun", prim_defun, error) &&
 	define_subr(vm, "eq", prim_eq, error) &&
