@@ -28,12 +28,15 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.17 1999/08/28 04:10:18 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.18 1999/08/30 03:49:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <X11/IntrinsicP.h>
 #include <Xm/List.h>
+#include "glyph.h"
+#include "ScrollerP.h"
 #include "history.h"
 
 #ifdef DEBUG
@@ -52,6 +55,9 @@ struct history_node
 {
     /* The node's reference count */
     int ref_count;
+
+    /* True if the receiver has been killed */
+    int is_killed;
 
     /* The node's message */
     Message message;
@@ -86,6 +92,7 @@ static history_node_t history_node_alloc(Message message)
 
     /* Initialize the fields to sane values */
     self -> ref_count = 1;
+    self -> is_killed = False;
     self -> message = Message_allocReference(message);
     self -> previous = NULL;
     self -> parent = NULL;
@@ -317,6 +324,7 @@ static void history_thread_node(history_t self, history_node_t node)
 
     /* Append this node to the end of the parent's replies */
     node -> parent = parent;
+    node -> is_killed = parent -> is_killed;
     node -> previous_response = parent -> last_response;
     parent -> last_response = node;
 
@@ -656,7 +664,7 @@ int history_add(history_t self, Message message)
     /* Update the List widget */
     history_update_list(self, node);
 
-    return 0;
+    return node -> is_killed;
 }
 
 
@@ -733,6 +741,46 @@ int history_index(history_t self, Message message)
 
     return history_index_unthreaded(self, message);
 }
+
+
+/* Kill off a thread */
+void history_node_kill_thread(history_node_t self, ScrollerWidget scroller)
+{
+    history_node_t child;
+
+    /* If we're already killed then there's nothing left to do */
+    if (self -> is_killed)
+    {
+	return;
+    }
+
+    /* Delete the receiver */
+    self -> is_killed = True;
+    ScDeleteMessage(scroller, self -> message);
+
+    /* Kill its children */
+    for (child = self -> last_response; child != NULL; child = child -> previous_response)
+    {
+	history_node_kill_thread(child, scroller);
+    }
+}
+
+/* Kill off a thread */
+void history_kill_thread(history_t self, ScrollerWidget scroller, Message message)
+{
+    history_node_t node;
+
+    /* Locate the node for the message */
+    for (node = self -> last; node != NULL; node = node -> previous)
+    {
+	if (node -> message == message)
+	{
+	    history_node_kill_thread(node, scroller);
+	}
+    }
+}
+
+
 
 /* Just for debugging */
 void history_print_unthreaded(history_t self, FILE *out)

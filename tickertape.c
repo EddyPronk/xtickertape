@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.12 1999/08/29 14:24:53 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.13 1999/08/30 03:49:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -236,16 +236,29 @@ static void mime_callback(Widget widget, tickertape_t self, Message message)
     tickertape_show_attachment(self, message);
 }
 
+/* Callback for a kill() action in the Scroller */
+static void kill_callback(Widget widget, tickertape_t self, Message message)
+{
+    SANITY_CHECK(self);
+
+    if (message == NULL)
+    {
+	return;
+    }
+
+    history_kill_thread(self -> history, self -> scroller, message);
+}
+
 /* Receive a Message matched by Subscription */
 static void receive_callback(tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
 
-    /* Add the message to the scroller */
-    ScAddMessage(self -> scroller, message);
-
     /* Add the message to the history */
-    history_add(self -> history, message);
+    if (history_add(self -> history, message) == 0)
+    {
+	ScAddMessage(self -> scroller, message);
+    }
 }
 
 /* Read from the Groups file.  Returns a List of subscriptions if
@@ -407,8 +420,11 @@ static void init_ui(tickertape_t self)
 	(Widget)self -> scroller, XtNcallback,
 	(XtCallbackProc)menu_callback, self);
     XtAddCallback(
-	(Widget)self -> scroller, XtNactionCallback,
+	(Widget)self -> scroller, XtNattachmentCallback,
 	(XtCallbackProc)mime_callback, self);
+    XtAddCallback(
+	(Widget)self -> scroller, XtNkillCallback,
+	(XtCallbackProc)kill_callback, self);
     XtRealizeWidget(self -> top);
 }
 
