@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.63 2002/04/11 12:55:17 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.64 2002/04/12 13:22:34 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1760,6 +1760,13 @@ void control_panel_add_message(control_panel_t self, message_t message)
 {
     /* Add the message to the history */
     HistoryAddMessage(self -> history, message);
+}
+
+/* Kills a message and its descendents in the history */
+void control_panel_kill_thread(control_panel_t self, message_t message)
+{
+    /* Delegate to the History widget */
+    HistoryKillThread(self -> history, message);
 }
 
 /* Changes the location of the subscription within the control panel */

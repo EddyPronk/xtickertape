@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.9 2002/04/09 22:43:08 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.10 2002/04/12 13:22:35 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -79,6 +79,8 @@ void control_panel_remove_subscription(control_panel_t self, void *rock);
 /* Adds a message to the control panel's history */
 void control_panel_add_message(control_panel_t self, message_t message);
 
+/* Kills the thread rooted at message */
+void control_panel_kill_thread(control_panel_t self, message_t message);
 
 /* Changes the location of the subscription in the control panel's menu */
 void control_panel_set_index(control_panel_t self, void *rock, int index);
