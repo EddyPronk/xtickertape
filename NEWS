@@ -10,7 +10,7 @@ Overview of changes in xtickertape-2.0
   temporary file.  [Thanks David Leonard]
 
 * Fixed a bug in the way the icon was created.  Now the big `e' will
-  be read even on 8-bit displays.
+  be red even on 8-bit displays.
 
 * The scroller can now operate without an offscreen pixmap.  This
   enables hardware optimizations with some graphics cards, but results 
@@ -21,7 +21,13 @@ Overview of changes in xtickertape-2.0
 * Message replacement now works!
 
 * Updated to use the elvin-4 client library instead of the elvin-3
-  client library
+  client library.
+
+* Using elvin's sha1digest function instead of crypt, and encrypting
+  the entire message id instead of just the host id to make it
+  reasonably difficult to subvert the sender's anonymity.
+  [Thanks Ian Lister]
+
 
 Overview of changes in xtickertape-1.6.6
 
