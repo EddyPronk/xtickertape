@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.20 2002/04/15 08:42:08 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.21 2002/04/15 08:53:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -170,24 +170,25 @@ static int accept_subscription(groups_parser_t self)
 	/* Add the private keys to the notification block */
 	for (i = 0; i < self -> private_key_count; i++)
 	{
-	    if (self -> private_key_count != 0)
-	    {
-		/* SHA1 dual */
-		if (! elvin_keys_add(notification_keys,
-				     ELVIN_KEY_SCHEME_SHA1_DUAL,
-				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
-				     self -> private_keys[i],
-				     self -> private_key_lengths[i],
-				     NULL))
-		{
-		    return -1;
-		}
-	    }
-
-	    /* SHA1 consumer */
+	    /* SHA-1 dual */
 	    if (! elvin_keys_add(notification_keys,
-				 ELVIN_KEY_SCHEME_SHA1_CONSUMER,
-				 ELVIN_KEY_SHA1_CONSUMER_INDEX,
+				 ELVIN_KEY_SCHEME_SHA1_DUAL,
+				 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				 self -> private_keys[i],
+				 self -> private_key_lengths[i],
+				 NULL))
+	    {
+		return -1;
+	    }
+	}
+
+	/* Add the public keys to the notification key block */
+	for (i = 0; i < self -> public_key_count; i++)
+	{
+	    /* SHA-1 dual */
+	    if (! elvin_keys_add(notification_keys,
+				 ELVIN_KEY_SCHEME_SHA1_DUAL,
+				 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
 				 self -> public_keys[i],
 				 self -> public_key_lengths[i],
 				 NULL))
@@ -199,10 +200,24 @@ static int accept_subscription(groups_parser_t self)
 	/* Add the public keys to the notification key blcok */
 	for (i = 0; i < self -> public_key_count; i++)
 	{
-	    /* SHA1 dual */
+	    if (self -> private_key_count != 0)
+	    {
+		/* SHA-1 dual */
+		if (! elvin_keys_add(notification_keys,
+				     ELVIN_KEY_SCHEME_SHA1_DUAL,
+				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				     self -> public_keys[i],
+				     self -> public_key_lengths[i],
+				     NULL))
+		{
+		    return -1;
+		}
+	    }
+
+	    /* SHA-1 consumer */
 	    if (! elvin_keys_add(notification_keys,
-				 ELVIN_KEY_SCHEME_SHA1_DUAL,
-				 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				 ELVIN_KEY_SCHEME_SHA1_CONSUMER,
+				 ELVIN_KEY_SHA1_CONSUMER_INDEX,
 				 self -> public_keys[i],
 				 self -> public_key_lengths[i],
 				 NULL))
@@ -211,15 +226,15 @@ static int accept_subscription(groups_parser_t self)
 	    }
 	}
 
-	/* Add the public keys to the subscription key block */
+	/* Add the private keys to the subscription key block */
 	for (i = 0; i < self -> private_key_count; i++)
 	{
-	    /* SHA1 dual */
+	    /* SHA-1 dual */
 	    if (! elvin_keys_add(subscription_keys,
 				 ELVIN_KEY_SCHEME_SHA1_DUAL,
 				 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-				 self -> private_keys[i],
-				 self -> private_key_lengths[i],
+				 self -> public_keys[i],
+				 self -> public_key_lengths[i],
 				 NULL))
 	    {
 		return -1;
@@ -231,7 +246,7 @@ static int accept_subscription(groups_parser_t self)
 	{
 	    if (self -> private_key_count != 0)
 	    {
-		/* SHA1 dual */
+		/* SHA-1 dual */
 		if (! elvin_keys_add(subscription_keys,
 				     ELVIN_KEY_SCHEME_SHA1_DUAL,
 				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
@@ -243,7 +258,7 @@ static int accept_subscription(groups_parser_t self)
 		}
 	    }
 
-	    /* SHA1 producer */
+	    /* SHA-1 producer */
 	    if (! elvin_keys_add(subscription_keys,
 				 ELVIN_KEY_SCHEME_SHA1_PRODUCER,
 				 ELVIN_KEY_SHA1_PRODUCER_INDEX,
