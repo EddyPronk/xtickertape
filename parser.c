@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.9 2000/07/09 00:49:11 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.10 2000/07/10 00:12:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -152,6 +152,10 @@ static int lex_decimal(parser_t self, int ch, elvin_error_t error);
 static int lex_octal(parser_t self, int ch, elvin_error_t error);
 static int lex_hex(parser_t self, int ch, elvin_error_t error);
 static int lex_float_first(parser_t self, int ch, elvin_error_t error);
+static int lex_float(parser_t self, int ch, elvin_error_t error);
+static int lex_exp_first(parser_t self, int ch, elvin_error_t error);
+static int lex_exp_sign(parser_t self, int ch, elvin_error_t error);
+static int lex_exp(parser_t self, int ch, elvin_error_t error);
 static int lex_dq_string(parser_t self, int ch, elvin_error_t error);
 static int lex_dq_string_esc(parser_t self, int ch, elvin_error_t error);
 static int lex_sq_string(parser_t self, int ch, elvin_error_t error);
@@ -530,6 +534,33 @@ static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
     }
 
     return accept_int64(self, value, error);
+}
+
+/* Accepts a FLOAT token */
+static int accept_float(parser_t self, double value, elvin_error_t error)
+{
+    ast_t node;
+
+    /* Make an AST out of the float */
+    if (! (node = ast_float_alloc(value, error)))
+    {
+	return 0;
+    }
+
+    return shift_reduce(self, TT_FLOAT, node, error);
+}
+
+/* Accepts a string as a float token */
+static int accept_float_string(parser_t self, char *string, elvin_error_t error)
+{
+    double value;
+
+    if (! elvin_string_to_real64(string, &value, error))
+    {
+	return 0;
+    }
+
+    return accept_float(self, value, error);
 }
 
 /* Accepts an STRING token */
@@ -1138,23 +1169,245 @@ static int lex_decimal(parser_t self, int ch, elvin_error_t error)
 /* Reading an octal integer */
 static int lex_octal(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_octal: not yet implemented\n");
-    abort();
+    /* Watch for more octal digits */
+    if (isdigit(ch) && ch != '8' && ch != '9')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_octal;
+	return 1;
+    }
+
+    /* Null-terminate the number */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    /* Watch for a trailing `L' */
+    if (ch == 'l' || ch == 'L')
+    {
+	if (! accept_int64_string(self, self -> token, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_start;
+	return 1;
+    }
+
+    /* Accept an int32 token */
+    if (! accept_int32_string(self, self -> token, error))
+    {
+	return 0;
+    }
+
+    /* Run ch back through the start state */
+    return lex_start(self, ch, error);
 }
 
 /* Reading a hex integer */
 static int lex_hex(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_hex: not yet implemented\n");
-    abort();
+    /* Watch for more digits */
+    if (isxdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_hex;
+	return 1;
+    }
+
+    /* Null-terminate the token */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    /* Watch for a trailing `L' indicating a 64-bit value */
+    if (ch == 'l' || ch == 'L')
+    {
+	if (! accept_int64_string(self, self -> token, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_start;
+	return 1;
+    }
+
+    /* Otherwise accept an int32 token */
+    if (! accept_int32_string(self, self -> token, error))
+    {
+	return 0;
+    }
+
+    /* Run ch back through the start state */
+    return lex_start(self, ch, error);
 }
 
 /* Reading the first digit of the decimal portion of a floating point number */
 static int lex_float_first(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_float_first: not yet implemented\n");
+    /* Watch for a digit */
+    if (isdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_float;
+	return 1;
+    }
+
+    /* Otherwise null-terimate the token */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    /* And complain */
+    fprintf(stderr, "bogus token: %s\n", self -> token);
+    return 0;
+}
+
+/* We've read at least one digit of the decimal portion */
+static int lex_float(parser_t self, int ch, elvin_error_t error)
+{
+    /* Watch for the exponent */
+    if (ch == 'e' || ch == 'E')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_exp_first;
+	return 1;
+    }
+
+    /* Watch for more digits */
+    if (isdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_float;
+	return 1;
+    }
+
+    /* Otherwise we're done */
+    if (! accept_float_string(self, self -> token, error))
+    {
+	return 0;
+    }
+
+    /* Run ch through the lexer start state */
+    return lex_start(self, ch, error);
+}
+
+/* Reading the first character after the `e' in a float */
+static int lex_exp_first(parser_t self, int ch, elvin_error_t error)
+{
+    /* Watch for a sign */
+    if (ch == '-' || ch == '+')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_exp_sign;
+	return 1;
+    }
+
+    /* Watch for digits of the exponent */
+    if (isdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_exp;
+	return 1;
+    }
+
+    /* Otherwise we've got an error */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    fprintf(stderr, "bogus token %s\n", self -> token);
     abort();
 }
+
+/* Reading the first character after a `+' or `-' in an exponent of a float */
+static int lex_exp_sign(parser_t self, int ch, elvin_error_t error)
+{
+    /* Must have a digit here */
+    if (isdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_exp;
+	return 1;
+    }
+
+    /* Anything else is an error */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    fprintf(stderr, "lex_exp_sign(): bogus token: %s\n", self -> token);
+    abort();
+}
+
+/* Reading the digits of an exponent */
+static int lex_exp(parser_t self, int ch, elvin_error_t error)
+{
+    /* Watch for more digits */
+    if (isdigit(ch))
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_exp;
+	return 1;
+    }
+
+    /* Null-terminate the string */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    /* Accept a float token */
+    if (! accept_float_string(self, self -> token, error))
+    {
+	return 0;
+    }
+
+    /* Run ch back through the start state */
+    return lex_start(self, ch, error);
+}
+
 
 /* Reading the characters of a double-quoted string */
 static int lex_dq_string(parser_t self, int ch, elvin_error_t error)
@@ -1213,8 +1466,21 @@ static int lex_dq_string(parser_t self, int ch, elvin_error_t error)
 /* Reading an escaped character in a double-quoted string */
 static int lex_dq_string_esc(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_dq_string_esc: not yet implemented\n");
-    abort();
+    /* Watch for EOF */
+    if (ch == EOF)
+    {
+	fprintf(stderr, "unterminated string constant\n");
+	return 0;
+    }
+
+    /* Append the character to the end of the string */
+    if (! append_char(self, ch, error))
+    {
+	return 0;
+    }
+
+    self -> state = lex_dq_string;
+    return 1;
 }
 
 /* Reading the characters of a single-quoted string */
@@ -1274,8 +1540,21 @@ static int lex_sq_string(parser_t self, int ch, elvin_error_t error)
 /* Reading an escaped character in a single-quoted string */
 static int lex_sq_string_esc(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_sq_string_esc: not yet implemented\n");
-    abort();
+    /* Watch for EOF */
+    if (ch == 0)
+    {
+	fprintf(stderr, "unterminated string constant\n");
+	abort();
+    }
+
+    /* Append the character to the end of the string */
+    if (! append_char(self, ch, error))
+    {
+	return 0;
+    }
+
+    self -> state = lex_sq_string;
+    return 1;
 }
 
 /* Reading an identifier (2nd character on) */
@@ -1318,8 +1597,33 @@ static int lex_id(parser_t self, int ch, elvin_error_t error)
 
 static int lex_id_esc(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_id_esc: not yet implemented\n");
-    abort();
+    /* Watch for EOF */
+    if (ch == EOF)
+    {
+	/* Add the backslash to the end of the token */
+	if (! append_char(self, '\\', error))
+	{
+	    return 0;
+	}
+
+	/* Null-terminate the token */
+	if (! append_char(self, 0, error))
+	{
+	    return 0;
+	}
+
+	fprintf(stderr, "unterminated id: %s\n", self -> token);
+	return 0;
+    }
+
+    /* Append the character to the id */
+    if (! append_char(self, ch, error))
+    {
+	return 0;
+    }
+
+    self -> state = lex_id;
+    return 1;
 }
 
 
