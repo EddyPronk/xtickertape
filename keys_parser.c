@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.11 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.12 2004/11/24 11:39:00 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -719,6 +719,11 @@ keys_parser_t keys_parser_alloc(
 /* Frees the resources consumed by the receiver */
 void keys_parser_free(keys_parser_t self)
 {
+    if (self -> keys_dir != NULL)
+    {
+        free(self -> keys_dir);
+    }
+
     if (self -> tag != NULL)
     {
 	free(self -> tag);
