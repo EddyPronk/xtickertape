@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.20 2002/04/04 12:45:28 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.21 2002/04/04 14:21:08 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -149,8 +149,14 @@ typedef struct
     /* The history as both tree and list */
     node_t nodes;
 
+    /* The messages in order of receipt */
+    message_t *messages;
+
     /* The number of message_views in the history */
     unsigned int message_count;
+
+    /* The first index messages circular array */
+    unsigned int message_index;
 
     /* An array of message_views in display order */
     message_view_t *message_views;

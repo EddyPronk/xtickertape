@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.44 2002/04/04 12:45:28 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.45 2002/04/04 14:21:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -326,9 +326,6 @@ static void node_add1(node_t *self,
 		     depth + 1, depth_out);
 	}
 
-	/* We've actually checked a node */
-	(*index)--;
-
 	/* If this node has scrolled off the top of the history and
 	 * has no children then we can safely remove it from the tree.
 	 * Note: this check is simplistic, but it will work since the
@@ -352,6 +349,9 @@ static void node_add1(node_t *self,
 	    /* The pointer we want to update if this node disappears */
 	    self = &(*self) -> sibling;
 	}
+
+	/* We've actually checked a node */
+	(*index)--;
     }
 }
 
@@ -432,6 +432,45 @@ static void node_dump(node_t self, int depth)
     node_dump(self -> child, depth + 1);
 }
 #endif
+
+
+/* Populate an array with message views */
+static void node_populate(node_t self,
+			  XFontStruct *font,
+			  message_view_t *array,
+			  int depth, int *index,
+			  message_t selection,
+			  unsigned int *selection_index_out)
+{
+    /* Go through each of our siblings */
+    while (self != NULL)
+    {
+	/* Add the children first */
+	if (self -> child)
+	{
+	    node_populate(self -> child, font, array, depth + 1, index, selection, selection_index_out);
+	}
+
+	/* Bail if the index goes negative */
+	if (index < 0)
+	{
+	    printf("bailing out!\n");
+	    return;
+	}
+
+	/* Is this the selection? */
+	if (self -> message == selection)
+	{
+	    *selection_index_out = *index;
+	}
+
+	/* Wrap the message in a message view */
+	array[(*index)--] =  message_view_alloc(self -> message, font, depth);
+
+	/* Move on to the next node */
+	self = self -> sibling;
+    }
+}
 		     
 
 
@@ -648,7 +687,9 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Allocate enough room for all of our message views */
     self -> history.message_capacity = MAX(self -> history.message_capacity, 1);
+    self -> history.messages = calloc(self -> history.message_capacity, sizeof(message_t));
     self -> history.message_count = 0;
+    self -> history.message_index = 0;
     self -> history.message_views =
 	calloc(self -> history.message_capacity, sizeof(message_view_t));
 
@@ -1840,54 +1881,17 @@ static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal 
 }
 
 
-/*
- *
- * Method definitions
- *
- */
-
-/* Set the widget's display to be threaded or not */
-void HistorySetThreaded(Widget widget, Boolean is_threaded)
+/* Redraw the widget */
+static void redraw_all(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
-
-    /* Don't do anything if there's no change */
-    if (self -> history.is_threaded == is_threaded)
-    {
-	return;
-    }
-
-    /* Change threaded status */
-    self -> history.is_threaded = is_threaded;
-
-    /* FIX THIS: rebuild the list */
-    dprintf(("HistorySetThreaded(): not yet implemented\n"));
-}
-
-/* Returns whether or not the history is threaded */
-Boolean HistoryIsThreaded(Widget widget)
-{
-    HistoryWidget self = (HistoryWidget)widget;
-    return self -> history.is_threaded;
-}
-
-/* Set the widget's display to show timestamps or not */
-void HistorySetShowTimestamps(Widget widget, Boolean show_timestamps)
-{
-    HistoryWidget self = (HistoryWidget)widget;
-    Display *display = XtDisplay((Widget)self);
-    Window window = XtWindow((Widget)self);
+    Display *display = XtDisplay(widget);
+    Window window = XtWindow(widget);
     GC gc = self -> history.gc;
     XGCValues values;
     XRectangle bbox;
 
-    /* Update the flag */
-    self -> history.show_timestamps = show_timestamps;
-
-    /* Recompute the dimensions of the widget */
-    recompute_dimensions(self);
-
-    /* Bail out if we don't have a graphics context */
+    /* Bail if we don't have a valid GC */
     if (gc == None)
     {
 	return;
@@ -1912,6 +1916,102 @@ void HistorySetShowTimestamps(Widget widget, Boolean show_timestamps)
 
     /* And repaint it */
     paint(self, &bbox);
+}
+
+/*
+ *
+ * Method definitions
+ *
+ */
+
+/* Set the widget's display to be threaded or not */
+void HistorySetThreaded(Widget widget, Boolean is_threaded)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    unsigned int i, index;
+    message_t message;
+
+    /* Don't do anything if there's no change */
+    if (self -> history.is_threaded == is_threaded)
+    {
+	return;
+    }
+
+    /* Change threaded status */
+    self -> history.is_threaded = is_threaded;
+
+    /* Get rid of all of the old message views */
+    for (i = 0; i < self -> history.message_count; i++)
+    {
+	message_view_free(self -> history.message_views[i]);
+    }
+
+    /* Create a bunch of new message views accordingly */
+    if (is_threaded)
+    {
+	index = self -> history.message_count - 1;
+
+	/* Clear the selection in case it doesn't show up */
+	self -> history.selection_index = (unsigned int)-1;
+
+	/* Traverse the history tree */
+	node_populate(
+	    self -> history.nodes,
+	    self -> history.font,
+	    self -> history.message_views,
+	    0, &index,
+	    self -> history.selection,
+	    &self -> history.selection_index);
+    }
+    else
+    {
+	/* Create a bunch of new ones */
+	index = self -> history.message_index;
+	for (i = 0; i < self -> history.message_count; i++)
+	{
+	    /* Look up the message */
+	    message = self -> history.messages[index];
+
+	    /* Wrap it in a message view */
+	    self -> history.message_views[i] = message_view_alloc(message, self -> history.font, 0);
+
+	    /* Update the selection index */
+	    if (self -> history.selection == message)
+	    {
+		self -> history.selection_index = i;
+	    }
+
+	    index = (index + 1) % self -> history.message_count;
+	}
+    }
+
+    /* Recompute the dimensions of the widget */
+    recompute_dimensions(self);
+
+    /* Redraw the contents of the widget */
+    redraw_all(widget);
+}
+
+/* Returns whether or not the history is threaded */
+Boolean HistoryIsThreaded(Widget widget)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    return self -> history.is_threaded;
+}
+
+/* Set the widget's display to show timestamps or not */
+void HistorySetShowTimestamps(Widget widget, Boolean show_timestamps)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+
+    /* Update the flag */
+    self -> history.show_timestamps = show_timestamps;
+
+    /* Recompute the dimensions of the widget */
+    recompute_dimensions(self);
+
+    /* Redraw the whole thing */
+    redraw_all(widget);
 }
 
 /* Returns whether or not the timestamps are visible */
@@ -1943,6 +2043,23 @@ void HistoryAddMessage(Widget widget, message_t message)
 	     MIN(self -> history.message_count + 1, self -> history.message_capacity),
 	     &index,
 	     &depth);
+
+    /* If we're not at capacity then just add a reference to the end
+     * of the array of messages */
+    if (self -> history.message_count < self -> history.message_capacity)
+    {
+	self -> history.messages[self -> history.message_count] =
+	    message_alloc_reference(message);
+    }
+    else
+    {
+	/* Free the old message */
+	message_free(self -> history.messages[self -> history.message_index]);
+
+	/* Replace it with this message */
+	self -> history.messages[self -> history.message_index++] = 
+	    message_alloc_reference(message);
+    }
 
     /* Add the node according to our threadedness */
     if (HistoryIsThreaded(widget))
