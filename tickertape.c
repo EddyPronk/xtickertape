@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.86 2002/04/08 14:56:40 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.87 2002/04/09 17:06:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -68,7 +68,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.86 2002/04/08 14:56:40 phelps
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
 
-#define METAMAIL_OPTIONS "-x", "-B", "-q", "-b"
+#define METAMAIL_OPTIONS "-x", "-B", "-q"
 
 /* How long to wait before we tell the user we're having trouble connecting */
 #define BUFFER_SIZE 1024
@@ -927,8 +927,7 @@ static void status_cb(
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
 	NULL, "internal", "tickertape", string, 30,
-	NULL, NULL, 0,
-	NULL, NULL, NULL)) != NULL)
+	NULL, 0, NULL, NULL, NULL)) != NULL)
     {
 	receive_callback(self, message, False);
 	message_free(message);
@@ -1808,9 +1807,8 @@ static char *tickertape_usenet_filename(tickertape_t self)
 int tickertape_show_attachment(tickertape_t self, message_t message)
 {
 #ifdef METAMAIL
-    char *mime_type;
-    char *mime_args;
-    size_t mime_length;
+    char *attachment;
+    size_t count;
     char *pointer;
     char *end;
     pid_t pid;
@@ -1818,18 +1816,13 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     int status;
 
     /* If the message has no attachment then we're done */
-    if (((mime_type = message_get_mime_type(message)) == NULL) ||
-	((mime_length = message_get_mime_args(message, &mime_args)) == 0))
+    if ((count = message_get_attachment(message, &attachment)) == 0)
     {
 #ifdef DEBUG
 	printf("no attachment\n");
 #endif /* DEBUG */
 	return -1;
     }
-
-#ifdef DEBUG
-    printf("attachment: \"%s\" \"%s\"\n", mime_type, mime_args);
-#endif /* DEBUG */
 
     /* Create a pipe to send the file to metamail */
     if (pipe(fds) < 0)
@@ -1859,7 +1852,6 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 	execl(
 	    METAMAIL, METAMAIL,
 	    METAMAIL_OPTIONS,
-	    "-c", mime_type,
 	    NULL);
 
 	/* We'll only get here if exec fails */
@@ -1875,8 +1867,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Write the mime args into the pipe */
-    end = mime_args + mime_length;
-    pointer = mime_args;
+    end = attachment + count;
+    pointer = attachment;
     while (pointer < end)
     {
 	ssize_t length;

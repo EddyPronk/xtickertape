@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.6 2001/08/25 14:04:43 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.7 2002/04/09 17:06:58 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -48,9 +48,8 @@ message_t message_alloc(
     char *user,
     char *string,
     unsigned int timeout,
-    char *mime_type,
-    char *mime_args,
-    size_t mime_length,
+    char *attachment,
+    size_t length,
     char *tag,
     char *id,
     char *reply_id);
@@ -89,11 +88,8 @@ void message_set_timeout(message_t self, unsigned long timeout);
 /* Answers non-zero if the receiver has a MIME attachment */
 int message_has_attachment(message_t self);
 
-/* Answers the receiver's MIME-type string */
-char *message_get_mime_type(message_t self);
-
-/* Answers the receiver's MIME arguments */
-size_t message_get_mime_args(message_t self, char **mime_args_out);
+/* Answers the length of the attachment, and a pointer to its bytes */
+size_t message_get_attachment(message_t self, char **attachment_out);
 
 /* Answers the receiver's tag */
 char *message_get_tag(message_t self);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.28 2002/04/03 23:27:35 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.29 2002/04/09 17:06:58 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -92,7 +92,6 @@ static void notify_cb(
     char *folder;
     char *subject;
     char *buffer = NULL;
-    int found;
 
     /* Get the name from the `From' field */
     if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
@@ -148,7 +147,7 @@ static void notify_cb(
     /* Construct a message_t out of all of that */
     message = message_alloc(
 	NULL, folder, from, subject, 60,
-	NULL, NULL, 0,
+	NULL, 0,
 	NULL, NULL, NULL);
 
     (*self -> callback)(self -> rock, message, False);
@@ -239,8 +238,7 @@ static void notify_cb(
     /* Construct a message_t out of all of that */
     message = message_alloc(
 	NULL, folder, from, subject, 60,
-	NULL, NULL, 0,
-	NULL, NULL, NULL);
+	NULL, 0, NULL, NULL, NULL);
 
     (*self -> callback)(self -> rock, message, False);
 

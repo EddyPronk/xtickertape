@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.29 2002/04/04 21:20:12 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.30 2002/04/09 17:06:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -39,7 +39,6 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.29 2002/04/04 21:20:12 phelps
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
 #include "usenet_sub.h"
-
 
 /* Some notification field names */
 #define BODY "BODY"
@@ -76,6 +75,12 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.29 2002/04/04 21:20:12 phelps
 
 #define USENET_PREFIX "usenet: %s"
 #define NEWS_URL "news://%s/%s"
+
+#define ATTACHMENT_FMT \
+    "MIME-Version: 1.0\n" \
+    "Content-Type: %s; charset=us-ascii\n" \
+    "\n" \
+    "%s\n"
 
 /* The structure of a usenet subscription */
 struct usenet_sub
@@ -122,6 +127,8 @@ static void notify_cb(
     char *subject;
     char *mime_type;
     char *mime_args;
+    char *attachment = NULL;
+    size_t length = 0;
     char *buffer = NULL;
 
     /* If we don't have a callback than bail out now */
@@ -247,11 +254,24 @@ static void notify_cb(
 	}
     }
 
+    /* Convert the mime type and args into an attachment */
+    if (mime_type && mime_args)
+    {
+	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+	if ((attachment = malloc(length + 1)) == NULL)
+	{
+	    length = 0;
+	}
+	else
+	{
+	    snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+	}
+    }
 
     /* Construct a message out of all of that */
     if ((message = message_alloc(
 	NULL, newsgroups, name, subject, 60,
-	mime_type, mime_args, strlen(mime_args),
+	attachment, length,
  	NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */
@@ -264,6 +284,11 @@ static void notify_cb(
     if (buffer != NULL)
     {
 	free(buffer);
+    }
+
+    if (attachment != NULL)
+    {
+	free(attachment);
     }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
@@ -285,6 +310,8 @@ static void notify_cb(
     char *mime_type;
     char *mime_args;
     char *buffer = NULL;
+    char *attachment = NULL;
+    size_t length = 0;
     int found;
 
     /* If we don't have a callback than bail out now */
@@ -433,11 +460,24 @@ static void notify_cb(
 	}
     }
 
+    /* Convert the mime type and args into an attachment */
+    if (mime_type && mime_args)
+    {
+	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+	if ((attachment = malloc(length + 1)) == NULL)
+	{
+	    length = 0;
+	}
+	else
+	{
+	    snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+	}
+    }
 
     /* Construct a message out of all of that */
     if ((message = message_alloc(
 	NULL, newsgroups, name, subject, 60,
-	mime_type, mime_args, strlen(mime_args),
+	attachment, length,
  	NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */

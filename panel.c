@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.58 2002/04/09 10:44:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.59 2002/04/09 17:06:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -51,6 +51,11 @@ static const char cvsid[] = "$Id: panel.c,v 1.58 2002/04/09 10:44:59 phelps Exp 
 #define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
 #endif
 
+#define ATTACHMENT_FMT \
+    "MIME-Version: 1.0\n" \
+    "Content-Type: %s; charset=us-ascii\n" \
+    "\n" \
+    "%s\n"
 
 /*
  *
@@ -656,7 +661,8 @@ static void history_motion_callback(
     /* If the message has an URL then show it in the status bar */
     if (message && message_has_attachment(message))
     {
-	message_get_mime_args(message, &string);
+	/* FIX THIS: show the first few bytes of the attachment body */
+	/* message_get_mime_args(message, &string); */
     }
 
     control_panel_show_status(self, string);
@@ -1293,6 +1299,8 @@ static message_t construct_message(control_panel_t self)
     char *mime_type;
     char *mime_args;
     char *uuid;
+    size_t length = 0;
+    char *attachment = NULL;
     message_t message;
 
     /* Determine our user and text */
@@ -1304,18 +1312,29 @@ static message_t construct_message(control_panel_t self)
     mime_args = get_mime_args(self);
     uuid = create_uuid(self);
 
+    /* Construct an RFC2045-compliant MIME message */
+    if (mime_type != NULL || mime_args != NULL)
+    {
+	/* Measure how long the attachment will need to be */
+	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+	if ((attachment = malloc(length + 1)) == NULL)
+	{
+	    length = 0;
+	}
+	else
+	{
+	    snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+	}
+    }
+
     /* Construct a message */
     message = message_alloc(
 	self -> selection -> tag,
 	self -> selection -> title, user, text, get_timeout(self),
-	(mime_args == NULL) ? NULL : mime_type,
-	mime_args, (mime_args == NULL) ? 0 : strlen(mime_args),
+	attachment, length,
 	NULL, uuid, self -> message_id);
 
     /* Clean up */
-    XtFree(user);
-    XtFree(text);
-
     if (mime_args != NULL)
     {
 	XtFree(mime_args);
@@ -1324,6 +1343,11 @@ static message_t construct_message(control_panel_t self)
     if (mime_type != NULL)
     {
 	XtFree(mime_type);
+    }
+
+    if (attachment)
+    {
+	free(attachment);
     }
 
     free(uuid);

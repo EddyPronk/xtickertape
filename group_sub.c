@@ -28,13 +28,14 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.32 2002/04/08 11:41:50 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.33 2002/04/09 17:06:58 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
@@ -53,9 +54,16 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.32 2002/04/08 11:41:50 phelps 
 #define F2_REPLACEMENT "REPLACEMENT"
 #define F3_MESSAGE_ID "Message-Id"
 #define F3_IN_REPLY_TO "In-Reply-To"
+#define F3_ATTACHMENT "Attachment"
 #define F2_MIME_ARGS "MIME_ARGS"
 #define F2_MIME_TYPE "MIME_TYPE"
 
+#define ATTACHMENT_HEADER_FMT \
+    "MIME-Version: 1.0\n" \
+    "Content-Type: %s; charset=us-ascii\n\n"
+
+/* The size of the MIME args buffer */
+#define BUFFER_SIZE (32)
 
 /* The group subscription data type */
 struct group_sub
@@ -136,11 +144,16 @@ static void notify_cb(
     char *user;
     char *text;
     int timeout;
+    uchar *attachment = NULL;
+    uint32_t length = 0;
     char *mime_type;
+    char *buffer = NULL;
+    size_t header_length = 0;
     elvin_opaque_t mime_args;
     char *tag;
     char *message_id;
     char *reply_id;
+    int found;
 
     /* If we don't have a callback then just quit now */
     if (self -> callback == NULL)
@@ -264,33 +277,62 @@ static void notify_cb(
 	timeout = self -> max_time;
     }
 
-    /* Get the MIME type (if provided) */
-    if (elvin_notification_get(notification, F2_MIME_TYPE, &type, &value, error) &&
-	type == ELVIN_STRING)
+    /* Get the `Attachment' field from the notification */
+    if (elvin_notification_get(notification, F3_ATTACHMENT, &type, &value, error) &&
+	type == ELVIN_OPAQUE)
     {
-	mime_type = (char *)value.s;
+	attachment = value.o.data;
+	length = value.o.length;
     }
     else
     {
-	mime_type = NULL;
-    }
+	/* Get the MIME type (if provided) */
+	if (elvin_notification_get(notification, F2_MIME_TYPE, &type, &value, error) &&
+	    type == ELVIN_STRING)
+	{
+	    mime_type = (char *)value.s;
+	    header_length = sizeof(ATTACHMENT_HEADER_FMT) - 3 + strlen(mime_type);
+	}
+	else
+	{
+	    mime_type = NULL;
+	}
 
-    /* Get the MIME args (if provided) */
-    if (elvin_notification_get(notification, F2_MIME_ARGS, &type, &value, error) &&
-	type == ELVIN_STRING)
-    {
-	mime_args.data = value.s;
-	mime_args.length = strlen(value.s);
-    }
-    else if (type == ELVIN_OPAQUE)
-    {
-	mime_args.data = value.o.data;
-	mime_args.length = value.o.length;
-    }
-    else
-    {
-	mime_args.data = NULL;
-	mime_args.length = 0;
+	/* Get the MIME args (if provided) */
+	found = elvin_notification_get(notification, F2_MIME_ARGS, &type, &value, error);
+	if (mime_type != NULL && found && type == ELVIN_STRING)
+	{
+	    length = header_length = strlen(value.s);
+	    if ((buffer = malloc(length + 1)) == NULL)
+	    {
+		length = 0;
+	    }
+	    else
+	    {
+		attachment = buffer;
+		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		strcpy(buffer + header_length, value.s);
+	    }
+	}
+	else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
+	{
+	    length = header_length + value.o.length;
+	    if ((buffer = malloc(length + 1)) == NULL)
+	    {
+		length = 0;
+	    }
+	    else
+	    {
+		attachment = buffer;
+		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		memcpy(buffer + header_length, value.o.data, value.o.length);
+	    }
+	}
+	else
+	{
+	    mime_args.data = NULL;
+	    mime_args.length = 0;
+	}
     }
 
     /* Get the replacement tag (if provided) */
@@ -335,7 +377,7 @@ static void notify_cb(
     message = message_alloc(
 	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
-	mime_type, mime_args.data, mime_args.length,
+	attachment, length,
 	tag, message_id, reply_id);
 
     /* Deliver the message */
@@ -343,6 +385,11 @@ static void notify_cb(
 
     /* Clean up */
     message_free(message);
+
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's subscription expression */
@@ -360,9 +407,13 @@ static void notify_cb(
     elvin_value_t value;
     char *user;
     char *text;
-    int timeout;
+    int timeout = 0;
+    uchar *attachment;
+    uint32_t length;
     char *mime_type;
+    size_t header_length;
     elvin_opaque_t mime_args;
+    char *buffer = NULL;
     char *tag;
     char *message_id;
     char *reply_id;
@@ -442,14 +493,9 @@ static void notify_cb(
 	}
     }
 
-    /* Set the timeout to zero so that it's set */
-    if (! found)
+    /* Be overly generous with the timeout field's type */
+    if (found)
     {
-	timeout = 0;
-    }
-    else
-    {
-	/* Be overly generous with the timeout field's type */
 	switch (type)
 	{
 	    case ELVIN_INT32:
@@ -496,52 +542,90 @@ static void notify_cb(
 	timeout = self -> max_time;
     }
 
-    /* Get the MIME type (if provided) */
-    if (! elvin_notification_get_string(
+    /* Get the `Attachment' field from the notification */
+    if (! elvin_notification_get_opaque(
 	    notification,
-	    F2_MIME_TYPE,
-	    NULL, &mime_type,
-	    error))
-    {
-	fprintf(stderr, "elvin_notification_get_string(): failed");
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-
-    /* Get the MIME args (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F2_MIME_ARGS,
-	    &found, &type, &value,
+	    F3_ATTACHMENT,
+	    &found,
+	    &attachment,
+	    &length,
 	    error))
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    /* Accept both string and opaque attachments */
-    if (found && type == ELVIN_STRING)
+    if (! found)
     {
-	mime_args.data = value.s;
-	mime_args.length = strlen(value.s);
-    }
-    else if (type == ELVIN_OPAQUE)
-    {
-	mime_args.data = value.o.data;
-	mime_args.length = value.o.length;
-    }
-    else
-    {
-	mime_args.data = NULL;
-	mime_args.length = 0;
+	/* Try the backward compatible `MIME-TYPE' field */
+	if (! elvin_notification_get_string(
+		notification,
+		F2_MIME_TYPE,
+		NULL, &mime_type,
+		error))
+	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
+	header_length = sizeof(ATTACHMENT_HEADER_FMT) - 3 + strlen(mime_type);
+
+	/* Try the backward compatible `MIME_ARGS' field */
+	if (! elvin_notification_get(
+		notification,
+		F2_MIME_ARGS,
+		&found, &type, &value,
+		error))
+	{
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
+	/* Accept string attachments */
+	if (mime_type != NULL && found && type == ELVIN_STRING)
+	{
+	    length = header_length + strlen(value.s);
+	    if ((buffer = malloc(length + 1)) == NULL)
+	    {
+		length = 0;
+	    }
+	    else
+	    {
+		attachment = buffer;
+		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		strcpy(buffer + header_length, value.s);
+	    }
+	}
+	/* And accept opaque attachments */
+	else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
+	{
+	    length = header_length + value.o.length;
+	    if ((buffer = malloc(length + 1)) == NULL)
+	    {
+		length = 0;
+	    }
+	    else
+	    {
+		attachment = buffer;
+		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		memcpy(buffer + header_length, value.o.data, value.o.length);
+	    }
+	}
+	/* But not other kinds */
+	else
+	{
+	    mime_args.data = NULL;
+	    mime_args.length = 0;
+	}
     }
 
     /* Get the `Replaces' field from the notification */
     if (! elvin_notification_get_string(notification, F3_REPLACES, &found, &tag, error))
     {
 	fprintf(stderr, "elvin_notification_get_string(): failed\n");
-	    elvin_error_fprintf(stderr, error);
-	    exit(1);
+	elvin_error_fprintf(stderr, error);
+	exit(1);
     }
 
     /* Try the backward compatible `REPLACEMENT' field */
@@ -574,7 +658,7 @@ static void notify_cb(
     message = message_alloc(
 	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
-	mime_type, mime_args.data, mime_args.length,
+	attachment, length,
 	tag, message_id, reply_id);
 
     /* Deliver the message */
@@ -582,8 +666,36 @@ static void notify_cb(
 
     /* Clean up */
     message_free(message);
+
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
 }
 #endif /* ELVIN_VERSION_AT_LEAST */
+
+/* Copy the message's Content-Type into the buffer, and return a
+ * pointer to the mime arg.  Note: this is a very dodgy hack that only
+ * works because we generate the buffer to begin with and can
+ * therefore be confident of its format. */
+static void decode_attachment(
+    char *attachment,
+    char *buffer, size_t length,
+    char **pointer_out)
+{
+    char *point;
+    char *mark;
+
+    /* The Content-Type field starts a fixed distance from the start */
+    point = attachment + 32;
+    mark = strchr(point, ';');
+    assert(mark != NULL);
+
+    strncpy(buffer, point, length < mark - point ? length : mark - point);
+
+    /* The body starts a fixed distance from the semicolon */
+    *pointer_out = mark + 20;
+}
 
 /* Sends a message_t using the receiver's information */
 static void send_message(group_sub_t self, message_t message)
@@ -592,22 +704,29 @@ static void send_message(group_sub_t self, message_t message)
     unsigned int timeout;
     char *message_id;
     char *reply_id;
+    char *attachment;
+    uint32_t length;
     char *mime_args;
-    char *mime_type;
-    size_t mime_length;
+    char mime_type[BUFFER_SIZE];
     
     /* Pull information out of the message */
     timeout = message_get_timeout(message);
     message_id = message_get_id(message);
     reply_id = message_get_reply_id(message);
-    mime_type = message_get_mime_type(message);
-    mime_length = message_get_mime_args(message, &mime_args);
+    length = message_get_attachment(message, &attachment);
+
+    /* If there's an attachment then try to extract the type and body */
+    if (attachment != NULL)
+    {
+	decode_attachment(attachment, mime_type, BUFFER_SIZE, &mime_args);
+    }
 
     /* Allocate a new notification */
     if ((notification = elvin_notification_alloc(self -> error)) == NULL)
     {
 	fprintf(stderr, "elvin_notification_alloc(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
     /* Add an xtickertape user agent tag */
@@ -618,7 +737,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
     /* Add the `Group' field and the backward compatible `TICKERTAPE'
@@ -635,7 +755,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
     /* Add the `From' field and the backward compatible `USER'
@@ -652,7 +773,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
     /* Add the `Message' field and the backward compatible
@@ -669,7 +791,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
     /* Add the `Timeout' field and the backward compatible `TIMEOUT'
@@ -686,7 +809,24 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_int32(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
+    }
+
+    /* Add the attachment if one was provided */
+    if (attachment != NULL)
+    {
+	if (elvin_notification_add_opaque(
+		notification,
+		F3_ATTACHMENT,
+		attachment,
+		length,
+		self -> error) == 0)
+	{
+	    fprintf(stderr, "elvin_notification_add_opaque(): failed\n");
+	    elvin_error_fprintf(stderr, self -> error);
+	    exit(1);
+	}
     }
 
     /* Add mime information if both mime_args and mime_type are provided */
@@ -699,7 +839,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	    abort();
+	    elvin_error_fprintf(stderr, self -> error);
+	    exit(1);
 	}
 
 	if (elvin_notification_add_string(
@@ -709,7 +850,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	    abort();
+	    elvin_error_fprintf(stderr, self -> error);
+	    exit(1);
 	}
     }
 
@@ -721,7 +863,8 @@ static void send_message(group_sub_t self, message_t message)
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
     }
 
 
@@ -735,7 +878,8 @@ static void send_message(group_sub_t self, message_t message)
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	    abort();
+	    elvin_error_fprintf(stderr, self -> error);
+	    exit(1);
 	}
     }
 

@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.14 2001/08/25 14:04:43 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.15 2002/04/09 17:06:58 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -64,14 +64,11 @@ struct message
     /* The receiver's string (tickertext) */
     char *string;
 
-    /* The receiver's MIME type information */
-    char *mime_type;
+    /* The receiver's MIME attachment */
+    char *attachment;
 
-    /* The receiver's MIME arg */
-    char *mime_args;
-
-    /* The length of the receiver's mime arg */
-    size_t mime_length;
+    /* The length of the receiver's MIME attachment */
+    size_t length;
 
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
@@ -94,9 +91,8 @@ message_t message_alloc(
     char *user,
     char *string,
     unsigned int timeout,
-    char *mime_type,
-    char *mime_args,
-    size_t mime_length,
+    char *attachment,
+    size_t length,
     char *tag,
     char *id,
     char *reply_id)
@@ -116,24 +112,24 @@ message_t message_alloc(
     self -> user = strdup(user);
     self -> string = strdup(string);
 
-    self -> mime_type = (mime_type == NULL) ? NULL : strdup(mime_type);
-    self -> mime_length = mime_length;
-    if (mime_length == 0)
+    if (length == 0)
     {
-	self -> mime_args = NULL;
+	self -> attachment = NULL;
+	self -> length = 0;
     }
     else
     {
 	/* Allocate some room for a copy of the mime args */
-	if ((self -> mime_args = (char *)malloc(mime_length + 1)) == NULL)
+	if ((self -> attachment = malloc(length + 1)) == NULL)
 	{
-	    self -> mime_length = 0;
+	    self -> length = 0;
 	}
 	else
 	{
-	    /* Copy the mime args and null terminate them */
-	    memcpy(self -> mime_args, mime_args, mime_length);
-	    self -> mime_args[mime_length] = '\0';
+	    /* Make a copy of the attachment */
+	    memcpy(self -> attachment, attachment, length);
+	    self -> attachment[length] = '\0';
+	    self -> length = length;
 	}
     }
 
@@ -203,16 +199,10 @@ void message_free(message_t self)
 	self -> string = NULL;
     }
 
-    if (self -> mime_type != NULL)
+    if (self -> attachment != NULL)
     {
-	free(self -> mime_type);
-	self -> mime_type = NULL;
-    }
-
-    if (self -> mime_args != NULL)
-    {
-	free(self -> mime_args);
-	self -> mime_args = NULL;
+	free(self -> attachment);
+	self -> attachment = NULL;
     }
 
     if (self -> tag != NULL)
@@ -247,8 +237,7 @@ void message_debug(message_t self)
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
-    printf("  mime_type = \"%s\"\n", (self -> mime_type == NULL) ? "<null>" : self -> mime_type);
-    printf("  mime_args = \"%s\"\n", (self -> mime_args == NULL) ? "<null>" : self -> mime_args);
+    printf("  attachment = \"%p\" [%d]\n", self -> attachment, self -> length);
     printf("  timeout = %ld\n", self -> timeout);
     printf("  tag = \"%s\"\n", (self -> tag == NULL) ? "<null>" : self -> tag);
     printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
@@ -302,20 +291,14 @@ void message_set_timeout(message_t self, unsigned long timeout)
 /* Answers non-zero if the receiver has a MIME attachment */
 int message_has_attachment(message_t self)
 {
-    return (self -> mime_args != NULL);
-}
-
-/* Answers the receiver's MIME-type string */
-char *message_get_mime_type(message_t self)
-{
-    return self -> mime_type;
+    return (self -> attachment != NULL);
 }
 
 /* Answers the receiver's MIME arguments */
-size_t message_get_mime_args(message_t self, char **mime_args_out)
+size_t message_get_attachment(message_t self, char **attachment_out)
 {
-    *mime_args_out = self -> mime_args;
-    return self -> mime_length;
+    *attachment_out = self -> attachment;
+    return self -> length;
 }
 
 /* Answers the receiver's tag */
