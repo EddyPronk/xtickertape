@@ -1,3 +1,9 @@
+Overview of changes in xtickertape-1.6.5
+
+* Completed the great tickertape naming reform.
+
+* Plugged all remaining memory leaks (hopefully!)
+
 Overview of changes in xtickertape-1.6.4
 
 * Rebuilt the usenet and groups file parsers with an eye towards
