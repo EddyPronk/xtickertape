@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.35 1999/01/21 00:43:45 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.36 1999/01/27 00:08:33 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -501,6 +501,8 @@ void MessageView_decodeMime(MessageView self)
     FILE *file;
 
     SANITY_CHECK(self);
+
+#ifdef METAMAIL
     mimeType = Message_getMimeType(self -> message);
     mimeArgs = Message_getMimeArgs(self -> message);
 
@@ -531,7 +533,8 @@ void MessageView_decodeMime(MessageView self)
 
     /* Send it off to metamail to display */
     StringBuffer_clear(buffer);
-    StringBuffer_append(buffer, "metamail -B -q -b -c ");
+    StringBuffer_append(buffer, METAMAIL);
+    StringBuffer_append(buffer, " -B -q -b -c ");
     StringBuffer_append(buffer, mimeType);
     StringBuffer_appendChar(buffer, ' ');
     StringBuffer_append(buffer, filename);
@@ -544,6 +547,7 @@ void MessageView_decodeMime(MessageView self)
     free(filename);
 #endif /* HAVE_ALLOCA */
     StringBuffer_free(buffer);
+#endif /* HAVE_METAMAIL */
 }
 
 
