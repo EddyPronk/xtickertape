@@ -3,6 +3,9 @@ Overview of changes in xtickertape-1.5.10
 * Fixed a bug in the reconnect code in which the delay between reconnect
   attempts was never being reset to the initial delay.
 
+* Added the -nw option to show-url to placate users who only want to
+  have one Nescape window open at a time.
+
 Overview of changes in xtickertape-1.5.9
 
 * Using configure to find metamail so that it doesn't have to be in
