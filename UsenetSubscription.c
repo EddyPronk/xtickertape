@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.14 1999/04/27 04:31:12 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.15 1999/04/27 05:13:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -767,7 +767,6 @@ void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection c
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
-	printf("usenet subscription is:\n%s\n", self -> expression);
 	self -> connectionInfo = ElvinConnection_subscribe(
 	    self -> connection, self -> expression,
 	    (NotifyCallback)HandleNotify, self);
