@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.25 1998/08/19 06:38:34 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.26 1998/08/26 04:57:09 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,7 +102,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn3Down>: menu()\n<Btn1Up>(2): decodeMime()\n<Key>d: delete()\n<Key>q: quit()"
+    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>q: quit()"
 };
 
 
