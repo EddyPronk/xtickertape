@@ -77,5 +77,9 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    elvin_error_free(error);
+
+    /* Report on memory usage */
+    elvin_memory_report();
     exit(0);
 }
