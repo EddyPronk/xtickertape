@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.3 1997/05/31 03:42:28 phelps Exp $ */
+/* $Id: Subscription.c,v 1.4 1998/05/16 05:49:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +75,7 @@ void Subscription_free(Subscription self)
 void Subscription_debug(Subscription self)
 {
     SANITY_CHECK(self);
-    printf("Subscription (0x%p)\n", self);
+    printf("Subscription (%p)\n", self);
 #ifdef SANITY
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */    

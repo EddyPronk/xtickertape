@@ -1,4 +1,4 @@
-/* $Id: Hash.c,v 1.2 1997/05/31 03:42:25 phelps Exp $ */
+/* $Id: Hash.c,v 1.3 1998/05/16 05:49:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -269,7 +269,7 @@ void Hashtable_fdebug(Hashtable self, FILE *out)
 
 	while (entry != NULL)
 	{
-	    fprintf(out, "[%ld] 0x%p key=\"%s\"\n", index, entry -> value, entry -> key);
+	    fprintf(out, "[%ld] %p key=\"%s\"\n", index, entry -> value, entry -> key);
 	    entry = entry -> next;
 	}
     }

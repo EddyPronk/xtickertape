@@ -304,18 +304,18 @@ void List_debug(List self)
     ListLink link;
 
     SANITY_CHECK(self);
-    printf("\nList (0x%p)\n", self);
+    printf("\nList (%p)\n", self);
 #ifdef SANITY
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */
-    printf("  head = 0x%p\n", self -> head);
-    printf("  tail = 0x%p\n", self -> tail);
+    printf("  head = %p\n", self -> head);
+    printf("  tail = %p\n", self -> tail);
     printf("  elements:\n");
 
     for (link = self -> head; link != NULL; link = link -> next)
     {
-	printf("    ListLink (0x%p)\n", link);
-	printf("      next = 0x%p\n", link -> next);
-	printf("      value = 0x%p (\"%s\")\n", link -> value, (char *)link -> value);
+	printf("    ListLink (%p)\n", link);
+	printf("      next = %p\n", link -> next);
+	printf("      value = %p (\"%s\")\n", link -> value, (char *)link -> value);
     }
 }

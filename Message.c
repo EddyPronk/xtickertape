@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.5 1998/02/10 23:41:09 phelps Exp $ */
+/* $Id: Message.c,v 1.6 1998/05/16 05:49:11 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,7 +147,7 @@ void Message_debug(Message self)
 {
     SANITY_CHECK(self);
 
-    printf("Message (0x%p)\n", self);
+    printf("Message (%p)\n", self);
 #ifdef SANITY
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */

@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.18 1998/05/12 05:08:46 phelps Exp $ */
+/* $Id: MessageView.c,v 1.19 1998/05/16 05:49:11 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -266,12 +266,12 @@ static void computeWidths(MessageView self)
 void MessageView_debug(MessageView self)
 {
     SANITY_CHECK(self);
-    printf("MessageView (0x%p)\n", self);
+    printf("MessageView (%p)\n", self);
 #ifdef SANITY
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */
     printf("  refcount = %u\n", self -> refcount);
-    printf("  widget = 0x%p\n", self -> widget);
+    printf("  widget = %p\n", self -> widget);
     printf("  fadeLevel = %d\n", self -> fadeLevel);
     printf("  isExpired = %s\n", (self -> isExpired) ? "true" : "false");
     printf("  message = Message[%s:%s:%s (%ld)]\n",
@@ -280,8 +280,8 @@ void MessageView_debug(MessageView self)
 	   Message_getString(self -> message),
 	   Message_getTimeout(self -> message)
 	);
-    printf("  timer = 0x%lx\n", self -> timer);
-    printf("  pixmap = 0x%lx\n", self -> pixmap);
+    printf("  timer = %lx\n", self -> timer);
+    printf("  pixmap = %lx\n", self -> pixmap);
     printf("  ascent = %u\n", self -> ascent);
     printf("  height = %u\n", self -> height);
     printf("  groupWidth = %u\n", self -> groupWidth);
@@ -351,7 +351,7 @@ void MessageView_freeReference(MessageView self)
     else
     {
 #ifdef DEBUG	
-	printf("MessageView_free: 0x%p\n", self); fflush(stdout);
+	printf("MessageView_free: %p\n", self); fflush(stdout);
 #endif /* DEBUG */
 	MessageView_free(self);
     }

@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.21 1998/05/13 07:17:08 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.22 1998/05/16 05:49:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -375,7 +375,7 @@ static void AddMessageView(TickertapeWidget self, MessageView view)
     List_addLast(self -> tickertape.messages, view);
     MessageView_allocReference(view);
 #ifdef DEBUG
-    printf("Added message view 0x%p\n", view);
+    printf("Added message view %p\n", view);
 #endif /* DEBUG */
 
     /* Make sure the clock is running */
@@ -662,7 +662,7 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 static void Destroy(Widget widget)
 {
 #ifdef DEBUG
-    fprintf(stderr, "Destroy 0x%p\n", widget);
+    fprintf(stderr, "Destroy %p\n", widget);
 #endif /* DEBUG */
 }
 
@@ -670,7 +670,7 @@ static void Destroy(Widget widget)
 static void Resize(Widget widget)
 {
 #ifdef DEBUG
-    fprintf(stderr, "Resize 0x%p\n", widget);
+    fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
 }
 
