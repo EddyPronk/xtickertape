@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.25 2002/04/23 16:56:20 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.26 2002/07/02 15:19:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.25 2002/04/23 16:56:20 phe
 #endif
 #include <elvin/elvin.h>
 #include <elvin/sha1.h>
+#include "globals.h"
 #include "replace.h"
 #include "key_table.h"
 #include "groups_parser.h"
@@ -167,6 +168,7 @@ static int accept_subscription(groups_parser_t self)
     /* If there are keys then make a key block */
     if (self -> private_key_count != 0 || self -> public_key_count != 0)
     {
+#if ! defined(ELVIN_VERSION_AT_LEAST)
 	/* Construct a notification key block */
 	if ((notification_keys = elvin_keys_alloc(NULL)) == NULL)
 	{
@@ -178,6 +180,21 @@ static int accept_subscription(groups_parser_t self)
 	{
 	    abort();
 	}
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+	/* Construct a notification key block */
+	if ((notification_keys = elvin_keys_alloc(client, NULL)) == NULL)
+	{
+	    abort();
+	}
+
+	/* Construct a subscription key block */
+	if ((subscription_keys = elvin_keys_alloc(client, NULL)) == NULL)
+	{
+	    abort();
+	}
+#else
+#error "Unsupported Elvin library version"
+#endif
 
 	/* Add the private keys to the notification block */
 	for (i = 0; i < self -> private_key_count; i++)
@@ -400,10 +417,12 @@ static int accept_key(groups_parser_t self, char *name)
 	}
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 	/* Calculate the public key */
-	if (! elvin_sha1digest(data, length, public_key, NULL))
+	if (! elvin_sha1digest(client, data, length, public_key, NULL))
 	{
 	    return -1;
 	}
+#else
+#error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
 	length = ELVIN_SHA1DIGESTLEN;

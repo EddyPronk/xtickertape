@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.42 2002/04/23 23:11:22 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.43 2002/07/02 15:19:21 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -46,6 +46,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.42 2002/04/23 23:11:22 phelps 
 #endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include "globals.h"
 #include "replace.h"
 #include "group_sub.h"
 
@@ -746,13 +747,25 @@ static void send_message(group_sub_t self, message_t message)
 	mime_args = buffer;
     }
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
     /* Allocate a new notification */
     if ((notification = elvin_notification_alloc(self -> error)) == NULL)
     {
-	fprintf(stderr, "elvin_notification_alloc(): failed\n");
+	fprintf(stderr, PACKAGE ": elvin_notification_alloc() failed\n");
 	elvin_error_fprintf(stderr, self -> error);
 	exit(1);
     }
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+    /* Allocate a new notification */
+    if ((notification = elvin_notification_alloc(client, self -> error)) == NULL)
+    {
+	fprintf(stderr, PACKAGE ": elvin_notification_alloc(): failed\n");
+	elvin_error_fprintf(stderr, self -> error);
+	exit(1);
+    }
+#else
+#error "Unsupported Elvin library version"
+#endif
 
     /* Add an xtickertape user agent tag */
     if (elvin_notification_add_string(

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.69 2002/04/23 22:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.70 2002/07/02 15:19:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.69 2002/04/23 22:29:52 phelps Exp 
 #include <elvin/elvin.h>
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
+#include "globals.h"
 #include "replace.h"
 #include "panel.h"
 #include "History.h"
@@ -1320,10 +1321,12 @@ void create_uuid(control_panel_t self, char *result)
 	abort();
     }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    if (! elvin_sha1digest(buffer, 31, digest, NULL))
+    if (! elvin_sha1digest(client, buffer, 31, digest, NULL))
     {
 	abort();
     }
+#else
+#error "Unsupported Elvin library version"
 #endif
 
     /* Convert those digits into bytes */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.111 2002/06/11 15:20:25 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.112 2002/07/02 15:19:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -67,6 +67,7 @@ static const char cvsid[] = "$Id: main.c,v 1.111 2002/06/11 15:20:25 phelps Exp 
 #include <X11/Xmu/Editres.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
+#include "globals.h"
 #include "replace.h"
 #include "message.h"
 #include "tickertape.h"
@@ -128,6 +129,16 @@ static void do_quit(
 
 /* The Tickertape */
 static tickertape_t tickertape;
+
+#if defined(ELVIN_VERSION_AT_LEAST)
+#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
+/* The global elvin client information */
+elvin_client_t client;
+#else
+#error "Unsupported Elvin library version"
+#endif
+#endif
+
 
 /* The default application actions table */
 static XtActionsRec actions[] =
@@ -606,29 +617,40 @@ int main(int argc, char *argv[])
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
-#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    /* Allocate an error context */
-    if (! (error = elvin_error_alloc(NULL))) {
-	fprintf(stderr, PACKAGE ": elvin_error_alloc(): failed\n");
-	exit(1);
-    }
-
-    /* Initialize the elvin client library */
-    if (! elvin_xt_init(context, error))
-    {
-	fprintf(stderr, PACKAGE ": elvin_xt_init(): failed\n");
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-#endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Create a new elvin connection handle */
     if ((handle = elvin_handle_alloc(error)) == NULL)
     {
-	fprintf(stderr, PACKAGE ": elvin_handle_alloc(): failed\n");
+	fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
+
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+    /* Allocate an error context */
+    if (! (error = elvin_error_alloc(NULL, NULL))) {
+	fprintf(stderr, PACKAGE ": elvin_error_alloc() failed\n");
+	exit(1);
+    }
+
+    /* Initialize the elvin client library */
+    if ((client = elvin_xt_init(context, error)) == NULL)
+    {
+	fprintf(stderr, PACKAGE ": elvin_xt_init() failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Create a new elvin connection handle */
+    if ((handle = elvin_handle_alloc(client, error)) == NULL)
+    {
+	fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+#else /* ELVIN_VERSION_AT_LEAST */
+#error "Unsupported Elvin library version"
+#endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Scan what's left of the arguments */
     parse_args(argc, argv, handle, &user, &domain,

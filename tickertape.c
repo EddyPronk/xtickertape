@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.96 2002/06/07 15:13:20 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.97 2002/07/02 15:19:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -943,6 +943,7 @@ static void connect_cb(
 }
 
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
 /* Callback for elvin status changes */
 static void status_cb(
     elvin_handle_t handle, char *url,
@@ -962,7 +963,7 @@ static void status_cb(
 	/* We were unable to (re)connect */
 	case ELVIN_STATUS_CONNECTION_FAILED:
 	{
-	    fprintf(stderr, "%s: unable to connect\n", PACKAGE);
+	    fprintf(stderr, PACKAGE ": unable to connect\n");
 	    elvin_error_fprintf(stderr, error);
 	    exit(1);
 	}
@@ -976,7 +977,8 @@ static void status_cb(
 	    length = strlen(CONNECT_MSG) + strlen(url) - 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
-		return;
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
 	    }
 
 	    snprintf(buffer, length, CONNECT_MSG, url);
@@ -993,7 +995,8 @@ static void status_cb(
 	    length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
-		return;
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
 	    }
 
 	    snprintf(buffer, length, LOST_CONNECT_MSG, url);
@@ -1010,38 +1013,14 @@ static void status_cb(
 	    length = strlen(CONN_CLOSED_MSG) + strlen(url) - 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
-		return;
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
 	    }
 
 	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
 	    string = buffer;
 	    break;
 	}
-
-#if defined(ELVIN_VERSION_AT_LEAST)
-#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
-	/* Connection warnings go to the status line */
-	case ELVIN_STATUS_CONNECTION_WARN:
-	{
-	    /* Get a big buffer */
-	    if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
-	    {
-		return;
-	    }
-	    
-	    /* Print the error message into it */
-	    elvin_error_snprintf(buffer, BUFFER_SIZE, error);
-	    string = buffer;
-
-	    /* Display it on the status line */
-	    control_panel_set_status(self -> control_panel, buffer);
-
-	    /* Clean up */
-	    free(buffer);
-	    return;
-	}
-#endif /* ELVIN_VERSION_AT_LEAST(4, 1, -1) */
-#endif /* ELVIN_VERSION_AT_LEAST */
 
 	case ELVIN_STATUS_DROP_WARN:
 	{
@@ -1058,7 +1037,8 @@ static void status_cb(
 	    length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
-		return;
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
 	    }
 
 	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
@@ -1108,6 +1088,218 @@ static void status_cb(
 	free(buffer);
     }
 }
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+/* Callback for elvin status changes */
+static int status_cb(
+    elvin_handle_t handle,
+    elvin_status_event_t event,
+    void *rock,
+    elvin_error_t error)
+{
+    tickertape_t self = (tickertape_t)rock;
+    message_t message;
+    size_t length;
+    char *buffer = NULL;
+    char *string;
+
+    /* Construct an appropriate message string */
+    switch (event -> type)
+    {
+	/* We were unable to (re)connect */
+	case ELVIN_STATUS_CONNECTION_FAILED:
+	{
+	    fprintf(stderr, PACKAGE ": unable to connect\n");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
+	case ELVIN_STATUS_CONNECTION_FOUND:
+	{
+	    char *url;
+
+	    /* Stringify the URL */
+	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    {
+		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+		elvin_error_fprintf(stderr, error);
+		exit(1);
+	    }
+
+	    /* Tell the control panel that we're connected */
+	    control_panel_set_connected(self -> control_panel, True);
+	    
+	    /* Make room for a combined string and URL */
+	    length = strlen(CONNECT_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
+	    {
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
+	    }
+
+	    snprintf(buffer, length, CONNECT_MSG, url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_CONNECTION_LOST:
+	{
+	    char *url;
+
+	    /* Stringify the URL */
+	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    {
+		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+		elvin_error_fprintf(stderr, error);
+		exit(1);
+	    }
+
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
+	    /* Make room for a combined string and URL */
+	    length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
+	    {
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
+	    }
+
+	    snprintf(buffer, length, LOST_CONNECT_MSG, url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_CONNECTION_CLOSED:
+	{
+	    char *url;
+
+	    /* Stringify the URL */
+	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    {
+		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+		elvin_error_fprintf(stderr, error);
+		exit(1);
+	    }
+
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
+	    /* Make room for a message string */
+	    length = strlen(CONN_CLOSED_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
+	    {
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
+	    }
+
+	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
+	    string = buffer;
+	    break;
+	}
+
+	/* Connection warnings go to the status line */
+	case ELVIN_STATUS_CONNECTION_WARN:
+	{
+	    /* Get a big buffer */
+	    if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
+	    {
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
+	    }
+	    
+	    /* Print the error message into it */
+	    elvin_error_snprintf(buffer, BUFFER_SIZE, error);
+	    string = buffer;
+
+	    /* Display it on the status line */
+	    control_panel_set_status(self -> control_panel, buffer);
+
+	    /* Clean up */
+	    free(buffer);
+	    return 1;
+	}
+
+	case ELVIN_STATUS_DROP_WARN:
+	{
+	    string = DROP_WARN_MSG;
+	    break;
+	}
+
+	case ELVIN_STATUS_PROTOCOL_ERROR:
+	{
+	    char *url;
+
+	    /* Stringify the URL */
+	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    {
+		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+		elvin_error_fprintf(stderr, error);
+		exit(1);
+	    }
+
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
+	    /* Make room for a message string */
+	    length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
+	    {
+		perror(PACKAGE ": malloc() failed");
+		exit(1);
+	    }
+
+	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_IGNORED_ERROR:
+	{
+	    fprintf(stderr, "%s: status ignored\n", PACKAGE);
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
+	case ELVIN_STATUS_CLIENT_ERROR:
+	{
+	    fprintf(stderr, "%s: client error\n", PACKAGE);
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
+	default:
+	{
+	    length = sizeof(UNKNOWN_STATUS_MSG) + 16;
+	    buffer = (char *)malloc(length);
+	    snprintf(buffer, length, UNKNOWN_STATUS_MSG, event -> type);
+	    string = buffer;
+	    break;
+	}
+    }
+
+    /* Construct a message for the string and add it to the scroller */
+    if ((message = message_alloc(
+	NULL, "internal", "tickertape", string, 30,
+	NULL, 0, NULL, NULL, NULL)) != NULL)
+    {
+	receive_callback(self, message, False);
+	message_free(message);
+    }
+
+    /* Also display the message on the status line */
+    control_panel_set_status(self -> control_panel, buffer);
+
+    /* Clean up */
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+
+    return 1;
+}
+#else
+#error "Unsupported Elvin library version"
+#endif
 
 #ifdef ENABLE_LISP_INTERPRETER
 /* The callback from the parser */
