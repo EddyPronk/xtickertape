@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.88 2002/04/11 15:36:12 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.89 2002/04/12 13:22:58 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -246,9 +246,8 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 	return;
     }
 
-#if 0
-    history_kill_thread(self -> history, self -> scroller, message);
-#endif
+    /* Delegate to the control panel */
+    control_panel_kill_thread(self -> control_panel, message);
 }
 
 /* Receive a message_t matched by a subscription */
