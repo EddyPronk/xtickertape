@@ -6,6 +6,8 @@ Configuration
   both configure-time and run-time.  Perhaps both a command-line
   option and an environment variable would be useful.
 
+- Add the necessary bits to build an RPM from the CVS tree.
+
 
 Control Panel:
 
@@ -27,6 +29,9 @@ History Widget
 - We should have resources for the colors to use when drawing the
   selected line so that people on black and white machines can still
   read it.
+
+- The history window should scroll messages up when the visible window
+  is full rather than waiting until the history buffer is full.
 
 - It should be possible to scroll horizontally from the keyboard.
 
@@ -50,6 +55,9 @@ History Widget
 
 - It should be possible to view the attachment of the selected message
   from the keyboard.
+
+- Finish implementing the scrollbar callbacks, and possibly combine
+  them into fewer functions.
 
 
 Scheme Interpreter:
