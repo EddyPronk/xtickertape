@@ -61,20 +61,29 @@ when sending messages.
 Use \fIdomain\fP (in conjunction with the user) as the default domain
 when sending messages.
 .TP
+.B -T \fIticker-dir\fP
+.TP
+.BI --ticker-dir= ticker-dir
+Look for configuration files in this directory.  Defaults to
+$TICKERDIR environment variable or, if that is not set, $HOME/.ticker.
+.TP
 .B -G \fIgroups-file\fP
 .TP
 .BI --groups= groups-file
-Read the group subscriptions out of \fIgroups-file\fP.
+Read the group subscriptions out of \fIgroups-file\fP.  Defaults to
+\fIticker-dir\fP/groups.
 .TP
 .B -U \fIusenet-file\fP
 .TP
 .BI --usenet= usenet-file
-Read the usenet news subscriptions out of \fIusenet-file\fP.
+Read the usenet news subscriptions out of \fIusenet-file\fP.  Defaults
+to \fIticker-dir\fP/usenet.
 .TP
 .B -K \fIkeys-file\fP
 .TP
 .BI --keys= keys-file
-Read the keys information out of \fIkeys-file\fP.
+Read the keys information out of \fIkeys-file\fP.  Defaults to
+\fIticker-dir\fP/keys.
 .TP
 .B -k \fIkeys-dir\fP
 .TP

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.117 2003/01/28 15:58:47 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.118 2003/01/28 16:07:39 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -91,6 +91,7 @@ static struct option long_options[] =
 #if defined(ENABLE_LISP_INTERPRETER)
     { "config", required_argument, NULL, 'c' },
 #endif
+    { "ticker-dir", required_argument, NULL, 'T' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "keys", required_argument, NULL, 'K' },
@@ -102,9 +103,9 @@ static struct option long_options[] =
 #endif /* GETOPT_LONG */
 
 #if defined(ENABLE_LISP_INTERPRETER)
-#define OPTIONS "e:c:D:G:H:hI:K:S:u:U:v"
+#define OPTIONS "e:c:D:G:H:hI:K:k:S:T:u:U:v"
 #else
-#define OPTIONS "e:D:G:H:hI:K:k:S:u:U:v"
+#define OPTIONS "e:D:G:H:hI:K:k:S:T:u:U:v"
 #endif
 
 #if defined(HAVE_GETOPT_LONG)
@@ -120,6 +121,7 @@ static void usage(int argc, char *argv[])
 	"  -I idle-period, --idle=idle-period\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
+	"  -T ticker-dir,  --ticker-dir=ticker-dir\n"
 #if defined(ENABLE_LISP_INTERPRETER)
 	"  -c config-file, --config=config-file\n"
 #endif
@@ -144,6 +146,7 @@ static void usage(int argc, char *argv[])
 	"  -I idle-period\n"
 	"  -u user\n"
 	"  -D domain\n"
+	"  -T ticker-dir\n"
 #if defined(ENABLE_LISP_INTERPRETER)
 	"  -c config-file\n"
 #endif
@@ -418,6 +421,14 @@ static void parse_args(
 	    case 'D':
 	    {
 		*domain_return = strdup(optarg);
+		break;
+	    }
+
+
+	    /* --ticker-dir= or -T */
+	    case 'T':
+	    {
+		*ticker_dir_return = optarg;
 		break;
 	    }
 
