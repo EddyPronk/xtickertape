@@ -1,11 +1,12 @@
-/* $Id: OrbitSubscription.c,v 1.7 1998/10/21 08:20:41 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.8 1998/10/22 04:15:48 phelps Exp $ */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <alloca.h>
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
 #include "OrbitSubscription.h"
 #include "sanity.h"
-#include "Message.h"
 
 #ifdef SANITY
 static char *sanity_value = "OrbitSubscription";
@@ -62,7 +63,7 @@ void SendMessage(OrbitSubscription self, Message message);
  *
  */
 
-/* Transforms a notification into Message and delivers it */
+/* Transforms a notification into a Message and delivers it */
 static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 {
     Message message;
@@ -148,14 +149,14 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 	thread_id_p = &thread_id;
     }
 
-    /* Construct the message */
+    /* Construct the Message */
     message = Message_alloc(
 	self -> controlPanelInfo, self -> title,
 	user, text, *timeout_p,
 	mimeType, mimeArgs,
 	*msg_id_p, *thread_id_p);
 
-    /* Deliver the message */
+    /* Deliver the Message */
     (*self -> callback)(self -> context, message);
 }
 
@@ -242,8 +243,9 @@ void OrbitSubscription_free(OrbitSubscription self)
 
 #ifdef SANITY
     self -> sanity_check = sanity_freed;
-#endif /* SANITY */    
+#else /* SANITY */    
     free(self);
+#endif /* SANITY */    
 }
 
 
