@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.9 2000/07/10 12:45:15 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.10 2000/07/10 13:43:45 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -847,8 +847,15 @@ int ast_free(ast_t self, elvin_error_t error)
 
 	case AST_SUB:
 	{
-	    fprintf(stderr, "ast_free(): type %d is not yet supported\n", self -> type);
-	    abort();
+	    if (self -> value.sub != NULL)
+	    {
+		if (! subscription_free(self -> value.sub, error))
+		{
+		    return 0;
+		}
+	    }
+
+	    return ELVIN_FREE(self, error);
 	}
 
 	default:
@@ -1154,16 +1161,6 @@ static int eval_block(
     return 1;
 }
 
-/* Evaluates a subscription ast in the given environment */
-static int eval_sub(
-    ast_t self,
-    elvin_hashtable_t env,
-    value_t *value_out,
-    elvin_error_t error)
-{
-    fprintf(stderr, "eval_sub(): not yet implemented\n");
-    abort();
-}
 
 /* Evaluates an AST with the given notification */
 int ast_eval(
@@ -1225,10 +1222,6 @@ int ast_eval(
 	}
 
 	case AST_SUB:
-	{
-	    return eval_sub(self, env, value_out, error);
-	}
-
 	default:
 	{
 	    fprintf(stderr, "ast_eval(): bad type: %d\n", self -> type);
@@ -1236,4 +1229,60 @@ int ast_eval(
 	}
     }
 }
+
+/* Evaluates a list of subscriptions */
+int ast_eval_sub_list(
+    ast_t self,
+    elvin_hashtable_t env,
+    uint32_t *count_out,
+    subscription_t **subs_out,
+    elvin_error_t error)
+{
+    uint32_t count, i;
+    subscription_t *subs;
+    ast_t ast;
+
+    /* Figure out how many subscriptions we have */
+    count = 0;
+    for (ast = self; ast != NULL; ast = ast -> next)
+    {
+	count++;
+    }
+
+    /* Shortcut for zero-length lists */
+    if (count < 1)
+    {
+	*count_out = 0;
+	*subs_out = NULL;
+	return 1;
+    }
+
+    /* Allocate an array to hold the items in the list */
+    if (! (subs = (subscription_t *)ELVIN_MALLOC(count * sizeof(subscription_t), error)))
+    {
+	return 0;
+    }
+
+    /* Add each subscription to the array */
+    ast = self;
+    for (i = 0; i < count; i++)
+    {
+	/* Sanity check */
+	if (ast -> type != AST_SUB)
+	{
+	    fprintf(stderr, "ast_eval_subs_list(): invalid ast type: %d\n", ast -> type);
+	    abort();
+	}
+
+	subs[i] = ast -> value.sub;
+	ast -> value.sub = NULL;
+	ast = ast -> next;
+    }
+
+    /* Fill in the results */
+    *count_out = count;
+    *subs_out = subs;
+    return 1;
+}
+
 

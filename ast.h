@@ -31,7 +31,7 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.6 2000/07/10 07:44:14 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.7 2000/07/10 13:43:45 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
@@ -39,6 +39,9 @@ typedef struct ast *ast_t;
 
 /* The value data type */
 typedef struct value value_t;
+
+/* This shouldn't be here */
+typedef struct subscription *subscription_t;
 
 
 
@@ -171,11 +174,19 @@ int ast_free(ast_t self, elvin_error_t error);
 ast_t ast_append(ast_t list, ast_t item, elvin_error_t error);
 
 
-/* Evaluates an AST against the given notification */
+/* Evaluates an AST in the given environment */
 int ast_eval(
     ast_t self,
     elvin_hashtable_t env,
     value_t *value_out,
+    elvin_error_t error);
+
+/* Evaluates a list of subscriptions */
+int ast_eval_sub_list(
+    ast_t self,
+    elvin_hashtable_t env,
+    uint32_t *count_out,
+    subscription_t **subs_out,
     elvin_error_t error);
 
 /* Allocates and returns a string representation of the AST */
