@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.51 2000/04/10 03:48:49 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.52 2000/04/11 09:36:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -41,6 +41,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.51 2000/04/10 03:48:49 phelps
 #include <errno.h>
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include <elvin/xt_mainloop.h>
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
@@ -722,7 +723,7 @@ static void publish_startup_notification(tickertape_t self)
     }
 
     /* No keys support yet */
-    elvin_async_notify(self -> handle, notification, NULL, self -> error);
+    elvin_xt_notify(self -> handle, notification, NULL, self -> error);
     elvin_notification_free(notification, self -> error);
 }
 
@@ -1177,9 +1178,9 @@ tickertape_t tickertape_alloc(
     handle -> status_closure = self;
 
     /* Connect to the elvin server */
-    if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
+    if (elvin_xt_connect(handle, connect_cb, self, self -> error) == 0)
     {
-	fprintf(stderr, "*** elvin_async_connect(): failed\n");
+	fprintf(stderr, "*** elvin_xt_connect(): failed\n");
 	exit(1);
     }
 

@@ -28,14 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.15 2000/03/30 06:37:28 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.16 2000/04/11 09:36:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include <elvin/xt_mainloop.h>
 #include "usenet_sub.h"
 
 
@@ -574,12 +576,12 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
     /* Disconnect from the old connection */
     if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
-	if (elvin_async_delete_subscription(
+	if (elvin_xt_delete_subscription(
 	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
 	    abort();
 	}
     }
@@ -589,13 +591,13 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
 
     if ((self -> handle != NULL) && (self -> expression != NULL))
     {
-	if (elvin_async_add_subscription(
+	if (elvin_xt_add_subscription(
 	    self -> handle, (uchar *)self -> expression, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
 	    abort();
 	}
     }

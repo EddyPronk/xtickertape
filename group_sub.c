@@ -28,14 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.12 2000/03/30 06:37:28 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.13 2000/04/11 09:36:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include <elvin/xt_mainloop.h>
 #include "group_sub.h"
 
 #define F_VERSION "xtickertape.version"
@@ -403,7 +405,7 @@ static void send_message(group_sub_t self, message_t message)
 
 
     /* No keys support yet */
-    elvin_async_notify(self -> handle, notification, NULL, self -> error);
+    elvin_xt_notify(self -> handle, notification, NULL, self -> error);
     elvin_notification_free(notification, self -> error);
 }
 
@@ -523,12 +525,12 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 {
     if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
-	if (elvin_async_delete_subscription(
+	if (elvin_xt_delete_subscription(
 	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
 	    abort();
 	}
     }
@@ -538,13 +540,13 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 
     if (self -> handle != NULL)
     {
-	if (elvin_async_add_subscription(
+	if (elvin_xt_add_subscription(
 	    self -> handle, (uchar *)self -> expression, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
 	    abort();
 	}
     }

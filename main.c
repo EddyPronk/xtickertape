@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.77 2000/04/10 01:23:55 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.78 2000/04/11 09:36:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -386,9 +386,9 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Initialize the elvin client library */
-    if ((error = elvin_xt_async_init("en", context)) == NULL)
+    if ((error = elvin_xt_init("en", context)) == NULL)
     {
-	fprintf(stderr, "*** elvin_xt_async_init(): failed\n");
+	fprintf(stderr, "*** elvin_xt_init(): failed\n");
 	abort();
     }
 

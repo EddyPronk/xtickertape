@@ -28,14 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.16 2000/03/30 06:37:28 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.17 2000/04/11 09:36:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include <elvin/xt_mainloop.h>
 #include "message.h"
 #include "mbox_parser.h"
 #include "mail_sub.h"
@@ -224,12 +226,12 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
     /* Unsubscribe from the old connection */
     if (self -> handle != NULL)
     {
-	if (elvin_async_delete_subscription(
+	if (elvin_xt_delete_subscription(
 	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
 	    abort();
 	}
     }
@@ -249,13 +251,13 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
 	sprintf(buffer, MAIL_SUB, self -> user);
 
 	/* Subscribe to elvinmail notifications */
-	if (elvin_async_add_subscription(
+	if (elvin_xt_add_subscription(
 	    self -> handle, (uchar *)buffer, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
 	    abort();
 	}
 
