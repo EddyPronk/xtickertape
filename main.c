@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.48 1999/01/26 12:25:18 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.49 1999/04/27 05:13:49 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -330,7 +330,6 @@ int main(int argc, char *argv[])
     top = XtVaAppInitialize(
 	&context, "Tickertape",
 	NULL, 0, &argc, argv, NULL,
-	XtNtitle, "Tickertape",
 	XtNborderWidth, 0,
 	NULL);
 
