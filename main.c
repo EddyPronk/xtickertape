@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.65 1999/11/25 08:47:51 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.66 1999/11/29 07:12:54 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -279,7 +279,7 @@ static Window create_icon(Widget shell)
     unsigned long black = BlackPixelOfScreen(screen);
     Window window;
     Pixmap pixmap, mask;
-    XColor color;
+    XColor color, ignored;
     GC gc;
     XGCValues values;
 
@@ -289,12 +289,8 @@ static Window create_icon(Widget shell)
 	0, 0, mask_width, mask_height, 0,
 	CopyFromParent, CopyFromParent);
 
-    /* Allocate the color red */
-    color.red = 0xFFFF;
-    color.green = 0x0000;
-    color.blue = 0x0000;
-    color.flags = DoRed | DoGreen | DoBlue;
-    XAllocColor(display, colormap, &color);
+    /* Allocate the color red by name */
+    XAllocNamedColor(display, colormap, "red", &color, &ignored);
 
     /* Create a pixmap from the red bitmap data */
     pixmap = XCreatePixmapFromBitmapData(
