@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.13 1999/05/17 12:56:30 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.14 1999/05/17 14:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -217,17 +217,16 @@ WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
  */
 
 /* Holder for MessageViews and Spacers */
-typedef struct ViewHolder_t
+struct view_holder
 {
+    view_holder_t next;
     MessageView view;
     unsigned int width;
     unsigned int previous_width;
-} *ViewHolder;
+};
 
-static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
-static void ViewHolder_free(ViewHolder self);
-static MessageView ViewHolder_view(ViewHolder self);
-static void ViewHolder_redisplay(ViewHolder self, void *context[]);
+static view_holder_t view_holder_alloc(MessageView view, unsigned int width);
+static void view_holder_free(view_holder_t self);
 
 static void CreateGC(ScrollerWidget self);
 static Pixel *CreateFadedColors(Display *display, Colormap colormap,
@@ -239,27 +238,37 @@ static void Tick(XtPointer widget, XtIntervalId *interval);
 
 static void AddMessageView(ScrollerWidget self, MessageView view);
 static MessageView RemoveMessageView(ScrollerWidget self, MessageView view);
-static void EnqueueViewHolder(ScrollerWidget self, ViewHolder holder);
-static ViewHolder DequeueViewHolder(ScrollerWidget self);
+static void EnqueueViewHolder(ScrollerWidget self, view_holder_t view_holder);
 
 
-/* Allocates a new ViewHolder */
-static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width)
+/* Allocates and initializes new view_holder_t.  Returns a valid
+ * view_holder_t if successful, NULL otherwise */
+static view_holder_t view_holder_alloc(MessageView view, unsigned int width)
 {
-    ViewHolder self = (ViewHolder) malloc(sizeof(struct ViewHolder_t));
-    self -> view = view;
+    view_holder_t self;
+
+    if ((self = (view_holder_t) malloc(sizeof(struct view_holder))) == NULL)
+    {
+	return NULL;
+    }
+
+    self -> next = NULL;
     self -> width = width;
 
-    if (view)
+    if (view != NULL)
     {
-	MessageView_allocReference(view);
+	self -> view = MessageView_allocReference(view);
+    }
+    else
+    {
+	self -> view = NULL;
     }
 
     return self;
 }
 
-/* Frees a ViewHolder */
-static void ViewHolder_free(ViewHolder self)
+/* Frees a view_holder_t */
+static void view_holder_free(view_holder_t self)
 {
     if (self -> view)
     {
@@ -268,43 +277,6 @@ static void ViewHolder_free(ViewHolder self)
 
     free(self);
 }
-
-
-/* Answers the receiver's MessageView */
-static MessageView ViewHolder_view(ViewHolder self)
-{
-    return self -> view;
-}
-
-/* Displays a ViewHolder */
-static void ViewHolder_redisplay(ViewHolder self, void *context[])
-{
-    Drawable drawable = (Drawable) context[1];
-    int x = (int) context[2];
-    int y = (int) context[3];
-
-    if (self -> view != NULL)
-    {
-	MessageView_redisplay(self -> view, drawable, x, y);
-    }
-
-    context[2] = (void *)(x + self -> width);
-}
-
-/* Locates the Message at the given offset */
-static int ViewHolder_locate(ViewHolder self, long *x)
-{
-    if (*x < 0)
-    {
-	return 0;
-    }
-
-    *x -= self -> width;
-
-    return (*x < 0);
-}
-
-
 
 
 /* Answers a GC with the right background color and font */
@@ -425,30 +397,79 @@ static MessageView RemoveMessageView(ScrollerWidget self, MessageView view)
 }
 
 
-/* Adds a ViewHolder to the receiver */
-static void EnqueueViewHolder(ScrollerWidget self, ViewHolder holder)
+/* Adds a view_holder_t to the receiver */
+static void EnqueueViewHolder(ScrollerWidget self, view_holder_t holder)
 {
-    List_addLast(self -> scroller.holders, holder);
+    holder -> next = NULL;
     self -> scroller.visibleWidth += holder -> width;
-}
 
-/* Removes a ViewHolder from the receiver */
-static ViewHolder RemoveViewHolder(ScrollerWidget self, ViewHolder holder)
-{
-    /* Remove the holder from the list (and make sure it was there) */
-    if (List_remove(self -> scroller.holders, holder) == NULL)
+    /* If the list is empty, then simply add this view_holder_t */
+    if (self -> scroller.last_holder == NULL)
     {
-	return NULL;
+	self -> scroller.holders = holder;
+	self -> scroller.last_holder = holder;
+	return;
     }
 
-    self -> scroller.visibleWidth -= holder -> width;
-    return holder;
+    /* Otherwise, append the view_holder_t to the end of the list */
+    self -> scroller.last_holder -> next = holder;
+    self -> scroller.last_holder = holder;
 }
 
-/* Removes a ViewHolder from the receiver */
-static ViewHolder DequeueViewHolder(ScrollerWidget self)
+/* Removes a view_holder_t from the receiver */
+static view_holder_t RemoveViewHolder(ScrollerWidget self, view_holder_t holder)
 {
-    return RemoveViewHolder(self, List_first(self -> scroller.holders));
+    view_holder_t probe;
+
+    /* Short cut for removing the first view_holder_t */
+    if (self -> scroller.holders == holder)
+    {
+	self -> scroller.holders = holder -> next;
+
+	/* Watch for removal of the last view_holder_t */
+	if (self -> scroller.last_holder == holder)
+	{
+	    self -> scroller.last_holder = NULL;
+	}
+
+	/* Update the spacer */
+	if (holder == self -> scroller.spacer)
+	{
+	    self -> scroller.spacer = NULL;
+	}
+
+	/* Update the visible width */
+	self -> scroller.visibleWidth -= holder -> width;
+	return holder;
+    }
+
+    /* Otherwise we spin through the list looking for the holder */
+    for (probe = self -> scroller.holders; probe != NULL; probe = probe -> next)
+    {
+	if (probe -> next == holder)
+	{
+	    probe -> next = holder -> next;
+
+	    /* Watch for removal of the last view_holder_t */
+	    if (self -> scroller.last_holder == holder)
+	    {
+		self -> scroller.last_holder = probe;
+	    }
+
+	    /* Update the spacer */
+	    if (holder == self -> scroller.spacer)
+	    {
+		self -> scroller.spacer = NULL;
+	    }
+
+	    /* Update the visible width */
+	    self -> scroller.visibleWidth -= holder -> width;
+	    return holder;
+	}
+    }
+
+    /* Didn't find the view_holder_t in the list.  Return NULL */
+    return NULL;
 }
 
 
@@ -560,7 +581,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 
     self -> scroller.isStopped = True;
     self -> scroller.messages = List_alloc();
-    self -> scroller.holders = List_alloc();
+    self -> scroller.holders = NULL;
+    self -> scroller.last_holder = NULL;
+    self -> scroller.spacer = NULL;
     self -> scroller.offset = 0;
     self -> scroller.visibleWidth = 0;
     self -> scroller.nextVisible = 0;
@@ -579,7 +602,8 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     }
 
     /* Ensure that we always have at least a blank view holder around */
-    EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
+    EnqueueViewHolder(self, view_holder_alloc(NULL, self -> core.width));
+    self -> scroller.spacer = self -> scroller.last_holder;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -623,12 +647,12 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 }
 
 
-/* Dequeue a ViewHolder if it is no longer visible */
+/* Dequeue a view_holder_t if it is no longer visible */
 static void OutWithTheOld(ScrollerWidget self)
 {
-    ViewHolder holder;
+    view_holder_t holder;
 
-    while ((holder = List_first(self -> scroller.holders)) != NULL)
+    while ((holder = self -> scroller.holders) != NULL)
     {
 	/* See if the first holder has scrolled off the left edge */
 	if (self -> scroller.offset < holder -> width)
@@ -637,19 +661,23 @@ static void OutWithTheOld(ScrollerWidget self)
 	}
 
 	/* It has -- remove it from the queue */
-	holder = DequeueViewHolder(self);
-	    
-	if (holder -> view)
+	RemoveViewHolder(self, holder);
+
+	/* Update the count of real views */
+	if (holder -> view != NULL)
 	{
 	    self -> scroller.realCount--;
 	}
 
+	/* Free the view_holder_t */
+	view_holder_free(holder);
+
+	/* Reset the scroller offset to zero */
 	self -> scroller.offset = 0;
-	ViewHolder_free(holder);
     }
 }
 
-/* Enqueue a ViewHolder if there's space for one */
+/* Enqueue a view_holder_t if there's space for one */
 static void InWithTheNew(ScrollerWidget self)
 {
     while (self -> scroller.visibleWidth - self -> scroller.offset < self -> core.width)
@@ -668,8 +696,8 @@ static void InWithTheNew(ScrollerWidget self)
 	/* If at end of list, add a spacer */
 	if (next == NULL)
 	{
-	    ViewHolder last = List_last(self -> scroller.holders);
-	    ViewHolder holder;
+	    view_holder_t last = self -> scroller.last_holder;
+	    view_holder_t holder;
 	    unsigned long lastWidth;
 	    unsigned long width;
 
@@ -692,14 +720,14 @@ static void InWithTheNew(ScrollerWidget self)
 	    }
 
 	    self -> scroller.nextVisible = 0;
-	    holder = ViewHolder_alloc(NULL, width);
+	    holder = view_holder_alloc(NULL, width);
 	    holder -> previous_width = lastWidth;
 	    EnqueueViewHolder(self, holder);
 	}
-	/* otherwise add message */
 	else
 	{
-	    EnqueueViewHolder(self, ViewHolder_alloc(next, MessageView_getWidth(next)));
+	    /* otherwise add message */
+	    EnqueueViewHolder(self, view_holder_alloc(next, MessageView_getWidth(next)));
 	    self -> scroller.realCount++;
 	}
     }
@@ -721,26 +749,32 @@ static void Rotate(ScrollerWidget self)
 }
 
 
-/* Repaints all of the ViewHolders' views */
+/* Repaints the view of each view_holder_t */
 static void Paint(ScrollerWidget self)
 {
     Widget widget = (Widget)self;
-    void *context[4];
+    view_holder_t holder;
+    long x;
 
     /* Reset the pixmap to the background color */
     XFillRectangle(
 	XtDisplay(widget), self -> scroller.pixmap, self -> scroller.backgroundGC,
 	0, 0, self -> core.width, self -> core.height);
 
-    /* Draw each of the visible ViewHolders */
-    context[0] = (void *)widget;
-    context[1] = (void *)self -> scroller.pixmap;
-    context[2] = (void *)(-self -> scroller.offset);
-    context[3] = (void *)0;
-    List_doWith(self -> scroller.holders, ViewHolder_redisplay, context);
+    /* Draw each visible view_holder_t */
+    x = -self -> scroller.offset;
+    for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
+    {
+	if (holder -> view != NULL)
+	{
+	    MessageView_redisplay(holder -> view, self -> scroller.pixmap, x, 0);
+	}
+
+	x += holder -> width;
+    }
 }
 
-/* Repaints all of the ViewHolders' views */
+/* Repaints the scroller */
 static void Redisplay(Widget widget, XEvent *event, Region region)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
@@ -762,59 +796,40 @@ static void Destroy(Widget widget)
 }
 
 
-
-/* Update the widget of the blank view */
-static void ViewHolder_Resize(ViewHolder self, ScrollerWidget widget, long *x)
-{
-    long width;
-
-    /* If x < 0 then we don't want to resize (but we do want to update x) */
-    if (*x < 0)
-    {
-	*x += self -> width;
-	return;
-    }
-
-    /* Skip any ViewHolders with actual text */
-    if (self -> view != NULL)
-    {
-	return;
-    }
-
-    /* Ok, we've got the blank one.  Update its size (and make sure
-       the visibleWidth is properly updated */
-    widget -> scroller.visibleWidth -= self -> width;
-    width = widget -> core.width - self -> previous_width;
-    self -> width = (width < END_SPACING) ? END_SPACING : width;
-    widget -> scroller.visibleWidth += self -> width;
-}
-
-
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    long x = 0 - self -> scroller.offset;
+    view_holder_t spacer;
 
 #if DEBUG
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
 
-    /* Update our offscreen pixmap */
+    /* Resize our offscreen pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(widget), XtWindow(widget),
 	self -> core.width, self -> core.height,
 	self -> core.depth);
 
-    /* Update the size of the placeholder */
-    List_doWithWith(self -> scroller.holders, ViewHolder_Resize, self, &x);
+    /* Update the size of the spacer (and our visible width) */
+    if ((self -> scroller.spacer) != NULL)
+    {
+	long width = self -> core.width - spacer -> previous_width;
+
+	self -> scroller.visibleWidth -= spacer -> width;
+	spacer -> width = (width < END_SPACING) ? END_SPACING : width;
+	self -> scroller.visibleWidth += spacer -> width;
+    }
 
     /* Make sure we have the right number of things visible */
     OutWithTheOld(self);
     InWithTheNew(self);
 
+    /* Repaint our offscreen pixmap and copy it to the display*/
     Paint(self);
+    Redisplay(widget, NULL, 0);
 }
 
 /* What should this do? */
@@ -845,42 +860,75 @@ static XtGeometryResult QueryGeometry(
 }
 
 
-/* Locates the ViewHolder at the given offset (NULL if none) */
-static ViewHolder ViewHolderAtOffset(ScrollerWidget self, int offset)
+/* Locates the view_holder_t at the given offset (NULL if none) */
+static view_holder_t ViewHolderAtOffset(ScrollerWidget self, int offset)
 {
     long x = offset + self -> scroller.offset;
+    view_holder_t probe;
 
-    return List_findFirstWith(self -> scroller.holders, (ListFindWithFunc)ViewHolder_locate, &x);
-}
-
-/* Answers the ViewHolder corresponding to the location of the last event */
-static ViewHolder ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
-{
-    if ((event -> type == KeyPress) || (event -> type == KeyRelease))
+    /* Watch out for negative offsets (these can happen with
+     * click-to-focus and actions for keys) */
+    if (x < 0)
     {
-	XKeyEvent *keyEvent = (XKeyEvent *) event;
-	return ViewHolderAtOffset(self, keyEvent -> x);
+	return NULL;
     }
 
-    if ((event -> type == ButtonPress) || (event -> type == ButtonRelease))
+    /* Locate the matching view_holder_t */
+    for (probe = self -> scroller.holders; probe != NULL; probe = probe -> next)
     {
-	XButtonEvent *buttonEvent = (XButtonEvent *) event;
-	return ViewHolderAtOffset(self, buttonEvent -> x);
-    }
-
-    if (event -> type == MotionNotify)
-    {
-	XMotionEvent *motionEvent = (XMotionEvent *) event;
-	return ViewHolderAtOffset(self, motionEvent -> x);
+	x -= probe -> width;
+	if (x < 0)
+	{
+	    return probe;
+	}
     }
 
     return NULL;
 }
 
+/* Answers the view_holder_t corresponding to the location of the last event */
+static view_holder_t ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
+{
+    switch (event -> type)
+    {
+	case KeyPress:
+	case KeyRelease:
+	{
+	    XKeyEvent *keyEvent = (XKeyEvent *) event;
+	    return ViewHolderAtOffset(self, keyEvent -> x);
+	}
+
+	case ButtonPress:
+	case ButtonRelease:
+	{
+	    XButtonEvent *buttonEvent = (XButtonEvent *) event;
+	    return ViewHolderAtOffset(self, buttonEvent -> x);
+	}
+
+	case MotionNotify:
+	{
+	    XMotionEvent *motionEvent = (XMotionEvent *) event;
+	    return ViewHolderAtOffset(self, motionEvent -> x);
+	}
+
+	default:
+	{
+	    return NULL;
+	}
+    }
+}
+
 /* Answers the message under the mouse in the given event */
 static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
 {
-    return ViewHolder_view(ViewHolderAtEvent(self, event));
+    view_holder_t holder;
+
+    if ((holder = ViewHolderAtEvent(self, event)) == NULL)
+    {
+	return NULL;
+    }
+
+    return holder -> view;
 }
 
 
@@ -932,10 +980,15 @@ static void Delete(Widget widget, XEvent *event)
 static void Kill(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    ViewHolder holder = ViewHolderAtEvent(self, event);
-    MessageView view = ViewHolder_view(holder);
+    view_holder_t holder;
+    MessageView view;
 
-    if (view != NULL)
+    if ((holder = ViewHolderAtEvent(self, event)) == NULL)
+    {
+	return;
+    }
+
+    if ((view = holder -> view) != NULL)
     {
 	MessageView_expireNow(view);
 	RemoveViewHolder(self, holder);
