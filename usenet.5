@@ -13,8 +13,8 @@ subscription expressions.  Empty lines and those beginning with a hash
 .TP
 .B group
 is a regular expression specifying the group or groups to be
-searched, or if preceded by a \fBnot\fP, the groups or groups not to
-be ignored.
+searched, or if preceded by a \fBnot\fP, the groups or groups to be
+ignored while searching.
 .TP
 .B expr
 is of the form:
@@ -57,10 +57,9 @@ is one of:
 can be a number, a word (or words) or a regular expression, depending
 on the operator.
 .PP
-The spaces between the \fBfield\fP, the \fBop\P and the \fBpattern\fP
-\fIare\fP important.  Regular expression matches are \fInot\fP case
-sensitive.  All of the expressions on a single line are AND'ed
-together.
+The spaces between the \fBfield\fP, the \fBop\fP and the \fBpattern\fP
+are not important.  Regular expression matches are case sensitive.
+All of the expressions on a single line are AND'ed together.
 .SH SEE ALSO
 .BR xtickertape (1),
 .BR elvin (1)
