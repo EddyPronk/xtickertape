@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.2 1997/02/06 06:55:49 phelps Exp $ */
+/* $Id: main.c,v 1.3 1997/02/07 06:06:51 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 
     /* Send a subscription request */
     printf("sending subscription request\n");
-    fprintf(out, "TICKERTAPE == \"phelps\" || TICKERTAPE == \"Chat\" || TICKERTAPE == \"Rooms\" || TICKERTAPE == \"level7\" || TICKERTAPE == \"email\" || TICKERTAPE == \"Files\" || TICKERTAPE == \"rwall\" || TICKERTAPE == \"elvin_news\"%c", '\2');
+    fprintf(out, "TICKERTAPE == \"phelps\" || TICKERTAPE == \"Chat\" || TICKERTAPE == \"Coffee\" || TICKERTAPE == \"Rooms\" || TICKERTAPE == \"level7\" || TICKERTAPE == \"email\" || TICKERTAPE == \"Files\" || TICKERTAPE == \"rwall\" || TICKERTAPE == \"elvin_news\"%c", '\2');
     fflush(out);
 #endif /* CONNECTING */
 
