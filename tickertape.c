@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.25 1999/10/04 11:23:06 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.26 1999/10/04 11:30:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -73,9 +73,10 @@ static char *sanity_freed = "Freed Ticker";
 
 #define BUFFER_SIZE 1024
 
+#define RECONNECT_MSG "Connected to elvin server at %s:%d."
 #define NO_CONNECT_MSG "Unable to connect to elvin server at %s:%d.  Still trying..."
 #define LOST_CONNECT_MSG \
-"Lost connection to elvin server at %s:%d.  Attemptin to reconnect..."
+"Lost connection to elvin server at %s:%d.  Attempting to reconnect..."
 
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
 
@@ -685,13 +686,16 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
     int port;
     char *buffer;
     message_t message;
-    SANITY_CHECK(self);
 
     /* Construct a reconnect message */
     host = connection_host(connection);
     port = connection_port(connection);
-    buffer = (char *) malloc(sizeof("Connected to elvin server at :.") + strlen(host) + 5);
-    sprintf(buffer, "Connected to elvin server at %s:%d.", host, port);
+    if ((buffer = (char *)malloc(strlen(RECONNECT_MSG) + strlen(host) + 5 - 3)) == NULL)
+    {
+	return;
+    }
+
+    sprintf(buffer, RECONNECT_MSG, host, port);
 
     /* Display the message on the scroller */
     message = message_alloc(NULL, "internal", "tickertape", buffer, 30, NULL, NULL, 0, 0);
