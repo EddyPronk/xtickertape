@@ -30,6 +30,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* toupper */
+#endif
 #include "replace.h"
 
 /* Replacements for standard functions */
@@ -48,5 +51,49 @@ void *memset(void *s, int c, size_t n)
     }
 
     return s;
+}
+#endif
+
+#ifndef HAVE_STRCASECMP
+/* A slow but correct implementation of strcasecmp */
+int strcasecmp(const char *s1, const char *s2)
+{
+    size_t i = 0;
+    int c1, c2;
+
+    while (1)
+    {
+	c1 = toupper(s1[i]);
+	c2 = toupper(s2[i]);
+
+	if (c1 == 0)
+	{
+	    if (c2 == 0)
+	    {
+		return 0;
+	    }
+	    else
+	    {
+		return -1;
+	    }
+	}
+
+	if (c2 == 0)
+	{
+	    return 1;
+	}
+	
+	if (c1 < c2)
+	{
+	    return -1;
+	}
+
+	if (c1 > c2)
+	{
+	    return 1;
+	}
+
+	i++;
+    }
 }
 #endif

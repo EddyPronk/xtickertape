@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.4 2002/04/23 16:51:42 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.5 2002/04/23 17:09:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -62,6 +62,7 @@ static const char cvsid[] = "$Id: keys_parser.c,v 1.4 2002/04/23 16:51:42 phelps
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h> /* open */
 #endif
+#include "replace.h"
 #include "keys_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
