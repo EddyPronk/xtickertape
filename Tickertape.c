@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.18 1998/02/16 06:22:35 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.19 1998/04/21 05:05:37 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -695,23 +695,23 @@ static MessageView messageAtOffset(TickertapeWidget self, int offset)
 }
 
 /* Answers the message under the mouse in the given event */
-static MessageView messageAtEvent(TickertapeWidget self, XEvent event)
+static MessageView messageAtEvent(TickertapeWidget self, XEvent *event)
 {
-    if ((event.type == KeyPress) || (event.type == KeyRelease))
+    if ((event -> type == KeyPress) || (event -> type == KeyRelease))
     {
-	XKeyEvent *keyEvent = (XKeyEvent *) &event;
+	XKeyEvent *keyEvent = (XKeyEvent *) event;
 	return messageAtOffset(self, keyEvent -> x);
     }
 
-    if ((event.type == ButtonPress) || (event.type == ButtonRelease))
+    if ((event -> type == ButtonPress) || (event -> type == ButtonRelease))
     {
-	XButtonEvent *buttonEvent = (XButtonEvent *) &event;
+	XButtonEvent *buttonEvent = (XButtonEvent *) event;
 	return messageAtOffset(self, buttonEvent -> x);
     }
 
-    if (event.type == MotionNotify)
+    if (event -> type == MotionNotify)
     {
-	XMotionEvent *motionEvent = (XMotionEvent *) &event;
+	XMotionEvent *motionEvent = (XMotionEvent *) event;
 	return messageAtOffset(self, motionEvent -> x);
     }
 
@@ -724,13 +724,13 @@ static MessageView messageAtEvent(TickertapeWidget self, XEvent event)
  */
 
 /* Called when the button is pressed */
-void Menu(Widget widget, XEvent event)
+void Menu(Widget widget, XEvent *event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
     XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer)NULL);
 }
 
-static void DecodeMime(Widget widget, XEvent event)
+static void DecodeMime(Widget widget, XEvent *event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
     MessageView view = messageAtEvent(self, event);
@@ -741,11 +741,13 @@ static void DecodeMime(Widget widget, XEvent event)
     }
     else
     {
+#ifdef DEBUG
 	printf("none\n");
+#endif /* DEBUG */
     }
 }
 
-static void Delete(Widget widget, XEvent event)
+static void Delete(Widget widget, XEvent *event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
     MessageView view = messageAtEvent(self, event);
