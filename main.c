@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.51 1999/05/22 08:24:52 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.52 1999/08/19 01:46:10 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -43,7 +43,7 @@ static const char cvsid[] = "$Id: main.c,v 1.51 1999/05/22 08:24:52 phelps Exp $
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xmu/Editres.h>
-#include "Tickertape.h"
+#include "tickertape.h"
 
 #include "red.xbm"
 #include "white.xbm"

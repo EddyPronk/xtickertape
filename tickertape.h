@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: Tickertape.h,v 1.9 1999/05/22 08:23:28 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.1 1999/08/19 01:46:12 phelps Exp $";
 #endif /* lint */
 
 typedef struct Tickertape_t *Tickertape;
