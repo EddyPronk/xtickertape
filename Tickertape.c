@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.7 1997/02/11 06:46:41 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.8 1997/02/12 05:50:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,6 +135,7 @@ TickertapeClassRec tickertapeClassRec =
 	NULL /* extension */
     },
 
+    /* FIX THIS: should be capable of being a Motif widget as well */
     /* Simple class fields initialization */
     {
 	XtInheritChangeSensitive /* change_sensitive */
@@ -153,7 +154,7 @@ WidgetClass tickertapeWidgetClass = (WidgetClass)&tickertapeClassRec;
  * Private Methods
  */
 
-/* Bloody kludge? */
+/* Holder for MessageViews and Spacers */
 typedef struct ViewHolder_t
 {
     MessageView view;
@@ -234,6 +235,7 @@ static void CreateGC(TickertapeWidget self)
 	GCFont | GCBackground, &values);
 }
 
+
 /* Answers an array of colors fading from first to last */
 static Pixel *CreateFadedColors(
     Display *display, Colormap colormap,
@@ -306,6 +308,9 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 }
 
 
+
+
+
 /* Adds a MessageView to the receiver */
 static void AddMessageView(TickertapeWidget self, MessageView view)
 {
@@ -340,6 +345,8 @@ static ViewHolder DequeueViewHolder(TickertapeWidget self)
     self -> tickertape.visibleWidth -= holder -> width;
     return holder;
 }
+
+
 
 /*
  * Semi-private methods
@@ -398,14 +405,14 @@ GC TtGCForBackground(TickertapeWidget self)
 /* Answers the XFontStruct to be use for displaying the group */
 XFontStruct *TtFontForGroup(TickertapeWidget self)
 {
-    /* Fix this: should allow user to specify various fonts */
+    /* FIX THIS: should allow user to specify different fonts for each part*/
     return self -> tickertape.font;
 }
 
 /* Answers the XFontStruct to be use for displaying the user */
 XFontStruct *TtFontForUser(TickertapeWidget self)
 {
-    /* Fix this: should allow user to specify various fonts */
+    /* FIX THIS: should allow user to specify different fonts for each part*/
     return self -> tickertape.font;
 }
 
@@ -413,14 +420,14 @@ XFontStruct *TtFontForUser(TickertapeWidget self)
 /* Answers the XFontStruct to be use for displaying the string */
 XFontStruct *TtFontForString(TickertapeWidget self)
 {
-    /* Fix this: should allow user to specify various fonts */
+    /* FIX THIS: should allow user to specify different fonts for each part*/
     return self -> tickertape.font;
 }
 
 /* Answers the XFontStruct to be use for displaying the user */
 XFontStruct *TtFontForSeparator(TickertapeWidget self)
 {
-    /* Fix this: should allow separator to specify various fonts */
+    /* FIX THIS: should allow user to specify different fonts for each part*/
     return self -> tickertape.font;
 }
 
@@ -552,11 +559,15 @@ static void InWithTheNew(TickertapeWidget self)
 	if (next == NULL)
 	{
 	    ViewHolder last = List_last(self -> tickertape.holders);
-	    long width = self -> core.width - last -> width;
+	    unsigned long width;
 
-	    if (width < END_SPACING)
+	    if (self -> core.width < last -> width + END_SPACING)
 	    {
 		width = END_SPACING;
+	    }
+	    else
+	    {
+		width = self -> core.width - last -> width;
 	    }
 	    self -> tickertape.nextVisible = 0;
 	    EnqueueViewHolder(self, ViewHolder_alloc(NULL, width));
@@ -637,6 +648,7 @@ static XtGeometryResult QueryGeometry(
  */
 
 /* Called when the button is pressed */
+/* FIX THIS: should call a callback instead */
 void Click(Widget widget, XEvent event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
