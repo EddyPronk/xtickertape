@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.14 1999/11/01 14:39:04 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.15 1999/11/01 15:16:02 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -710,7 +710,6 @@ static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
 
     /* Show them in a tool-tip */
     show_tool_tip(self, self -> history, mime_args, self -> x, self -> y);
-    XtFree(mime_args);
 }
 
 
