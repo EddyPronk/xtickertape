@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.6 2000/11/20 05:22:43 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.7 2000/11/20 06:24:10 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -103,6 +103,9 @@ int vm_push_char(vm_t self, int value, elvin_error_t error);
 
 /* Pushes a special form onto the vm's stack */
 int vm_push_special_form(vm_t self, prim_t func, elvin_error_t error);
+
+/* Pushes a primitive subroutine onto the vm's stack */
+int vm_push_subr(vm_t self, prim_t func, elvin_error_t error);
 
 /* Makes a symbol out of the string on the top of the stack */
 int vm_make_symbol(vm_t self, elvin_error_t error);
