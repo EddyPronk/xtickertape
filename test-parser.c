@@ -227,14 +227,20 @@ static int prim_gc(vm_t vm, uint32_t argc, elvin_error_t error)
 /* The `lambda' special form */
 static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 {
-    /* FIX THIS: we should allow lambdas with complex bodies */
-    if (argc != 2)
+    /* Make sure we at least have an argument list */
+    if (argc < 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
 	return 0;
     }
 
-    return vm_make_lambda(vm, error);
+    /* Make a progn form out of the body forms and turn the whole
+     * thing into a lambda */
+    return
+	vm_push_symbol(vm, "progn", error) &&
+	vm_roll(vm, argc - 1, error) &&
+	vm_make_list(vm, argc, error) &&
+	vm_make_lambda(vm, error);
 }
 
 /* The `or' special form */
@@ -246,7 +252,7 @@ static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
 	return vm_push_nil(vm, error);
     }
 
-    /* Look for any tru arguments */
+    /* Look for any true arguments */
     while (argc > 1)
     {
 	object_type_t type;
