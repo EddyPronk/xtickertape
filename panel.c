@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.74 2003/01/22 14:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.75 2003/01/22 15:08:41 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1565,6 +1565,9 @@ static void action_clear(Widget button, control_panel_t self, XtPointer ignored)
     /* Clear the message and mime areas */
     set_text(self, "");
     set_mime_args(self, "");
+
+    /* Clear the selection */
+    control_panel_select(self, NULL);
 
     /* Reset the timeout */
     reset_timeout(self);
