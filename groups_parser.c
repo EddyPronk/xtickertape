@@ -1,6 +1,7 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2000.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +29,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.26 2002/07/02 15:19:22 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.27 2002/07/04 06:55:47 arnold Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -205,6 +206,9 @@ static int accept_subscription(groups_parser_t self)
 				 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
 				 self -> private_keys[i],
 				 self -> private_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                 NULL,
+#endif
 				 NULL))
 	    {
 		return -1;
@@ -222,6 +226,9 @@ static int accept_subscription(groups_parser_t self)
 				     ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
 				     self -> public_keys[i],
 				     self -> public_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                     NULL,
+#endif
 				     NULL))
 		{
 		    return -1;
@@ -234,6 +241,9 @@ static int accept_subscription(groups_parser_t self)
 				 ELVIN_KEY_SHA1_CONSUMER_INDEX,
 				 self -> public_keys[i],
 				 self -> public_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                 NULL,
+#endif
 				 NULL))
 	    {
 		return -1;
@@ -249,6 +259,9 @@ static int accept_subscription(groups_parser_t self)
 				 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
 				 self -> private_keys[i],
 				 self -> private_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                 NULL,
+#endif
 				 NULL))
 	    {
 		return -1;
@@ -266,6 +279,9 @@ static int accept_subscription(groups_parser_t self)
 				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
 				     self -> public_keys[i],
 				     self -> public_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                     NULL,
+#endif
 				     NULL))
 		{
 		    return -1;
@@ -278,6 +294,9 @@ static int accept_subscription(groups_parser_t self)
 				 ELVIN_KEY_SHA1_PRODUCER_INDEX,
 				 self -> public_keys[i],
 				 self -> public_key_lengths[i],
+#if defined(ELVIN_VERSION_AT_LEAST)
+                                 NULL,
+#endif
 				 NULL))
 	    {
 		return -1;
