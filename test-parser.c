@@ -41,31 +41,44 @@ int main(int argc, char *argv[])
 	abort();
     }
 
-    /* Assume the args are filenames */
-    for (i = 1; i < argc; i++)
+    /* If we have no args, then read from stdin */
+    if (argc < 2)
     {
-	char *filename = argv[i];
-	int fd;
-
-	/* Open the file */
-	if ((fd = open(argv[i], O_RDONLY)) < 0)
-	{
-	    perror("open(): failed");
-	    exit(1);
-	}
-
-	/* Parse its contents */
-	if (! parser_parse_file(parser, fd, filename, error))
+	if (! parser_parse_file(parser, STDIN_FILENO, "[stdin]", error))
 	{
 	    fprintf(stderr, "parser_parse_file(): failed\n");
 	    elvin_error_fprintf(stderr, "en", error);
 	}
-
-	/* Close the file */
-	if (close(fd) < 0)
+    }
+    else
+    {
+	for (i = 1; i < argc; i++)
 	{
-	    perror("close(): failed");
-	    exit(1);
+	    char *filename = argv[i];
+	    int fd;
+
+	    fprintf(stderr, "--- parsing %s ---\n", filename);
+
+	    /* Open the file */
+	    if ((fd = open(filename, O_RDONLY)) < 0)
+	    {
+		perror("open(): failed");
+		exit(1);
+	    }
+
+	    /* Parse its contents */
+	    if (! parser_parse_file(parser, fd, filename, error))
+	    {
+		fprintf(stderr, "parser_parse_file(): failed\n");
+		elvin_error_fprintf(stderr, "en", error);
+	    }
+
+	    /* Close the file */
+	    if (close(fd) < 0)
+	    {
+		perror("close(): failed");
+		exit(1);
+	    }
 	}
     }
 
