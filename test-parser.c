@@ -10,17 +10,32 @@
 #include "atom.h"
 #include "parser.h"
 
+env_t root_env = NULL;
 
 
 /* Parser callback */
 int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
 {
+    atom_t result;
+
     printf("eval: ");
     atom_print(sexp, error);
     printf("\n");
-    atom_print(atom_eval(sexp, error));
-    printf("\n");
-    return 1;
+
+    /* Evaluate the s-expression */
+    if (atom_eval(sexp, root_env, &result, error) == 0)
+    {
+	elvin_error_fprintf(stderr, error);
+	return 1;
+    }
+    else
+    {
+	/* Print it */
+	atom_print(result); printf("\n");
+
+	/* Free it */
+	return atom_free(result, error);
+    }
 }
 
 /* Parse a file */
@@ -67,8 +82,8 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
-    /* Initialize the Lisp engine */
-    if (atom_alloc(error) == 0)
+    /* Allocate the root environment */
+    if ((root_env = root_env_alloc(error)) == NULL)
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);
@@ -122,10 +137,18 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /* Clean up */
-    if (! parser_free(parser, error))
+    /* Get rid of the parser */
+    if (parser_free(parser, error) == 0)
     {
 	fprintf(stderr, "parser_free(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Free the root environment */
+    if (env_free(root_env, error) == 0)
+    {
+	fprintf(stderr, "env_free(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
