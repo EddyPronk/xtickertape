@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.18 2000/05/31 05:46:24 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.19 2000/06/13 07:27:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -428,6 +428,10 @@ group_sub_t group_sub_alloc(
     int has_nazi,
     int min_time,
     int max_time,
+    int producer_key_count,
+    char **producer_keys,
+    int consumer_key_count,
+    char **consumer_keys,
     group_sub_callback_t callback,
     void *rock)
 {
@@ -467,6 +471,22 @@ group_sub_t group_sub_alloc(
     self -> callback = callback;
     self -> rock = rock;
     self -> is_pending = 0;
+
+
+    /* HACK */
+    {
+	int i;
+	printf("%s\n", expression);
+	for (i = 0; i < producer_key_count; i++)
+	{
+	    printf("p: %s\n", producer_keys[i]);
+	}
+
+	for (i =0 ; i < consumer_key_count; i++)
+	{
+	    printf("c: %s\n", consumer_keys[i]);
+	}
+    }
 
     return self;
 }

@@ -34,7 +34,7 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.6 2000/04/12 05:33:09 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.7 2000/06/13 07:27:32 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -54,6 +54,10 @@ group_sub_t group_sub_alloc(
     int has_nazi,
     int min_time,
     int max_time,
+    int producer_key_count,
+    char **producer_keys,
+    int consumer_key_count,
+    char **consumer_keys,
     group_sub_callback_t callback,
     void *rock);
 

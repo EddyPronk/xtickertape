@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.55 2000/06/02 06:52:11 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.56 2000/06/13 07:27:32 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -375,7 +375,9 @@ static int open_subscription_file(
 static int parse_groups_callback(
     tickertape_t self, char *name,
     int in_menu, int has_nazi,
-    int min_time, int max_time)
+    int min_time, int max_time,
+    int producer_key_count, char **producer_keys,
+    int consumer_key_count, char **consumer_keys)
 {
     char *expression;
     group_sub_t subscription;
@@ -391,7 +393,11 @@ static int parse_groups_callback(
 
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
-	    name, expression, in_menu, has_nazi, min_time, max_time,
+	    name, expression,
+	    in_menu, has_nazi,
+	    min_time, max_time,
+	    producer_key_count, producer_keys,
+	    consumer_key_count, consumer_keys,
 	    receive_callback, self)) == NULL)
     {
 	return -1;
