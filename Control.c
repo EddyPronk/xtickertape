@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.24 1998/11/05 01:50:43 phelps Exp $ */
+/* $Id: Control.c,v 1.25 1998/11/05 06:28:55 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -961,28 +961,20 @@ void ControlPanel_removeSubscription(ControlPanel self, void *info)
 void ControlPanel_setSubscriptionIndex(ControlPanel self, void *info, int index)
 {
     MenuItemTuple tuple;
-    int i;
     XmString string;
     SANITY_CHECK(self);
-
-    /* Bail out if it's already at the correct location */
-    if (((i = List_index(self -> subscriptions, info)) < 0) || (i == index))
-    {
-	return;
-    }
 
     /* Bail out if the tuple isn't here */
     if ((tuple = (MenuItemTuple)List_remove(self -> subscriptions, info)) == NULL)
     {
-	/* This should never happen */
 	return;
     }
 
-    /* Insert the tuple in the appropriate location */
-    List_insert(self -> subscriptions, index, info);
-
     /* Remove the item from the menu... */
     XtDestroyWidget(tuple -> widget);
+
+    /* Insert the tuple in the appropriate location */
+    List_insert(self -> subscriptions, index, info);
 
     /* ... and put it back in the proper locations */
     string = XmStringCreateSimple(tuple -> title);
@@ -992,6 +984,11 @@ void ControlPanel_setSubscriptionIndex(ControlPanel self, void *info, int index)
 	XmNuserData, tuple,
 	NULL);
     XmStringFree(string);
+
+    /* Add a callback to update the selection when the item is specified */
+    XtAddCallback(
+	tuple -> widget, XmNactivateCallback,
+	(XtCallbackProc)SelectGroup, (XtPointer)tuple);
 
     /* If it was the selection, then make sure it is still selected in the menu */
     if (self -> selection == tuple)
