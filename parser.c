@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.17 2000/07/11 03:59:38 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.18 2000/07/11 04:26:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -777,6 +777,25 @@ static ast_t make_block(parser_t self, elvin_error_t error)
 }
 
 
+/* Frees an array of subscriptions */
+static int subscription_array_free(
+    uint32_t count,
+    subscription_t *subs,
+    elvin_error_t error)
+{
+    uint32_t i;
+
+    for (i = 0; i < count; i++)
+    {
+	if (! subscription_free(subs[i], error))
+	{
+	    return 0;
+	}
+    }
+
+    return ELVIN_FREE(subs, error);
+}
+
 /* <config-file> ::= <subscription-list> */
 static int do_accept(parser_t self, elvin_error_t error)
 {
@@ -795,16 +814,17 @@ static int do_accept(parser_t self, elvin_error_t error)
 	return 0;
     }
 
-    /* Call the callback with the subscriptions */
+    /* If we have a callback then give it the subscriptions */
     if (self -> callback)
     {
 	if (! self -> callback(self -> rock, count, subs, error))
 	{
+	    subscription_array_free(count, subs, NULL);
 	    return 0;
 	}
     }
 
-    return 1;
+    return subscription_array_free(count, subs, NULL);
 }
 
 /* Accepts another token and performs as many parser transitions as
