@@ -12,8 +12,9 @@ Configuration
   both configure-time and run-time.  Perhaps both a command-line
   option and an environment variable would be useful.
 
-- Add the necessary bits to build an RPM from the CVS tree.
-
+- Errors in the configuration files should be reported to somewhere
+  other than the terminal which started the program.  A message in the
+  scroller is probably the most appropriate place.
 
 Control Panel:
 
