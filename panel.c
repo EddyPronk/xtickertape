@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.22 1999/11/29 03:59:06 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.23 1999/12/06 13:08:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -421,7 +421,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 	NULL);
 
     /* Create the title label */
-    XmStringCreateSimple(PACKAGE " " VERSION);
+    string = XmStringCreateSimple(PACKAGE " " VERSION);
     title = XtVaCreateManagedWidget(
 	"titleLabel", xmLabelWidgetClass, info_form,
 	XmNlabelString, string,
@@ -1598,7 +1598,7 @@ void control_panel_free(control_panel_t self)
 
 
 /* This is called when the elvin connection status changes */
-control_panel_t control_panel_set_connected(
+void control_panel_set_connected(
     control_panel_t self,
     int is_connected)
 {
