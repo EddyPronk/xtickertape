@@ -215,14 +215,8 @@ static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 	return 0;
     }
 
-    /* Free our reference to the car */
-    if (sexp_free(values[0], error) == 0)
-    {
-	return 0;
-    }
-
-    /* Free our reference to the cdr */
-    return sexp_free(values[1], error);
+    /* Retain our reference to the car and cdr */
+    return 1;
 }
 
 /* The `eq' primitive function */
