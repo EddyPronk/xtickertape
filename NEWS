@@ -1,5 +1,9 @@
 Overview of changes in xtickertape-1.6.5
 
+* Items in the history window which have an attachment (by default
+  these are displayed in a bold font) now display a tool-tip
+  indicating what that attachment is.
+
 * The user field now defaults to a combination of the user name and
   local domain.  These can be overridden with environment variables
   (USER/LOGNAME, DOMAIN) or on the command-line (--user/-u,

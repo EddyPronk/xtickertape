@@ -1,3 +1,13 @@
+1999-10-07  Ted Phelps  <phelps@pobox.com>
+
+	* panel.c: added a tool-tip to the history panel which displays
+		  the attachment of the message under the pointer.
+	
+	* history.h, history.c: added a way to find the message in the
+		  history at a given x, y position
+
+	* ScrollerP.h, Scroller.c: minor tweaks to the timer code.
+
 1999-10-06  Ted Phelps  <phelps@pobox.com>
 
 	* mail_sub.c: fixed a bug that got introduced in some of
