@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.6 1998/10/21 05:36:40 phelps Exp $
+ * $Id: Ticker.c,v 1.7 1998/10/21 08:20:00 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -87,9 +87,7 @@ static void SubscribeToOrbit(Tickertape self);
 /* Callback for a mouse click in the tickertape scroller */
 static void Click(Widget widget, Tickertape self, Message message)
 {
-    void *info = NULL;
     SANITY_CHECK(self);
-
     ControlPanel_show(self -> controlPanel, message);
 }
 
