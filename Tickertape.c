@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.13 1997/02/15 02:32:16 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.14 1997/02/17 02:28:05 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -283,7 +283,9 @@ static void StartClock(TickertapeWidget self)
 {
     if (self -> tickertape.isStopped)
     {
+#ifdef DEBUG
 	fprintf(stderr, "restarting\n");
+#endif /* DEBUG */
 	fflush(stderr);
 	self -> tickertape.isStopped = FALSE;
 	SetClock(self);
@@ -293,7 +295,9 @@ static void StartClock(TickertapeWidget self)
 /* Stops the clock */
 static void StopClock(TickertapeWidget self)
 {
+#ifdef DEBUG
     fprintf(stderr, "stalling\n");
+#endif /* DEBUG */
     fflush(stderr);
     self -> tickertape.isStopped = TRUE;
 }
@@ -327,7 +331,9 @@ static void AddMessageView(TickertapeWidget self, MessageView view)
 {
     List_addLast(self -> tickertape.messages, view);
     MessageView_allocReference(view);
+#ifdef DEBUG
     printf("Added message view 0x%p\n", view);
+#endif /* DEBUG */
 
     /* Make sure the clock is running */
     StartClock(self);
@@ -615,13 +621,17 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 /* FIX THIS: should actually do something? */
 static void Destroy(Widget widget)
 {
+#ifdef DEBUG
     fprintf(stderr, "Destroy 0x%p\n", widget);
+#endif /* DEBUG */
 }
 
 /* Nothing to do */
 static void Resize(Widget widget)
 {
+#ifdef DEBUG
     fprintf(stderr, "Resize 0x%p\n", widget);
+#endif /* DEBUG */
 }
 
 /* What should this do? */

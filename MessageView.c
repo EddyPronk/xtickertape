@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.10 1997/02/12 13:53:18 phelps Exp $ */
+/* $Id: MessageView.c,v 1.11 1997/02/17 02:28:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,7 +119,9 @@ static void tick(MessageView self, XtIntervalId *ignored)
     }
 
     paint(self, self -> pixmap, 0, self -> ascent);
-    /* printf(":"); fflush(stdout); */
+#ifdef DEBUG    
+    printf(":"); fflush(stdout);
+#endif /* DEBUG */
     setClock(self);
 }
 
@@ -324,7 +326,9 @@ void MessageView_freeReference(MessageView self)
     }
     else
     {
+#ifdef DEBUG	
 	printf("MessageView_free: 0x%p\n", self); fflush(stdout);
+#endif /* DEBUG */
 	MessageView_free(self);
     }
 }

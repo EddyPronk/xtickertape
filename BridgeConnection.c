@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.8 1997/02/17 01:53:10 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.9 1997/02/17 02:28:03 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -264,7 +264,9 @@ void BridgeConnection_read(BridgeConnection self)
 		    free(group);
 		    free(user);
 		    free(string);
+#ifdef DEBUG
 		    Message_debug(message);
+#endif /* DEBUG */
 		    TtAddMessage(self -> tickertape, message);
 		    return;
 		}

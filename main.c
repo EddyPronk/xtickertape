@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.13 1997/02/16 07:05:18 phelps Exp $ */
+/* $Id: main.c,v 1.14 1997/02/17 02:28:06 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +16,7 @@
 
 #define HOSTNAME "fatcat"
 #define PORT 8800
-
+#define BUFFERSIZE 8192
 
 /* Notification of something */
 static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
@@ -75,6 +75,27 @@ static void sendMessage(Message message, void *context)
     Message_free(message);
 }
 
+/* Answers the user's group file */
+static FILE *getGroupFile()
+{
+    char buffer[BUFFERSIZE];
+    char *dir;
+
+    dir = getenv("TICKERDIR");
+    if (dir != NULL)
+    {
+	sprintf(buffer, "%s/group", dir);
+    }
+    else
+    {
+	sprintf(buffer, "%s/.ticker/groups", getenv("HOME"));
+    }
+#ifdef DEBUG    
+    printf("reading group file \"%s\"\n", buffer);
+#endif /* DEBUG */
+    return fopen(buffer, "r");
+}
+
 
 /* Parse args and go */
 int main(int argc, char *argv[])
@@ -101,9 +122,17 @@ int main(int argc, char *argv[])
 
     /* Read subscriptions from the groups file */
     subscriptions = List_alloc();
-    file = fopen("/home/phelps/.ticker/groups", "r");
-    Subscription_readFromGroupFile(file, subscriptions);
-    fclose(file);
+    file = getGroupFile();
+    if (file == NULL)
+    {
+	printf("*** unable to read ${TICKERDIR}/groups\n");
+	exit(1); /* This shouldn't need to exit! */
+    }
+    else
+    {
+	Subscription_readFromGroupFile(file, subscriptions);
+	fclose(file);
+    }
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
