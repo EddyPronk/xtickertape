@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.86 2000/04/05 12:43:50 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.87 2000/04/11 05:09:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -684,7 +684,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 #else
 	    glyph_holder_paint(
 		holder, display, XtWindow((Widget) self),
-		offset, 0, 0, self -> core.width, self -> core.height);
+		offset, 0, 0, self -> core.width, self -> scroller.height);
 #endif
 	}
 
