@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.49 2001/07/13 08:49:52 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.50 2001/07/20 01:10:23 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -217,8 +217,8 @@ static Cardinal order_group_menu(Widget item);
 static Widget create_group_menu(control_panel_t self, Widget parent);
 static Widget create_timeout_menu(control_panel_t self, Widget parent);
 
-void history_selection_callback(Widget widget, control_panel_t self, XmListCallbackStruct *info);
-void history_action_callback(Widget widget, control_panel_t self, XmListCallbackStruct *info);
+static void history_selection_callback(Widget widget, XtPointer closure, XtPointer call_data);
+static void history_attachment_callback(Widget widget, XtPointer closure, XtPointer call_data);
 static void create_history_box(control_panel_t self, Widget parent);
 
 static void create_top_box(control_panel_t self, Widget parent);
@@ -607,29 +607,23 @@ static Widget create_timeout_menu(control_panel_t self, Widget parent)
 }
 
 /* This is called when an item in the history list is selected */
-void history_selection_callback(Widget widget, control_panel_t self, XmListCallbackStruct *info)
+static void history_selection_callback(Widget widget, XtPointer closure, XtPointer call_data)
 {
-    message_t message;
+    control_panel_t self = (control_panel_t)closure;
+    message_t message = (message_t)call_data;
+    
 
     /* Reconfigure to reply to the selected message (or lack thereof) */
-    message = history_get(tickertape_history(self -> tickertape), info -> item_position);
     prepare_reply(self, message);
 }
 
 /* This is called when an item in the history is double-clicked */
-void history_action_callback(Widget widget, control_panel_t self, XmListCallbackStruct *info)
+static void history_attachment_callback(Widget widget, XtPointer closure, XtPointer call_data)
 {
-    message_t message;
+    control_panel_t self = (control_panel_t)closure;
+    message_t message = (message_t)call_data;
 
-    /* Figure out which message was selected */
-    if ((message = history_get(
-	tickertape_history(self -> tickertape),
-	info -> item_position)) == NULL)
-    {
-	return;
-    }
-
-    /* Display its attachment */
+    /* Display the attachment */
     tickertape_show_attachment(self -> tickertape, message);
 }
 
@@ -655,6 +649,7 @@ static void show_status(
     self -> status = message;
 }
 
+#if 0
 /* This is called when the mouse enters, leaves or moves around in the
  * history widget */
 static void history_motion_callback(
@@ -717,6 +712,7 @@ static void history_motion_callback(
     /* Show the mime_args in the status line */
     show_status(self, mime_args);
 }
+#endif
 
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
@@ -746,6 +742,17 @@ static void create_history_box(control_panel_t self, Widget parent)
     /* Tell the scroller what its work window is */
     XtVaSetValues(scroll_window, XmNworkWindow, self -> history, NULL);
     XtManageChild(scroll_window);
+
+    /* Add a callback for selection changes */
+    XtAddCallback(
+	self -> history, XtNcallback,
+	history_selection_callback, (XtPointer)self);
+
+    /* Add a callback for showing attachments */
+    XtAddCallback(
+	self -> history, XtNattachmentCallback,
+	history_attachment_callback, (XtPointer)self);
+	
 #else
     Arg args[10];
 
@@ -1831,7 +1838,9 @@ static void make_index_visible(Widget list, int index)
 /* Makes the control panel window visible */
 void control_panel_select(control_panel_t self, message_t message)
 {
+#if 0
     int index;
+#endif
 
     /* Set up to reply */
     prepare_reply(self, message);
