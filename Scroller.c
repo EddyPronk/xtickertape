@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.47 1999/07/30 04:56:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.48 1999/07/30 05:57:50 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1331,8 +1331,8 @@ static void delete(Widget widget, XEvent *event)
 	return;
     }
 
-    /* Extract the glyph from the queue */
-    dequeue(self, glyph);
+    /* Mark the glyph as expired */
+    glyph -> expire(glyph);
 
     /* Delete the glyph and any holders for that glyph, and keep the
      * leading edge of the text in place */
@@ -1559,7 +1559,9 @@ void ScAddMessage(ScrollerWidget self, Message message)
 /* Callback for expiring glyphs */
 void ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
+#ifdef DEBUG
     printf("expired...\n");
+#endif /* DEBUG */
     dequeue(self, glyph);
 }
 
