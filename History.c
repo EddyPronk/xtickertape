@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.27 2001/07/22 02:42:53 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.28 2001/08/20 13:03:53 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -360,7 +360,7 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
+static void vert_scrollbar_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)client_data;
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
@@ -369,116 +369,15 @@ static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_da
     set_origin(self, self -> history.x, cbs -> value, 0);
 }
 
-/* Callback for the vertical scrollbar */
-static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    HistoryWidget self = (HistoryWidget)client_data;
-    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
-
-    /* Move up by one pixel for now */
-    set_origin(self, self -> history.x, self -> history.y - 1, 0);
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    HistoryWidget self = (HistoryWidget)client_data;
-    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
-
-    /* Move down by one pixel for now */
-    set_origin(self, self -> history.x, self -> history.y + 1, 0);
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("vert_page_dec_cb(): not yet implemented\n"));
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("vert_page_inc_cb(): not yet implemented\n"));
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("vert_to_top_cb(): not yet implemented\n"));
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("vert_to_bottom_cb(): not yet implemented\n"));
-}
-
-/* Callback for the vertical scrollbar */
-static void vert_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("vert_val_changed_cb(): not yet implemented\n"));
-}
-
-
 
 /* Callback for the horizontal scrollbar */
-static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
+static void horiz_scrollbar_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)client_data;
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Drag to the new location */
     set_origin(self, cbs -> value, self -> history.y, 0);
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    HistoryWidget self = (HistoryWidget)client_data;
-    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
-
-    /* Move left by one pixel for now */
-    set_origin(self, self -> history.x - 1, self -> history.y, 0);
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    HistoryWidget self = (HistoryWidget)client_data;
-    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
-
-    /* Move right by one pixel for now */
-    set_origin(self, self -> history.x + 1, self -> history.y, 0);
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("horiz_page_dec_cb(): not yet implemented\n"));
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("horiz_page_inc_cb(): not yet implemented\n"));
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("horiz_to_top_cb(): not yet implemented\n"));
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("horiz_to_bottom_cb(): not yet implemented\n"));
-}
-
-/* Callback for the horizontal scrollbar */
-static void horiz_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_data)
-{
-    dprintf(("horiz_val_changed_cb(): not yet implemented\n"));
 }
 
 
@@ -527,14 +426,14 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 	NULL);
 
     /* Add a bunch of callbacks */
-    XtAddCallback(scrollbar, XmNdecrementCallback, horiz_dec_cb, self);
-    XtAddCallback(scrollbar, XmNdragCallback, horiz_drag_cb, self);
-    XtAddCallback(scrollbar, XmNincrementCallback, horiz_inc_cb, self);
-    XtAddCallback(scrollbar, XmNpageDecrementCallback, horiz_page_dec_cb, self);
-    XtAddCallback(scrollbar, XmNpageIncrementCallback, horiz_page_inc_cb, self);
-    XtAddCallback(scrollbar, XmNtoTopCallback, horiz_to_top_cb, self);
-    XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_to_bottom_cb, self);
-    XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_val_changed_cb, self);
+    XtAddCallback(scrollbar, XmNdragCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNdecrementCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNincrementCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageDecrementCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageIncrementCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNtoTopCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_scrollbar_cb, self);
     self -> history.hscrollbar = scrollbar;
     
     /* Create the vertical scrollbar */
@@ -548,14 +447,14 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 	NULL);
 
     /* Add a bunch of callbacks */
-    XtAddCallback(scrollbar, XmNdecrementCallback, vert_dec_cb, self);
-    XtAddCallback(scrollbar, XmNdragCallback, vert_drag_cb, self);
-    XtAddCallback(scrollbar, XmNincrementCallback, vert_inc_cb, self);
-    XtAddCallback(scrollbar, XmNpageDecrementCallback, vert_page_dec_cb, self);
-    XtAddCallback(scrollbar, XmNpageIncrementCallback, vert_page_inc_cb, self);
-    XtAddCallback(scrollbar, XmNtoTopCallback, vert_to_top_cb, self);
-    XtAddCallback(scrollbar, XmNtoBottomCallback, vert_to_bottom_cb, self);
-    XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_val_changed_cb, self);
+    XtAddCallback(scrollbar, XmNdecrementCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNdragCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNincrementCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageDecrementCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageIncrementCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNtoTopCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNtoBottomCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_scrollbar_cb, self);
     self -> history.vscrollbar = scrollbar;
 
     printf("History: init()\n");
@@ -1271,7 +1170,6 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 {
     HistoryWidget self = (HistoryWidget)widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
-    unsigned int index;
 
     /* FIgure out what's going on */
     if (button_event -> y < 0)

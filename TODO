@@ -63,9 +63,6 @@ History Widget
 - It should be possible to view the attachment of the selected message
   from the keyboard.
 
-- Finish implementing the scrollbar callbacks, and possibly combine
-  them into fewer functions.
-
 
 Scheme Interpreter:
 
