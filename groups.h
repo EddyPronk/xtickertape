@@ -27,43 +27,43 @@
 
 ****************************************************************/
 
-static char *defaultGroupsFile = "\
-# Tickertape groups file - $HOME/.ticker/groups\n\
-#\n\
-# empty lines and those beginning with a hash are ignored\n\
-#\n\
-# Each line has the following format:\n\
-# \n\
-#	<group name>:<menu option>:<auto option>:<min time>:<max time>\n\
-#\n\
-# group name	is the group of Tickertape events the line relates to\n\
-# menu option	whether the group appears on the 'Send' menu.  One of\n\
-#		'menu' or 'no menu'\n\
-# auto option	indicates MIME attachments should be automatically\n\
-#		viewed.  One of 'auto' or 'manual'\n\
-# min/max time	sets limits on the duration events are displayed - in mins\n\
-#\n\
-# The order that the groups appear in this file determines the order\n\
-# they appear in the Group menu when sending events.  With multiple\n\
-# lines for the same group, all but the first are ignored\n\
-#\n\
-# Some examples\n\
-\n\
-# A misc chat group\n\
-Chat:menu:manual:1:60\n\
-\n\
-# Keep track of the coffee-pigs\n\
-Coffee:no menu:manual:1:30\n\
-\n\
-# Room booking events\n\
-Rooms:no menu:manual:1:60\n\
-\n\
-# All the gossip\n\
-level7:menu:manual:1:60\n\
-\n\
-# System messages about what was rebooted in the previous hour\n\
-rwall:no menu:manual:1:60\n\
-\n\
-# Your own group so that you can talk to yourself\n\
-%u@%d:menu:manual:1:10\n\
-";
+static char *defaultGroupsFile =
+"# Tickertape groups file - $HOME/.ticker/groups\n"
+"#\n"
+"# empty lines and those beginning with a hash are ignored\n"
+"#\n"
+"# Each line has the following format:\n"
+"# \n"
+"#	<group name>:<menu option>:<auto option>:<min time>:<max time>\n"
+"#\n"
+"# group name	is the group of Tickertape events the line relates to\n"
+"# menu option	whether the group appears on the 'Send' menu.  One of\n"
+"#		'menu' or 'no menu'\n"
+"# auto option	indicates MIME attachments should be automatically\n"
+"#		viewed.  One of 'auto' or 'manual'\n"
+"# min/max time	sets limits on the duration events are displayed - in mins\n"
+"#\n"
+"# The order that the groups appear in this file determines the order\n"
+"# they appear in the Group menu when sending events.  With multiple\n"
+"# lines for the same group, all but the first are ignored\n"
+"#\n"
+"# Some examples\n"
+"\n"
+"# A misc chat group\n"
+"Chat:menu:manual:1:60\n"
+"\n"
+"# Keep track of the coffee-pigs\n"
+"Coffee:no menu:manual:1:30\n"
+"\n"
+"# Room booking events\n"
+"Rooms:no menu:manual:1:60\n"
+"\n"
+"# All the gossip\n"
+"level7:menu:manual:1:60\n"
+"\n"
+"# System messages about what was rebooted in the previous hour\n"
+"rwall:no menu:manual:1:60\n"
+"\n"
+"# Your own group so that you can talk to yourself\n"
+"%u@%d:menu:manual:1:10\n";
+
