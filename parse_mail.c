@@ -299,6 +299,12 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
     /* Record the number of attributes */
     write_int32(self -> count_point, self -> count);
 
+    /* We'll happily deliver_insecure */
+    if (append_int32_tuple(self, 1, msg_num) < 0)
+    {
+	return -1;
+    }
+
     /* No keys */
     return append_int32(self, 0);
 }
