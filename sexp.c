@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.11 2000/11/12 01:52:07 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.12 2000/11/12 02:39:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -692,7 +692,12 @@ int sexp_print(sexp_t sexp)
 
 
 /* Initialize an environment from an arg list and a set of args */
-static int init_env_with_args(env_t env, sexp_t arg_list, sexp_t args, elvin_error_t error)
+static int init_env_with_args(
+    env_t env,
+    env_t eval_env,
+    sexp_t arg_list,
+    sexp_t args,
+    elvin_error_t error)
 {
     /* Go through each of the args in arg_list */
     while (arg_list -> type == SEXP_CONS)
@@ -707,7 +712,7 @@ static int init_env_with_args(env_t env, sexp_t arg_list, sexp_t args, elvin_err
 	}
 
 	/* Evaluate the value */
-	if (sexp_eval(cons_car(args, error), env, &value, error) == 0)
+	if (sexp_eval(cons_car(args, error), eval_env, &value, error) == 0)
 	{
 	    return 0;
 	}
@@ -753,19 +758,23 @@ static int funcall(
 	/* Lambda expression? */
 	case SEXP_LAMBDA:
 	{
-	    env_t env;
+	    env_t lambda_env;
 	    sexp_t body;
 
 	    /* Create an environment for execution */
-	    if ((env = env_alloc(17, function -> value.l.env, error)) == NULL)
+	    if ((lambda_env = env_alloc(17, function -> value.l.env, error)) == NULL)
 	    {
 		return 0;
 	    }
 
 	    /* Map the args to their values */
-	    if ((init_env_with_args(env, function -> value.l.arg_list, args, error)) == 0)
+	    if ((init_env_with_args(
+		     lambda_env, env,
+		     function -> value.l.arg_list,
+		     args,
+		     error)) == 0)
 	    {
-		env_free(env, NULL);
+		env_free(lambda_env, NULL);
 		return 0;
 	    }
 
@@ -773,7 +782,7 @@ static int funcall(
 	    body = function -> value.l.body;
 	    while (body -> type == SEXP_CONS)
 	    {
-		if (sexp_eval(cons_car(body, error), env, result, error) == 0)
+		if (sexp_eval(cons_car(body, error), lambda_env, result, error) == 0)
 		{
 		    return 0;
 		}
@@ -785,12 +794,12 @@ static int funcall(
 	    if (body -> type != SEXP_NIL)
 	    {
 		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "dotted func body");
-		env_free(env, NULL);
+		env_free(lambda_env, NULL);
 		return 0;
 	    }
 
 	    /* Free the environment */
-	    if (env_free(env, error) == 0)
+	    if (env_free(lambda_env, error) == 0)
 	    {
 		return 0;
 	    }
