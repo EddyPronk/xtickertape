@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.73 1999/10/07 03:42:58 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.74 1999/10/07 03:45:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -315,8 +315,8 @@ void glyph_holder_paint(
 static void CreateGC(ScrollerWidget self);
 static Pixel *CreateFadedColors(Display *display, Colormap colormap,
 				XColor *first, XColor *last, unsigned int levels);
-static void StartClock(ScrollerWidget self);
-static void StopClock(ScrollerWidget self);
+static void EnableClock(ScrollerWidget self);
+static void DisableClock(ScrollerWidget self);
 static void SetClock(ScrollerWidget self);
 static void Tick(XtPointer widget, XtIntervalId *interval);
 
