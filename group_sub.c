@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.35 2002/04/09 22:30:48 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.36 2002/04/10 11:17:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -699,7 +699,7 @@ static void decode_attachment(
     assert(mark != NULL);
 
     /* Copy the content into the buffer */
-    count = length < mark - point ? length - 1 : mark - point - 1;
+    count = length - 1 < mark - point ? length - 1 : mark - point;
     strncpy(buffer, point, count);
     buffer[count] = '\0';
 
