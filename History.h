@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.9 2002/04/08 14:54:30 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.10 2002/04/12 13:21:53 phelps Exp $";
 #endif /* lint */
 
 
@@ -173,9 +173,6 @@ void HistoryAddMessage(Widget widget, message_t message);
 
 /* Kills the thread of the given message */
 void HistoryKillThread(Widget widget, message_t message);
-
-/* Returns whether or not a given message is in a killed thread */
-Boolean HistoryIsMessageKilled(Widget widget, message_t message);
 
 /* Selects a message in the history */
 void HistorySelect(Widget widget, message_t message);
