@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.90 2000/10/26 05:20:51 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.91 2000/10/26 05:28:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -411,9 +411,11 @@ int main(int argc, char *argv[])
     Widget top;
 
     /* Create the toplevel widget */
-    top = XtVaAppInitialize(
+    top = XtVaOpenApplication(
 	&context, "XTickertape",
-	NULL, 0, &argc, argv, NULL,
+	NULL, 0,
+	&argc, argv, NULL,
+	applicationShellWidgetClass,
 	XtNborderWidth, 0,
 	NULL);
 
