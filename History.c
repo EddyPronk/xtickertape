@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.26 2001/07/22 02:31:57 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.27 2001/07/22 02:42:53 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1216,14 +1216,41 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 	if (y < 0)
 	{
 	    /* We're being dragged up. */
-	    index = index_of_y(self, - 1);
-	    set_selection_index(self, index);
+	    self -> history.drag_direction = DRAG_UP;
+
+	    /* If we've already selected at the first message then make
+	     * the top margin visible */
+	    if (self -> history.selection_index == 0)
+	    {
+		set_origin(self, self -> history.x, 0, 1);
+	    }
+	    else
+	    {
+ 		/* Otherwise select the item before the first completely visible one */
+		index = index_of_y(self, -1);
+		set_selection_index(self, index);
+	    }
 	}
 	else if (self -> core.height < y)
 	{
 	    /* We're being dragged down */
-	    index = index_of_y(self, self -> core.height + 1);
-	    set_selection_index(self, index);
+	    self -> history.drag_direction = DRAG_DOWN;
+
+	    /* If we've already select the last message then make the
+	     * bottom margin visible */
+	    if (self -> history.selection_index == self -> history.message_count - 1)
+	    {
+		if (! (self -> history.height < self -> core.height))
+		{
+		    set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
+		}
+	    }
+	    else
+	    {
+		/* Otherwise select the item below the last completely visible one */
+		index = index_of_y(self, self -> core.height + 1);
+		set_selection_index(self, index);
+	    }
 	}
 	else
 	{
