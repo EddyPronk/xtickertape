@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.74 1999/10/07 03:45:28 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.75 1999/11/10 13:16:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -407,15 +407,17 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
+    /* Set the clock *before* we start scrolling so that if we
+     * encounter an end condition we can cancel the timer there
+     * and then. */
+    SetClock(self);
+
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
-    self -> scroller.timer = 0;
     if (self -> scroller.step != 0)
     {
 	scroll(self, self -> scroller.step);
 	Redisplay((Widget)self, NULL, 0);
     }
-
-    SetClock(self);
 }
 
 
