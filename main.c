@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.22 1998/04/21 05:06:22 phelps Exp $ */
+/* $Id: main.c,v 1.23 1998/05/09 06:20:36 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,6 +46,9 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 /* The ControlPanel popup */
 static ControlPanel controlPanel;
 
+/* The top-level widget */
+Widget top;
+
 /* The tickertape widget */
 TickertapeWidget tickertape;
 
@@ -67,7 +70,7 @@ static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal 
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
     /* if main window then quit */
-    if (widget == (Widget) tickertape)
+    if (widget == top)
     {
 	XtDestroyApplicationContext(XtWidgetToApplicationContext(widget));
 	exit(0);
@@ -130,7 +133,6 @@ int main(int argc, char *argv[])
     CONNECTION connection;
     FILE *file;
     List subscriptions;
-    Widget top;
     XtAppContext context;
     Atom deleteAtom;
     char *hostname = HOSTNAME;
