@@ -150,8 +150,8 @@ XTickertape.metamailPath: @METAMAIL@
 !
 *.scroller.baseTranslations: \
 	<Btn1Down>: start-drag()\n\
+	<Btn1Up>: stop-drag(show-menu)\n\
 	<Btn1Motion>: drag()\n\
-	<Btn1Up>: show-menu()\n\
 	<Btn2Up>: show-attachment()\n\
 	<Btn3Up>: expire()\n\
 	<Key>d: expire()\n\
