@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.94 2000/04/28 07:26:24 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.95 2000/04/28 07:41:01 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -281,6 +281,9 @@ struct glyph_holder
     /* The width (in pixels) of this holder's glyph */
     int width;
 
+    /* Nonzero if the glyph needs to be repainted */
+    int is_pending;
+
     /* This holder's glyph */
     glyph_t glyph;
 };
@@ -300,6 +303,7 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> previous = NULL;
     self -> next = NULL;
     self -> width = width;
+    self -> is_pending = 0;
     self -> glyph = glyph -> alloc(glyph);
     return self;
 }
@@ -681,7 +685,7 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer)
 /* Repaints the given glyph (if visible) */
 void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 {
-    Display *display = XtDisplay((Widget) self);
+    Display *display = XtDisplay((Widget)self);
     glyph_holder_t holder = self -> scroller.left_holder;
     int offset = 0 - self -> scroller.left_offset;
 
@@ -701,9 +705,16 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 	    }
 	    else
 	    {
-		glyph_holder_paint(
-		    holder, display, XtWindow((Widget) self),
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		if (self -> scroller.state == SS_READY)
+		{
+		    glyph_holder_paint(
+			holder, display, XtWindow((Widget)self),
+			offset, 0, 0, self -> core.width, self -> scroller.height);
+		}
+		else
+		{
+		    holder -> is_pending = 1;
+		}
 	    }
 	}
 
@@ -787,7 +798,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
     self -> scroller.clip_width = 0;
-    self -> scroller.state = SS_OBSCURED;
+    self -> scroller.state = SS_READY;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1249,15 +1260,44 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
  * NoExpose) events were received */
 static void overflow_recover(ScrollerWidget self)
 {
+    Display *display = XtDisplay((Widget)self);
+    glyph_holder_t holder;
+    int offset = 0 - self -> scroller.left_offset;
+
     printf("overflow recovery\n");
+
+    /* Update any glyphs which need to be repainted */
+    for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
+    {
+	if (holder -> is_pending)
+	{
+	    if (self -> scroller.use_pixmap)
+	    {
+		glyph_holder_paint(
+		    holder, display, self -> scroller.pixmap,
+		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		Redisplay((Widget)self, NULL, 0);
+	    }
+	    else
+	    {
+		glyph_holder_paint(
+		    holder, display, XtWindow((Widget)self),
+		    offset, 0, 0, self -> core.width, self -> scroller.height);
+	    }
+
+	    holder -> is_pending = 0;
+	}
+    }
 
     /* If we were dragging then update the position now */
     if (self -> scroller.is_dragging)
     {
 	drag_to(self, self -> scroller.overflow_x);
     }
-
-    Tick((Widget)self, NULL);
+    else
+    {
+	Tick((Widget)self, NULL);
+    }
 }
 
 
