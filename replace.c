@@ -30,6 +30,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h> /* NULL */
 #endif
@@ -126,6 +127,24 @@ char *strchr(const char *s, int c)
 }
 #endif
 
+#ifndef HAVE_STRDUP
+/* A slow but correct implementation of strdup */
+char *strdup(const char *s)
+{
+    size_t length;
+    char *result;
+
+    length = strlen(s) + 1;
+    if ((result = (char *)malloc(length)) == NULL)
+    {
+	return NULL;
+    }
+
+    memcpy(result, s, length);
+    return result;
+}
+#endif
+
 #ifndef HAVE_STRRCHR
 /* A slow but correct implementation of strrchr */
 char *strrchr(const char *s, int c)
@@ -147,21 +166,12 @@ char *strrchr(const char *s, int c)
 }
 #endif
 
-
-#ifndef HAVE_STRDUP
-/* A slow but correct implementation of strdup */
-char *strdup(const char *s)
+#ifndef HAVE_STRERROR
+#define BUFFER_SIZE 32
+static char buffer[BUFFER_SIZE];
+char *strerror(int errnum)
 {
-    size_t length;
-    char *result;
-
-    length = strlen(s) + 1;
-    if ((result = (char *)malloc(length)) == NULL)
-    {
-	return NULL;
-    }
-
-    memcpy(result, s, length);
-    return result;
+    snprintf(buffer, BUFFER_SIZE, "errno=%d\n", errnum);
+    return buffer;
 }
 #endif
