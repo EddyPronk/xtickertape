@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.137 2003/01/09 22:48:32 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.138 2003/01/10 11:57:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -48,8 +48,9 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.137 2003/01/09 22:48:32 phelps 
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 #include "replace.h"
-#include "ScrollerP.h"
+#include "message.h"
 #include "message_view.h"
+#include "ScrollerP.h"
 
 #ifdef DEBUG
 #define DPRINTF(x) fprintf x
@@ -63,9 +64,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.137 2003/01/09 22:48:32 phelps 
 #if ! defined(MAX)
 # define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
-
-/* Default source code set */
-#define SRC_CODE_SET "UTF-8"
 
 /*
  * Resources
@@ -98,7 +96,7 @@ static XtResource resources[] =
 	offset(scroller.font), XtRString, XtDefaultFont
     },
 
-    /* The font code set */
+    /* The font's code set */
     {
 	XtNfontCodeSet, XtCString, XtRString, sizeof(char *),
 	offset(scroller.code_set), XtRString, (XtPointer)NULL
@@ -315,7 +313,6 @@ static void glyph_set_clock(glyph_t self, int level_count);
 static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
 {
     glyph_t self;
-    XFontStruct *font;
 
     /* Allocate memory for a new glyph */
     if ((self = malloc(sizeof(struct glyph))) == NULL)
@@ -337,8 +334,9 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
     }
 
     /* Allocate a message view for display */
-    font = widget -> scroller.font;
-    if ((self -> message_view = message_view_alloc(message, font, 0)) == NULL)
+    if ((self -> message_view = message_view_alloc(
+	     message, 0,
+	     widget -> scroller.cs_info)) == NULL)
     {
 	glyph_free(self);
 	return NULL;
@@ -349,7 +347,7 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
 
     /* Add a little space on the end */
     /* FIX THIS: compute the per_char info for a space */
-    self -> sizes.width += font -> ascent;
+    self -> sizes.width += widget -> scroller.font -> ascent;
 
     /* Start the clock */
     self -> timeout = None;
@@ -939,6 +937,17 @@ static void initialize(
 	self -> core.width = 400;
     }
 
+    /* Try to allocate a conversion descriptor */
+    if ((self -> scroller.cs_info = code_set_info_alloc(
+	     XtDisplay(widget),
+	     self -> scroller.font,
+	     self -> scroller.code_set)) == NULL)
+    {
+	/* FIX THIS: can we fail gracefully? */
+	perror("trouble");
+	exit(1);
+    }
+
     /* Record the height and width for future reference */
     self -> scroller.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
 
@@ -987,18 +996,6 @@ static void realize(
     Display *display = XtDisplay(self);
     Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
     XColor colors[5];
-
-    /* Try to allocate a conversion descriptor */
-    if (encoder_alloc(
-	    display,
-	    self -> scroller.font, self -> scroller.code_set,
-	    SRC_CODE_SET, "a", 1,
-	    &self -> scroller.cd,
-	    &self -> scroller.enc_width) < 0)
-    {
-	self -> scroller.cd = (iconv_t)-1;
-	self -> scroller.enc_width = 1;
-    }
 
     /* Initialize colors */
     colors[0].pixel = self -> core.background_pixel;

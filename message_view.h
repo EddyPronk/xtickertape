@@ -31,15 +31,17 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.6 2003/01/09 22:48:32 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.7 2003/01/10 11:57:24 phelps Exp $";
 #endif /* lint */
-
-/* The message_view type */
-typedef struct message_view *message_view_t;
 
 /* String measurements */
 typedef struct string_sizes *string_sizes_t;
 
+/* The code_set_info type */
+typedef struct code_set_info *code_set_info_t;
+
+/* The message_view type */
+typedef struct message_view *message_view_t;
 
 /* Use for string measurement results */
 struct string_sizes
@@ -63,19 +65,19 @@ struct string_sizes
 /* Returns an iconv conversion descriptor for converting characters to
  * be displayed in a given font from a given code set.  If tocode is
  * non-NULL then it will be tried first. */
-int encoder_alloc(
+code_set_info_t code_set_info_alloc(
     Display *display,
-    XFontStruct *font, const char *tocode,
-    const char *fromcode,
-    char *one_ch, size_t one_len,
-    iconv_t *cd_out,
-    int *dimension_out);
+    XFontStruct *font,
+    const char *tocode);
+
+/* Releases the resources allocated by a code_set_info_t */
+void code_set_info_free(code_set_info_t self);
 
 /* Allocates and initializes a new message_view_t */
 message_view_t message_view_alloc(
     message_t message,
-    XFontStruct *font,
-    long indent);
+    long indent,
+    code_set_info_t cs_info);
 
 /* Frees a message_view_t */
 void message_view_free(message_view_t self);

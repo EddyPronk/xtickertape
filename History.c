@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.70 2003/01/09 22:37:15 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.71 2003/01/10 11:57:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -52,7 +52,6 @@ static const char cvsid[] = "$Id: History.c,v 1.70 2003/01/09 22:37:15 phelps Ex
 #include <X11/Xaw/SimpleP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
-#include <iconv.h>
 #include "replace.h"
 #include "message.h"
 #include "message_view.h"
@@ -106,6 +105,12 @@ static XtResource resources[] =
     {
 	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
 	offset(history.font), XtRString, XtDefaultFont
+    },
+
+    /* The font's code set */
+    {
+	XtNfontCodeSet, XtCString, XtRString, sizeof(char *),
+	offset(history.code_set), XtRString, (XtPointer)NULL
     },
 
     /* Pixel timestamp_pixel */
@@ -552,7 +557,7 @@ static void node_dump(node_t self, int depth)
 
 /* Populate an array with message views */
 static void node_populate(node_t self,
-			  XFontStruct *font,
+			  code_set_info_t cs_info,
 			  message_view_t *array,
 			  int depth, int *index,
 			  message_t selection,
@@ -564,7 +569,7 @@ static void node_populate(node_t self,
 	/* Add the children first */
 	if (self -> child)
 	{
-	    node_populate(self -> child, font, array, depth + 1, index, selection, selection_index_out);
+	    node_populate(self -> child, cs_info, array, depth + 1, index, selection, selection_index_out);
 	}
 
 	/* Bail if the index goes negative */
@@ -580,7 +585,9 @@ static void node_populate(node_t self,
 	}
 
 	/* Wrap the message in a message view */
-	array[(*index)--] =  message_view_alloc(self -> message, font, depth);
+	/* FIX THIS: use a real conversion descriptor */
+	array[(*index)--] =  message_view_alloc(
+	    self -> message, depth, cs_info);
 
 	/* Move on to the next node */
 	self = self -> sibling;
@@ -943,6 +950,16 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* No GC to start with */
     self -> history.gc = None;
+
+    /* Allocate a conversion descriptor */
+    if ((self -> history.cs_info = code_set_info_alloc(
+	     XtDisplay(widget),
+	     self -> history.font,
+	     self -> history.code_set)) == NULL)
+    {
+	perror("trouble");
+	exit(1);
+    }
 
     /* Set the initial width/height if none are supplied */
     self -> core.width = 400;
@@ -1589,7 +1606,10 @@ static void insert_message(HistoryWidget self,
     }
 
     /* Create a new message view */
-    view = message_view_alloc(message, self -> history.font, indent);
+    /* FIX THIS: use a real conversion descriptor! */
+    view = message_view_alloc(
+	message, indent,
+	self -> history.cs_info);
     self -> history.message_views[index] = view;
 
     /* Measure it */
@@ -2330,7 +2350,7 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
 	/* Traverse the history tree */
 	node_populate(
 	    self -> history.nodes,
-	    self -> history.font,
+	    self -> history.cs_info,
 	    self -> history.message_views,
 	    0, &index,
 	    self -> history.selection,
@@ -2346,7 +2366,9 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
 	    message = self -> history.messages[index];
 
 	    /* Wrap it in a message view */
-	    self -> history.message_views[i] = message_view_alloc(message, self -> history.font, 0);
+	    self -> history.message_views[i] = message_view_alloc(
+		message, 0,
+		self -> history.cs_info);
 
 	    /* Update the selection index */
 	    if (self -> history.selection == message)

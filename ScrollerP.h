@@ -34,11 +34,10 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.45 2003/01/09 20:40:29 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.46 2003/01/10 11:57:24 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
-#include <iconv.h>
 
 #include "Scroller.h"
 
@@ -82,11 +81,8 @@ typedef struct
 
     /* Private state */
 
-    /* The iconv conversion descriptor */
-    iconv_t cd;
-
-    /* The number of bytes required to represent a character */
-    int enc_width;
+    /* The code set info used to display UTF-8 strings */
+    code_set_info_t cs_info;
 
     /* The timer used to do the scrolling */
     XtIntervalId timer;
