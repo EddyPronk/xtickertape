@@ -1,4 +1,4 @@
-/* $Id: Scroller.c,v 1.3 1997/02/05 09:22:06 phelps Exp $ */
+/* $Id: Scroller.c,v 1.4 1997/02/05 09:59:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -277,8 +277,16 @@ void Scroller_scroll(Scroller self)
 	    }
 	    else
 	    {
-		width = self -> width - MessageView_getWidth(last);
-		width = width > END_SPACING ? width : END_SPACING;
+		unsigned int lastWidth = MessageView_getWidth(last);
+
+		if (lastWidth + END_SPACING < self -> width)
+		{
+		    width = self -> width - lastWidth;
+		}
+		else
+		{
+		    width = END_SPACING;
+		}
 	    }
 
 	    self -> nextVisible = 0;
