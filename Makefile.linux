@@ -3,13 +3,12 @@
 #
 
 TICKERTAPE = xtickertape
-CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
 
-OBJS = $(CONNECTION) \
-	Control.o Tickertape.o \
-	MessageView.o Message.o Subscription.o List.o main.o
+OBJS = \
+	Ticker.o Control.o Tickertape.o ElvinConnection.o OrbitSubscription.o \
+	MessageView.o Message.o Subscription.o Hash.o List.o main.o
 
 CDEBUGFLAGS = -g 
 #CDEBUGFLAGS = -g

@@ -1,35 +1,34 @@
-/* $Id: ElvinConnection.h,v 1.8 1998/10/16 03:46:25 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.9 1998/10/21 01:58:07 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
 
 typedef struct ElvinConnection_t *ElvinConnection;
 
-#include "Subscription.h"
-#include "Message.h"
-#include "List.h"
+/* The format of the error callback function */
+typedef void (*ErrorCallback)(void *context, char *message);
+typedef void (*NotifyCallback)(void *context, en_notify_t notification);
 
-typedef void *(*EventLoopRegisterInputFunc)(int fd, void *callback, void *rock);
-typedef void (*EventLoopUnregisterInputFunc)(void *rock);
-typedef void (*EventLoopRegisterTimerFunc)(unsigned long interval, void *callback, void *rock);
+#include <X11/Intrinsic.h>
+#include "Message.h"
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
-    char *hostname, int port, char *user,
-    List subscriptions,
-    Subscription errorSubscription);
+    char *hostname, int port, XtAppContext app_context,
+    ErrorCallback callback, void *context);
 
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self);
 
-/* Registers the connection with an event loop */
-void ElvinConnection_register(
-    ElvinConnection self,
-    EventLoopRegisterInputFunc registerFunc,
-    EventLoopUnregisterInputFunc unregisterFunc,
-    EventLoopRegisterTimerFunc registerTimerFunc);
+/* Registers a callback for when the given expression is matched */
+void *ElvinConnection_subscribe(
+    ElvinConnection self, char *expression,
+    NotifyCallback callback, void *context);
+
+/* Unregisters a callback (info was returned by ElvinConnection_subscribe) */
+void ElvinConnection_unsubscribe(ElvinConnection self, void *info);
 
 /* Sends a message by posting an Elvin event */
-void ElvinConnection_send(ElvinConnection self, Message message);
+void ElvinConnection_send(ElvinConnection self, en_notify_t notification);
 
 #endif /* ELVINCONNECTION_H */

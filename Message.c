@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.7 1998/10/16 06:02:50 phelps Exp $ */
+/* $Id: Message.c,v 1.8 1998/10/21 01:58:07 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,10 @@ struct Message_t
     char *sanity_check;
 #endif /* SANITY */
 
-    /* The receiver's group (tickertape) */
+    /* The Subscription which was matched to generate the receiver */
+    void *info;
+
+    /* The receiver's group */
     char *group;
 
     /* The receiver's user */
@@ -34,13 +37,14 @@ struct Message_t
     /* The receiver's MIME arg */
     char *mimeArgs;
 
-    /* The lifetime of the message in seconds */
+    /* The lifetime of the receiver in seconds */
     unsigned long timeout;
 };
 
 
 /* Creates and returns a new message */
 Message Message_alloc(
+    void *info,
     char *group,
     char *user,
     char *string,
@@ -48,35 +52,36 @@ Message Message_alloc(
     char *mimeType,
     char *mimeArgs)
 {
-    Message message = (Message) malloc(sizeof(struct Message_t));
+    Message self = (Message) malloc(sizeof(struct Message_t));
 
 #ifdef SANITY
-    message -> sanity_check = sanity_value;
+    self -> sanity_check = sanity_value;
 #endif /* SANITY */
-    message -> group = strdup(group);
-    message -> user = strdup(user);
-    message -> string = strdup(string);
+    self -> info = info;
+    self -> group = strdup(group);
+    self -> user = strdup(user);
+    self -> string = strdup(string);
 
     if (mimeType == NULL)
     {
-	message -> mimeType = NULL;
+	self -> mimeType = NULL;
     }
     else
     {
-	message -> mimeType = strdup(mimeType);
+	self -> mimeType = strdup(mimeType);
     }
 
     if (mimeArgs == NULL)
     {
-	message -> mimeArgs = NULL;
+	self -> mimeArgs = NULL;
     }
     else
     {
-	message -> mimeArgs = strdup(mimeArgs);
+	self -> mimeArgs = strdup(mimeArgs);
     }
 
-    message -> timeout = timeout;
-    return message;
+    self -> timeout = timeout;
+    return self;
 }
 
 /* Frees the memory used by the receiver */
@@ -86,10 +91,22 @@ void Message_free(Message self)
 
 #ifdef SANITY
     self -> sanity_check = sanity_freed;
-#endif /* SANITY */    
-    free(self -> group);
-    free(self -> user);
-    free(self -> string);
+#endif /* SANITY */
+
+    if (self -> group)
+    {
+	free(self -> group);
+    }
+
+    if (self -> user)
+    {
+	free(self -> user);
+    }
+
+    if (self -> string)
+    {
+	free(self -> string);
+    }
 
     if (self -> mimeType)
     {
@@ -102,6 +119,13 @@ void Message_free(Message self)
     }
 
     free(self);
+}
+
+/* Answers the Subscription matched to generate the receiver */
+void *Message_getInfo(Message self)
+{
+    SANITY_CHECK(self);
+    return self -> info;
 }
 
 /* Answers the receiver's group */
@@ -163,6 +187,7 @@ void Message_debug(Message self)
 #ifdef SANITY
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */
+    printf("  info = 0x%p\n", self -> info);
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);

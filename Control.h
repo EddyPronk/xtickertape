@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.5 1998/10/16 01:57:25 phelps Exp $ */
+/* $Id: Control.h,v 1.6 1998/10/21 01:58:06 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -7,22 +7,36 @@
 #include <stdlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
-#include "Message.h"
-#include "List.h"
 
-typedef void (*ControlPanelCallback)(Message message, void *context);
+/* The ControlPanel datatype */
 typedef struct ControlPanel_t *ControlPanel;
 
+#include "Message.h"
+
+/* The ControlPanelCallback type */
+typedef void (*ControlPanelCallback)(void *context, Message message);
+
+
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(
-    Widget parent, char *user, List subscriptions,
-    ControlPanelCallback callback, void *context);
+ControlPanel ControlPanel_alloc(Widget parent, char *user);
 
 /* Releases the resources used by the receiver */
 void ControlPanel_free(ControlPanel self);
 
+/* Adds a subscription to the receiver */
+void *ControlPanel_addSubscription(
+    ControlPanel self, char *title,
+    ControlPanelCallback callback, void *context);
+
+/* Removes a subscription from the receiver (info was returned by addSubscription) */
+void ControlPanel_removeSubscription(ControlPanel self, void *info);
+
+/* Retitles an entry */
+void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title);
+
+
 /* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self, Message view);
+void ControlPanel_show(ControlPanel self, void *data);
 
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self);

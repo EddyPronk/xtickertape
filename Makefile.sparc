@@ -7,12 +7,12 @@ CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
 
-OBJS = $(CONNECTION) \
-	Control.o Tickertape.o \
-	MessageView.o Message.o Subscription.o List.o main.o
+OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o \
+	MessageView.o Message.o Subscription.o OrbitSubscription.o Hash.o List.o main.o
 
 CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5
-#CDEBUGFLAGS = -g
+#CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -DORBIT -DSANITY -Wall
+
 
 INCLUDES = -I/usr/openwin/include -I/usr/local/dstc/include \
 	-I/usr/local/dstc/include/elvin3

@@ -1,5 +1,5 @@
 /*
- * $Id: List.h,v 1.5 1998/08/19 06:38:56 phelps Exp $
+ * $Id: List.h,v 1.6 1998/10/21 01:58:07 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
@@ -10,6 +10,11 @@
 
 /* The List pointer type */
 typedef struct List_t *List;
+
+/* Function prototype for the List_find function */
+typedef int (*ListFindFunc)(void *item);
+typedef int (*ListFindWithFunc)(void *item, void *data);
+
 
 /* Allocates a new List */
 List List_alloc();
@@ -48,6 +53,23 @@ int List_isEmpty(List self);
 
 /* Answers 0 if the receiver contains the value, 1 otherwise */
 int List_includes(List self, void *value);
+
+
+/* Answers the first element for which function returns non-zero */
+void *List_findFirst(List self, ListFindFunc function);
+
+/* Answers the last element for which function returns non-zero */
+void *List_findLast(List self, ListFindFunc function);
+
+/* Answers the first element for which function returns non-zero */
+void *List_findFirstWith(List self, ListFindWithFunc function, void *data);
+
+/* Answers the last element for which function returns non-zero */
+void *List_findLastWith(List self, ListFindWithFunc function, void *data);
+
+
+/* Construct a copy list containing the elements for which function returns != 0 */
+List List_select(List self, ListFindFunc function);
 
 
 /* Enumeration */

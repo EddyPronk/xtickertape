@@ -1,7 +1,8 @@
-/* $Id: MessageView.c,v 1.22 1998/10/15 06:22:52 phelps Exp $ */
+/* $Id: MessageView.c,v 1.23 1998/10/21 01:58:07 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
@@ -412,8 +413,8 @@ void MessageView_decodeMime(MessageView self)
 {
     char *mimeType;
     char *mimeArgs;
-    char buffer[2048];
-    char filename[2048];
+    char filename[sizeof("/tmp/ticker") + 10];
+    char *buffer;
     FILE *file;
 
     SANITY_CHECK(self);
@@ -431,12 +432,15 @@ void MessageView_decodeMime(MessageView self)
 #endif /* DEBUG */
 
     /* Write the mimeArgs to a file */
-    sprintf(filename, "/tmp/ticker%d", getpid());
+    sprintf(filename, "/tmp/ticker%lu", getpid());
     file = fopen(filename, "wb");
     fputs(mimeArgs, file);
     fclose(file);
 
     /* Send it off to metamail to display */
+    buffer = alloca(
+	strlen(mimeType) + strlen(filename) +
+	sizeof("metamail -B -q -b -c   > /dev/null 2>&1"));
     sprintf(buffer, "metamail -B -q -b -c %s %s > /dev/null 2>&1", mimeType, filename);
     system(buffer);
 

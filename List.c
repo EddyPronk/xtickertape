@@ -267,6 +267,94 @@ int List_includes(List self, void *value)
     return 0;
 }
 
+/* Answers the first element for which function returns non-zero */
+void *List_findFirst(List self, ListFindFunc function)
+{
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if ((*function)(link -> value) != 0)
+	{
+	    return link -> value;
+	}
+    }
+
+    return NULL;
+}
+
+
+/* Answers the last element for which function returns non-zero */
+void *List_findLast(List self, ListFindFunc function)
+{
+    void *value = NULL;
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if ((*function)(link -> value) != 0)
+	{
+	    value = link -> value;
+	}
+    }
+
+    return value;
+}
+
+/* Answers the first element for which function returns non-zero */
+void *List_findFirstWith(List self, ListFindWithFunc function, void *data)
+{
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if ((*function)(link -> value, data) != 0)
+	{
+	    return link -> value;
+	}
+    }
+
+    return NULL;
+}
+
+/* Answers the last element for which function returns non-zero */
+void *List_findLastWith(List self, ListFindWithFunc function, void *data)
+{
+    ListLink link;
+    void *value = NULL;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if ((*function)(link -> value, data) != 0)
+	{
+	    value = link -> value;
+	}
+    }
+
+    return value;
+}
+
+/* Construct a copy list containing the elements for which function returns != 0 */
+List List_select(List self, ListFindFunc function)
+{
+    List list = List_alloc();
+    ListLink link;
+
+    SANITY_CHECK(self);
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if ((*function)(link -> value) != 0)
+	{
+	    List_addLast(list, link -> value);
+	}
+    }
+
+    return list;
+}
 
 
 /* Enumeration */

@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.14 1998/10/16 01:57:23 phelps Exp $ */
+/* $Id: Control.c,v 1.15 1998/10/21 01:58:06 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,7 +7,7 @@
 
 #include "sanity.h"
 #include "Control.h"
-#include "Subscription.h"
+#include "List.h"
 
 #include <X11/Shell.h>
 #include <X11/Xaw/Box.h>
@@ -37,14 +37,64 @@ char *timeouts[] =
 };
 
 
+
+/* Used in callbacks to denote both a ControlPanel and a callback */
+typedef struct MenuItemTuple_t
+{
+    ControlPanel controlPanel;
+    Widget widget;
+    char *title;
+    ControlPanelCallback callback;
+    void *context;
+} *MenuItemTuple;
+
+/* The pieces of the control panel */
+struct ControlPanel_t
+{
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
+
+    /* The receiver's top-level widget */
+    Widget top;
+
+    /* The receiver's user text widget */
+    Widget user;
+
+    /* The receiver's group menu button */
+    Widget group;
+
+    /* The receiver's group menu */
+    Widget groupMenu;
+
+    /* The receiver's timeout menu button */
+    Widget timeout;
+
+    /* The receiver's text text widget */
+    Widget text;
+
+    /* The currently selected subscription (group) */
+    MenuItemTuple selection;
+
+    /* The list of subscriptions to appear in the group menu */
+    List subscriptions;
+
+    /* The list of timeouts to appear in the timeout menu */
+    char **timeouts;
+
+    /* The default user name */
+    char *username;
+};
+
+
 /* Prototypes for static functions */
 static void SetLabel(Widget widget, char *label);
 static char *GetLabel(Widget widget);
 static void SetString(Widget widget, char *string);
 static char *GetString(Widget widget);
-static void SetMBValue(Widget item, XtPointer context, XtPointer ignored);
+static void SetGroupValue(Widget item, MenuItemTuple tuple, XtPointer unused);
+static void SetTimeoutValue(Widget item, XtPointer ignored, XtPointer unused);
 static Widget CreateUserBox(ControlPanel self, Widget parent);
-static void CreateGroupMenuItem(Subscription subscription, Widget context[]);
 static Widget CreateGroupMenu(ControlPanel self, Widget parent);
 static Widget CreateGroupBox(ControlPanel self, Widget parent, Widget left);
 static Widget CreateTimeoutMenu(ControlPanel self, Widget parent);
@@ -53,38 +103,15 @@ static Widget CreateTopBox(ControlPanel self, Widget parent);
 static Widget CreateTextBox(ControlPanel self, Widget parent);
 static Widget CreateBottomBox(ControlPanel self, Widget parent);
 static Widget CreateControlPanelPopup(ControlPanel self, Widget parent);
-static char *GetGroup(ControlPanel self);
-static void SetGroup(ControlPanel self, char *group);
+static void SetSelection(ControlPanel self, MenuItemTuple tuple);
 static char *GetUser(ControlPanel self);
 static void SetUser(ControlPanel self, char *user);
 static char *GetText(ControlPanel self);
 static void SetText(ControlPanel self, char *text);
 static int GetTimeout(ControlPanel self);
-static void SetTimeout(ControlPanel self, int timeout);
-static void MatchSubscription(Subscription self, char *group, Subscription *result);
-static Subscription SubscriptionForMessage(ControlPanel self, Message message);
-static void ActionOK(Widget button, XtPointer context, XtPointer ignored);
-static void ActionClear(Widget button, XtPointer context, XtPointer ignored);
-static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
-
-
-/* The pieces of the control panel */
-struct ControlPanel_t
-{
-#ifdef SANITY
-    char *sanity_check;
-#endif /* SANITY */
-    ControlPanelCallback callback;
-    void *context;
-    Widget top;
-    Widget user;
-    Widget group;
-    Widget timeout;
-    Widget text;
-    List subscriptions;
-    char **timeouts;
-    char *username;
-};
+static void ActionOK(Widget button, ControlPanel self, XtPointer ignored);
+static void ActionClear(Widget button, ControlPanel self, XtPointer ignored);
+static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
 
 
 /* Sets the value of a Widget's "label" resource */
@@ -132,11 +159,19 @@ static char *GetString(Widget widget)
 }
 
 /* Sets the label of a MenuButton to the label of a Menu Object */
-static void SetMBValue(Widget item, XtPointer context, XtPointer ignored)
+static void SetGroupValue(Widget item, MenuItemTuple tuple, XtPointer unused)
 {
-    SetLabel((Widget)context, GetLabel(item));
+    ControlPanel self = tuple -> controlPanel;
+    SANITY_CHECK(self);
+
+    SetSelection(self, tuple);
 }
 
+/* Sets the label of a MenuButton to the label of a Menu Object */
+static void SetTimeoutValue(Widget item, XtPointer ignored, XtPointer unused)
+{
+    SetLabel(XtParent(XtParent(item)), GetLabel(item));
+}
 
 /* Constructs the User label box */
 static Widget CreateUserBox(ControlPanel self, Widget parent)
@@ -176,33 +211,14 @@ static Widget CreateUserBox(ControlPanel self, Widget parent)
     return form;
 }
 
-/* Construct a menu item for the group list */
-static void CreateGroupMenuItem(Subscription subscription, Widget context[])
-{
-    Widget parent = context[0];
-    Widget menu = context[1];
-
-    if (Subscription_isInMenu(subscription))
-    {
-	Widget item = XtVaCreateManagedWidget(
-	    Subscription_getGroup(subscription), smeBSBObjectClass, menu,
-	    NULL);
-	XtAddCallback(item, XtNcallback, SetMBValue, parent);
-    }
-}
 
 /* Construct the menu for the Group list */
 static Widget CreateGroupMenu(ControlPanel self, Widget parent)
 {
-    Widget context[2];
-    Widget menu;
-
     SANITY_CHECK(self);
-    menu = XtVaCreatePopupShell("groupMenu", simpleMenuWidgetClass, parent, NULL);
-    context[0] = parent;
-    context[1] = menu;
-    List_doWith(self -> subscriptions, CreateGroupMenuItem, context);
-    return menu;
+
+    return XtVaCreatePopupShell(
+	"groupMenu", simpleMenuWidgetClass, parent, NULL);
 }
 
 /* Create the Group box */
@@ -240,9 +256,8 @@ static Widget CreateGroupBox(ControlPanel self, Widget parent, Widget left)
 	XtNbottom, XawChainTop,
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
-	XtNlabel, Subscription_getGroup(List_first(self -> subscriptions)),
 	NULL);
-    CreateGroupMenu(self, self -> group);
+    self -> groupMenu = CreateGroupMenu(self, self -> group);
     return form;
 }
 
@@ -261,7 +276,7 @@ static Widget CreateTimeoutMenu(ControlPanel self, Widget parent)
 	Widget item = XtVaCreateManagedWidget(
 	    *timeout, smeBSBObjectClass, menu,
 	    NULL);
-	XtAddCallback(item, XtNcallback, SetMBValue, parent);
+	XtAddCallback(item, XtNcallback, SetTimeoutValue, NULL);
     }
 
     return menu;
@@ -302,6 +317,7 @@ static Widget CreateTimeoutBox(ControlPanel self, Widget parent, Widget left)
 	XtNbottom, XawChainTop,
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
+	XtNlabel, "5",
 	NULL);
     CreateTimeoutMenu(self, self -> timeout);
     return form;
@@ -382,7 +398,7 @@ static Widget CreateBottomBox(ControlPanel self, Widget parent)
 	XtNbottom, XawChainTop,
 	XtNright, XawRubber,
 	NULL);
-    XtAddCallback(button, XtNcallback, ActionOK, self);
+    XtAddCallback(button, XtNcallback, (XtCallbackProc)ActionOK, self);
 
     button = XtVaCreateManagedWidget(
 	"clear", commandWidgetClass, form,
@@ -394,7 +410,7 @@ static Widget CreateBottomBox(ControlPanel self, Widget parent)
 	XtNright, XawRubber,
 	XtNfromHoriz, button,
 	NULL);
-    XtAddCallback(button, XtNcallback, ActionClear, self);
+    XtAddCallback(button, XtNcallback, (XtCallbackProc)ActionClear, self);
 
     button = XtVaCreateManagedWidget(
 	"cancel", commandWidgetClass, form,
@@ -406,7 +422,7 @@ static Widget CreateBottomBox(ControlPanel self, Widget parent)
 	XtNright, XawChainRight,
 	XtNfromHoriz, button,
 	NULL);
-    XtAddCallback(button, XtNcallback, ActionCancel, self);
+    XtAddCallback(button, XtNcallback, (XtCallbackProc)ActionCancel, self);
     return form;
 }
 
@@ -423,18 +439,20 @@ static Widget CreateControlPanelPopup(ControlPanel self, Widget parent)
     return box;
 }
 
-/* Answers the receiver's group */
-static char *GetGroup(ControlPanel self)
-{
-    SANITY_CHECK(self);
-    return GetLabel(self -> group);
-}
-
 /* Sets the receiver's group */
-static void SetGroup(ControlPanel self, char *group)
+static void SetSelection(ControlPanel self, MenuItemTuple tuple)
 {
     SANITY_CHECK(self);
-    SetLabel(self -> group, group);
+    self -> selection = tuple;
+
+    if (self -> selection == NULL)
+    {
+	SetLabel(self -> group, "");
+    }
+    else
+    {
+	SetLabel(self -> group, tuple -> title);
+    }
 }
 
 /* Answers the receiver's user */
@@ -473,79 +491,52 @@ static int GetTimeout(ControlPanel self)
     return atoi(GetLabel(self -> timeout));
 }
 
-/* Sets the receiver's timeout */
-static void SetTimeout(ControlPanel self, int timeout)
-{
-    char buffer[80];
-
-    SANITY_CHECK(self);
-    sprintf(buffer, "%d", timeout);
-    SetLabel(self -> timeout, buffer);
-}
-
-
-/* Helper function for SubscriptionForGroup */
-static void MatchSubscription(Subscription self, char *group, Subscription *result)
-{
-    if (strcmp(Subscription_getGroup(self), group) == 0)
-    {
-	*result = self;
-    }
-}
-
-/* Answers the subscription which produced the message */
-/* FIX THIS: can't guarantee groups will match for much longer... */
-static Subscription SubscriptionForMessage(ControlPanel self, Message message)
-{
-    Subscription result = NULL;
-    List_doWithWith(self -> subscriptions, MatchSubscription, Message_getGroup(message), &result);
-    return result;
-}
-
 
 /*
+ *
  * Actions
+ *
  */
+
 /* Callback for OK button */
-static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
+static void ActionOK(Widget button, ControlPanel self, XtPointer ignored)
 {
-    ControlPanel self = (ControlPanel) context;
     SANITY_CHECK(self);
 
-    if (self -> callback)
+    if (self -> selection != NULL)
     {
 	Message message = ControlPanel_createMessage(self);
-	(*self -> callback)(message, self -> context);
+	(*self -> selection -> callback)(self -> selection -> context, message);
+	Message_free(message);
     }
+
     XtPopdown(self -> top);
 }
 
 /* Callback for Clear button */
-static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
+static void ActionClear(Widget button, ControlPanel self, XtPointer ignored)
 {
-    ControlPanel self = (ControlPanel) context;
-
     SANITY_CHECK(self);
     SetUser(self, self -> username);
     SetText(self, "");
-    SetTimeout(self, 10);
 }
 
 /* Callback for Cancel button */
-static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
+static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored)
 {
-    ControlPanel self = (ControlPanel) context;
-
     SANITY_CHECK(self);
     XtPopdown(self -> top);
 }
 
 
+/*
+ *
+ * Exported functions
+ *
+ */
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(
-    Widget parent, char *user, List subscriptions,
-    ControlPanelCallback callback, void *context)
+ControlPanel ControlPanel_alloc(Widget parent, char *user)
 {
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
     Atom deleteAtom;
@@ -553,15 +544,15 @@ ControlPanel ControlPanel_alloc(
 #ifdef SANITY
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
-    self -> subscriptions = subscriptions;
-    self -> callback = callback;
-    self -> context = context;
-    self -> username = strdup(user);
     self -> top = XtVaCreatePopupShell(
 	"controlPanel", transientShellWidgetClass, parent,
 	XtNtitle, "Tickertape Control Panel",
 	NULL);
+
+    self -> selection = NULL;
+    self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
+    self -> username = strdup(user);
 
     CreateControlPanelPopup(self, self -> top);
     ActionClear(NULL, (XtPointer)self, NULL);
@@ -586,19 +577,102 @@ void ControlPanel_free(ControlPanel self)
 }
 
 
-/* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self, Message message)
+/* Adds a subscription to the receiver */
+void *ControlPanel_addSubscription(
+    ControlPanel self, char *title,
+    ControlPanelCallback callback, void *context)
 {
+    Widget item;
+    MenuItemTuple tuple;
     SANITY_CHECK(self);
 
-    /* If a Message has been provided then select its group in the menu */
-    if (message)
+    item = XtVaCreateManagedWidget(
+	title, smeBSBObjectClass, self -> groupMenu,
+	NULL);
+
+    if ((tuple = (MenuItemTuple) malloc(sizeof(struct MenuItemTuple_t))) == NULL)
     {
-	Subscription subscription = SubscriptionForMessage(self, message);
-	if ((subscription != NULL) && (Subscription_isInMenu(subscription)))
-	{
-	    SetGroup(self, Subscription_getGroup(subscription));
-	}
+	fprintf(stderr, "*** Out of memory\n");
+	exit(1);
+    }
+
+    tuple -> controlPanel = self;
+    tuple -> widget = item;
+    tuple -> title = strdup(title);
+    tuple -> callback = callback;
+    tuple -> context = context;
+
+    XtAddCallback(item, XtNcallback, (XtCallbackProc)SetGroupValue, (XtPointer)tuple);
+
+    if (self -> selection == NULL)
+    {
+	SetSelection(self, tuple);
+    }
+
+    List_addLast(self -> subscriptions, tuple);
+
+    return tuple;
+}
+
+/* Removes a subscription from the receiver (tuple was returned by addSubscription) */
+void ControlPanel_removeSubscription(ControlPanel self, void *info)
+{
+    MenuItemTuple tuple;
+    SANITY_CHECK(self);
+
+    /* Bail out if it's not in the List of subscriptions */
+    if ((tuple = (MenuItemTuple)List_remove(self -> subscriptions, info)) == NULL)
+    {
+	return;
+    }
+
+    /* Destroy it's widget so it isn't in the menu anymore */
+    XtDestroyWidget(tuple -> widget);
+
+    /* If it's the selected item, then change the selection to something else */
+    if (self -> selection == tuple)
+    {
+	SetSelection(self, List_first(self -> subscriptions));
+    }
+
+    /* Free up some memory */
+    free(tuple -> title);
+    free(tuple);
+}
+
+/* Retitles an entry */
+void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title)
+{
+    MenuItemTuple tuple;
+    SANITY_CHECK(self);
+
+    /* Update the Widget's label */
+    tuple = (MenuItemTuple)info;
+    free(tuple -> title);
+    tuple -> title = title;
+    SetLabel(tuple -> widget, tuple -> title);
+
+
+    /* If this is the selected item, then update the MenuButton's label as well */
+    if (self -> selection == tuple)
+    {
+	SetLabel(self -> group, title);
+    }
+}
+
+
+
+/* Makes the ControlPanel window visible */
+void ControlPanel_show(ControlPanel self, void *info)
+{
+    MenuItemTuple tuple;
+    SANITY_CHECK(self);
+
+    tuple = (MenuItemTuple) info;
+
+    if (tuple != NULL)
+    {
+	SetSelection(self, tuple);
     }
 
     XtPopup(self -> top, XtGrabNone);
@@ -609,9 +683,11 @@ void ControlPanel_show(ControlPanel self, Message message)
 Message ControlPanel_createMessage(ControlPanel self)
 {
     SANITY_CHECK(self);
+
     /* FIX THIS: should include MIME stuff */
     return Message_alloc(
-	GetGroup(self),
+	self -> selection,
+	self -> selection -> title,
 	GetUser(self),
 	GetText(self),
 	GetTimeout(self),

@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.21 1998/10/16 06:05:02 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.22 1998/10/21 01:58:06 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -8,9 +8,8 @@
 
 #include "sanity.h"
 #include "ElvinConnection.h"
-#include "Subscription.h"
+#include "List.h"
 
-#define BUFFERSIZE 8192
 #define INITIAL_PAUSE 1000 /* 1 second */
 #define MAX_PAUSE (5 * 60 * 1000) /* 5 minutes */
 
@@ -19,22 +18,25 @@ static char *sanity_value = "ElvinConnection";
 static char *sanity_freed = "Freed ElvinConnection";
 #endif /* SANITY */
 
-/* Static function headers */
-static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
-static void SubscribeToItem(Subscription subscription, ElvinConnection self);
-static void ReadInput(ElvinConnection self);
-static void PublishStartupNotification(ElvinConnection self);
-static void Connect(ElvinConnection self);
-static void Reconnect(ElvinConnection self);
-static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, char *message);
 
+/* The receiver's state machine for connectivity status */
 typedef enum
 {
     NeverConnected,
     Connected,
     LostConnection,
-    ReconnectFailed
+    ReconnectFailed,
+    Disconnected
 } ConnectionState;
+
+/* A tuple of subscription expression, callback, context for the Hashtable */
+typedef struct SubscriptionTuple_t
+{
+    uint32 id;
+    char *expression;
+    NotifyCallback callback;
+    void *context;
+} *SubscriptionTuple;
 
 
 /* The ElvinConnection data structure */
@@ -48,9 +50,6 @@ struct ElvinConnection_t
     char *host;
     int port;
 
-    /* The name of our user */
-    char *user;
-
     /* Our elvin connection */
     elvin_t elvin;
 
@@ -59,96 +58,56 @@ struct ElvinConnection_t
 
     /* The duration to wait before attempting to reconnect */
     unsigned long retryPause;
+
+    /* The receiver's application context */
+    XtAppContext app_context;
     
-    /* The function to call to register the receiver with an event loop */
-    EventLoopRegisterInputFunc registerFunc;
-
-    /* The function to call to unregister the receiver with an event loop */
-    EventLoopUnregisterInputFunc unregisterFunc;
-
-    /* The function to register a timer callback with an event loop */
-    EventLoopRegisterTimerFunc registerTimerFunc;
-
     /* The data returned from the register function we need to pass to unregister */
-    void *registrationData;
+    XtInputId inputId;
 
-    /* The special subscription we notify about elvin errors */
-    Subscription errorSubscription;
+    /* The subscription callback function */
+    ErrorCallback callback;
 
-    /* Our current list of subscriptions */
+    /* The subscription callback context */
+    void *context;
+
+    /* A Hashtable mapping expressions to callbacks */
     List subscriptions;
 };
 
 
-
-
-/* Callback for quench expressions */
+/* Callback for quench expressions (we don't use these) */
 static void (*QuenchCallback)(elvin_t elvin, void *arg, char *quench) = NULL;
 
-/* Callback for subscription thingo */
-static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification)
+
+/*
+ *
+ * Static function headers 
+ *
+ */
+static void Notify(
+    elvin_t connection, void *context,
+    uint32 subscriptionId, en_notify_t notification);
+static void ReadInput(ElvinConnection self);
+static void Resubscribe(SubscriptionTuple tuple, ElvinConnection self);
+static void Connect(ElvinConnection self);
+static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *message);
+
+
+/*
+ *
+ * Static functions
+ *
+ */
+
+/* Callback for a notification */
+static void Notify(
+    elvin_t connection, void *context,
+    uint32 subscriptionId, en_notify_t notification)
 {
-    Subscription subscription = (Subscription)object;
-    en_type_t type;
-    char *group;
-    char *user;
-    char *text;
-    int32 *timeout;
-    char *mimeType;
-    char *mimeArgs;
+    SubscriptionTuple tuple = (SubscriptionTuple)context;
 
-    /* Get the group from the subscription */
-    group = Subscription_getGroup(subscription);
-
-    /* Get the user from the notification if one is provided */
-    if ((en_search(notification, "USER", &type, (void **)&user) != 0) || (type != EN_STRING))
-    {
-	user = "nobody";
-    }
-
-    /* Get the text of the notification (if any is provided) */
-    if ((en_search(notification, "TICKERTEXT", &type, (void **)&text) != 0) || (type != EN_STRING))
-    {
-	text = "no message";
-    }
-
-    /* Get the timeout for the notification (if any is provided) */
-    if ((en_search(notification, "TIMEOUT", &type, (void **)&timeout) != 0) || (type != EN_INT32))
-    {
-	*timeout = 10;
-    }
-
-    /* Get the MIME type of the notification (if provided) */
-    if ((en_search(notification, "MIME_TYPE", &type, (void **)&mimeType) != 0) || (type != EN_STRING))
-    {
-	mimeType = NULL;
-    }
-
-    /* Get the MIME args of the notification (if provided) */
-    if ((en_search(notification, "MIME_ARGS", &type, (void **)&mimeArgs) != 0) || (type != EN_STRING))
-    {
-	mimeArgs = NULL;
-    }
-
-    /* Deliver the notification to its subscription */
-    Subscription_deliverMessage(
-	subscription,
-	Message_alloc(group, user, text, *timeout, mimeType, mimeArgs));
-}
-
-
-/* Subscribe to a tickertape "group" */
-static void SubscribeToItem(Subscription subscription, ElvinConnection self)
-{
-    SANITY_CHECK(self);
-
-    /* Don't try to subscribe if we've lost our connection */
-    if (self -> state == Connected)
-    {
-	elvin_add_subscription(
-	    self -> elvin, Subscription_getExpression(subscription),
-	    ReceiveCallback, subscription, 0);
-    }
+    (*tuple -> callback)(tuple -> context, notification);
 }
 
 
@@ -163,17 +122,16 @@ static void ReadInput(ElvinConnection self)
     }
 }
 
-/* Publish a notification to say that we're up and running */
-static void PublishStartupNotification(ElvinConnection self)
+
+/* Resubscribe a subscription */
+static void Resubscribe(SubscriptionTuple tuple, ElvinConnection self)
 {
-    en_notify_t notification;
     SANITY_CHECK(self);
 
-    notification = en_new();
-    en_add_string(notification, "tickertape.startup_notification", "1.0");
-    en_add_string(notification, "user", self -> user);
-    elvin_notify(self -> elvin, notification);
-    en_free(notification);
+    if (self -> state == Connected)
+    {
+	tuple -> id = elvin_add_subscription(self -> elvin, tuple -> expression, Notify, tuple, 0);
+    }
 }
 
 /* Attempt to connect to the elvin server */
@@ -181,22 +139,29 @@ static void Connect(ElvinConnection self)
 {
     if ((self -> elvin = elvin_connect(
 	EC_NAMEDHOST, self -> host, self -> port,
-	QuenchCallback, NULL, ErrorCallback, self, 1)) == NULL)
+	QuenchCallback, NULL, Error, self, 1)) == NULL)
     {
 	int pause = self -> retryPause;
 
 	/* Is this the first time we've tried to connect? */
 	if (self -> state == NeverConnected)
 	{
-	    char buffer[1024];
+	    char *buffer;
 
-	    sprintf(buffer, "Unable to connect to elvin server %s:%d", self -> host, self -> port);
-	    Subscription_deliverMessage(
-		self -> errorSubscription,
-		Message_alloc("tickertape", "tickertape", buffer, 10, NULL, NULL));
+	    buffer = alloca(
+		strlen(self -> host) + 10 +
+		sizeof("Unable to connect to elvin server :"));
+	    sprintf(
+		buffer,
+		"Unable to connect to elvin server %s:%d",
+		self -> host, self -> port);
+
+	    (*self -> callback)(self -> context, buffer);
 	}
 
-	(*self -> registerTimerFunc)(pause, Connect, self);
+	XtAppAddTimeOut(
+	    self -> app_context, pause,
+	    (XtTimerCallbackProc)Connect, (XtPointer)self);
 	self -> retryPause = (pause * 2 > MAX_PAUSE) ? MAX_PAUSE : pause * 2;
 	self -> state = ReconnectFailed;
     }
@@ -204,42 +169,47 @@ static void Connect(ElvinConnection self)
     {
 	if (self -> state != NeverConnected)
 	{
-	    char buffer[1024];
-	    self -> retryPause = INITIAL_PAUSE;
+	    char *buffer;
 
+	    self -> retryPause = INITIAL_PAUSE;
+	    buffer = alloca(
+		strlen(self -> host) + 10 +
+		sizeof("Connected to %s:%d"));
 	    sprintf(buffer, "Connected to %s:%d", self -> host, self -> port);
-	    Subscription_deliverMessage(
-		self -> errorSubscription,
-		Message_alloc("tickertape", "tickertape", buffer, 10, NULL, NULL));
+	    (*self -> callback)(self -> context, buffer);
 	}
 	self -> state = Connected;
 
-	self -> registrationData = (*self -> registerFunc)(elvin_get_socket(self -> elvin), ReadInput, self);
-	List_doWith(self -> subscriptions, SubscribeToItem, self);
+	self -> inputId = XtAppAddInput(
+	    self -> app_context, elvin_get_socket(self -> elvin), 
+	    (XtPointer)XtInputReadMask,
+	    (XtInputCallbackProc)ReadInput, (XtPointer)self);
+	List_doWith(self -> subscriptions, Resubscribe, self);
     }
 }
 
 /* Callback for elvin errors */
-static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, char *message)
+static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *message)
 {
     ElvinConnection self = (ElvinConnection) arg;
-    char buffer[1024];
+    char *buffer;
     SANITY_CHECK(self);
 
     /* Unregister our file descriptor */
-    if (self -> registrationData != NULL)
+    if (self -> inputId != 0)
     {
-	(*self -> unregisterFunc)(self -> registrationData);
-	self -> registrationData = NULL;
+	XtRemoveInput(self -> inputId);
+	self -> inputId = 0;
     }
 
     /* Notify the user that we've lost our connection */
-    sprintf(buffer, "Lost connection to elvin server %s:%d, attempting to reconnect",
-	    self -> host, self -> port);
-    Subscription_deliverMessage(
-	self -> errorSubscription,
-	Message_alloc("tickertape", "tickertape", buffer, 10, NULL, NULL));
     self -> state = LostConnection;
+    buffer = alloca(
+	strlen(self -> host) + 10 +
+	sizeof("Lost connection to elvin server :.  Attempting to reconnect"));
+    sprintf(buffer, "Lost connection to elvin server %s:%d.  Attempting to reconnect",
+	    self -> host, self -> port);
+    (*self -> callback)(self -> context, buffer);
 
     /* Try to reconnect */
     Connect(self);
@@ -248,8 +218,8 @@ static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, cha
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
-    char *hostname, int port, char *user,
-    List subscriptions, Subscription errorSubscription)
+    char *hostname, int port, XtAppContext app_context,
+    ErrorCallback callback, void *context)
 {
     ElvinConnection self;
 
@@ -262,14 +232,14 @@ ElvinConnection ElvinConnection_alloc(
 
     self -> host = hostname;
     self -> port = port;
-    self -> user = strdup(user);
     self -> state = NeverConnected;
     self -> retryPause = INITIAL_PAUSE;
-    self -> registerFunc = NULL;
-    self -> unregisterFunc = NULL;
-    self -> registerTimerFunc = NULL;
-    self -> errorSubscription = errorSubscription;
-    self -> subscriptions = subscriptions;
+    self -> app_context = app_context;
+    self -> inputId = 0;
+    self -> callback = callback;
+    self -> context = context;
+    self -> subscriptions = List_alloc();
+    Connect(self);
 
     return self;
 }
@@ -280,61 +250,71 @@ void ElvinConnection_free(ElvinConnection self)
 {
     SANITY_CHECK(self);
 
-#ifdef SANITY
-    self -> sanity_check = sanity_value;
-#endif /* SANITY */
     /* Disconnect from elvin server */
     if (self -> state == Connected)
     {
 	elvin_disconnect(self -> elvin);
+	self -> state = Disconnected;
     }
 
-    /* Free our memory */
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#else
     free(self);
+#endif /* SANITY */
 }
 
 
-/* Registers the connection with an event loop */
-void ElvinConnection_register(
-    ElvinConnection self,
-    EventLoopRegisterInputFunc registerFunc,
-    EventLoopUnregisterInputFunc unregisterFunc,
-    EventLoopRegisterTimerFunc registerTimerFunc)
+/* Registers a callback for when the given expression is matched */
+void *ElvinConnection_subscribe(
+    ElvinConnection self, char *expression,
+    NotifyCallback callback, void *context)
 {
-    self -> registerFunc = registerFunc;
-    self -> unregisterFunc = unregisterFunc;
-    self -> registerTimerFunc = registerTimerFunc;
-    Connect(self);
+    SubscriptionTuple tuple;
+    SANITY_CHECK(self);
+
+    tuple = malloc(sizeof(struct SubscriptionTuple_t));
+    tuple -> expression = strdup(expression);
+    tuple -> callback = callback;
+    tuple -> context = context;
+    Resubscribe(tuple, self);
+    List_addLast(self -> subscriptions, tuple);
+
+    return tuple;
+}
+
+/* Unregisters a callback (info was returned by ElvinConnection_subscribe) */
+void ElvinConnection_unsubscribe(ElvinConnection self, void *info)
+{
+    SubscriptionTuple tuple;
+    SANITY_CHECK(self);
+
+    /* Remove the tuple from the List of subscriptions (if not there then quit) */
+    if ((tuple = List_remove(self -> subscriptions, info)) == NULL)
+    {
+	return;
+    }
+    
+    /* Only need to unsubscribe if we're connected */
+    if (self -> state == Connected)
+    {
+	elvin_del_subscription(self -> elvin, tuple -> id);
+    }
+
+    /* Release the tuple's memory */
+    free(tuple -> expression);
+    free(tuple);
 }
 
 
 /* Sends a message by posting an Elvin event */
-void ElvinConnection_send(ElvinConnection self, Message message)
+void ElvinConnection_send(ElvinConnection self, en_notify_t notification)
 {
-    en_notify_t notification;
-    int32 timeout;
-
     SANITY_CHECK(self);
 
     /* Don't even try if we're not connected */
-    if (self -> state != Connected)
+    if (self -> state == Connected)
     {
-	return;
+	elvin_notify(self -> elvin, notification);
     }
-
-    timeout = Message_getTimeout(message);
-    notification = en_new();
-    en_add_string(notification, "TICKERTAPE", Message_getGroup(message));
-    en_add_string(notification, "USER", Message_getUser(message));
-    en_add_int32(notification, "TIMEOUT", timeout);
-    en_add_string(notification, "TICKERTEXT", Message_getString(message));
-
-    if (elvin_notify(self -> elvin, notification) < 0)
-    {
-	fprintf(stderr, "*** Unable to send message\n");
-	exit(0);
-    }
-
-    en_free(notification);
 }
-
