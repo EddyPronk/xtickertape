@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.5 2004/08/02 15:17:32 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.6 2004/08/02 15:34:02 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -65,6 +65,12 @@ static const char cvsid[] = "$Id: key_table.c,v 1.5 2004/08/02 15:17:32 phelps E
 #define ELVIN_KEYS_ALLOC elvin_keys_alloc
 #else
 #error "Unsupported version of libelvin"
+#endif
+
+#ifdef DEBUG
+#define DPRINTF(x) fprintf x
+#else
+#define DPRINTF(x)
 #endif
 
 typedef struct key_entry *key_entry_t;
@@ -624,7 +630,7 @@ void key_table_diff(
         result = entry_compare(old_entries + old_index, new_entries + new_index);
         if (result < 0) 
         {
-            printf("removing key: \"%s\"\n", old_entries[old_index] -> name);
+            DPRINTF((stdout, "removing key: \"%s\"\n", old_entries[old_index] -> name));
             ensure_keys(&keys_to_remove);
             key_entry_add_to_keys(
                 old_entries[old_index++],
@@ -633,7 +639,7 @@ void key_table_diff(
         }
         else if (result > 0)
         {
-            printf("adding key: \"%s\"\n", new_entries[new_index] -> name);
+            DPRINTF((stdout, "adding key: \"%s\"\n", new_entries[new_index] -> name));
             ensure_keys(&keys_to_add);
             key_entry_add_to_keys(
                 new_entries[new_index++],
@@ -644,15 +650,15 @@ void key_table_diff(
         {
             if (old_entries[old_index] -> is_private == new_entries[old_index] -> is_private)
             {
-                printf("keeping key: \"%s\" -> \"%s\"\n",
-                       old_entries[old_index] -> name,
-                       new_entries[new_index] -> name);
+                DPRINTF((stdout, "keeping key: \"%s\" -> \"%s\"\n",
+                         old_entries[old_index] -> name,
+                         new_entries[new_index] -> name));
             }
             else if (old_entries[old_index] -> is_private)
             {
-                printf("demoting key: \"%s\" -> \"%s\"\n",
-                       old_entries[old_index] -> name,
-                       new_entries[new_index] -> name);
+                DPRINTF((stdout, "demoting key: \"%s\" -> \"%s\"\n",
+                         old_entries[old_index] -> name,
+                         new_entries[new_index] -> name);)
                 ensure_keys(&keys_to_remove);
                 key_entry_promote(old_entries[old_index],
                                   is_for_notify,
@@ -660,9 +666,9 @@ void key_table_diff(
             }
             else if (new_entries[old_index] -> is_private)
             {
-                printf("promoting key: \"%s\" -> \"%s\"\n",
-                       old_entries[old_index] -> name,
-                       new_entries[new_index] -> name);
+                DPRINTF((stdout, "promoting key: \"%s\" -> \"%s\"\n",
+                         old_entries[old_index] -> name,
+                         new_entries[new_index] -> name));
                 ensure_keys(&keys_to_add);
                 key_entry_promote(new_entries[new_index],
                                   is_for_notify,
@@ -676,7 +682,7 @@ void key_table_diff(
 
     while (old_index < old_count)
     {
-        printf("removing key: \"%s\"\n", old_entries[old_index] -> name);
+        DPRINTF((stdout, "removing key: \"%s\"\n", old_entries[old_index] -> name));
         ensure_keys(&keys_to_remove);
         key_entry_add_to_keys(
             old_entries[old_index++],
@@ -686,7 +692,7 @@ void key_table_diff(
 
     while (new_index < new_count)
     {
-        printf("adding key: \"%s\"\n", new_entries[new_index] -> name);
+        DPRINTF((stdout, "adding key: \"%s\"\n", new_entries[new_index] -> name));
         ensure_keys(&keys_to_add);
         key_entry_add_to_keys(
             new_entries[new_index++],
@@ -694,7 +700,7 @@ void key_table_diff(
             keys_to_add, NULL);
     }
 
-    printf("---\n");
+    DPRINTF((stdout, "---\n"));
 
     free(old_entries);
     free(new_entries);
