@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.32 1999/06/21 14:26:47 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.33 1999/06/21 14:50:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -957,7 +957,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 
     if (glyph -> previous != self -> scroller.right_glyph)
     {
-	printf("glyph=%p, right_glyph=%p\n", glyph, self -> scroller.right_glyph);
+	printf("previous=%p, right_glyph=%p\n", glyph -> previous, self -> scroller.right_glyph);
     }
 }
 
@@ -1206,6 +1206,9 @@ static void delete(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph = glyph_at_event(self, event);
+    glyph_t left = self -> scroller.left_glyph;
+    glyph_t right = self -> scroller.right_glyph;
+    int width = glyph -> get_width(glyph);
 
     /* If the glyph is the gap then don't bother */
     if (glyph == self -> scroller.glyphs)
@@ -1217,13 +1220,69 @@ static void delete(Widget widget, XEvent *event)
     /* Figure out which way we're scrolling to determine what to do */
     if (self -> scroller.step < 0)
     {
-	printf("not yet implemented\n");
+	/* Scrolling left-to-right */
+
+	/* Make sure the left_offset lines up properly by either
+	 * increasing the size of the gap (if the gap is the
+	 * left_glyph) or by reducing the left_offset */
+	if (left == self -> scroller.glyphs)
+	{
+	    self -> scroller.last_width -= width;
+
+	    /* If the right_glyph is also the gap then adjust its
+	     * offset to compensate */
+	    if (right == self -> scroller.glyphs)
+	    {
+		self -> scroller.right_offset += width;
+	    }
+	}
+	else
+	{
+	    self -> scroller.left_offset -= width;
+	}
+
+	/* If we've deleted the right_glyph, then find a new one */
+	if (glyph == right)
+	{
+	    self -> scroller.right_glyph = right -> previous;
+	}
+
+	/* If we've deleted the left_glyph then roll back */
+	if (glyph == left)
+	{
+	    self -> scroller.left_glyph = left -> next;
+	}
+
+	/* Remove the deleted glyph from the queue */
+	queue_remove(glyph);
+	glyph -> free(glyph);
+
+	/* Attempt to recover */
+	adjust_right_right(self);
+	adjust_right_left(self);
     }
     else
     {
 	/* Scrolling right-to-left */
-	glyph_t left = self -> scroller.left_glyph;
-	glyph_t right = self -> scroller.right_glyph;
+
+	/* Make sure the right_offset lines up properly by either
+	 * increasing the size of the gap (if the gap is the
+	 * right_glyph) or by reducing the right_offset */
+	if (right == self -> scroller.glyphs)
+	{
+	    self -> scroller.last_width -= width;
+
+	    /* If the left_glyph is also the gap, then adjust its
+	     * offset to compensate */
+	    if (left == self -> scroller.glyphs)
+	    {
+		self -> scroller.left_offset += width;
+	    }
+	}
+	else
+	{
+	    self -> scroller.right_offset -= width;
+	}
 
 	/* If we've deleted the left_glyph, then update */
 	if (glyph == left)
@@ -1237,13 +1296,9 @@ static void delete(Widget widget, XEvent *event)
 	    self -> scroller.right_glyph = right -> previous;
 	}
 
-	/* Roll the right_offset back the width of the deleted glyph */
-	self -> scroller.right_offset -= glyph -> get_width(glyph);
-
 	/* Remove the deleted glyph from the queue */
 	queue_remove(glyph);
 	glyph -> free(glyph);
-	self -> scroller.last_width = get_last_width(self);
 
 	/* Attempt to recover */
 	adjust_left_left(self);
