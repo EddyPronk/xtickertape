@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.3 2000/11/05 04:25:22 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.4 2000/11/05 08:40:57 phelps Exp $";
 #endif /* lint */
 
 /* The types of atoms */
@@ -50,9 +50,8 @@ typedef enum
 /* An atom_t is a an opaque struct */
 typedef struct atom *atom_t;
 
-/* Initializes the Lisp evaluation engine */
-int atom_init(elvin_error_t error);
-
+/* An env_t is an opaque struct as well */
+typedef struct env *env_t;
 
 /* Answers the unique nil instance */
 atom_t nil_alloc(elvin_error_t error);
@@ -90,31 +89,44 @@ int atom_free(atom_t atom, elvin_error_t error);
 char *atom_to_string(atom_t atom, elvin_error_t error);
 
 /* Evaluates an atom */
-atom_t atom_eval(atom_t atom, elvin_error_t error);
+int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error);
 
 /* Returns the symbol's name */
-char *symbol_name(atom_t atom);
+char *symbol_name(atom_t atom, elvin_error_t error);
 
 /* Returns the integer's value */
-int32_t int32_value(atom_t atom);
+int32_t int32_value(atom_t atom, elvin_error_t error);
 
 /* Returns the integer's value */
-int64_t int64_value(atom_t atom);
+int64_t int64_value(atom_t atom, elvin_error_t error);
 
 /* Returns the string's bytes */
-uchar *string_value(atom_t atom);
+uchar *string_value(atom_t atom, elvin_error_t error);
 
 /* Returns the char's byte */
-uchar char_value(atom_t atom);
+uchar char_value(atom_t atom, elvin_error_t error);
 
 /* Answers the car of a cons atom */
-atom_t cons_car(atom_t atom);
+atom_t cons_car(atom_t atom, elvin_error_t error);
 
 /* Answers the cdr of a cons atom */
-atom_t cons_cdr(atom_t atom);
+atom_t cons_cdr(atom_t atom, elvin_error_t error);
 
 /* Reverse the elements of a list */
-atom_t cons_reverse(atom_t atom, atom_t end);
+atom_t cons_reverse(atom_t atom, atom_t end, elvin_error_t error);
+
+
+/* Allocates and returns a fully-populated root environment */
+env_t root_env_alloc(elvin_error_t error);
+
+/* Frees an environment and all of its references */
+int env_free(env_t env, elvin_error_t error);
+
+/* Looks up a symbol's value in the environment */
+int env_get(env_t env, atom_t atom, atom_t *result, elvin_error_t error);
+
+/* Sets a symbol's value in the environment */
+int env_set(env_t env, atom_t atom, atom_t value, elvin_error_t error);
 
 #endif /* ATOM_H */
 

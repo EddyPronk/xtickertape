@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.4 2000/11/05 04:25:22 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.5 2000/11/05 08:40:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -39,6 +39,7 @@ static const char cvsid[] = "$Id: atom.c,v 2.4 2000/11/05 04:25:22 phelps Exp $"
 #include <elvin/memory.h>
 #include <elvin/error.h>
 #include <elvin/errors/elvin.h>
+#include <math.h>
 #include "atom.h"
 
 /* A cons cell has two values */
@@ -68,6 +69,16 @@ struct atom
     } value;
 };
 
+/* An environment is a hashtable and a parent */
+struct env
+{
+    /* The parent environment */
+    env_t parent;
+
+    /* A mapping of symbols to their values */
+    elvin_hashtable_t map;
+};
+
 
 /* Some predefined atoms */
 static struct atom nil = { ATOM_NIL, 1, { 0 } };
@@ -86,10 +97,6 @@ static struct atom numbers[] =
     { ATOM_INT32, 1, { 9 } }
 };
 
-/* The root environment */
-static elvin_hashtable_t root_env;
-
-
 /* Grabs a reference to an atom */
 static int hashcopy(elvin_hashtable_t table,
 		    elvin_hashdata_t *copy_out,
@@ -105,25 +112,9 @@ static int hashcopy(elvin_hashtable_t table,
 /* Frees a reference to an atom */
 static int hashfree(elvin_hashdata_t data, elvin_error_t error)
 {
+    atom_t atom = (atom_t)data;
     return atom_free((atom_t)data, error);
 }
-
-
-/* Initializes the Lisp evaluation engine */
-int atom_init(elvin_error_t error)
-{
-    /* Initialize the root environment */
-    if ((root_env = elvin_string_hash_create(40, hashcopy, hashfree, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* FIX THIS: construct all of the character atoms here */
-    /* FIX THIS: define some built-in functions */
-    return 1;
-}
-
-
 
 
 /* Answers the unique nil instance */
@@ -180,7 +171,7 @@ atom_t int32_alloc(int32_t value, elvin_error_t error)
 }
 
 /* Answers the integer's value */
-int32_t int32_value(atom_t atom)
+int32_t int32_value(atom_t atom, elvin_error_t error)
 {
     return atom -> value.i;
 }
@@ -201,7 +192,7 @@ atom_t int64_alloc(int64_t value, elvin_error_t error)
 }
 
 /* Answers the integer's value */
-int64_t int64_value(atom_t atom)
+int64_t int64_value(atom_t atom, elvin_error_t error)
 {
     return atom -> value.h;
 }
@@ -244,7 +235,7 @@ atom_t string_alloc(uchar *value, elvin_error_t error)
 }
 
 /* Answers the string's characters */
-uchar *string_value(atom_t atom)
+uchar *string_value(atom_t atom, elvin_error_t error)
 {
     return atom -> value.s;
 }
@@ -265,7 +256,7 @@ atom_t char_alloc(uchar ch, elvin_error_t error)
 }
 
 /* Answers the char's char */
-uchar char_value(atom_t atom)
+uchar char_value(atom_t atom, elvin_error_t error)
 {
     return (uchar)atom->value.i;
 }
@@ -293,8 +284,9 @@ atom_t symbol_alloc(char *name, elvin_error_t error)
 }
 
 /* Answers the symbol's name */
-char *symbol_name(atom_t atom)
+char *symbol_name(atom_t atom, elvin_error_t error)
 {
+    /* FIX THIS: complain if the atom is not a symbol */
     return atom -> value.s;
 }
 
@@ -316,19 +308,19 @@ atom_t cons_alloc(atom_t car, atom_t cdr, elvin_error_t error)
 }
 
 /* Answers the car of a cons atom */
-atom_t cons_car(atom_t atom)
+atom_t cons_car(atom_t atom, elvin_error_t error)
 {
     return atom -> value.c.car;
 }
 
 /* Answers the cdr of a cons atom */
-atom_t cons_cdr(atom_t atom)
+atom_t cons_cdr(atom_t atom, elvin_error_t error)
 {
     return atom -> value.c.cdr;
 }
 
 /* Reverses a collection of cons cells */
-atom_t cons_reverse(atom_t atom, atom_t end)
+atom_t cons_reverse(atom_t atom, atom_t end, elvin_error_t error)
 {
     atom_t cdr = end;
 
@@ -481,7 +473,7 @@ int atom_print(atom_t atom)
 
 
 /* Evaluates an atom */
-atom_t atom_eval(atom_t atom, elvin_error_t error)
+int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 {
     switch (atom -> type)
     {
@@ -493,23 +485,172 @@ atom_t atom_eval(atom_t atom, elvin_error_t error)
 	case ATOM_STRING:
 	case ATOM_CHAR:
 	{
-	    return atom;
+	    atom->ref_count++;
+	    *result = atom;
+	    return 1;
 	}
 
 	/* Symbols get extracted from the environment */
 	case ATOM_SYMBOL:
 	{
-	    return &nil;
+	    /* Look up the symbol's value in the environment */
+	    if (env_get(env, atom, result, error) == 0)
+	    {
+		return 0;
+	    }
+
+	    /* Increment its reference count */
+	    (*result) -> ref_count++;
+	    return 1;
 	}
 
 	case ATOM_CONS:
 	{
-	    return &nil;
+	    nil.ref_count++;
+	    *result = &nil;
+	    return 1;
 	}
 
 	default:
 	{
-	    return &nil;
+	    /* FIX THIS: set a better error */
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"atom_eval");
+	    return 0;
 	}
     }
+}
+
+/* Allocates and initializes an environment */
+static env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
+{
+    env_t env;
+
+    /* Allocate some memory for the new environment */
+    if ((env = (env_t)ELVIN_MALLOC(sizeof(struct env), error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Allocate a hashtable to map symbols to their values */
+    /* FIX THIS: we should use a pointer hash and a symbol table */
+    if ((env -> map = elvin_string_hash_create(size, hashcopy, hashfree, error)) == NULL)
+    {
+	ELVIN_FREE(env, NULL);
+	return NULL;
+    }
+
+    env -> parent = parent;
+    return env;
+}
+
+/* Initializes the Lisp evaluation engine */
+env_t root_env_alloc(elvin_error_t error)
+{
+    env_t env;
+    atom_t pi;
+
+    if ((env = env_alloc(40, NULL, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Create the value for pi */
+    if ((pi = float_alloc(M_PI, error)) == NULL)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register th constant `pi' */
+    if (env_set_string(env, "pi", pi, error) == 0)
+    {
+	atom_free(pi, NULL);
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Lose our reference to the constant */
+    if (atom_free(pi, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* FIX THIS: define some built-in functions */
+    return env;
+}
+
+/* Frees an environment and all of its references */
+int env_free(env_t env, elvin_error_t error)
+{
+    int result = 1;
+
+    /* Free the hashtable */
+    if (env -> map)
+    {
+	result = elvin_hash_free(env -> map, result ? error : NULL) && result;
+    }
+
+    /* Free the environment */
+    return ELVIN_FREE(env, result ? error : NULL) && result;
+}
+
+/* Looks up a symbol's value in the environment */
+int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
+{
+    char *name;
+
+    /* Look up the symbol's name */
+    if ((name = symbol_name(symbol, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Use that to extract its value from the map */
+    if ((*result = (atom_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) == NULL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"env_get");
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Sets a symbol's value in the environment */
+int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
+{
+    char *name;
+
+    /* Look up the symbol's name */
+    if ((name = symbol_name(symbol, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Use it to register the value in the map (automatically increases the ref_count) */
+    if (elvin_hash_add(env -> map, (elvin_hashkey_t)name, (elvin_hashdata_t)value, error) == 0)
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Sets the named symbol's value in the environment */
+int env_set_string(env_t env, char *name, atom_t value, elvin_error_t error)
+{
+    atom_t symbol;
+    int result;
+
+    /* Locate the symbol */
+    if ((symbol = symbol_alloc(name, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Set its value */
+    result = env_set(env, symbol, value, error);
+
+    /* Lose our reference to the symbol */
+    return atom_free(symbol, result ? error : NULL) && result;
 }
