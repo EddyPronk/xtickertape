@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.49 2000/04/05 12:44:14 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.50 2000/04/10 01:24:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -68,8 +68,8 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.49 2000/04/05 12:44:14 phelps
 #define BUFFER_SIZE 1024
 
 #define CONNECT_MSG "Connected to elvin server: %s."
-#define NO_CONNECT_MSG "Unable to connect to elvin server at %s:%d.  Still trying..."
 #define LOST_CONNECT_MSG "Lost connection to elvin server %s."
+#define CONN_CLOSED_MSG "Server %s closed connection"
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
@@ -1059,6 +1059,22 @@ static void status_cb(
 	    }
 
 	    sprintf(buffer, LOST_CONNECT_MSG, url->url);
+	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_CONNECTION_CLOSED:
+	{
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
+	    /* Make room for a message string */
+	    if ((buffer = (char *)malloc(sizeof(CONN_CLOSED_MSG) + strlen(url->url) - 2)) == NULL)
+	    {
+		return;
+	    }
+
+	    sprintf(buffer, CONN_CLOSED_MSG, url->url);
 	    string = buffer;
 	    break;
 	}
