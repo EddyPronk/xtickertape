@@ -13,6 +13,9 @@ xtickertape_SOURCES = \
 	panel.h panel.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	message.h message.c \
+	subscription.h subscription.c \
+	ast.h ast.c grammar.h \
+	def-config.h parser.h parser.c \
 	groups.h groups_parser.h groups_parser.c \
 	group_sub.h group_sub.c \
 	usenet.h usenet_parser.h usenet_parser.c \
