@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.24 2004/05/28 12:09:21 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.25 2004/05/28 13:31:54 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -105,6 +105,124 @@ struct message
     int is_killed;
 };
 
+typedef enum
+{
+    ST_START = 0,
+    ST_CR,
+    ST_CRLF,
+    ST_CRLFCR,
+    ST_BODY
+} state_t;
+
+/* Copies a MIME attachment, replacing \r or \r\n in the header with \n */
+static void cleanse_header(char *attachment, size_t length, char *copy, size_t *length_out)
+{
+    char *end = attachment + length;
+    char *in = attachment;
+    char *out = copy;
+    state_t state;
+    int ch;
+
+    /* Go through one character at a time */
+    state = ST_START;
+    for (in = attachment; in < end; in++)
+    {
+        ch = *(unsigned char *)in;
+
+        switch (state)
+        {
+            case ST_START:
+            {
+                if (ch == '\r')
+                {
+                    *out++ = '\n';
+                    state = ST_CR;
+                }
+                else if (ch == '\n')
+                {
+                    *out++ = ch;
+                    state = ST_CRLF;
+                }
+                else
+                {
+                    *out++ = ch;
+                }
+
+                break;
+            }
+
+            case ST_CR:
+            {
+                if (ch == '\r')
+                {
+                    *out++ = '\n';
+                    state = ST_BODY;
+                }
+                else if (ch == '\n')
+                {
+                    state = ST_CRLF;
+                }
+                else
+                {
+                    *out++ = ch;
+                    state = ST_START;
+                }
+
+                break;
+            }
+
+            case ST_CRLF:
+            {
+                if (ch == '\r')
+                {
+                    *out++ = '\n';
+                    state = ST_CRLFCR;
+                }
+                else if (ch == '\n')
+                {
+                    *out++ = ch;
+                    state = ST_BODY;
+                }
+                else
+                {
+                    *out++ = ch;
+                    state = ST_START;
+                }
+
+                break;
+            }
+
+            case ST_CRLFCR:
+            {
+                if (ch == '\n')
+                {
+                    state = ST_BODY;
+                }
+                else
+                {
+                    *out++ = ch;
+                    state = ST_BODY;
+                }
+
+                break;
+            }
+
+            case ST_BODY:
+            {
+                *out++ = ch;
+                break;
+            }
+
+            default:
+            {
+                abort();
+            }
+        }
+    }
+
+    *length_out = out - copy;
+}
+
 
 /* Creates and returns a new message */
 message_t message_alloc(
@@ -162,9 +280,7 @@ message_t message_alloc(
 	}
 	else
 	{
-	    /* Make a copy of the attachment */
-	    memcpy(self -> attachment, attachment, length);
-	    self -> length = length;
+            cleanse_header(attachment, length, self->attachment, &self->length);
 	}
     }
 
@@ -365,7 +481,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
     while (point < end)
     {
 	/* End of line? */
-	if (*point == '\r' || *point == '\n')
+	if (*point == '\n')
 	{
 	    /* Is this the Content-Type line? */
 	    if (ct_length < point - mark &&
@@ -402,15 +518,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 	    }
 	    else if (point - mark == 0)
 	    {
-		/* If the CR-LF linefeed is used then skip the LF */
-		if (*point == '\r' && point + 1 < end && *(point + 1) == '\n')
-		{
-		    point += 2;
-		}
-		else
-		{
-		    point += 1;
-		}
+                point++;
 
 		/* Trim any CRs and LFs from the end of the body */
 		while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
@@ -425,16 +533,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 		return 0;
 	    }
 
-	    /* If the CR-LF linefeed is used then skip the LF */
-	    if (*point == '\r' && point + 1 < end && *(point + 1) == '\n')
-	    {
-		mark = point + 2;
-		point++;
-	    }
-	    else
-	    {
-		mark = point + 1;
-	    }
+            mark = point + 1;
 	}
 
 	point++;
