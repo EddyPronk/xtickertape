@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.10 1998/08/27 04:08:09 phelps Exp $ */
+/* $Id: Control.c,v 1.11 1998/10/15 04:18:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,12 +60,12 @@ struct ControlPanel_t
     Widget text;
     List subscriptions;
     char **timeouts;
-    char *userName;
+    char *username;
 };
 
 
 /* Determines the user's login name */
-static char *getUserName()
+static char *GetUsername()
 {
     struct passwd *password = getpwuid(getuid());
     return password -> pw_name;
@@ -73,7 +73,7 @@ static char *getUserName()
 
 
 /* Sets the value of a Widget's "label" resource */
-static void setLabel(Widget widget, char *label)
+static void SetLabel(Widget widget, char *label)
 {
     Arg arg;
 
@@ -83,7 +83,7 @@ static void setLabel(Widget widget, char *label)
 }
 
 /* Answers the value of a Widget's "label" resource */
-static char *getLabel(Widget widget)
+static char *GetLabel(Widget widget)
 {
     Arg arg;
     char *label;
@@ -95,7 +95,7 @@ static char *getLabel(Widget widget)
 }
 
 /* Sets the value of a Widget's "string" resource */
-static void setString(Widget widget, char *string)
+static void SetString(Widget widget, char *string)
 {
     Arg arg;
 
@@ -105,7 +105,7 @@ static void setString(Widget widget, char *string)
 }
 
 /* Answers the value of a Widget's "string" resource */
-static char *getString(Widget widget)
+static char *GetString(Widget widget)
 {
     Arg arg;
     char *string;
@@ -117,14 +117,14 @@ static char *getString(Widget widget)
 }
 
 /* Sets the label of a MenuButton to the label of a Menu Object */
-static void setMBValue(Widget item, XtPointer context, XtPointer ignored)
+static void SetMBValue(Widget item, XtPointer context, XtPointer ignored)
 {
-    setLabel((Widget)context, getLabel(item));
+    SetLabel((Widget)context, GetLabel(item));
 }
 
 
 /* Constructs the User label box */
-static Widget createUserBox(ControlPanel self, Widget parent)
+static Widget CreateUserBox(ControlPanel self, Widget parent)
 {
     Widget form, label;
 
@@ -150,7 +150,7 @@ static Widget createUserBox(ControlPanel self, Widget parent)
     self -> user = XtVaCreateManagedWidget(
 	"user", asciiTextWidgetClass, form,
 	XtNeditType, XawtextEdit,
-	XtNstring, self -> userName,
+	XtNstring, self -> username,
 	XtNfromHoriz, label,
 	XtNtop, XawChainTop,
 	XtNbottom, XawChainTop,
@@ -162,7 +162,7 @@ static Widget createUserBox(ControlPanel self, Widget parent)
 }
 
 /* Construct a menu item for the group list */
-static void createGroupMenuItem(Subscription subscription, Widget context[])
+static void CreateGroupMenuItem(Subscription subscription, Widget context[])
 {
     Widget parent = context[0];
     Widget menu = context[1];
@@ -172,12 +172,12 @@ static void createGroupMenuItem(Subscription subscription, Widget context[])
 	Widget item = XtVaCreateManagedWidget(
 	    Subscription_getGroup(subscription), smeBSBObjectClass, menu,
 	    NULL);
-	XtAddCallback(item, XtNcallback, setMBValue, parent);
+	XtAddCallback(item, XtNcallback, SetMBValue, parent);
     }
 }
 
 /* Construct the menu for the Group list */
-static Widget createGroupMenu(ControlPanel self, Widget parent)
+static Widget CreateGroupMenu(ControlPanel self, Widget parent)
 {
     Widget context[2];
     Widget menu;
@@ -186,12 +186,12 @@ static Widget createGroupMenu(ControlPanel self, Widget parent)
     menu = XtVaCreatePopupShell("groupMenu", simpleMenuWidgetClass, parent, NULL);
     context[0] = parent;
     context[1] = menu;
-    List_doWith(self -> subscriptions, createGroupMenuItem, context);
+    List_doWith(self -> subscriptions, CreateGroupMenuItem, context);
     return menu;
 }
 
 /* Create the Group box */
-static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
+static Widget CreateGroupBox(ControlPanel self, Widget parent, Widget left)
 {
     Widget form, label;
 
@@ -227,13 +227,13 @@ static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 	XtNright, XawChainRight,
 	XtNlabel, Subscription_getGroup(List_first(self -> subscriptions)),
 	NULL);
-    createGroupMenu(self, self -> group);
+    CreateGroupMenu(self, self -> group);
     return form;
 }
 
 
 /* Creates the popup menu for timeout selection */
-static Widget createTimeoutMenu(ControlPanel self, Widget parent)
+static Widget CreateTimeoutMenu(ControlPanel self, Widget parent)
 {
     char **timeout;
     Widget menu;
@@ -246,14 +246,14 @@ static Widget createTimeoutMenu(ControlPanel self, Widget parent)
 	Widget item = XtVaCreateManagedWidget(
 	    *timeout, smeBSBObjectClass, menu,
 	    NULL);
-	XtAddCallback(item, XtNcallback, setMBValue, parent);
+	XtAddCallback(item, XtNcallback, SetMBValue, parent);
     }
 
     return menu;
 }
 
 /* Creates the timeout box */
-static Widget createTimeoutBox(ControlPanel self, Widget parent, Widget left)
+static Widget CreateTimeoutBox(ControlPanel self, Widget parent, Widget left)
 {
     Widget form, label;
 
@@ -288,12 +288,12 @@ static Widget createTimeoutBox(ControlPanel self, Widget parent, Widget left)
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
 	NULL);
-    createTimeoutMenu(self, self -> timeout);
+    CreateTimeoutMenu(self, self -> timeout);
     return form;
 }
 
 /* Constructs the top box of the Control Panel */
-static Widget createTopBox(ControlPanel self, Widget parent)
+static Widget CreateTopBox(ControlPanel self, Widget parent)
 {
     Widget form, widget;
 
@@ -304,15 +304,15 @@ static Widget createTopBox(ControlPanel self, Widget parent)
 	XtNborderWidth, 0,
 	XtNshowGrip, False,
 	NULL);
-    widget = createUserBox(self, form);
-    widget = createGroupBox(self, form, widget);
-    createTimeoutBox(self, form, widget);
+    widget = CreateUserBox(self, form);
+    widget = CreateGroupBox(self, form, widget);
+    CreateTimeoutBox(self, form, widget);
     return form;
 }
 
 
 /* Constructs the Text box */
-static Widget createTextBox(ControlPanel self, Widget parent)
+static Widget CreateTextBox(ControlPanel self, Widget parent)
 {
     Widget form, label;
 
@@ -344,7 +344,7 @@ static Widget createTextBox(ControlPanel self, Widget parent)
 }
 
 /* Creates the bottom box (where the buttons live) */
-static Widget createBottomBox(ControlPanel self, Widget parent)
+static Widget CreateBottomBox(ControlPanel self, Widget parent)
 {
     Widget form, button;
 
@@ -396,80 +396,80 @@ static Widget createBottomBox(ControlPanel self, Widget parent)
 }
 
 /* Constructs the entire control panel */
-static Widget createControlPanelPopup(ControlPanel self, Widget parent)
+static Widget CreateControlPanelPopup(ControlPanel self, Widget parent)
 {
     Widget box;
 
     SANITY_CHECK(self);
     box = XtVaCreateManagedWidget("paned", panedWidgetClass, parent, NULL);
-    createTopBox(self, box);
-    createTextBox(self, box);
-    createBottomBox(self, box);
+    CreateTopBox(self, box);
+    CreateTextBox(self, box);
+    CreateBottomBox(self, box);
     return box;
 }
 
 /* Answers the receiver's group */
-char *getGroup(ControlPanel self)
+static char *GetGroup(ControlPanel self)
 {
     SANITY_CHECK(self);
-    return getLabel(self -> group);
+    return GetLabel(self -> group);
 }
 
 /* Sets the receiver's group */
-void setGroup(ControlPanel self, char *group)
+static void SetGroup(ControlPanel self, char *group)
 {
     SANITY_CHECK(self);
-    setLabel(self -> group, group);
+    SetLabel(self -> group, group);
 }
 
 /* Answers the receiver's user */
-char *getUser(ControlPanel self)
+static char *GetUser(ControlPanel self)
 {
     SANITY_CHECK(self);
-    return getString(self -> user);
+    return GetString(self -> user);
 }
 
 /* Sets the receiver's user */
-void setUser(ControlPanel self, char *user)
+static void SetUser(ControlPanel self, char *user)
 {
     SANITY_CHECK(self);
-    setString(self -> user, user);
+    SetString(self -> user, user);
 }
 
 
 /* Answers the receiver's text */
-char *getText(ControlPanel self)
+static char *GetText(ControlPanel self)
 {
     SANITY_CHECK(self);
-    return getString(self -> text);
+    return GetString(self -> text);
 }
 
 /* Sets the receiver's text */
-void setText(ControlPanel self, char *text)
+static void SetText(ControlPanel self, char *text)
 {
     SANITY_CHECK(self);
-    setString(self -> text, text);
+    SetString(self -> text, text);
 }
 
 /* Answers the receiver's timeout */
-int getTimeout(ControlPanel self)
+static int GetTimeout(ControlPanel self)
 {
     SANITY_CHECK(self);
-    return atoi(getLabel(self -> timeout));
+    return atoi(GetLabel(self -> timeout));
 }
 
 /* Sets the receiver's timeout */
-void setTimeout(ControlPanel self, int timeout)
+static void SetTimeout(ControlPanel self, int timeout)
 {
     char buffer[80];
 
     SANITY_CHECK(self);
     sprintf(buffer, "%d", timeout);
-    setLabel(self -> timeout, buffer);
+    SetLabel(self -> timeout, buffer);
 }
 
 
-/* Helper function for subscriptionForGroup */
+/* Helper function for SubscriptionForGroup */
 static void MatchSubscription(Subscription self, char *group, Subscription *result)
 {
     if (strcmp(Subscription_getGroup(self), group) == 0)
@@ -479,7 +479,7 @@ static void MatchSubscription(Subscription self, char *group, Subscription *resu
 }
 
 /* Answers the subscription matching the given group */
-static Subscription subscriptionForGroup(ControlPanel self, char *group)
+static Subscription SubscriptionForGroup(ControlPanel self, char *group)
 {
     Subscription result = NULL;
     List_doWithWith(self -> subscriptions, MatchSubscription, group, &result);
@@ -510,9 +510,9 @@ static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
     ControlPanel self = (ControlPanel) context;
 
     SANITY_CHECK(self);
-    setUser(self, self -> userName);
-    setText(self, "");
-    setTimeout(self, 10);
+    SetUser(self, self -> username);
+    SetText(self, "");
+    SetTimeout(self, 10);
 }
 
 /* Callback for Cancel button */
@@ -540,14 +540,14 @@ ControlPanel ControlPanel_alloc(
     self -> subscriptions = subscriptions;
     self -> callback = callback;
     self -> context = context;
-    self -> userName = getUserName();
+    self -> username = GetUsername();
     self -> top = XtVaCreatePopupShell(
 	"controlPanel", transientShellWidgetClass, parent,
 	XtNtitle, "Tickertape Control Panel",
 	NULL);
     self -> timeouts = timeouts;
 
-    createControlPanelPopup(self, self -> top);
+    CreateControlPanelPopup(self, self -> top);
     ActionClear(NULL, (XtPointer)self, NULL);
 
     XtOverrideTranslations(
@@ -578,10 +578,10 @@ void ControlPanel_show(ControlPanel self, Message message)
     /* If a Message has been provided then select its group in the menu */
     if (message)
     {
-	Subscription subscription = subscriptionForGroup(self, Message_getGroup(message));
+	Subscription subscription = SubscriptionForGroup(self, Message_getGroup(message));
 	if (Subscription_isInMenu(subscription))
 	{
-	    setGroup(self, Subscription_getGroup(subscription));
+	    SetGroup(self, Subscription_getGroup(subscription));
 	}
     }
 
@@ -595,10 +595,10 @@ Message ControlPanel_createMessage(ControlPanel self)
     SANITY_CHECK(self);
     /* FIX THIS: should include MIME stuff */
     return Message_alloc(
-	getGroup(self),
-	getUser(self),
-	getText(self),
-	getTimeout(self),
+	GetGroup(self),
+	GetUser(self),
+	GetText(self),
+	GetTimeout(self),
 	NULL,
 	NULL);
 }
