@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.3 2002/10/04 17:19:57 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.4 2002/10/06 13:58:12 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -77,7 +77,7 @@ static char do_esc[128] =
 static char *cmd_buffer = NULL;
 
 /* The next character in the command buffer */
-static char *cmd_point = NULL;
+static size_t cmd_index = 0;
 
 /* The end of the command buffer */
 static size_t cmd_length = 0;
@@ -93,7 +93,7 @@ static void usage(int argc, char *argv[])
 static void append_char(int ch)
 {
     /* Make sure there's enough room */
-    if (! (cmd_point < cmd_buffer + cmd_length))
+    if (! (cmd_index < cmd_length))
     {
 	/* Double the buffer size */
 	cmd_length *= 2;
@@ -104,7 +104,7 @@ static void append_char(int ch)
 	}
     }
 
-    *(cmd_point++) = ch;
+    cmd_buffer[cmd_index++] = ch;
 }
 
 /* Appends an URL to the command buffer, apply escapes as appropriate */
@@ -144,7 +144,7 @@ char *invoke(char *browser, char *url)
 {
     int did_subst = 0;
     char *point = browser;
-    cmd_point = cmd_buffer;
+    cmd_index = 0;
 
     /* Copy from the browser string */
     while (1)
@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
     /* Read up to MAX_URL_SIZE bytes of it */
     length = fread(buffer, 1, MAX_URL_SIZE, file);
     buffer[length] = 0;
+    printf("url=%s\n", buffer);
 
     /* Clean up */
     fclose(file);
