@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.2 2000/07/06 14:24:44 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.3 2000/07/07 05:57:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -48,8 +48,16 @@ typedef enum ast_type
     AST_LIST,
     AST_ID,
     AST_BINOP,
+    AST_FUNCTION,
+    AST_BLOCK,
     AST_SUBSCRIPTION
 } ast_type_t;
+
+/* The supported functions */
+typedef enum ast_func
+{
+    FUNC_FORMAT
+} ast_func_t;
 
 /* The structure of a binary operation node */
 struct binop
@@ -64,6 +72,17 @@ struct binop
     ast_t rvalue;
 };
 
+/* The structure of a function node */
+struct func
+{
+    /* The function operator */
+    ast_func_t op;
+
+    /* The operation's args */
+    ast_t args;
+};
+
+
 /* A union of all of the various kinds of ASTs */
 union ast_union
 {
@@ -74,6 +93,8 @@ union ast_union
     ast_t list;
     char *id;
     struct binop binop;
+    struct func func;
+    ast_t block;
 };
 
 
@@ -203,13 +224,6 @@ ast_t ast_id_alloc(char *name, elvin_error_t error)
     return self;
 }
 
-/* Allocates and initializes a new function AST node */
-ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error)
-{
-    printf("ast_function_alloc(): not yet implemented\n");
-    return id;
-}
-
 /* Allocates and initializes a new binary operation AST node */
 ast_t ast_binop_alloc(
     ast_binop_t op,
@@ -226,9 +240,67 @@ ast_t ast_binop_alloc(
     }
 
     self -> type = AST_BINOP;
+    self -> next = NULL;
     self -> value.binop.op = op;
     self -> value.binop.lvalue = lvalue;
     self -> value.binop.rvalue = rvalue;
+    return self;
+}
+
+/* Allocates and initializes a new function AST node */
+ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error)
+{
+    ast_t self;
+    char *name;
+    
+    /* Allocate memory */
+    if (! (self = (ast_t)ELVIN_MALLOC(sizeof(struct ast), error)))
+    {
+	return NULL;
+    }
+
+    self -> type = AST_FUNCTION;
+    self -> next = NULL;
+
+    /* Get the function's name */
+    name = id -> value.id;
+
+    /* Figure out which function it is and check the args */
+    switch (*name)
+    {
+	/* format */
+	case 'f':
+	{
+	    if (strcmp(name, "format") == 0)
+	    {
+		self -> value.func.op = FUNC_FORMAT;
+		self -> value.func.args = args;
+		return self;
+	    }
+
+	    break;
+	}
+    }
+
+    fprintf(stderr, "bogus function name: `%s'\n", name);
+    ELVIN_FREE(self, NULL);
+    return NULL;
+}
+
+/* Allocates and initializes a new block AST node */
+ast_t ast_block_alloc(ast_t body, elvin_error_t error)
+{
+    ast_t self;
+
+    /* Allocate a new node */
+    if (! (self = (ast_t)ELVIN_MALLOC(sizeof(struct ast), error)))
+    {
+	return NULL;
+    }
+
+    self -> type = AST_BLOCK;
+    self -> next = NULL;
+    self -> value.block = body;
     return self;
 }
 
@@ -654,9 +726,22 @@ int ast_free(ast_t self, elvin_error_t error)
 /* Appends another element to the end of an AST list */
 ast_t ast_append(ast_t list, ast_t item, elvin_error_t error)
 {
+    ast_t ast;
+
     /* Find the end of the list */
-    item -> next = list;
-    return item;
+    for (ast = list; ast -> next != NULL; ast = ast -> next);
+
+    /* Append the item */
+    ast -> next = item;
+    return list;
+}
+
+
+/* Evaluates an AST with the given notification */
+ast_t ast_eval(ast_t self, elvin_notification_t notification, elvin_error_t error)
+{
+    fprintf(stderr, "ast_eval(): not yet implemented\n");
+    return NULL;
 }
 
 

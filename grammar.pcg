@@ -94,7 +94,7 @@
 # And they may be a comma-separated list of values
 <values> ::= <values> COMMA <value>
 	[extend_values]
-<values> ::= <value>
+<values> ::= <disjunction>
 	[identity]
 
 # A value can be many things, including basetypes
@@ -110,9 +110,9 @@
 	[identity]
 
 # Values can be lists
-<value> ::= LBRACKET <values> RBRACKET
+<value> ::= LBRACE <values> RBRACE
 	[make_list]
-<value> ::= LBRACKET RBRACKET
+<value> ::= LBRACE RBRACE
 	[make_empty_list]
 
 # Values are also returned from functions
@@ -124,3 +124,7 @@
 # And any disjunction becomes a value in parenthesis
 <value> ::= LPAREN <disjunction> RPAREN
 	[identity2]
+
+# And, finally, a value may be a block to be evaluated later
+<value> ::= LBRACKET <disjunction> RBRACKET
+	[make_block]

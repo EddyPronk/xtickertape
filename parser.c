@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.6 2000/07/06 13:59:37 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.7 2000/07/07 05:57:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -56,9 +56,9 @@ static int is_id_char(int ch)
 	0, 1, 0, 1,  1, 1, 1, 0,  0, 0, 1, 1,  0, 1, 1, 1, /* 0x20 */
 	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 0, 0,  1, 1, 1, 1, /* 0x30 */
 	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x40 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1, /* 0x50 */
+	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 0,  0, 0, 1, 1, /* 0x50 */
 	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x60 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 0  /* 0x70 */
+	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 0,  1, 0, 1, 0  /* 0x70 */
     };
 
     /* Use a table for quick lookup of those tricky symbolic chars */
@@ -136,6 +136,7 @@ static ast_t make_list(parser_t self, elvin_error_t error);
 static ast_t make_empty_list(parser_t self, elvin_error_t error);
 static ast_t make_function(parser_t self, elvin_error_t error);
 static ast_t make_noarg_function(parser_t self, elvin_error_t error);
+static ast_t make_block(parser_t self, elvin_error_t error);
 
 /* Lexer state function headers */
 static int lex_start(parser_t self, int ch, elvin_error_t error);
@@ -361,13 +362,13 @@ static ast_t extend_values(parser_t self, elvin_error_t error)
     return ast_append(self -> value_top[0], self -> value_top[2], error);
 }
 
-/* <value> ::= LBRACKET <values> RBRACKET */
+/* <value> ::= LBRACE <values> RBRACE */
 static ast_t make_list(parser_t self, elvin_error_t error)
 {
     return ast_list_alloc(self -> value_top[1], error);
 }
 
-/* <value> ::= LBRACKET RBRACKET */
+/* <value> ::= LBRACE RBRACE */
 static ast_t make_empty_list(parser_t self, elvin_error_t error)
 {
     return ast_list_alloc(NULL, error);
@@ -386,6 +387,13 @@ static ast_t make_noarg_function(parser_t self, elvin_error_t error)
     fprintf(stderr, "make_noarg_function(): not yet implemented\n");
     return NULL;
 }
+
+/* <block> ::= LBRACKET <value> RBRACKET */
+static ast_t make_block(parser_t self, elvin_error_t error)
+{
+    return ast_block_alloc(self -> value_top[1], error);
+}
+
 
 
 /* Accepts another token and performs as many parser transitions as
@@ -437,11 +445,14 @@ static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_e
     /* Everything else is an error */
     if (value == NULL)
     {
-	fprintf(stderr, "Houston, we have a problem (1)\n");
-	abort();
+	fprintf(stderr, "parse error before token type: %d\n", terminal);
+    }
+    else
+    {
+	fprintf(stderr, "houston, we have a problem (2)\n");
     }
 
-    fprintf(stderr, "houston, we have a problem (2)\n");
+    fprintf(stderr, "line: %d\n", self -> line_num);
     abort();
 }
 

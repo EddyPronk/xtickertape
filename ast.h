@@ -31,7 +31,7 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.1 2000/07/06 14:00:01 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.2 2000/07/07 05:57:36 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
@@ -71,6 +71,9 @@ ast_t ast_id_alloc(char *name, elvin_error_t error);
 
 /* Allocates and initializes a new function AST node */
 ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error);
+
+/* Allocates and initializes a new block AST node */
+ast_t ast_block_alloc(ast_t body, elvin_error_t error);
 
 /* Allocates and initializes a new binary operation AST node */
 ast_t ast_binop_alloc(
