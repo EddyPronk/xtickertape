@@ -3,7 +3,7 @@
 ##
 ## MIME helper to show a URL
 ##
-## $Id: show-url,v 1.7 1999/04/15 07:02:03 phelps Exp $
+## $Id: show-url,v 1.8 1999/04/28 01:25:59 phelps Exp $
 ##
 
 # Where to find netscape
@@ -33,7 +33,7 @@ fi
 
 # Run the URL through sed to get rid of some troublesome characters.
 # Also figure out what to pass to Netscape in order to show the URL
-ARGS="openURL(`echo $URL | sed -e 's/,/%2c/g' -e 's/)/%29/g'`$WINDOW_ARGS)"
+ARGS="openURL(`echo $URL | sed -e 's/,/%2c/g' -e 's/ /%20/g' -e 's/)/%29/g'`$WINDOW_ARGS)"
 
 # Try to get netscape to open the URL
 $NETSCAPE -noraise -remote $ARGS > /dev/null 2>&1

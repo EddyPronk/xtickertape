@@ -5,6 +5,8 @@ Overview of changes in xtickertape-1.6.0
 * The `not' operator in a usenet subscription no longer generates a
   bogus elvin subscription.
 
+* show-url can now cope with URLs which contain spaces.
+
 Overview of changes in xtickertape-1.5.10
 
 * Fixed a bug in the reconnect code in which the delay between reconnect
