@@ -162,12 +162,18 @@ notification fades.  Unless you have a 24-bit color display you'll
 want to keep this small as \*(xt will allocate 4 times this many
 colors.
 .TP
+.B "dragDelta (\fPclass\fB Position)"
+Indicates how many pixels the pointer must be moved before it is
+considered to be a drag action.  Small values make it difficult to get 
+the control panel to pop up, whereas larger values make it difficult
+to drag the scroller precisely.
+.TP
 .B "frequency (\fPclass\fB Dimension)"
 The number of times per second to scroll the notifications in the
 scroller.  Use this in conjunction with \fIstepSize\fP (below) to
 adjust the speed at which notifications are scrolled.
 .TP
-.B "stepSize (\fPclass\fB Dimension)"
+.B "stepSize (\fPclass\fB Position)"
 The number of pixels to move the notifications in the scroller.  Use
 this in conjunction with \fIfrequency\fP (above) to adjust the speed
 at which notifications are scrolled.
