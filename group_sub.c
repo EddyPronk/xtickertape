@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.43 2002/07/02 15:19:21 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.44 2002/07/02 15:48:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -682,6 +682,8 @@ static void notify_cb(
 	free(buffer);
     }
 }
+#else
+#error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
 /* Copy the message's Content-Type into the buffer, and return a
@@ -1050,6 +1052,8 @@ static int keys_equal(elvin_keys_t self, elvin_keys_t keys)
 #if defined(ELVIN_VERSION_AT_LEAST)
 #if ELVIN_VERSION_AT_LEAST(4, 1, -1)
     int matched;
+#else
+#error "Unsupported Elvin library version"
 #endif
 #endif
 
@@ -1088,6 +1092,8 @@ static int keys_equal(elvin_keys_t self, elvin_keys_t keys)
     }
 
     return matched;
+#else
+#error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 }
 

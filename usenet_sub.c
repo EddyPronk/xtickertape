@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.33 2002/04/23 23:12:23 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.34 2002/07/02 15:48:51 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -507,7 +507,9 @@ static void notify_cb(
 	free(buffer);
     }
 }
-#endif
+#else
+#error "Unsupported Elvin library version"
+#endif /* ELVIN_VERSION_AT_LEAST */
 
 /* Construct a portion of the subscription expression */
 static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)

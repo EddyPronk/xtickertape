@@ -418,6 +418,8 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "elvin_error_alloc(): failed\n");
 	exit(1);
     }
+#else
+#error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Initialize the virtual machine */
@@ -536,6 +538,8 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "elvin_error_free(): failed\n");
 	exit(1);
     }
+#else
+#error "Unsupported Elvin library version"
 #endif
 
     /* Report on memory usage */

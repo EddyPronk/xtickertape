@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.33 2002/04/23 23:12:23 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.34 2002/07/02 15:48:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -262,6 +262,8 @@ static void notify_cb(
 	free(buffer);
     }
 }
+#else
+#error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
 /*

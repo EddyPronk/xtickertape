@@ -36,12 +36,14 @@
 #define GLOBALS_H
 
 #ifndef lint
-static const char cvs_GLOBALS_H[] = "$Id: globals.h,v 1.1 2002/07/02 15:06:06 phelps Exp $";
+static const char cvs_GLOBALS_H[] = "$Id: globals.h,v 1.2 2002/07/02 15:48:50 phelps Exp $";
 #endif /* lint */
 
 #if defined(ELVIN_VERSION_AT_LEAST)
 #if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 extern elvin_client_t client;
+#else
+#error "Unsupported Elvin library version"
 #endif
 #endif
 
