@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.14 1999/09/09 14:29:51 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.15 1999/09/12 07:33:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -49,7 +49,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.14 1999/09/09 14:29:51 phelps
 #include "Control.h"
 #include "Subscription.h"
 #include "UsenetSubscription.h"
-#include "MailSubscription.h"
+#include "mail_sub.h"
 #include "ElvinConnection.h"
 #ifdef ORBIT
 #include "OrbitSubscription.h"
@@ -92,7 +92,7 @@ struct tickertape
     UsenetSubscription usenetSubscription;
 
     /* The receiver's mail subscription */
-    MailSubscription mailSubscription;
+    mail_sub_t mail_sub;
 
 #ifdef ORBIT
     /* The receiver's Orbit-related subscriptions */
@@ -630,8 +630,8 @@ tickertape_t tickertape_alloc(
     self -> top = top;
     self -> subscriptions = read_groups_file(self);
     self -> usenetSubscription = read_usenet_file(self);
-    self -> mailSubscription = MailSubscription_alloc(
-	user, (MailSubscriptionCallback)receive_callback, self);
+    self -> mail_sub = mail_sub_alloc(
+	user, (mail_sub_callback_t)receive_callback, self);
     self -> connection = NULL;
     self -> history = history_alloc();
 
@@ -651,9 +651,9 @@ tickertape_t tickertape_alloc(
     }
 
     /* Subscribe to the Mail subscription if we have one */
-    if (self -> mailSubscription != NULL)
+    if (self -> mail_sub != NULL)
     {
-	MailSubscription_setConnection(self -> mailSubscription, self -> connection);
+	mail_sub_set_connection(self -> mail_sub, self -> connection);
     }
 
 #ifdef ORBIT
