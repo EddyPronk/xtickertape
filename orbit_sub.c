@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: orbit_sub.c,v 1.1 1999/10/02 09:40:29 phelps Exp $";
+static const char cvsid[] = "$Id: orbit_sub.c,v 1.2 1999/10/04 13:59:02 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -281,6 +281,12 @@ void orbit_sub_debug(orbit_sub_t self)
 }
 #endif /* DEBUG */
 
+
+/* Answers the receiver's zone id */
+char *orbit_sub_get_id(orbit_sub_t self)
+{
+    return self -> id;
+}
 
 /* Sets the receiver's title */
 void orbit_sub_set_title(orbit_sub_t self, char *title)

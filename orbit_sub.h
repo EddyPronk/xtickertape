@@ -34,7 +34,7 @@
 #define ORBIT_SUB_H
 
 #ifndef lint
-static const char cvs_ORBIT_SUB_H[] = "$Id: orbit_sub.h,v 1.1 1999/10/02 09:40:29 phelps Exp $";
+static const char cvs_ORBIT_SUB_H[] = "$Id: orbit_sub.h,v 1.2 1999/10/04 13:59:12 phelps Exp $";
 #endif /* lint */
 
 /* The orbit_sub data type */
@@ -54,6 +54,9 @@ orbit_sub_t orbit_sub_alloc(char *title, char *id, orbit_sub_callback_t callback
 
 /* Releases resources used by the receiver */
 void orbit_sub_free(orbit_sub_t self);
+
+/* Answers the receiver's zone id */
+char *orbit_sub_get_id(orbit_sub_t self);
 
 /* Sets the receiver's title */
 void orbit_sub_set_title(orbit_sub_t self, char *title);
