@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <math.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include "errors.h"
@@ -71,6 +72,28 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 	    return 1;
 	}
     }
+}
+
+
+/* Initializes the Lisp evaluation engine */
+static env_t root_env_alloc(elvin_error_t error)
+{
+    env_t env;
+
+    if ((env = env_alloc(40, NULL, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Register the constant `pi' */
+    if (env_set_float(env, "pi", M_PI, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* FIX THIS: define some built-in functions */
+    return env;
 }
 
 /* For testing purposes */
