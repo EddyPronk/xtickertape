@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.101 2002/04/15 08:42:20 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.102 2002/04/23 12:29:38 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,7 +37,9 @@ static const char cvsid[] = "$Id: main.c,v 1.101 2002/04/15 08:42:20 phelps Exp 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 #include <pwd.h>
 #include <signal.h>
 #include <netdb.h>
@@ -66,7 +68,9 @@ static struct option long_options[] =
     { "proxy", required_argument, NULL, 'H' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
+#if defined(ENABLE_LISP_INTERPRETER)
     { "config", required_argument, NULL, 'c' },
+#endif
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "keys", required_argument, NULL, 'K' },
@@ -95,6 +99,7 @@ static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *cpar
     tickertape_quit(tickertape);
 }
 
+#if defined(HAVE_GETOPT_LONG)
 /* Print out usage message */
 static void usage(int argc, char *argv[])
 {
@@ -105,14 +110,38 @@ static void usage(int argc, char *argv[])
 	"  -H http-proxy,  --proxy=http-proxy\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
+#if defined(ENABLE_LISP_INTERPRETER)
 	"  -c config-file, --config=config-file\n"
+#endif
 	"  -G groups-file, --groups=groups-file\n"
 	"  -U usenet-file, --usenet=usenet-file\n"
 	"  -K keys-file,   --keys=keys-file\n"
 	"  -v,             --version\n"
-	"  -h,             --help\n" ,
+	"  -h,             --help\n",
 	argv[0]);
 }
+#else
+/* Print out usage message */
+static void usage(int argc, char *argv[])
+{
+    fprintf(stderr,
+	"usage: %s [OPTION]...\n"
+	"  -e elvin-url\n"
+	"  -S scope\n"
+	"  -H http-proxy\n"
+	"  -u user\n"
+	"  -D domain\n"
+#if defined(ENABLE_LISP_INTERPRETER)
+	"  -c config-file\n"
+#endif
+	"  -G groups-file\n"
+	"  -U usenet-file\n"
+	"  -K keys-file\n"
+	"  -v\n"
+	"  -h\n",
+	argv[0]);
+}
+#endif
 
 /* Returns the name of the user who started this program */
 static char *get_user()
@@ -171,6 +200,12 @@ static char *get_domain()
     return DEFAULT_DOMAIN;
 }
 
+#if defined(ENABLE_LISP_INTERPRETER)
+#define OPTIONS "e:c:D:G:H:hK:S:u:U:v"
+#else
+#define OPTIONS "e:D:G:H:hK:S:u:U:v"
+#endif
+
 /* Parses arguments and sets stuff up */
 static void parse_args(
     int argc, char *argv[],
@@ -183,7 +218,6 @@ static void parse_args(
     char **keys_file_return,
     elvin_error_t error)
 {
-    int choice;
     char *http_proxy = NULL;
 
     /* Initialize arguments to sane values */
@@ -196,11 +230,22 @@ static void parse_args(
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
-    while ((choice = getopt_long(
-	argc, argv,
-	"e:S:H:u:D:c:G:U:K:vh", long_options,
-	NULL)) > 0)
+    while (1)
     {
+	int choice;
+
+#if defined(HAVE_GETOPT_LONG)
+	choice = getopt_long(argc, argv, OPTIONS, long_options, NULL);
+#else
+	choice = getopt(argc, argv, OPTIONS);
+#endif
+	/* End of options? */
+	if (choice < 0)
+	{
+	    break;
+	}
+
+	/* Which option was it then? */
 	switch (choice)
 	{
 	    /* --elvin= or -e */
