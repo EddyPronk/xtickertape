@@ -33,7 +33,7 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.4 2003/01/27 16:16:52 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.5 2004/04/06 00:36:53 phelps Exp $";
 #endif /* lint */
 
 /* String measurements */
@@ -75,7 +75,7 @@ void utf8_renderer_free(utf8_renderer_t self);
 /* Measures all of the characters in a string */
 void utf8_renderer_measure_string(
     utf8_renderer_t self,
-    char *string,
+    ICONV_CONST char *string,
     string_sizes_t sizes);
 
 /* Draw a string within the bounding box, measuring the characters so
@@ -87,7 +87,7 @@ void utf8_renderer_draw_string(
     utf8_renderer_t renderer,
     int x, int y,
     XRectangle *bbox,
-    char *string);
+    ICONV_CONST char *string);
 
 /* Draw an underline under a string */
 void utf8_renderer_draw_underline(
@@ -111,9 +111,9 @@ utf8_encoder_t utf8_encoder_alloc(
 void utf8_encoder_free(utf8_encoder_t self);
 
 /* Encodes a string */
-char *utf8_encoder_encode(utf8_encoder_t self, char *input);
+char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input);
 
 /* Decodes a string */
-char *utf8_encoder_decode(utf8_encoder_t self, char *input);
+char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input);
 
 #endif /* MESSAGE_VIEW_H */

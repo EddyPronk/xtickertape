@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.10 2004/02/12 10:23:26 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.11 2004/04/06 00:36:53 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -120,7 +120,7 @@ typedef void * iconv_t;
 /* The empty character */
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
-#ifdef HAVE_ICONV_OPEN
+#ifdef HAVE_ICONV
 /* Locates the guess with the given name in the guesses table */
 static struct guess *find_guess(const char *code)
 {
@@ -183,12 +183,12 @@ static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
             fromcode, tocode, strerror(errno));
     return (iconv_t)-1;
 }
-#else /* !HAVE_ICONV_OPEN */
+#else /* !HAVE_ICONV */
 static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
 {
     return (iconv_t)-1;
 }
-#endif /* HAVE_ICONV_OPEN */
+#endif /* HAVE_ICONV */
 
 #ifndef HAVE_ICONV
 size_t iconv(
@@ -342,7 +342,7 @@ static XCharStruct *per_char(
 static int cd_dimension(iconv_t cd)
 {
     char buffer[MAX_CHAR_SIZE];
-    char *string = "a";
+    ICONV_CONST char *string = "a";
     char *point = buffer;
     size_t in_length = 1;
     size_t out_length = MAX_CHAR_SIZE;
@@ -414,7 +414,7 @@ utf8_renderer_t utf8_renderer_alloc(
 	self -> underline_position = MAX(value, 2);
     }
 
-#ifdef HAVE_ICONV_OPEN
+#ifdef HAVE_ICONV
     /* Was an encoding provided? */
     if (tocode != NULL)
     {
@@ -464,7 +464,7 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Successful guess! */
     self -> cd = cd;
     self -> dimension = dimension;
-#endif /* HAVE_ICONV_OPEN */
+#endif /* HAVE_ICONV */
 
     return self;
 }
@@ -472,7 +472,7 @@ utf8_renderer_t utf8_renderer_alloc(
 /* Wrapper around iconv() to catch most of the nasty gotchas */
 static size_t utf8_renderer_iconv(
     utf8_renderer_t self,
-    char **inbuf, size_t *inbytesleft,
+    ICONV_CONST char **inbuf, size_t *inbytesleft,
     char **outbuf, size_t *outbytesleft)
 {
     size_t count;
@@ -603,7 +603,7 @@ static size_t utf8_renderer_iconv(
 /* Measures all of the characters in a string */
 void utf8_renderer_measure_string(
     utf8_renderer_t self,
-    char *string,
+    ICONV_CONST char *string,
     string_sizes_t sizes)
 {
     char buffer[BUFFER_SIZE];
@@ -709,7 +709,7 @@ void utf8_renderer_draw_string(
     utf8_renderer_t renderer,
     int x, int y,
     XRectangle *bbox,
-    char *string)
+    ICONV_CONST char *string)
 {
     char buffer[BUFFER_SIZE];
     XCharStruct *info;
@@ -948,7 +948,7 @@ utf8_encoder_t utf8_encoder_alloc(
 }
 
 /* Encodes a string */
-char *utf8_encoder_encode(utf8_encoder_t self, char *input)
+char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
 {
     char *buffer;
     char *output;
@@ -1044,7 +1044,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 }
 
 /* Decodes a string */
-char *utf8_encoder_decode(utf8_encoder_t self, char *input)
+char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
 {
     char *buffer;
     char *output;
