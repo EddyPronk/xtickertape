@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.11 1999/11/21 12:04:17 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.12 1999/11/22 21:32:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -139,7 +139,11 @@ static void notify_cb(
     }
 
     /* Construct a message_t out of all of that */
-    message = message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
+    message = message_alloc(
+	NULL, folder, from, subject, 60,
+	NULL, NULL,
+	NULL, NULL, NULL);
+
     (*self -> callback)(self -> rock, message);
 
     /* Clean up */

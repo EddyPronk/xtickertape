@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.6 1999/11/21 12:04:17 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.7 1999/11/22 21:32:34 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -42,6 +42,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.6 1999/11/21 12:04:17 phelps E
 #define F_USER "USER"
 #define F_TIMEOUT "TIMEOUT"
 #define F_TICKERTEXT "TICKERTEXT"
+#define F_REPLACEMENT "REPLACEMENT"
 #define F_MESSAGE_ID "Message-Id"
 #define F_IN_REPLY_TO "In-Reply-To"
 #define F_MIME_ARGS "MIME_ARGS"
@@ -119,6 +120,7 @@ static void notify_cb(
     int timeout;
     char *mime_type;
     char *mime_args;
+    char *tag;
     char *message_id;
     char *reply_id;
 
@@ -222,6 +224,17 @@ static void notify_cb(
 	mime_args = NULL;
     }
 
+    /* Get the replacement tag (if provided) */
+    if (elvin_notification_get(notification, F_REPLACEMENT, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	tag = value.s;
+    }
+    else
+    {
+	tag = NULL;
+    }
+
     /* Get the message id (if provided) */
     if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
 	type == ELVIN_STRING)
@@ -246,10 +259,10 @@ static void notify_cb(
 
     /* Construct a message */
     message = message_alloc(
-	self -> control_panel_rock, self -> name,
-	user, text, (unsigned long) timeout,
+	self -> control_panel_rock,
+	self -> name, user, text, (unsigned long) timeout,
 	mime_type, mime_args,
-	message_id, reply_id);
+	tag, message_id, reply_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> rock, message);

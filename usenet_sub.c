@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.10 1999/11/21 12:04:17 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.11 1999/11/22 21:32:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -232,11 +232,9 @@ static void notify_cb(
 
     /* Construct a message out of all of that */
     if ((message = message_alloc(
-	NULL,
-	newsgroups, name,
-	subject, 60,
+	NULL, newsgroups, name, subject, 60,
 	mime_type, mime_args,
-	0, 0)) != NULL)
+	NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */
 	(*self -> callback)(self -> rock, message);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.2 1999/10/05 06:02:20 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.3 1999/11/22 21:32:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -67,6 +67,9 @@ struct message
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
 
+    /* The message's replacement tag */
+    char *tag;
+
     /* The identifier for this message */
     char *id;
 
@@ -84,6 +87,7 @@ message_t message_alloc(
     unsigned int timeout,
     char *mime_type,
     char *mime_args,
+    char *tag,
     char *id,
     char *reply_id)
 {
@@ -102,16 +106,18 @@ message_t message_alloc(
     self -> user = strdup(user);
     self -> string = strdup(string);
 
-#ifdef DEBUG
-    printf("allocated message_t %p (%ld)\n", self, ++message_count);
-#endif /* DEBUG */
-
     self -> mime_type = (mime_type == NULL) ? NULL : strdup(mime_type);
     self -> mime_args = (mime_args == NULL) ? NULL : strdup(mime_args);
     self -> timeout = timeout;
 
+    self -> tag = (tag == NULL) ? NULL : strdup(tag);
     self -> id = (id == NULL) ? NULL : strdup(id);
     self -> reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
+
+#ifdef DEBUG
+    printf("allocated message_t %p (%ld)\n", self, ++message_count);
+    message_debug(self);
+#endif /* DEBUG */
 
     return self;
 }
@@ -184,10 +190,12 @@ void message_free(message_t self)
 }
 
 
+#ifdef DEBUG
 /* Prints debugging information */
 void message_debug(message_t self)
 {
     printf("message_t (%p)\n", self);
+    printf("  ref_count=%d\n", self -> ref_count);
     printf("  info = 0x%p\n", self -> info);
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
@@ -195,11 +203,11 @@ void message_debug(message_t self)
     printf("  mime_type = \"%s\"\n", (self -> mime_type == NULL) ? "<null>" : self -> mime_type);
     printf("  mime_args = \"%s\"\n", (self -> mime_args == NULL) ? "<null>" : self -> mime_args);
     printf("  timeout = %ld\n", self -> timeout);
+    printf("  tag = \"%s\"\n", (self -> tag == NULL) ? "<null>" : self -> tag);
     printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
     printf("  reply_id = \"%s\"\n", (self -> reply_id == NULL) ? "<null>" : self -> reply_id);
 }
-
-
+#endif /* DEBUG */
 
 /* Answers the Subscription matched to generate the receiver */
 void *message_get_info(message_t self)
@@ -254,6 +262,12 @@ char *message_get_mime_type(message_t self)
 char *message_get_mime_args(message_t self)
 {
     return self -> mime_args;
+}
+
+/* Answers the receiver's tag */
+char *message_get_tag(message_t self)
+{
+    return self -> tag;
 }
 
 /* Answers the receiver's id */

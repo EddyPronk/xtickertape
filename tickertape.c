@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.38 1999/11/18 07:32:02 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.39 1999/11/22 21:32:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -734,7 +734,11 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
     sprintf(buffer, RECONNECT_MSG, host, port);
 
     /* Display the message on the scroller */
-    message = message_alloc(NULL, "internal", "tickertape", buffer, 30, NULL, NULL, 0, 0);
+    message = message_alloc(
+	NULL, "internal", "tickertape", buffer, 30,
+	NULL, NULL,
+	NULL, NULL, NULL);
+
     receive_callback(self, message);
     message_free(message);
 
@@ -778,11 +782,10 @@ static void disconnect_callback(tickertape_t self, connection_t connection)
 
     /* Display the message on the scroller */
     message = message_alloc(
-	NULL,
-	"internal", "tickertape",
-	buffer, 10,
+	NULL, "internal", "tickertape", buffer, 10,
 	NULL, NULL,
-	0, 0);
+	NULL, NULL, NULL);
+
     receive_callback(self, message);
     message_free(message);
 
