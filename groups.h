@@ -64,6 +64,6 @@ level7:menu:manual:1:60\n\
 # System messages about what was rebooted in the previous hour\n\
 rwall:no menu:manual:1:60\n\
 \n\
-# Your own group so that you can talk to yourself
+# Your own group so that you can talk to yourself\n\
 %u@%d:menu:manual:1:10\n\
 ";
