@@ -1,0 +1,120 @@
+###############################################################
+#
+#  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1998.
+#  Unpublished work.  All Rights Reserved.
+#
+#  The software contained on this media is the property of the
+#  DSTC Pty Ltd.  Use of this software is strictly in accordance
+#  with the license agreement in the accompanying LICENSE.DOC
+#  file.  If your distribution of this software does not contain
+#  a LICENSE.DOC file then you have no rights to use this
+#  software in any manner and should contact DSTC at the address
+#  below to determine an appropriate licensing arrangement.
+#
+#     DSTC Pty Ltd
+#     Level 7, Gehrmann Labs
+#     University of Queensland
+#     St Lucia, 4072
+#     Australia
+#     Tel: +61 7 3365 4310
+#     Fax: +61 7 3365 4311
+#     Email: enquiries@dstc.edu.au
+#
+#  This software is being provided "AS IS" without warranty of
+#  any kind.  In no event shall DSTC Pty Ltd be liable for
+#  damage of any kind arising out of or in connection with
+#  the use or performance of this software.
+#
+###############################################################
+
+<config-file> ::= <subscription-list>
+	[function]
+
+
+# A subscription list is one or more subscriptions
+<subscription-list> ::= <subscription-list> <subscription>
+	[function]
+<subscription-list> ::= <subscription>
+	[function]
+
+# Subscriptions are a tagged sub definition
+<subscription> ::= <tag> LBRACE <statements> RBRACE SEMI
+	[function]
+<subscription> ::= <tag> LBRACE RBRACE SEMI
+	[function]
+
+# A tag is simply an ID followed by a COLON
+<tag> ::= ID COLON
+	[function]
+
+# A list of statements
+<statements> ::= <statements> <statement>
+	[function]
+<statements> ::= <statement>
+	[function]
+
+
+# So far we only support assignment statements
+<statement> ::= ID ASSIGN <disjunction> SEMI
+	[function]
+
+
+# Disjunctions have the lowest precedence
+<disjunction> ::= <disjunction> OR <conjunction>
+	[function]
+<disjunction> ::= <conjunction>
+	[function]
+
+# Conjunctions have the next highest precedence
+<conjunction> ::= <conjunction> AND <term>
+	[function]
+<conjunction> ::= <term>
+	[function]
+
+# A value may be a comparsion
+<term> ::= <term> EQ <value>
+	[function]
+<term> ::= <term> NEQ <value>
+	[function]
+<term> ::= <term> LT <value>
+	[function]
+<term> ::= <term> LE <value>
+	[function]
+<term> ::= <term> GT <value>
+	[function]
+<term> ::= <term> GE <value>
+	[function]
+<term> ::= <value>
+	[function]
+
+# A value may be negated
+<value> ::= BANG <value>
+	[function]
+
+# And they may be a comma-separated list of values
+<values> ::= <values> COMMA <value>
+	[function]
+<values> ::= <value>
+	[function]
+
+# A value can be many things, including basetypes
+<value> ::= ID
+	[function]
+<value> ::= STRING
+	[function]
+<value> ::= INT32
+	[function]
+<value> ::= INT64
+	[function]
+<value> ::= REAL64
+	[function]
+
+# Values can be lists
+<value> ::= LBRACKET <values> RBRACKET
+	[function]
+
+# Values are also returned from functions
+<value> ::= ID LPAREN <values> RPAREN
+	[function]
+<value> ::= ID LPAREN RPAREN
+	[function]
