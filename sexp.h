@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.2 2000/11/09 01:28:06 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.3 2000/11/09 02:48:16 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -83,7 +83,7 @@ sexp_t char_alloc(char ch, elvin_error_t error);
 sexp_t cons_alloc(sexp_t car, sexp_t cdr, elvin_error_t error);
 
 /* Allocates and initializes a new built-in sexp */
-sexp_t builtin_alloc(builtin_t value, elvin_error_t error);
+sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error);
 
 /* Allocates and initializes a new lambda sexp */
 sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error);
@@ -154,7 +154,10 @@ int env_set_float(env_t env, char *name, double value, elvin_error_t error);
 /* Sets the named symbol's value to the string value in env */
 int env_set_string(env_t env, char *name, char *value, elvin_error_t error);
 
+/* Sets the named symbol's value to the symbol in env */
+int env_set_symbol(env_t env, char *name, char *value, elvin_error_t error);
+
 /* Sets the named symbol's value to the built-in function in env */
-int env_set_builtin(env_t env, char *name, builtin_t value, elvin_error_t error);
+int env_set_builtin(env_t env, char *name, builtin_t function, elvin_error_t error);
 
 #endif /* SEXP_H */

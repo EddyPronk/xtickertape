@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.2 2000/11/09 01:28:06 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.3 2000/11/09 02:48:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,11 +42,23 @@ static const char cvsid[] = "$Id: sexp.c,v 2.2 2000/11/09 01:28:06 phelps Exp $"
 #include "errors.h"
 #include "sexp.h"
 
+#define INIT_SYMBOL_TABLE_SIZE 100
+
+/* The symbol table */
+static elvin_hashtable_t symbol_table = NULL;
+
 /* A cons cell has two values */
 struct cons
 {
     sexp_t car;
     sexp_t cdr;
+};
+
+/* A built-in function has a name and a function */
+struct builtin
+{
+    char *name;
+    builtin_t function;
 };
 
 /* An sexp can be many things */
@@ -66,7 +78,7 @@ struct sexp
 	double d;
 	char *s;
 	struct cons c;
-	builtin_t b;
+	struct builtin b;
     } value;
 };
 
@@ -267,6 +279,27 @@ sexp_t symbol_alloc(char *name, elvin_error_t error)
 {
     sexp_t sexp;
 
+    /* Do we have a symbol table? */
+    if (symbol_table == NULL)
+    {
+	/* No, so create one */
+	if ((symbol_table = elvin_string_hash_create(
+		 INIT_SYMBOL_TABLE_SIZE,
+		 hashcopy,
+		 hashfree,
+		 error)) == NULL)
+	{
+	    return NULL;
+	}
+    }
+
+    /* Check for the symbol in the symbol table */
+    if ((sexp = elvin_hash_get(symbol_table, (elvin_hashkey_t)name, error)) != NULL)
+    {
+	sexp -> ref_count++;
+	return sexp;
+    }
+
     /* Allocate an sexp */
     if ((sexp = sexp_alloc(SEXP_SYMBOL, error)) == NULL)
     {
@@ -276,6 +309,16 @@ sexp_t symbol_alloc(char *name, elvin_error_t error)
     /* Duplicate the value */
     if ((sexp -> value.s = ELVIN_STRDUP(name, error)) == NULL)
     {
+	ELVIN_FREE(sexp, NULL);
+	return NULL;
+    }
+
+    /* Store it in the symbol table */
+    if (elvin_hash_add(
+	    symbol_table,
+	    (elvin_hashkey_t)name,
+	    (elvin_hashdata_t)sexp,
+	    error) == 0) {
 	ELVIN_FREE(sexp, NULL);
 	return NULL;
     }
@@ -345,7 +388,7 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error)
 }
 
 /* Allocates and initializes a new built-in sexp */
-sexp_t builtin_alloc(builtin_t value, elvin_error_t error)
+sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error)
 {
     sexp_t sexp;
 
@@ -355,8 +398,15 @@ sexp_t builtin_alloc(builtin_t value, elvin_error_t error)
 	return NULL;
     }
 
+    /* Record the name */
+    if ((sexp -> value.b.name = ELVIN_STRDUP(name, error)) == NULL)
+    {
+	ELVIN_FREE(sexp, NULL);
+	return NULL;
+    }
+
     /* Record the function */
-    sexp -> value.b = value;
+    sexp -> value.b.function = function;
     return sexp;
 }
 
@@ -410,11 +460,20 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	}
 
 	case SEXP_STRING:
-	case SEXP_SYMBOL:
 	{
 	    int result;
 
 	    result = ELVIN_FREE(sexp -> value.s, error);
+	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
+	}
+
+	case SEXP_SYMBOL:
+	{
+	    int result;
+
+	    /* Remove the symbol from the symbol table */
+	    result = elvin_hash_delete(symbol_table, (elvin_hashdata_t)sexp, error);
+	    result = ELVIN_FREE(sexp -> value.s, result ? error : NULL) && result;
 	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
 	}
 
@@ -425,7 +484,15 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 
 	    result = sexp_free(sexp -> value.c.car, error);
 	    result = sexp_free(sexp -> value.c.cdr, result ? error : NULL) && result;
-	    return ELVIN_FREE(sexp, error);
+	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
+	}
+
+	case SEXP_BUILTIN:
+	{
+	    int result;
+
+	    result = ELVIN_FREE(sexp -> value.b.name, error);
+	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
 	}
 
 	default:
@@ -497,7 +564,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_SYMBOL:
 	{
-	    printf("%s", sexp -> value.s);
+	    printf("%s", sexp -> value.s, sexp);
 	    return 1;
 	}
 
@@ -521,7 +588,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_BUILTIN:
 	{
-	    printf("<builtin>");
+	    printf("<built-in %s>", sexp -> value.b.name);
 	    return 1;
 	}
 
@@ -543,7 +610,7 @@ int funcall(sexp_t function, env_t env, sexp_t args, sexp_t *result, elvin_error
 	case SEXP_BUILTIN:
 	{
 	    /* Call the built-in with the cdr as args */
-	    return function->value.b(env, args, result, error);
+	    return function->value.b.function(env, args, result, error);
 	}
 
 	case SEXP_LAMBDA:
@@ -816,14 +883,33 @@ int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
     return sexp_free(sexp, result ? error : NULL) && result;
 }
 
+/* Sets the named symbol's value to the symbol in env */
+int env_set_symbol(env_t env, char *name, char *value, elvin_error_t error)
+{
+    sexp_t sexp;
+    int result;
+
+    /* Create a symbol */
+    if ((sexp = symbol_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, sexp, error);
+
+    /* Lose our reference to it */
+    return sexp_free(sexp, result ? error : NULL) && result;
+}
+
 /* Sets the named symbol's value to the built-in function in env */
-int env_set_builtin(env_t env, char *name, builtin_t value, elvin_error_t error)
+int env_set_builtin(env_t env, char *name, builtin_t function, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
 
     /* Create a built-in */
-    if ((sexp = builtin_alloc(value, error)) == NULL)
+    if ((sexp = builtin_alloc(name, function, error)) == NULL)
     {
 	return 0;
     }
