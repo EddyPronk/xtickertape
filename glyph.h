@@ -31,13 +31,19 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.2 1999/07/27 07:51:22 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.3 1999/08/17 17:59:49 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
 
 #include "Scroller.h"
 #include "Message.h"
+
+/*
+ * The signature of the function which allocates another reference to
+ * the glyph. 
+ */
+typedef glyph_t (*alloc_method_t)(glyph_t glyph);
 
 /*
  * The signature of the function which frees the resources consumed by
@@ -85,6 +91,7 @@ typedef void (*expire_method_t)(glyph_t glyph);
 #define GLYPH_PREFIX \
     glyph_t previous; \
     glyph_t next; \
+    alloc_method_t alloc; \
     free_method_t free; \
     message_method_t get_message; \
     width_method_t get_width; \

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.5 1999/07/27 07:51:23 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.6 1999/08/17 17:59:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -52,6 +52,9 @@ struct message_glyph
 
     /* The Message which the receiver represents */
     Message message;
+
+    /* The receiver's reference count */
+    int ref_count;
 
     /* True if the receiver has [been] expired */
     int has_expired;
@@ -101,7 +104,7 @@ static void tick(message_glyph_t self, XtIntervalId *ignored)
     {
 	if (! self -> has_expired)
 	{
-	    self -> has_expired = 1;
+	    self -> has_expired = True;
 	    ScGlyphExpired(self -> widget, (glyph_t) self);
 	}
     }
@@ -139,10 +142,32 @@ static void clear_clock(message_glyph_t self)
     }
 }
 
+/* Allocates another reference to the gap */
+static message_glyph_t do_alloc(message_glyph_t self)
+{
+    self -> ref_count++;
+    return self;
+}
+
 /* Free everything except the message */
 static void do_free(message_glyph_t self)
 {
+    /* Decrement the reference count */
+    if (--self -> ref_count > 0)
+    {
+	return;
+    }
+
     clear_clock(self);
+
+#ifdef DEBUG
+    printf("message_glyph freed!\n");
+#endif /* DEBUG */
+
+#if 0
+    /* FIX THIS: free this once history_t doesn't refer to the message anymore */
+    Message_free(self -> message);
+#endif /* 0 */
     free(self);
 }
 
@@ -317,6 +342,7 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     /* Initialize its fields to sane values */
     self -> previous = NULL;
     self -> next = NULL;
+    self -> alloc = (alloc_method_t)do_alloc;
     self -> free = (free_method_t)do_free;
     self -> get_message = (message_method_t)get_message;
     self -> get_width = (width_method_t)get_width;
@@ -326,6 +352,7 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
 
     self -> widget = widget;
     self -> message = message;
+    self -> ref_count = 1;
     self -> has_expired = False;
     self -> fade_level = 0;
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.3 1999/07/27 11:55:22 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.4 1999/08/17 17:59:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -46,6 +46,18 @@ struct gap
     /* The ScrollerWidget in which the receiver is displayed */
     ScrollerWidget widget;
 };
+
+/* Allocates another reference to the gap */
+static gap_t do_alloc(gap_t self)
+{
+    return self;
+}
+
+/* Fails to free any references to the receiver */
+static void do_free(gap_t self)
+{
+    return;
+}
 
 /* The receiver will never contain a Message */
 static Message get_message(gap_t self)
@@ -90,7 +102,8 @@ glyph_t gap_alloc(ScrollerWidget widget)
     /* Initialize its fields to sane values */
     self -> previous = (glyph_t)self;
     self -> next = (glyph_t)self;
-    self -> free = (free_method_t)free;
+    self -> alloc = (alloc_method_t)do_alloc;
+    self -> free = (free_method_t)do_free;
     self -> get_message = (message_method_t)get_message;
     self -> get_width = (width_method_t)NULL;
     self -> paint = (paint_method_t)do_paint;
