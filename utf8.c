@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.13 2004/08/03 12:29:17 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.14 2004/11/24 11:40:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -937,6 +937,9 @@ utf8_encoder_t utf8_encoder_alloc(
 	    XmFontListFreeFontContext(context);
 	    return self;
 	}
+
+        /* We don't use the charset, so free it now */
+        XtFree(charset);
 
 	/* Look up the font's code set */
 	if ((string = alloc_font_code_set(display, font)) == NULL)
