@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.56 2004/08/02 20:59:35 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.57 2004/08/02 21:01:29 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -61,7 +61,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.56 2004/08/02 20:59:35 phelps 
 #define F2_TICKERTEXT "TICKERTEXT"
 #define F3_TIMEOUT "Timeout"
 #define F2_TIMEOUT "TIMEOUT"
-#define F3_REPLACES "Replaces"
+#define F3_REPLACEMENT_ID "Replacement-Id"
 #define F2_REPLACEMENT "REPLACEMENT"
 #define F3_MESSAGE_ID "Message-Id"
 #define F3_IN_REPLY_TO "In-Reply-To"
@@ -417,7 +417,7 @@ static void notify_cb(
     }
 
     /* Get the replacement tag (if provided) */
-    if (elvin_notification_get(notification, F3_REPLACES, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_REPLACEMENT_ID, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	tag = (char *)value.s;
@@ -757,7 +757,7 @@ static int notify_cb(
     }
 
     /* Get the `Replaces' field from the notification */
-    if (! elvin_notification_get_string(notification, F3_REPLACES, &found, &tag, error))
+    if (! elvin_notification_get_string(notification, F3_REPLACEMENT_ID, &found, &tag, error))
     {
 	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
