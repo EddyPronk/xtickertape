@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.45 1999/07/29 12:35:12 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.46 1999/07/29 13:10:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1293,7 +1293,31 @@ static void expire(Widget widget, XEvent *event)
     glyph -> expire(glyph);
 }
 
-/* Simple remove the message from the scroller NOW */
+/* Remove a glyph from the circular queue */
+static void dequeue(ScrollerWidget self, glyph_t glyph)
+{
+    /* If the glyph is already dequeued, then don't do anything */
+    if (glyph -> next == NULL)
+    {
+	return;
+    }
+
+    /* Make sure left_glyph is safe */
+    if (self -> scroller.left_glyph == glyph)
+    {
+	self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
+    }
+
+    /* Make sure that right_glyph is safe */
+    if (self -> scroller.right_glyph == glyph)
+    {
+	self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
+    }
+
+    queue_remove(glyph);
+}
+
+/* Simply remove the message from the scroller NOW */
 static void delete(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
@@ -1306,7 +1330,7 @@ static void delete(Widget widget, XEvent *event)
     }
 
     /* Extract the glyph from the queue */
-    ScGlyphExpired(self, glyph);
+    dequeue(self, glyph);
 
     /* Delete the glyph and any holders for that glyph, and keep the
      * leading edge of the text in place */
@@ -1321,20 +1345,19 @@ static void delete(Widget widget, XEvent *event)
 	int missing_width = 0;
 	glyph_holder_t holder = self -> scroller.left_holder;
 
-	/* If we're deleting the only visible glyph then we add
-	 * another holder to the list before we remove it so that the
-	 * list is never empty */
-	if ((holder -> glyph == glyph) &&
-	    (self -> scroller.left_holder == holder) && (self -> scroller.right_holder == holder))
+	/* If we're deleting the rightmost glyph, then we add another
+	 * now so that we know what comes next */
+	if (self -> scroller.right_holder -> glyph == glyph)
 	{
 	    add_right_holder(self);
 	}
 
+	/* Go through the glyphs and compensate */
 	while (holder != NULL)
 	{
 	    glyph_holder_t next = holder -> next;
 
-	    /* If we've found the gap than insert any lost width into it */
+	    /* If we've found the gap then insert any lost width into it */
 	    if ((holder -> glyph == self -> scroller.gap) && (missing_width != 0))
 	    {
 		holder -> width += missing_width;
@@ -1346,23 +1369,37 @@ static void delete(Widget widget, XEvent *event)
 	    {
 		missing_width += glyph_holder_width(holder);
 
+		/* We'll always have a next glyph */
+		holder -> next -> previous = holder -> previous;
+
 		/* Remove the holder from the list */
 		if (holder -> previous != NULL)
 		{
 		    holder -> previous -> next = holder -> next;
+
+		    /* If the glyph was surrounded by gaps, then join the gaps into one */
+		    if ((holder -> previous -> glyph == self -> scroller.gap) &&
+			(holder -> next -> glyph == self -> scroller.gap))
+		    {
+			offset += holder -> next -> width;
+			holder -> previous -> width += holder -> next -> width;
+			holder -> previous -> next = holder -> next -> next;
+
+			next = holder -> next -> next;
+			if (next == NULL)
+			{
+			    self -> scroller.right_holder = holder -> previous;
+			}
+			else
+			{
+			    next -> previous = holder -> previous;
+			}
+
+		    }
 		}
 		else
 		{
 		    self -> scroller.left_holder = holder -> next;
-		}
-
-		if (holder -> next != NULL)
-		{
-		    holder -> next -> previous = holder -> previous;
-		}
-		else
-		{
-		    self -> scroller.right_holder = holder -> previous;
 		}
 
 		glyph_holder_free(holder);
@@ -1558,20 +1595,7 @@ void ScAddMessage(ScrollerWidget self, Message message)
 void ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
     printf("expired...\n");
-
-    /* Make sure that left_glyph is safe */
-    if (self -> scroller.left_glyph == glyph)
-    {
-	self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
-    }
-
-    /* Make sure that right_glyph is safe */
-    if (self -> scroller.right_glyph == glyph)
-    {
-	self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
-    }
-
-    queue_remove(glyph);
+    dequeue(self, glyph);
 }
 
 /* Answers the width of the gap glyph */
