@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.19 1999/09/13 12:19:36 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.20 1999/09/13 12:51:23 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -371,7 +371,7 @@ static void do_paint(
 
     left += self -> group_width;
 
-    /* Draw the separator if appropriate*/
+    /* Draw the separator if appropriate */
     if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
     {
 	paint_string(
@@ -384,7 +384,7 @@ static void do_paint(
 
     left += self -> separator_width;
 
-    /* Draw the user string */
+    /* Draw the user string if appropriate */
     if ((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width))
     {
 	paint_string(
@@ -397,7 +397,7 @@ static void do_paint(
 
     left += self -> user_width;
 
-    /* Draw the separator */
+    /* Draw the separator if appropriate */
     if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
     {
 	paint_string(
@@ -410,8 +410,8 @@ static void do_paint(
 
     left += self -> separator_width;
 
-    /* Draw the message */
-    if ((x <= left + self -> string_rbearing) && (left + self -> separator_lbearing <= x + width))
+    /* Draw the message string if appropriate */
+    if ((x <= left + self -> string_rbearing) && (left + self -> string_lbearing <= x + width))
     {
 	paint_string(
 	    self, display, drawable, ScGCForString(self -> widget, level, x, y, width, height),
