@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.19 1997/05/31 03:42:30 phelps Exp $ */
+/* $Id: main.c,v 1.20 1998/03/06 07:36:50 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +17,7 @@
 # define CONNECTION_SEND ElvinConnection_send
 # define CONNECTION_GETFD ElvinConnection_getFD
 # define CONNECTION_READ ElvinConnection_read
-# define PORT 0
+# define PORT 5678
 #else /* USE_ELVIN */
 # include "BridgeConnection.h"
 # define CONNECTION BridgeConnection
@@ -30,7 +30,11 @@
 #include "Control.h"
 #include "Tickertape.h"
 
+#ifdef ELVIN_HOSTNAME
+#define HOSTNAME ELVIN_HOSTNAME
+#else /* ELVIN_HOSTNAME */
 #define HOSTNAME "fatcat"
+#endif /* ELVIN_HOSTNAME */
 #define BUFFERSIZE 8192
 
 /* Notification of something */
