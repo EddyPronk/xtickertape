@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.11 1997/02/17 02:28:04 phelps Exp $ */
+/* $Id: MessageView.c,v 1.12 1997/02/24 01:14:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -282,7 +282,10 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
     self -> height = self -> ascent + getDescent(self);
     computeWidths(self);
     self -> timer = 0;
-    self -> pixmap = TtCreatePixmap(self -> widget, MessageView_getWidth(self));
+    self -> pixmap = TtCreatePixmap(
+	self -> widget,
+	MessageView_getWidth(self),
+	self -> height);
     paint(self, self -> pixmap, 0, self -> ascent);
     setClock(self);
     return self;

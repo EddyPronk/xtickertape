@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.8 1997/02/14 16:33:16 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.9 1997/02/24 01:14:33 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -101,7 +101,7 @@ XFontStruct *TtFontForSeparator(TickertapeWidget self);
 Dimension TtGetFadeLevels(TickertapeWidget self);
 
 /* Answers a new Pixmap of the given width */
-Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width);
+Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width, unsigned int height);
 
 /* Sets a timer to go off in interval milliseconds */
 XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,

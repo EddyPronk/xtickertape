@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.14 1997/02/17 02:28:05 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.15 1997/02/24 01:14:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -457,14 +457,14 @@ Dimension TtGetFadeLevels(TickertapeWidget self)
 }
 
 /* Answers a Pixmap of the given width */
-Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width)
+Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width, unsigned int height)
 {
     Pixmap pixmap;
     pixmap = XCreatePixmap(
 	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
-	width, self -> core.height,
+	width, height,
 	DefaultDepthOfScreen(XtScreen(self)));
-    XFillRectangle(XtDisplay(self), pixmap, TtGCForBackground(self), 0, 0, width, self -> core.height);
+    XFillRectangle(XtDisplay(self), pixmap, TtGCForBackground(self), 0, 0, width, height);
     return pixmap;
 }
 
