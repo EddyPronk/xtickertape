@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.5 2000/03/16 06:54:38 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.6 2000/05/05 03:51:33 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -183,6 +183,12 @@ void message_free(message_t self)
     {
 	free(self -> mime_args);
 	self -> mime_args = NULL;
+    }
+
+    if (self -> tag != NULL)
+    {
+	free(self -> tag);
+	self -> tag = NULL;
     }
 
     if (self -> id != NULL)
