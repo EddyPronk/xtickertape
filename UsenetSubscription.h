@@ -1,4 +1,4 @@
-/* $Id: UsenetSubscription.h,v 1.1 1998/10/22 04:26:01 phelps Exp $
+/* $Id: UsenetSubscription.h,v 1.2 1998/10/22 07:08:42 phelps Exp $
  * COPYRIGHT!
  *
  * Receives notifications from the NewsWatcher and transforms them
@@ -11,11 +11,16 @@
 /* The UsenetSubscription data type */
 typedef struct UsenetSubscription_t *UsenetSubscription;
 
+#include <stdio.h>
 #include "Message.h"
 #include "ElvinConnection.h"
 
 typedef void (*UsenetSubscriptionCallback)(void *context, Message message);
 
+
+/* Read the UsenetSubscription from the given file */
+UsenetSubscription UsenetSubscription_readFromUsenetFile(
+    FILE *usenet, UsenetSubscriptionCallback callback, void *context);
 
 /* Answers a new UsenetSubscription */
 UsenetSubscription UsenetSubscription_alloc(

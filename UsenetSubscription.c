@@ -1,12 +1,15 @@
 /* $Id */
 
-#include <stdio.h>
+#include "UsenetSubscription.h"
 #include <stdlib.h>
 #include <alloca.h>
-#include <elvin3/elvin.h>
-#include <elvin3/element.h>
-#include "UsenetSubscription.h"
+#include "FileStreamTokenizer.h"
+#include "List.h"
+#include "Hash.h"
 #include "sanity.h"
+
+#define BUFFERSIZE 8192
+#define SEPARATORS " \t\n"
 
 #ifdef SANITY
 static char *sanity_value = "UsenetSubscription";
@@ -38,6 +41,10 @@ struct UsenetSubscription_t
 };
 
 
+/* The mapping from fields in the usenet file to the elvin notification equivalents */
+static Hashtable fieldMap = NULL;
+
+
 /*
  *
  * Static function headers
@@ -50,6 +57,188 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification);
  * Static functions
  *
  */
+
+/* Copies characters from inString into outString */
+void AppendString(char *inString, char **outString)
+{
+    char *pointer;
+
+    for (pointer = inString; *pointer != '\0'; pointer++)
+    {
+	**outString = *pointer;
+	(*outString)++;
+    }
+}
+
+
+/* Answers the field map (from field to subscription thingy) */
+static Hashtable GetFieldMap()
+{
+    if (fieldMap == NULL)
+    {
+	fieldMap = Hashtable_alloc(13);
+	Hashtable_put(fieldMap, "from", "FROM_NAME");
+	Hashtable_put(fieldMap, "email", "FROM_EMAIL");
+	Hashtable_put(fieldMap, "subject", "SUBJECT");
+	Hashtable_put(fieldMap, "keywords", "KEYWORDS");
+	Hashtable_put(fieldMap, "x-posts", "CROSS_POSTS");
+	Hashtable_put(fieldMap, "newsgroups", "NEWSGROUPS");
+    }
+
+    return fieldMap;
+}
+
+/* Reads the next tuple from the FileStreamTokenizer */
+static char *GetTupleFromTokenizer(FileStreamTokenizer tokenizer)
+{
+    char *field;
+    char *operation;
+    char *pattern;
+    char *elvinField;
+
+    /* Read the field */
+    field = FileStreamTokenizer_next(tokenizer);
+    if ((field == NULL) || (*field == '/') || (*field == '\n'))
+    {
+	return NULL;
+    }
+
+    if ((elvinField = Hashtable_get(GetFieldMap(), field)) == NULL)
+    {
+	fprintf(stderr, "*** Unrecognized field \"%s\"\n", field);
+	exit(1);
+    }
+    free(field);
+
+    /* Read the operation */
+    operation = FileStreamTokenizer_next(tokenizer);
+    if ((operation == NULL) || (*operation == '/') || (*field == '\n'))
+    {
+	return NULL;
+    }
+
+    /* Read the pattern */
+    pattern = FileStreamTokenizer_next(tokenizer);
+    if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
+    {
+	return NULL;
+    }
+
+    printf("  field=\"%s\", operation=\"%s\", pattern=\"%s\"\n", elvinField, operation, pattern);
+    free(operation);
+    free(pattern);
+
+    return strdup("bob");
+}
+
+
+/* Scans a non-empty, non-comment line of the usenet file and answers
+ * a malloc'ed string corresponding to that line's part of the
+ * subscription expression */
+static char *GetFromUsenetFileLine(char *token, FileStreamTokenizer tokenizer)
+{
+    List list = List_alloc();
+    int isGroupNegated = 0;
+    char *group;
+
+    /* Read the group: [not] groupname */
+    if (strcmp(token, "not") == 0)
+    {
+	isGroupNegated = 1;
+	if ((group = FileStreamTokenizer_next(tokenizer)) == NULL)
+	{
+	    fprintf(stderr, "*** Invalid usenet line containing \"%s\"\n", token);
+	    return NULL;
+	}
+
+	printf("group: !\"%s\"\n", group);
+    }
+    else
+    {
+	group = token;
+	printf("group: \"%s\"\n", group);
+    }
+
+    /* Read tuples */
+    while (1)
+    {
+	char *tok = FileStreamTokenizer_next(tokenizer);
+
+	/* End of file? */
+	if (tok == NULL)
+	{
+	    break;
+	}
+
+	/* End of line? */
+	if (*tok == '\n')
+	{
+	    free(tok);
+	    break;
+	}
+
+	/* Token separator? */
+	if (*tok == '/')
+	{
+	    char *expression;
+	    free(tok);
+
+	    expression = GetTupleFromTokenizer(tokenizer);
+	    if (expression == NULL)
+	    {
+		fprintf(stderr, "*** Invalid usenet line for group %s\n", group);
+		exit(1);
+	    }
+
+	    List_addLast(list, expression);
+	}
+	else
+	{
+	    fprintf(stderr, "*** Invalid usenet line for group %s\n", group);
+	    exit(1);
+	}
+    }
+
+    return strdup("hi");
+}
+
+/* Scans the next line of the usenet file and answers a malloc'ed
+ * string corresponding to that line's part of the subscription
+ * expression */
+static char *GetFromUsenetFile(FILE *file)
+{
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, "/\n");
+    char *token;
+
+    /* Locate a non-empty line which doesn't begin with a '#' */
+    while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
+    {
+	/* Comment line */
+	if (*token == '#')
+	{
+	    free(token);
+	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
+	}
+	/* Empty line? */
+	else if (*token == '\n')
+	{
+	    free(token);
+	}
+	/* Useful line */
+	else
+	{
+	    char *result = GetFromUsenetFileLine(token, tokenizer);
+	    free(token);
+	    return result;
+	}
+    }
+
+    FileStreamTokenizer_free(tokenizer);
+    fclose(file);
+
+    return NULL;
+}
+
 
 /* Transforms a usenet notification into a Message and delivers it */
 static void HandleNotify(UsenetSubscription self, en_notify_t notification)
@@ -157,11 +346,70 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 }
 
 
+
+
+
+
 /*
  *
  * Exported functions
  *
  */
+
+/* Read the UsenetSubscription from the given file */
+UsenetSubscription UsenetSubscription_readFromUsenetFile(
+    FILE *usenet, UsenetSubscriptionCallback callback, void *context)
+{
+    List list = List_alloc();
+    char *prefix = "ELVIN_CLASS == \"NEWSWATCHER\" && ELVIN_SUBCLASS == \"MONITOR\" && ( ";
+    char *suffix = " )";
+    char *conjunction = " || ";
+    char *expression;
+    char *pointer;
+    int size = 0;
+
+    /* Get the subscription expressions for each individual line */
+    while ((expression = GetFromUsenetFile(usenet)) != NULL)
+    {
+	if (List_isEmpty(list))
+	{
+	    size = strlen(expression);
+	}
+	else
+	{
+	    size += sizeof(conjunction) + strlen(expression);
+	}
+
+	List_addLast(list, expression);
+    }
+
+    /* If the List is empty, then return NULL now */
+    if (List_isEmpty(list))
+    {
+/*	List_free(list);*/
+	return NULL;
+    }
+
+    /* Construct one ubersubscription for all Usenet news */
+    expression = (char *)alloca(sizeof(prefix) + sizeof(suffix) + size);
+    pointer = expression;
+
+    /* Copy the prefix into the expression */
+    AppendString(prefix, &pointer);
+
+    /* Copy in each of the List elements */
+    List_doWith(list, AppendString, &pointer);
+/*    List_do(list, free);*/
+/*    List_free(list);*/
+    
+    /* Copy in the suffix */
+    AppendString(suffix, &pointer);
+
+    printf("expression: %s\n", expression);
+    return UsenetSubscription_alloc("ELVIN_CLASS == \"NEWSWATCHER\"", callback, context);
+}
+
+
 
 /* Answers a new UsenetSubscription */
 UsenetSubscription UsenetSubscription_alloc(
