@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.1 1999/10/03 06:11:26 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.2 1999/10/03 12:44:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -101,6 +101,9 @@ struct usenet_parser
     /* The next character in the token buffer */
     char *token_pointer;
 
+    /* A reference point within the token */
+    char *token_mark;
+
     /* The end of the token buffer */
     char *token_end;
 
@@ -112,6 +115,9 @@ struct usenet_parser
 
     /* This is set if the group pattern is negated */
     int has_not;
+
+    /* The name of the usenet group whose entry we're currently building */
+    char *group;
 
     /* The field name of the current expression */
     field_name_t field;
@@ -125,7 +131,6 @@ struct usenet_parser
 static int lex_start(usenet_parser_t self, int ch);
 static int lex_comment(usenet_parser_t self, int ch);
 static int lex_group(usenet_parser_t self, int ch);
-static int lex_group_esc(usenet_parser_t self, int ch);
 static int lex_group_ws(usenet_parser_t self, int ch);
 static int lex_field_start(usenet_parser_t self, int ch);
 static int lex_field(usenet_parser_t self, int ch);
@@ -133,13 +138,31 @@ static int lex_op_start(usenet_parser_t self, int ch);
 static int lex_op(usenet_parser_t self, int ch);
 static int lex_pattern_start(usenet_parser_t self, int ch);
 static int lex_pattern(usenet_parser_t self, int ch);
-static int lex_pattern_esc(usenet_parser_t self, int ch);
 static int lex_pattern_ws(usenet_parser_t self, int ch);
 
 /* Prints a consistent error message */
 static void parse_error(usenet_parser_t self, char *message)
 {
     fprintf(stderr, "%s: parse error line %d: %s\n", self -> tag, self -> line_num, message);
+}
+
+/* This is called when a complete group entry has been read */
+static int accept_group(usenet_parser_t self, char *group)
+{
+    printf("%s\n===\n", group);
+    return 0;
+}
+
+
+/* This is called when a complete expression has been read */
+static int accept_expression(
+    usenet_parser_t self,
+    field_name_t field,
+    op_name_t operator,
+    char *pattern)
+{
+    printf("  expr: %d %d \"%s\"\n", field, operator, pattern);
+    return 0;
 }
 
 /* Appends a character to the end of the token */
@@ -159,6 +182,7 @@ static int append_char(usenet_parser_t self, int ch)
 
 	/* Update the other pointers */
 	self -> token_pointer = new_token + (self -> token_pointer - self -> token);
+	self -> token_mark = new_token + (self -> token_mark - self -> token);
 	self -> token = new_token;
 	self -> token_end = self -> token + length;
     }
@@ -360,15 +384,6 @@ static int lex_start(usenet_parser_t self, int ch)
 	return 0;
     }
 
-    /* Watch for an escape character */
-    if (ch == '\\')
-    {
-	self -> has_not = 0;
-	self -> token_pointer = self -> token;
-	self -> state = lex_group_esc;
-	return 0;
-    }
-
     /* Anything else is part of the group pattern */
     self -> has_not = 0;
     self -> token_pointer = self -> token;
@@ -409,9 +424,12 @@ static int lex_group(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	/* FIX THIS: do something useful with the information */
-	printf("group: %s\"%s\"\n", self -> has_not ? "not " : "", self -> token);
-	printf("---\n");
+	/* This is a nice, short group entry */
+	if (accept_group(self, self -> token) < 0)
+	{
+	    return -1;
+	}
+
 	return lex_start(self, ch);
     }
 
@@ -424,13 +442,6 @@ static int lex_group(usenet_parser_t self, int ch)
 	return append_char(self, '\0');
     }
 
-    /* Watch for an escape character */
-    if (ch == '\\')
-    {
-	self -> state = lex_group_esc;
-	return 0;
-    }
-
     /* Watch for the separator character */
     if (ch == '/')
     {
@@ -440,28 +451,14 @@ static int lex_group(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	/* FIX THIS: do something useful with the group pattern */
-	printf("group: %s\"%s\"\n", self -> has_not ? "not " : "", self -> token);
+	/* Record the group name for later use */
+	self -> group = strdup(self -> token);
 	self -> token_pointer = self -> token;
 	self -> state = lex_field_start;
 	return 0;
     }
 
     /* Anything else is part of the group pattern */
-    return append_char(self, ch);
-}
-
-/* We're reading an escaped character in the group pattern */
-static int lex_group_esc(usenet_parser_t self, int ch)
-{
-    /* Watch for EOF */
-    if (ch == EOF)
-    {
-	parse_error(self, "unexpected end of file");
-	return -1;
-    }
-
-    self -> state = lex_group;
     return append_char(self, ch);
 }
 
@@ -473,8 +470,12 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* FIX THIS: do something useful with the information */
-	printf("group: %s\"%s\"\n", self -> has_not ? "not " : "", self -> token);
+	/* This is a nice, short group entry */
+	if (accept_group(self, self -> token) < 0)
+	{
+	    return -1;
+	}
+
 	return lex_start(self, ch);
     }
 
@@ -487,8 +488,8 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     /* Watch for the separator character */
     if (ch == '/')
     {
-	/* FIX THIS: do something useful with the information */
-	printf("group: %s\"%s\"\n", self -> has_not ? "not " : "", self -> token);
+	/* Record the group name for later */
+	self -> group = strdup(self -> token);
 	self -> token_pointer = self -> token;
 	self -> state = lex_field_start;
 	return 0;
@@ -513,13 +514,6 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     /* This is a negated group pattern */
     self -> has_not = 1;
     self -> token_pointer = self -> token;
-
-    /* Watch for an initial escape character */
-    if (ch == '\\')
-    {
-	self -> state = lex_group_esc;
-	return 0;
-    }
 
     /* Anything else is part of the group pattern */
     self -> state = lex_group;
@@ -576,7 +570,6 @@ static int lex_field(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	printf("field=%d\n", self -> field);
 	self -> token_pointer = self -> token;
 	self -> state = lex_op_start;
 	return 0;
@@ -636,7 +629,6 @@ static int lex_op(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	printf("operator=%d\n", self -> operator);
 	self -> token_pointer = self -> token;
 	self -> state = lex_pattern_start;
 	return 0;
@@ -672,25 +664,31 @@ static int lex_pattern(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	/* FIX THIS: Should do something interesting with the expression */
-	printf("end of expr: (%d %d \"%s\")\n", self -> field, self -> operator, self -> token);
-	printf("---\n");
+	/* Do something interesting with the expression */
+	if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
+	{
+	    return -1;
+	}
+
+	/* This is also the end of the group entry */
+	if (accept_group(self, self -> group) < 0)
+	{
+	    return -1;
+	}
+
+	free(self -> group);
+
+	/* Let the start state deal with the EOF or linefeed */
 	return lex_start(self, ch);
     }
 
     /* Watch for other whitespace */
     if (isspace(ch))
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
-
-	/* FIX THIS: should do something interesting with the expression */
-	printf("end of expr: (%d %d \"%s\")\n", self -> field, self -> operator, self -> token);
+	/* Record the position of the whitespace for later trimming */
+	self -> token_mark = self -> token_pointer;
 	self -> state = lex_pattern_ws;
-	return 0;
+	return append_char(self, ch);
     }
 
     /* Watch for a separator */
@@ -702,67 +700,64 @@ static int lex_pattern(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
-	/* FIX THIS: Should do something interesting with the expression */
-	printf("end of expr: (%d %d \"%s\")\n", self -> field, self -> operator, self -> token);
+	/* Do something interesting with the expression */
 	self -> token_pointer = self -> token;
 	self -> state = lex_field_start;
-	return 0;
-    }
-
-    /* Watch for the escape character */
-    if (ch == '\\')
-    {
-	self -> state = lex_pattern_esc;
-	return 0;
+	return accept_expression(self, self -> field, self -> operator, self -> token);
     }
 
     /* Anything else is part of the pattern */
     return append_char(self, ch);
 }
 
-/* Reading an escaped character within a pattern */
-static int lex_pattern_esc(usenet_parser_t self, int ch)
-{
-    if (ch == EOF)
-    {
-	parse_error(self, "unexpected end of file");
-	return -1;
-    }
-
-    self -> state = lex_pattern;
-    return append_char(self, ch);
-}
-
 /* Reading trailing whitespace after a pattern */
 static int lex_pattern_ws(usenet_parser_t self, int ch)
 {
-    char buffer[sizeof("expected '/' or newline, got 'x'")];
-
     /* Watch for EOF and newline */
     if ((ch == EOF) || (ch == '\n'))
     {
-	printf("---\n");
+	/* Trim off the trailing whitespace */
+	*self -> token_mark = '\0';
+
+	/* Do something interesting with the expression */
+	if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
+	{
+	    return -1;
+	}
+
+	/* This is also the end of the group entry */
+	if (accept_group(self, self -> group) < 0)
+	{
+	    return -1;
+	}
+
+	free(self -> group);
+
+	/* Let the start state deal with the EOF or newline */
 	return lex_start(self, ch);
     }
 
     /* Skip any other whitespace */
     if (isspace(ch))
     {
-	return 0;
+	return append_char(self, ch);
     }
 
     /* Watch for a separator */
     if (ch == '/')
     {
+	/* Trim off the trailing whitespace */
+	*self -> token_mark = '\0';
+
+	/* Do something interesting with the expression */
 	self -> token_pointer = self -> token;
 	self -> state = lex_field_start;
-	return 0;
+	return accept_expression(self, self -> field, self -> operator, self -> token);
     }
 
-    /* Anything else is an error */
-    sprintf(buffer, "expected '/' or newline, got '%c'", ch);
-    parse_error(self, buffer);
-    return -1;
+    /* Anything else is more of the pattern */
+    self -> state = lex_pattern;
+    return append_char(self, ch);
 }
 
 
@@ -794,9 +789,14 @@ usenet_parser_t usenet_parser_alloc(char *tag)
 
     /* Initialize everything else to a sane value */
     self -> token_pointer = self -> token;
+    self -> token_mark = self -> token;
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
     self -> state = lex_start;
     self -> line_num = 1;
+    self -> has_not = 0;
+    self -> group = NULL;
+    self -> field = F_NONE;
+    self -> operator = O_NONE;
     return self;
 }
 
@@ -835,6 +835,7 @@ int usenet_parser_parse(usenet_parser_t self, char *buffer, ssize_t length)
 
 
 #include <unistd.h>
+#define BUFFER_SIZE 2048
 
 /* Test harness */
 int main(int argc, char *argv[])
@@ -853,10 +854,10 @@ int main(int argc, char *argv[])
 
     while (1)
     {
-	char buffer[2048];
+	char buffer[BUFFER_SIZE];
 	ssize_t length;
 
-	if ((length = read(STDIN_FILENO, buffer, 2048)) < 0)
+	if ((length = read(STDIN_FILENO, buffer, BUFFER_SIZE)) < 0)
 	{
 	    perror("unable to read from stdin");
 	    exit(1);
