@@ -1,786 +1,360 @@
 
 /*
- * estore.c -- asynchronously add mail to a folder
- *             and send out an elvin notification
+ * rcvstore.c -- asynchronously add mail to a folder
  *
- * This code is mostly stolen from rcvstore.c
- *
- * $Id: estore.c,v 1.3 2000/03/21 11:47:23 phelps Exp $
+ * $Id: estore.c,v 2.1 2000/05/08 06:38:41 phelps Exp $
  */
 
-#include <elvin/elvin.h>
-#include <elvin/sync_api.h>
 #include <h/mh.h>
 #include <fcntl.h>
 #include <h/signals.h>
 #include <errno.h>
 #include <signal.h>
-#include <pwd.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <zotnet/mts/mts.h>
+#include "parse_mail.h"
 
-/* Default elvin server */
-#define ELVIN "elvin:/tcp,none,xdr/sequoia"
+#define MAX_PACKET_SIZE 8192
 
-
-static struct swit switches[] =
-{
-#define CRETSW 0
-    { "create", 0 },
-#define NCRETSW 1
+static struct swit switches[] = {
+#define CRETSW         0
+    { "create",	0 },
+#define NCRETSW        1
     { "nocreate", 0 },
-#define UNSEENSW 2
+#define UNSEENSW       2
     { "unseen", 0 },
-#define NUNSEENSW 3
+#define NUNSEENSW      3
     { "nounseen", 0 },
-#define PUBSW 4
-    { "public", 0 },
-#define NPUBSW 5
-    { "nopublic", 0 },
-#define ZEROSW 6
-    { "zero", 0 },
-#define NZEROSW 7
-    { "nozero", 0 },
-#define SEQSW 8
+#define PUBSW          4
+    { "public",	0 },
+#define NPUBSW         5
+    { "nopublic",  0 },
+#define ZEROSW         6
+    { "zero",	0 },
+#define NZEROSW        7
+    { "nozero",	0 },
+#define SEQSW          8
     { "sequence name", 0 },
-#define HOSTSW 9
+#define HOSTSW	9
     { "host name", 0 },
-#define PORTSW 10
+#define PORTSW	10
     { "port number", 0 },
-#define USERSW 11
-    { "user name", 0 },
-#define VERSIONSW 12
+#define VERSIONSW      11
     { "version", 0 },
-#define HELPSW 13
-    { "help", 4 },
+#define HELPSW        12
+    { "help", 0 },
     { NULL, 0 }
 };
 
-
-/* The states of the lexer */
-typedef enum
-{
-    StartState,
-    WhitespaceState,
-    FieldNameState,
-    FieldBodyState,
-    FoldState,
-    EndState,
-    ErrorState
-} LexerState;
-
 extern int errno;
 
-/* Name of temporary file in which to store incoming message */
-static char *tmpfilename = NULL;
+#define DEFAULT_HOST "elvin.dstc.edu.au"
+#define DEFAULT_PORT 12304
 
-/* The lexer state */
-static LexerState lexer_state = StartState;
-
-/* The lexer's field-name buffer */
-static char *field_name_buffer = NULL;
-static char *field_name_pointer = NULL;
-static char *field_name_end;
-
-/* The lexer's field-body buffer */
-static char *field_body_buffer = NULL;
-static char *field_body_pointer = NULL;
-static char *field_body_end;
-
-/* The elvin notification */
-elvin_notification_t notification = NULL;
+/*
+ * name of temporary file to store incoming message
+ */
+static char *tmpfilenam = NULL;
 
 
-/* Appends a character to the input buffer */
-static void FieldNameAppend(int ch)
+/* Copy a message from the input file to the output file and parse its 
+ * headers at the same time */
+int
+cpydatanfn (lexer_t lexer, int in, int out, char *ifile, char *ofile)
 {
-    /* Make sure we have enough space for the next character */
-    if (! (field_name_pointer < field_name_end))
-    {
-	/* Double the field name space */
-	size_t length = 2 * (field_name_end - field_name_buffer);
-	char *buffer = realloc(field_name_buffer, length);
-	field_name_end = buffer + length;
-	field_name_pointer = buffer + (field_name_pointer - field_name_buffer);
-	field_name_buffer = buffer;
+    int i;
+    char buffer[BUFSIZ];
+
+    while ((i = read(in, buffer, sizeof(buffer))) > 0) {
+	if (write(out, buffer, i) != i) {
+	    adios(ofile, "error writing");
+	}
+
+	lex(lexer, buffer, i);
     }
 
-    /* Append the character */
-    *(field_name_pointer++) = (char)ch;
+    if (i < 0)
+	adios(ifile, "error reading");
+
+    return lex(lexer, buffer, 0);
 }
 
-/* Clears out the field name buffer */
-static void FieldNameClear()
+/* Send a UDP packet to the given host and port */
+static void
+send_packet(char *hostname, int port, char *buffer, int length)
 {
-    /* Make sure we have a buffer! */
-    if (field_name_buffer == NULL)
-    {
-	field_name_buffer = (char *)malloc(16);
-	field_name_end = field_name_buffer + 16;
-    }
-
-    field_name_pointer = field_name_buffer;
-}
-
-/* Appends a character to the input buffer */
-static void FieldBodyAppend(int ch)
-{
-    /* Make sure we have enough space for the next character */
-    if (! (field_body_pointer < field_body_end))
-    {
-	/* Double the field body space */
-	size_t length = 2 * (field_body_end - field_body_buffer);
-	char *buffer = realloc(field_body_buffer, length);
-	field_body_end = buffer + length;
-	field_body_pointer = buffer + (field_body_pointer - field_body_buffer);
-	field_body_buffer = buffer;
-    }
-
-    /* Append the character */
-    *(field_body_pointer++) = (char)ch;
-}
-
-/* Clears out the field body buffer */
-static void FieldBodyClear()
-{
-    /* Make sure we have a buffer! */
-    if (field_body_buffer == NULL)
-    {
-	field_body_buffer = (char *)malloc(256);
-	field_body_end = field_body_buffer + 256;
-    }
-
-    field_body_pointer = field_body_buffer;
-}
-
-
-/* Update the state of the Lexer according to the input character */
-static void Lex(int ch)
-{
-    elvin_error_t error;
-
-    /* Initialize the sync client library */
-    if ((error = elvin_sync_init_default()) == NULL || elvin_error_is_error(error))
-    {
-	done(0);
-    }
-
-    /* Check for errors during initialization */
-    if (elvin_error_is_error(error))
-    {
-	done
-    }
-
-    switch (lexer_state)
-    {
-	/* Start state */
-	case StartState:
-	{
-	    /* Initialize the buffers and notification */
-	    notification = elvin_notification_alloc(error);
-	    FieldNameClear();
-	    FieldBodyClear();
-
-	    /* Can't start with a space or colon */
-	    if ((ch <= ' ') || (ch == ':'))
-	    {
-		lexer_state = ErrorState;
-		return;
-	    }
-
-	    /* CR indicates end of headers */
-	    if (ch == '\n')
-	    {
-		lexer_state = EndState;
-		return;
-	    }
-
-	    /* Anything else takes us to the FieldNameState */
-	    FieldNameAppend(toupper(ch));
-	    lexer_state = FieldNameState;
-	    return;
-	}
-
-	/* Reading whitespace at beginning of body */
-	case WhitespaceState:
-	{
-	    /* If we get a CR now then try to fold */
-	    if (ch == '\n')
-	    {
-		lexer_state = FoldState;
-		return;
-	    }
-
-	    /* If linear whitespace, then stay in this state */
-	    if ((ch == ' ') || (ch == '\t'))
-	    {
-		return;
-	    }
-
-	    /* For anything else, go to the FieldBodyState */
-	    FieldBodyAppend(ch);
-	    lexer_state = FieldBodyState;
-	    return;
-	}
-
-	/* Reading field name */
-	case FieldNameState:
-	{
-	    /* Spaces and control characters are not permitted in field names */
-	    if (ch < ' ')
-	    {
-		lexer_state = ErrorState;
-		return;
-	    }
-
-	    /* Colon indicates the end of the field name */
-	    if (ch == ':')
-	    {
-		FieldNameAppend('\0');
-		lexer_state = WhitespaceState;
-		return;
-	    }
-
-	    /* SPECIAL CASE: If we've encounter a space on the first
-	     * field name and it's "From", then permit it */
-	    if ((ch == ' ') && (elvin_notification_count(notification, error) == 0))
-	    {
-		FieldNameAppend('\0');
-		if (strcmp(field_name_buffer, "From") != 0)
-		{
-		    lexer_state = ErrorState;
-		    return;
-		}
-
-		/* Make this a lowercase 'from' so that we can
-		 * distinguish it from any later From: fields */
-		*field_name_buffer = 'f';
-		lexer_state = WhitespaceState;
-		return;
-	    }
-
-	    /* Anything else is part of the field name.  Convert it to lowercase */
-	    FieldNameAppend(tolower(ch));
-	    return;
-	}
-
-	/* We're reading the field body.  Keep reading until CR */
-	case FieldBodyState:
-	{
-	    if (ch == '\n')
-	    {
-		lexer_state = FoldState;
-		return;
-	    }
-
-	    FieldBodyAppend(ch);
-	    return;
-	}
-
-	/* We've read a CR.  Either start reading a header or read folded body */
-	case FoldState:
-	{
-	    /* Linear whitespace means folded body */
-	    if ((ch == ' ') || (ch == '\t'))
-	    {
-		FieldBodyAppend(' ');
-		lexer_state = WhitespaceState;
-		return;
-	    }
-
-	    /* Add the field's name and body to the notification */
-	    FieldBodyAppend('\0');
-	    elvin_notification_add_string(notification, field_name_buffer, field_body_buffer, error);
-	    FieldBodyClear();
-
-	    /* A linefeed means that we're at the end of the headers */
-	    if (ch == '\n')
-	    {
-		lexer_state = EndState;
-		return;
-	    }
-
-	    /* A colon puts us in an error state */
-	    if (ch == ':')
-	    {
-		lexer_state = ErrorState;
-		return;
-	    }
-
-	    /* Anything else is the start of a field name */
-	    FieldNameClear();
-	    FieldNameAppend(toupper(ch));
-	    lexer_state = FieldNameState;
-	    return;
-	}
-
-	/* There's no escape from the end state */
-	case EndState:
-	{
-	    return;
-	}
-
-	/* There is no escape from the error state */
-	case ErrorState:
-	{
-	    return;
-	}
-    }
-}
-
-
-/* Copy FILE in to FILE out and parse its contents as we go */
-static void CopyAndParse(FILE *in, FILE *out, char *in_name, char *out_name)
-{
-    int ch;
-
-    /* Read a character */
-    while ((ch = fgetc(in)) != EOF)
-    {
-	/* Write it to the output file */
-	if (fputc(ch, out) == EOF)
-	{
-	    adios(out_name, "error writing");
-	}
-
-	/* Update the state of the lexer */
-	Lex(ch);
-    }
-
-    Lex(EOF);
-}
-
-
-
-/* Parse args, perform actions and exit */
-int main(int argc, char *argv[])
-{
-    int publicsw = -1;
-    int zerosw = 0;
-    int create = 1;
-    int unseensw = 1;
+    struct sockaddr_in name;
     int fd;
-    FILE *file;
-    int msgnum;
-    int seqp = 0;
-    char *cp;
-    char *maildir;
-    char *folder = NULL;
-    char buf[BUFSIZ];
-    char **argp;
-    char **arguments;
-    char *seqs[NUMATTRS + 1];
+
+    /* Initialize the name */
+    memset(&name, 0, sizeof(name));
+    name.sin_family = AF_INET;
+    name.sin_port = htons(port);
+
+    /* See if the hostname is in dot notation */
+    if ((name.sin_addr.s_addr = inet_addr(hostname)) == (unsigned long)-1)
+    {
+	struct hostent *host;
+
+	/* Check with the name service */
+	if ((host = gethostbyname(hostname)) == NULL)
+	{
+	    return;
+	}
+
+	name.sin_addr = *(struct in_addr *)host -> h_addr;
+    }
+
+    /* Make a socket */
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+	return;
+    }
+
+    /* Send the packet */
+    sendto(fd, buffer, length, 0, (struct sockaddr *)&name, sizeof(name));
+    close(fd);
+}
+
+
+int
+main (int argc, char **argv)
+{
+    int publicsw = -1, zerosw = 0;
+    int create = 1, unseensw = 1;
+    int fd, msgnum, seqp = 0;
+    char *cp, *maildir, *folder = NULL, buf[BUFSIZ];
+    char **argp, **arguments, *seqs[NUMATTRS+1];
+    char packet[MAX_PACKET_SIZE];
     struct msgs *mp;
     struct stat st;
+    char *user = NULL;
     char *host = NULL;
     int port = 0;
-    char *user = NULL;
+    struct lexer lexer;
+    int ok;
 
 #ifdef LOCALE
     setlocale(LC_ALL, "");
-#endif /* LOCALE */
+#endif
+    invo_name = r1bindex (argv[0], '/');
 
-    invo_name = r1bindex(argv[0], '/');
-
-    /* Read the user profile and context */
+    /* read user profile/context */
     context_read();
 
-    /* Parse the command line */
-    mts_init(invo_name);
-    arguments = getarguments(invo_name, argc, argv, 1);
+    mts_init (invo_name);
+    arguments = getarguments (invo_name, argc, argv, 1);
     argp = arguments;
 
-    while (cp = *(argp++))
-    {
-	if (*cp == '-')
-	{
-	    switch (smatch(++cp, switches))
-	    {
-		case AMBIGSW:
-		{
-		    ambigsw(cp, switches);
-		    done(1);
+    /* parse arguments */
+    while ((cp = *argp++)) {
+	if (*cp == '-') {
+	    switch (smatch (++cp, switches)) {
+	    case AMBIGSW: 
+		ambigsw (cp, switches);
+		done (1);
+	    case UNKWNSW: 
+		adios (NULL, "-%s unknown", cp);
+
+	    case HELPSW: 
+		snprintf (buf, sizeof(buf), "%s [+folder] [switches]",
+			  invo_name);
+		print_help (buf, switches, 1);
+		done (1);
+	    case VERSIONSW:
+		print_version(invo_name);
+		done (1);
+
+	    case SEQSW: 
+		if (!(cp = *argp++) || *cp == '-')
+		    adios (NULL, "missing argument name to %s", argp[-2]);
+
+		/* check if too many sequences specified */
+		if (seqp >= NUMATTRS)
+		    adios (NULL, "too many sequences (more than %d) specified", NUMATTRS);
+		seqs[seqp++] = cp;
+		continue;
+
+	    case HOSTSW:
+		if (!(cp = *argp++) || *cp == '-')
+		    adios (NULL, "missing argument to %s", argp[-2]);
+
+		/* check if too many hosts specified */
+		if (host) {
+		    adios (NULL, "too many hosts specified");
 		}
+		host = cp;
+		continue;
 
-		case UNKWNSW:
-		{
-		    adios(NULL, "-%s unknown", cp);
-		}
+	    case PORTSW:
+		if (!(cp = *argp++) || *cp == '-')
+		    adios (NULL, "missing argument to %s", argp[-2]);
 
-		case HELPSW:
-		{
-		    snprintf(buf, sizeof(buf), "%s [+folder] [switches]", invo_name);
-		    print_help(buf, switches, 1);
-		    done(1);
-		}
+		/* check if too many ports specified */
+		if (port)
+		    adios (NULL, "too many ports specified");
+		port = atoi(cp);
+		continue;
+		    
+	    case UNSEENSW:
+		unseensw = 1;
+		continue;
+	    case NUNSEENSW:
+		unseensw = 0;
+		continue;
 
-		case SEQSW:
-		{
-		    if (! (cp = *(argp++)) || (*cp == '-'))
-		    {
-			adios(NULL, "missing argument name to %s", argp[-2]);
-		    }
+	    case PUBSW: 
+		publicsw = 1;
+		continue;
+	    case NPUBSW: 
+		publicsw = 0;
+		continue;
 
-		    if (seqp < NUMATTRS)
-		    {
-			seqs[seqp++] = cp;
-		    }
-		    else
-		    {
-			adios(NULL, "only %d sequences allowed!", NUMATTRS);
-		    }
+	    case ZEROSW: 
+		zerosw++;
+		continue;
+	    case NZEROSW: 
+		zerosw = 0;
+		continue;
 
-		    continue;
-		}
-
-		case HOSTSW:
-		{
-		    if (! (cp = *(argp++)) || (*cp == '-'))
-		    {
-			adios(NULL, "missing argument to %s", argp[-2]);
-		    }
-
-		    if (host != NULL)
-		    {
-			adios(NULL, "only one elvin host allowed!");
-		    }
-
-		    host = cp;
-		    continue;
-		}
-
-		case PORTSW:
-		{
-		    if (! (cp = *(argp++)) || (*cp == '-'))
-		    {
-			adios(NULL, "missing argument to %s", argp[-2]);
-		    }
-
-		    if (port != 0)
-		    {
-			adios(NULL, "only one elvin port allowed!");
-		    }
-
-		    port = atoi(cp);
-		    continue;
-		}
-
-		case USERSW:
-		{
-		    if (! (cp = *(argp++)) || (*cp == '-'))
-		    {
-			adios(NULL, "missing argument to %s", argp[-2]);
-		    }
-
-		    if (user != NULL)
-		    {
-			adios(NULL, "only one user name allowed!\n");
-		    }
-
-		    user = cp;
-		    continue;
-		}
-
-		case UNSEENSW:
-		{
-		    unseensw = 1;
-		    continue;
-		}
-
-		case NUNSEENSW:
-		{
-		    unseensw = 0;
-		    continue;
-		}
-
-		case PUBSW:
-		{
-		    publicsw = 1;
-		    continue;
-		}
-
-		case NPUBSW:
-		{
-		    publicsw = 0;
-		    continue;
-		}
-
-		case ZEROSW:
-		{
-		    zerosw = 1;
-		    continue;
-		}
-
-		case NZEROSW:
-		{
-		    zerosw = 0;
-		    continue;
-		}
-
-		case CRETSW:
-		{
-		    create = 1;
-		    continue;
-		}
-
-		case NCRETSW:
-		{
-		    create = 0;
-		    continue;
-		}
+	    case CRETSW: 
+		create++;
+		continue;
+	    case NCRETSW: 
+		create = 0;
+		continue;
 	    }
 	}
-
-	/* Folder (or subfolder) name? */
-	if ((*cp == '+') || (*cp == '@'))
-	{
+	if (*cp == '+' || *cp == '@') {
 	    if (folder)
-	    {
-		adios(NULL, "only one folder at a time!");
-	    }
+		adios (NULL, "only one folder at a time!");
 	    else
-	    {
-		folder = path(cp + 1, *cp == '+' ? TFOLDER : TSUBCWF);
-	    }
-	}
-	else
-	{
-	    adios(NULL, "usage: %s [+folder] [switches]", invo_name);
+		folder = path (cp + 1, *cp == '+' ? TFOLDER : TSUBCWF);
+	} else {
+	    adios (NULL, "usage: %s [+folder] [switches]", invo_name);
 	}
     }
 
-    /* Make sure we have a hostname */
-    if (host == NULL)
-    {
-	host = HOST;
-    }
+    seqs[seqp] = NULL;	/* NULL terminate list of sequences */
 
-    /* Make sure we have a port number */
-    if (port == 0)
-    {
-	port = PORT;
-    }
+    if (!context_find ("path"))
+	free (path ("./", TFOLDER));
 
-    /* Make sure we have a user name */
-    if (user == NULL)
-    {
-	user = getpwuid(getuid()) -> pw_name;
-    }
+    /* if no folder is given, use default folder */
+    if (!folder)
+	folder = getfolder (0);
+    maildir = m_maildir (folder);
 
-    /* NULL terminate the list of sequences */
-    seqs[seqp] = NULL;
-
-    /* Look up our path */
-    if (! context_find("path"))
-    {
-	free(path("./", TFOLDER));
-    }
-
-    /* If no folder is given then use the default folder */
-    if (! folder)
-    {
-	folder = getfolder(0);
-    }
-
-    maildir = m_maildir(folder);
-
-    /* Check if folder exists */
-    if (stat(maildir, &st) == NOTOK)
-    {
-	/* Something went wrong */
+    /* check if folder exists */
+    if (stat (maildir, &st) == NOTOK) {
 	if (errno != ENOENT)
-	{
-	    adios(maildir, "error on folder");
-	}
+	    adios (maildir, "error on folder");
+	if (!create)
+	    adios (NULL, "folder %s doesn't exist", maildir);
+	if (!makedir (maildir))
+	    adios (NULL, "unable to create folder %s", maildir);
+    }
 
-	/* Quit if we're not supposed to create missing folders */
-	if (! create)
-	{
-	    adios(NULL, "folder %s doesn't exist", maildir);
-	}
+    if (chdir (maildir) == NOTOK)
+	adios (maildir, "unable to change directory to");
 
-	/* Try to create the folder */
-	if (! makedir(maildir))
-	{
-	    adios(NULL, "unable to create folder %s", maildir);
+    /* ignore a few signals */
+    SIGNAL (SIGHUP, SIG_IGN);
+    SIGNAL (SIGINT, SIG_IGN);
+    SIGNAL (SIGQUIT, SIG_IGN);
+    SIGNAL (SIGTERM, SIG_IGN);
+
+    /* create a temporary file */
+    tmpfilenam = m_scratch ("", invo_name);
+    if ((fd = creat (tmpfilenam, m_gmprot ())) == NOTOK)
+	adios (tmpfilenam, "unable to create");
+    chmod (tmpfilenam, m_gmprot());
+
+#if 0
+    /* copy the message from stdin into temp file */
+    cpydata (fileno (stdin), fd, "standard input", tmpfilenam);
+#else
+    /* Initialize the lexer */
+    lexer_init(&lexer, packet, MAX_PACKET_SIZE);
+
+    /* Set up the unotify header of the packet */
+    user = getenv("USER");
+    user = user ? user : getenv("LOGNAME");
+    lexer_append_unotify_header(&lexer, user ? user : "doofus", folder);
+
+    /* copy the message from stdin into temp file and construct an
+     * elvin notification from its headers at the same time */
+    ok = cpydatanfn (&lexer, fileno (stdin), fd, "standard input", tmpfilenam);
+#endif
+
+    if (fstat (fd, &st) == NOTOK) {
+	unlink (tmpfilenam);
+	adios (tmpfilenam, "unable to fstat");
+    }
+    if (close (fd) == NOTOK)
+	adios (tmpfilenam, "error closing");
+
+    /* don't add file if it is empty */
+    if (st.st_size == 0) {
+	unlink (tmpfilenam);
+	advise (NULL, "empty file");
+	done (0);
+    }
+
+    /*
+     * read folder and create message structure
+     */
+    if (!(mp = folder_read (folder)))
+	adios (NULL, "unable to read folder %s", folder);
+
+    /*
+     * Link message into folder, and possibly add
+     * to the Unseen-Sequence's.
+     */
+    if ((msgnum = folder_addmsg (&mp, tmpfilenam, 0, unseensw, 0)) == -1)
+	done (1);
+
+    /*
+     * Add the message to any extra sequences
+     * that have been specified.
+     */
+    for (seqp = 0; seqs[seqp]; seqp++) {
+	if (!seq_addmsg (mp, seqs[seqp], msgnum, publicsw, zerosw))
+	    done (1);
+    }
+
+    seq_setunseen (mp, 0);	/* synchronize any Unseen-Sequence's      */
+    seq_save (mp);		/* synchronize and save message sequences */
+    folder_free (mp);		/* free folder/message structure          */
+
+    context_save ();		/* save the global context file           */
+    unlink (tmpfilenam);	/* remove temporary file                  */
+    tmpfilenam = NULL;
+
+    /* Send the elvin notification */
+    if (ok == 0) {
+	if (lexer_append_unotify_footer(&lexer, msgnum) == 0) {
+	    send_packet(host ? host : DEFAULT_HOST,
+			port ? port : DEFAULT_PORT,
+			packet, lexer.point - packet);
 	}
     }
 
-    /* Try to change directory to the folder */
-    if (chdir(maildir) == NOTOK)
-    {
-	adios(maildir, "unable to change directory to");
-    }
-
-    /* Make us difficult to interrupt */
-    SIGNAL(SIGHUP, SIG_IGN);
-    SIGNAL(SIGINT, SIG_IGN);
-    SIGNAL(SIGQUIT, SIG_IGN);
-    SIGNAL(SIGTERM, SIG_IGN);
-
-    /* Create a temporary file */
-    tmpfilename = m_scratch("", invo_name);
-    if ((fd = creat(tmpfilename, m_gmprot())) == NOTOK)
-    {
-	adios(tmpfilename, "unable to create");
-    }
-
-    /* Create a FILE abstraction over the temp file */
-    if ((file = fdopen(fd, "w")) == NULL)
-    {
-	/* Copy the message from stdin into the temporary file */
-	cpydata(fileno(stdin), fd, "standard input", tmpfilename);
-
-	/* Make sure our copy went smoothly */
-	if (fstat(fd, &st) == NOTOK)
-	{
-	    unlink(tmpfilename);
-	    adios(tmpfilename, "unable to fstat");
-	}
-
-	/* Close it */
-	if (close(fd) == NOTOK)
-	{
-	    adios(tmpfilename, "error closing");
-	}
-    }
-    else
-    {
-	/* Copy the message and parse it as we go */
-	CopyAndParse(stdin, file, "standard input", tmpfilename);
-	fflush(file);
-
-	/* Make sure our copy went smoothly */
-	if (fstat(fd, &st) == NOTOK)
-	{
-	    unlink(tmpfilename);
-	    adios(tmpfilename, "unable to fstat");
-	}
-
-	/* Close the file */
-	if (fclose(file) == NOTOK)
-	{
-	    adios(tmpfilename, "error closing");
-	}
-    }
-
-
-    /* Throw away empty files */
-    if (st.st_size == 0)
-    {
-	unlink(tmpfilename);
-	advise(NULL, "empty file");
-	done(0);
-    }
-
-    /* Read folder and create message structure */
-    if (! (mp = folder_read(folder)))
-    {
-	adios(NULL, "unable to read folder %s", folder);
-    }
-
-    /* Link message into folder and possibly add to the
-     * Unseen sequences */
-    if ((msgnum = folder_addmsg(&mp, tmpfilename, 0, unseensw, 0)) == -1)
-    {
-	done(1);
-    }
-
-    /* Add the message to any extra sequences that
-     * have been specified */
-    for (seqp = 0; seqs[seqp]; seqp++)
-    {
-	if (! seq_addmsg(mp, seqs[seqp], msgnum, publicsw, zerosw))
-	{
-	    done(1);
-	}
-    }
-
-    /* Synchronize any unseen sequences */
-    seq_setunseen(mp, 0);
-
-    /* Synchronize and save message sequences */
-    seq_save(mp);
-
-    /* Free the folder/message structure */
-    folder_free(mp);
-
-    /* Save the global context file */
-    context_save();
-
-    /* Remove the temporary file */
-    unlink(tmpfilename);
-    tmpfilename = NULL;
-
-    /* If we have successfully parsed the headers, then send the notification */
-    if (lexer_state == EndState)
-    {
-	elvin_handle_t handle;
-
-	/* Create an elvin connection handle */
-	if ((handle = elvin_hdl_alloc(error)) == NULL)
-	{
-	    done(0);
-	}
-
-	/* Insert the default elvin server URL */
-	if (elvin_hdl_insert_server(handle, -1, ELVIN, error) == 0)
-	{
-	    done(0);
-	}
-
-	/* Add some useful fields to the notification */
-	if (elvin_notification_add_string(notification, "elvinmail", "1.0", error) == 0)
-	{
-	    done(0);
-	}
-
-	if (elvin_notification_add_string(notification, "folder", folder, error) == 0)
-	{
-	    done(0);
-	}
-
-	if (elvin_notification_add_int32(notification, "index", msgnum, error) == 0)
-	{
-	    done(0);
-	}
-
-	if (elvin_notification_add_string(notification, "user", user, error) == 0)
-	{
-	    done(0);
-	}
-
-	/* Try to connect to the elvin server */
-	if (elvin_sync_connect(handle, error) == 0)
-	{
-	    done(0);
-	}
-
-	/* Send the notification */
-	if (elvin_sync_notify(handle, notification, NULL, error) == 0)
-	{
-	    done(0);
-	}
-
-	/* Disconnect */
-	elvin_sync_disconnect(handle, error);
-
-	/* Clean up */
-	elvin_notification_free(notification, error);
-	elvin_hdl_free(handle, error);
-	elvin_sync_cleanup(1, error);
-    }
-
-    done(0);
+    return done (0);
 }
 
-
-/* Clean up and exit */
-void done(int status)
+/*
+ * Clean up and exit
+ */
+int
+done(int status)
 {
-    /* Delete the temporary file if it's still around */
-    if (tmpfilename && *tmpfilename)
-    {
-	unlink(tmpfilename);
-    }
-
-    exit(status);
+    if (tmpfilenam && *tmpfilenam)
+	unlink (tmpfilenam);
+    exit (status);
+    return 1;  /* dead code to satisfy the compiler */
 }
