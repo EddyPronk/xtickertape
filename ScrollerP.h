@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.35 2000/04/28 08:41:53 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.36 2000/05/29 01:34:38 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -88,7 +88,7 @@ enum scroller_state
     SS_PENDING,
 
     /* The timer went off before our last CopyArea request completed */
-    SS_OVERFLOW,
+    SS_OVERFLOW
 };
 
 typedef enum scroller_state scroller_state_t;

@@ -73,7 +73,7 @@ if test "$ELVIN_CONFIG" = "not found" ; then
 fi
 
 # Update our flags to pick up the elvin includes and libraries
-CFLAGS="$CFLAGS `$ELVIN_CONFIG --cflags vin4Xt`"
+CPPFLAGS="$CPPFLAGS `$ELVIN_CONFIG --cflags vin4Xt`"
 LIBS="`$ELVIN_CONFIG --libs vin4Xt` $LIBS"
 
 # Make sure we link with the elvin libraries
