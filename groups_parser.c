@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.7 1999/12/16 07:52:09 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.8 2000/01/10 01:26:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -41,7 +41,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.7 1999/12/16 07:52:09 phel
 #define INITIAL_TOKEN_SIZE 64
 
 #define MENU_ERROR_MSG "expecting \"menu\" or \"no menu\", got \"%s\""
-#define NAZI_ERROR_MSG "expecting \"auto\" or \"no auto\", got \"%s\""
+#define NAZI_ERROR_MSG "expecting \"auto\" or \"manual\", got \"%s\""
 #define TIMEOUT_ERROR_MSG "illegal timeout value \"%s\""
 #define EXTRA_ERROR_MSG "superfluous characters: \"%s\""
 
