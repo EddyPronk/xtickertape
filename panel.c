@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.39 2000/11/07 04:01:21 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.40 2000/11/21 02:05:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1321,8 +1321,9 @@ char *create_uuid(control_panel_t self)
     /* Convert those digits into bytes */
     for (index = 0; index < SHA1DIGESTLEN; index++)
     {
-	result[index * 2] = hex_chars[digest[index] >> 4];
-	result[index * 2 + 1] = hex_chars[digest[index] & 0xF];
+	int ch = (uchar)digest[index];
+	result[index * 2] = hex_chars[ch >> 4];
+	result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
     result[SHA1DIGESTLEN * 2] = '\0';
 
