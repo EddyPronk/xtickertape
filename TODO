@@ -12,6 +12,9 @@ Configuration
 - Tickertape should be able to dynamically load new subscription
    modules.  The existing subscription types should fit into this API.
 
+- It would also be good to have new glyph rendering modules.
+  [Thanks David Arnold]
+
 
 Control Panel:
 
