@@ -9,7 +9,7 @@ The groups file consists of lines containing group subscription
 expressions.  Empty lines and lines beginning with a hash (#) are
 ignored.  Subscription expressions are of the form:
 .TP
-.B <group name>:<menu op>:<auto op>:<min time>:<max time>
+.B <group name>:<menu op>:<auto op>:<min time>:<max time>[:<keys>]
 .TP
 .B group name
 is the name of the tickertape group to which the rest of the line
@@ -33,6 +33,10 @@ necessary.
 sets the maximum number of minutes to display a notification in this
 group.  This value overrides the notification's timeout value if
 necessary.
+.TP
+.B keys
+is a comma-separated list of key names.  The mapping from key names to
+actual keys is made in the \fIkeys\fP file.
 .PP
 The order in which the subscription expressions appear in the groups
 file determines the order in which they will appear in the groups

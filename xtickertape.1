@@ -13,12 +13,14 @@ xtickertape [-e elvin-url] [--elvin=elvin-url]
             [-D domain] [--domain=domain]
             [-G groups-file] [--groups=groups-file]
             [-U usenet-file] [--usenet=usenet-file]
+            [-K keys-file] [--keys=keys-file]
             [-v] [--version]
             [-h] [--help]
 .fi
 .SH OPTIONS
-In addition to the standard X Toolkit command-line options, \*(xt may
-be invoked with the following:
+\*(Xt may be invoked with any of the standard X Toolkit command-line
+options.  It also accepts the following options (long names may be
+unavailable on some platforms):
 .TP
 .B -e \fIelvin-url\fP
 .TP
@@ -36,8 +38,7 @@ Connect to an elvin server advertising \fIscope\fP.
 Connect via the proxy server \fIhttp-proxy\fP, which should be of the
 form http://\fBhost\fR:\fBport\fR, or
 http://\fBuser\fR:\fBpassword\fR@\fBhost\fR:\fBport\fR if the proxy
-server requires a password.  This value overrides the value of the
-\fIhttp_proxy\fP environment variable.
+server requires a password.
 .TP
 .B -u \fIuser\fP
 .TP
@@ -54,17 +55,22 @@ when sending messages.
 .B -G \fIgroups-file\fP
 .TP
 .BI --groups= groups-file
-Read the group subscriptions out of \fIfilename\fP.
+Read the group subscriptions out of \fIgroups-file\fP.
 .TP
 .B -U \fIusenet-file\fP
 .TP
 .BI --usenet= usenet-file
-Read the usenet news subscriptions out of \fIfilename\fP.
+Read the usenet news subscriptions out of \fIusenet-file\fP.
+.TP
+.B -K \fIkeys-file\fP
+.TP
+.BI --keys= keys-file
+Read the keys information out of \fIkeys-file\fP.
 .TP
 .B -v
 .TP
 .B --version
-Print out the version of xtickertape that is being run and exit.
+Print out the xtickertape version and exit.
 .TP
 .B -h
 .TP
@@ -73,24 +79,24 @@ Print a usage message briefly summarizing these command-line options
 and then exit.
 .SH DESCRIPTION
 The \*(xt application is a scrolling one-line window of event
-notifications, providing you with information from many sources in a
-minimum of screen space.  It provides specific support for monitoring
-usenet news (see \fBusenet\fP\fI(5)\fP and incoming e-mail, and also for
-sending and receiving notifications belonging to specific tickertape
-groups (see \fBgroups\fP\fI(5)\fP).
+notifications, providing information from many sources in a minimum of
+screen space.  It provides specific support for monitoring usenet news
+(see \fBusenet\fP\fI(5)\fP and incoming e-mail, and also for sending
+and receiving notifications belonging to specific tickertape groups
+(see \fBgroups\fP\fI(5)\fP).
 .PP
 Notifications contain at least four pieces of information: a group, a
 user, a message and a timeout.  You can filter the information you
 receive by adding (or not) entries in your \fIgroups\fP file which
-match the group attribute.  The user attribute is meant to give you
-some idea of who is sending the message contained in the message
+match the group attribute.  The \fIuser\fP attribute is meant to give
+you some idea of who is sending the message contained in the message
 attribute.  The timeout indicates how many minutes a notification
 should be displayed by \*(xt.  As notifications age towards their
 timeout, they fade to the background color thus providing you with
 some idea of how old they are.  You may specify minimum and maximum
 timeouts for a given group in your \fIgroups\fP file.  You may also
-expire notifications before they timeout by clicking on them with the
-right mouse button (or by placing the pointer on them and pressing
+expire notifications before they expire by clicking on them with the
+right mouse button (or by placing the pointer over them and pressing
 the `d' key), causing them to quickly fade out.  If you wish for a
 message to go away instantly, you can delete it by pressing the `x'
 key.  If you find that this isn't vindictive enough, you may kill the
@@ -98,102 +104,144 @@ the message with the 'k' key.  This not only deletes the message but
 also all present and future replies to it.
 .PP
 In addition to these four attributes, notifications may also include
-MIME attachment (typically a URL).  If they do, they will be
-underlined so that you can identify them, and you may click on them
-with the middle mouse button to view the attachment.  If you are so
-inclined, you may specify in your \fIgroups\fP file that any
-notification with an attachment sent to a given group should
-automatically be displayed, thus saving you the trouble of clicking on
-it.  \*(Xt invokes \fImetamail\fP in order to view attachments.  The
+MIME attachment (often an URL).  If they do, they will be underlined
+so that you can identify them, and you may click on them with the
+middle mouse button to view the attachment.  \*(Xt delegates the
+problem of attachment display to \fImetamail\fP, so you should make
+sure it is installed if you want to use this feature.  The
 \fIshow-url\fP script is included in the \*(xt distribution as a
 viewer for URL attachements.  We reommend that you specify it as your
 \fBtext/uri-list\fP viewer and, for backwards compatibility, as your
-\fBx-elvin/url\fP viewer in your .mailcap file.
+\fBx-elvin/url\fP viewer in your \fI.mailcap\fP file.  If you are so
+inclined, you may specify in your \fIgroups\fP file that any
+notification with an attachment sent to a given group should
+automatically be displayed, thus saving you the trouble of clicking on
+it.
 .PP
-The scrolling speed of the tickertape can be adjusted through a number 
+The scrolling speed of the tickertape can be adjusted through a number
 of keystrokes, all of which may be adjusted by overriding the
-scroller's translations.  By default, the `-' key slows the scrolling
-speed and the `=' key hastens it.  Also, the ',' key scrolls the text
-slightly more quickly to the left (or slightly less quickly to the
-right) and the '.' key does the same except to the right.
-Additionally, each number key sets the scroll speed to exactly that
-speed (`0' will make the scroller stop).
-.PP
-The scrolling speed of the tickertape can be adjusted with the `-' and
-`=' keys.  These increment and decrement the number of pixels a
-message should move each time the scroller is updated (see the
-\fBstepSize()\fP resource below).  Direct control of the tickertape
-position may be obtained by dragging the pointer with the left mouse
-button pressed.  The tickertape is capable of scrolling backwards.
+scroller's translations (see below).  By default, the '-' key slows
+the scrolling speed and the '=' key hastens it.  Also, the ',' key
+scrolls the text slightly more quickly to the left (or slightly less
+quickly to the right) and the '.' key does the same except to the
+right.  Additionally, each number key sets the scroll speed to exactly
+that speed ('0' will make the scroller stop).  Direct control of the
+tickertape position may be obtained by dragging the pointer with the
+left mouse button pressed.
 .PP
 To send a notification you should bring up the \fIcontrol panel\fP
 window.  This is done by clicking in the \*(xt window with the left
 mouse button.  The control panel allows you to compose the four
 attributes and optional attachment of your notification and send it.
-If you clicked on a notification scrolling across your \*(xt window,
-then the control panel will be configured to reply to that message.
 .PP
 The control panel also allows you to tell \*(xt to re-read your
 \fIgroups\fP or \fIusenet\fP files if you have changed them since you
-started \*(xt from the `File' menu.  You may also exit the program
-from this menu (or by pressing the `q' key in the scroller window).
-At the bottom of the control panel is a history of the last thirty
-notifications received.  These may be displayed either in threaded
-order (with replies indented and under the original message) or in
-chronological order.  The user may toggle between these two views from
-the `Thread History' item on the `Options' menu.  Messages which are
-displayed in a bold font have an attachment, which may be viewed by
-double-clicking on the message.
-
+started \*(xt from the 'File' menu.  You may also exit the program
+from this menu (or by pressing 'M-q' in the scroller window).
+.PP
+The 'Options' menu allows you to specify whether the messages in the
+history should be displayed in chronological order or grouped into
+threads, whether a timestamp should be displayed to the left of each
+message, and whether or not the contrl panel should be closed whenever
+a message is sent.
+.PP
+The history window at the bottom of the control panel shows the last
+few messages received, helping you to catch up if you've missed the
+beginning of a conversation.  If a message is selected here when you
+hit the send button, your message will be marked as a reply to this
+one, for threading purposes.  Middle-clicking on a message with an
+attachment will view the attachment.
 .SH RESOURCES
 \*(Xt understands all of the core X Toolkit and Motif resource names
-and classes.  Additionally, the Scroller widget understands the
-following resources:
+and classes.  Additionally, the Scroller and History widgets define
+some new resources.  The Scroller widget understands the following:
 .TP
-.B "groupPixel (\fPclass\fB Pixel)"
+.B "groupPixel (\fPclass\fB GroupPixel)"
 Specifies the color to use when displaying the group attribute of a
 notification. 
 .TP
-.B "userPixel (\fPclass\fB Pixel)"
+.B "userPixel (\fPclass\fB UsrPixel)"
 Specifies the color to use when displaying the user attribute of a
 notification.
 .TP
-.B "stringPixel (\fPclass\fB Pixel)"
+.B "stringPixel (\fPclass\fB StringPixel)"
 Specifies the color to use when displaying the message attribute of a
 notification.
 .TP
-.B "separatorPixel (\fPclass\fB Pixel)"
+.B "separatorPixel (\fPclass\fB SeparatorPixel)"
 Specifies the color to use when displaying colon characters between
 the group, user and message attributes.
 .TP
-.B "fadeLevels (\fPclass\fB Dimension)"
+.B "fadeLevels (\fPclass\fB FadeLevels)"
 Specifies the number of gradations of color to go through as a
 notification fades.  Unless you have a 24-bit color display you'll
 want to keep this small as \*(xt will allocate 4 times this many
 colors.
 .TP
-.B "dragDelta (\fPclass\fB Position)"
-Indicates how many pixels the pointer must be moved before it is
-considered to be a drag action.  Small values make it difficult to get 
-the control panel to pop up, whereas larger values make it difficult
-to drag the scroller precisely.
-.TP
-.B "usePixmap (\fPclass\fB Boolean)"
+.B "usePixmap (\fPclass\fB UsePixmap)"
 Determines whether or not the scroller uses an offscreen pixmap to do
 its drawing.  Some X11 implementations have bugs which cause parts of
 the text to be lost under certain conditions.  Enabling the use of the
 offscreen pixmap should help these.  Not using an offscreen pixmap can 
 often permit graphic card accelerations to be used.
 .TP
-.B "frequency (\fPclass\fB Dimension)"
+.B "dragDelta (\fPclass\fB DragDelta)"
+Indicates how many pixels the pointer must be moved before it is
+considered to be a drag action.  Small values make it difficult to get 
+the control panel to pop up, whereas larger values make it difficult
+to drag the scroller precisely.
+.TP
+.B "frequency (\fPclass\fB Frequency)"
 The number of times per second to scroll the notifications in the
 scroller.  Use this in conjunction with \fIstepSize\fP (below) to
 adjust the speed at which notifications are scrolled.
 .TP
-.B "stepSize (\fPclass\fB Position)"
+.B "stepSize (\fPclass\fB StepSize)"
 The number of pixels to move the notifications in the scroller.  Use
 this in conjunction with \fIfrequency\fP (above) to adjust the speed
 at which notifications are scrolled.
+.PP
+The History widget understands the following resources:
+.TP
+.B "timestampPixel (\fPclass\fB TimestampPixel)"
+Specifies the color to use when displaying the timestamp to the left
+of a message.
+.B "groupPixel (\fPclass\fB GroupPixel)"
+Specifies the color to use when displaying the group attribute of a
+notification.
+.TP
+.B "userPixel (\fPclass\fB UserPixel)"
+Specifies the color to use when displaying the user attribute of a
+notification.
+.TP
+.B "stringPixel (\fPclass\fB StringPixel)"
+Specifies the color to use when displaying the message attribute of a
+notification.
+.TP
+.B "selectionPixel (\fPclass\fB SelectionPixel)"
+Specifies the color to use when displaying the background of the
+selected message.
+.TP
+.B "separatorPixel (\fPclass\fB SeparatorPixel)"
+Specifies the color to use when displaying the colon characters
+between the group, user and message attributes.
+.TP
+.B "marginWidth (\fPclass\fB MarginWidth)"
+The number of pixels between the left edge of the window and the
+leftmost pixel of a message, and the corresponding space on the right.
+.TP
+.B "marginHeight (\fPclass\fB MarginHeight)"
+The number of pixels between the top edge of the window and the top
+pixel of the first message, and the corresponding space on the bottom.
+.TP
+.B "messageCount (\fPclass\fB MessageCount)"
+The maximum number of messages to record in the history.  This setting
+will affect \*(xt's memory footprint.
+.TP
+.B "dragDelay (\fPclass\fB DragDelay)"
+The number of milliseconds to pause between updates when scrolling the
+history in response to the pointer being dragged outside of the bounds
+of the widget.
 .SH ACTIONS
 You can also customize the keystrokes and mouse clicks which control
 \*(xt.  The Scroller widget recognizes the following actions:
@@ -235,7 +283,7 @@ slowly.
 .PP
 As an example, the left mouse button could be bound to
 .B delete()
-and the `m' key to
+and the 'm' key to
 .B show-menu()
 by placing the following in one's .Xdefaults file.
 .TP
@@ -243,12 +291,44 @@ Tickertape.scroller.translations: #override \en\e
 <Btn1Down>: delete() \en\e
 .br
 <Key>m: show-menu() \en
+.PP
+The History widget understands the following actions:
+.TP
+.B drag()
+If the pointer is within the window, then the message under the
+pointer is selected.  Otherwise, the window is scrolled up or down in
+order to make the next message in the direction of the pointer visible.
+.TP
+.B drag-done()
+Stop following the pointer.
+.TP
+.B select()
+Selects the message under the pointer.
+.TP
+.B toggle-selection()
+If the message under the pointer is selected then it is unselected.
+Otherwise it is selected, replacing any previous selection.
+.TP
+.B show-attachment()
+Displays the attachment of the message under the pointer.
+.TP
+.B select-previous()
+Select the message before the current selection.
+.TP
+.B select-next()
+Select the message after the current selection.
+.TP
+.B scroll-left()
+Scroll the history window to the left.
+.TP
+.B scroll-right()
+Scroll the history window to the right.
 .SH ENVIRONMENT VARIABLES
 If
 .B TICKERDIR
 exists in the environment, then \*(xt will look in the directory it
-names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
-it defaults to \fB$HOME/.ticker\fP.
+names for the files \fBgroups\fP, \fBusenet\fP and \fIkeys\fP.  If it
+is not set, it defaults to \fB$HOME/.ticker\fP.
 .PP
 If no user name is specified on the command-line then the environment
 variables \fBUSER\fR and \fBLOGNAME\fR are consulted (in that order)
@@ -256,18 +336,6 @@ before resorting to asking the operating system directly.  Similarly,
 if no domain is specified on the command-line, the \fBDOMAIN\fR
 environment variable is checked before \*(xt goes mucking about with
 fully-qualified domain names.
-.PP
-The \fBhttp_proxy\fR variable can be used to specify an http proxy
-server to connect through for those who live behind paranoid
-firewalls.  See the \fI--proxy\fP option above for the format of its
-value.  The \fBno_proxy\fR variable may be used to specify domain
-names insed the firewall for which the use of an http proxy would be
-superfluous or even detrimental.  It should be a comma-separated list
-of domain names including the leading dots, such as:
-.nf
-
-    .dstc.com, .cs.uq.edu.au
-.fi
 .SH FILES
 .PP
 .TP
@@ -282,6 +350,11 @@ Specifies the usenet news articles to which \*(xt should subscribe.
 See the
 .BR usenet (5)
 man page for details.
+.TP
+.B $TICKERDIR/keys
+Specifies keys which may be attached to groups to prevent the general
+public from eavesdropping.  See the comments in this file for more
+information.
 .SH SEE ALSO
 .BR groups (5),
 .BR usenet (5),
@@ -297,12 +370,10 @@ Bugs should be reported using the Elvin Bugzilla
     http://elvin.dstc.com/bugzilla/
 .fi
 .SH AUTHORS
-\*(Xt was written by Ted Phelps <phelps@pobox.com>.  It was based on a 
-Java program,
+\*(Xt was written by Ted Phelps <phelps@pobox.com> with assistance
+from Ian Lister <ilister@dstc.edu.au> and Clinton Roy
+<croy@dstc.edu.au>.  It was based on a Java program,
 .BR jtickertape (1)
-by Julian Boot, which is to be used on lesser platforms.  Both \*(xt
-and \fIjtickertape\fP were derived from the original Python version
-written by Bill Segall <bill@segall.net> with contributions from the
-Reject Room.
-
-
+by Julian Boot.  Both \*(xt and \fIjtickertape\fP were derived from
+the original Python version written by Bill Segall <bill@segall.net>
+with contributions from the Reject Room.
