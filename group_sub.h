@@ -34,7 +34,7 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.2 1999/10/04 07:05:30 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.3 1999/10/05 02:57:29 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -42,7 +42,7 @@ typedef struct group_sub *group_sub_t;
 
 #include "message.h"
 #include "connect.h"
-#include "Control.h"
+#include "panel.h"
 
 /* The format for the callback function */
 typedef void (*group_sub_callback_t)(void *rock, message_t message);
@@ -72,14 +72,14 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription);
 /* Sets the receiver's connection */
 void group_sub_set_connection(group_sub_t self, connection_t connection);
 
-/* Registers the receiver with the ControlPanel */
-void group_sub_set_control_panel(group_sub_t self, ControlPanel control_panel);
+/* Registers the receiver with the control panel */
+void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel);
 
-/* Makes the receiver visible in the ControlPanel's group menu iff
+/* Makes the receiver visible in the control panel's group menu iff
  * inMenu is set, and makes sure it appears at the proper index */
 void group_sub_set_control_panel_index(
     group_sub_t self,
-    ControlPanel control_panel,
+    control_panel_t control_panel,
     int *index);
 
 #endif /* GROUP_SUB_H */

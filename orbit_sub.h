@@ -34,7 +34,7 @@
 #define ORBIT_SUB_H
 
 #ifndef lint
-static const char cvs_ORBIT_SUB_H[] = "$Id: orbit_sub.h,v 1.2 1999/10/04 13:59:12 phelps Exp $";
+static const char cvs_ORBIT_SUB_H[] = "$Id: orbit_sub.h,v 1.3 1999/10/05 02:57:29 phelps Exp $";
 #endif /* lint */
 
 /* The orbit_sub data type */
@@ -42,7 +42,7 @@ typedef struct orbit_sub *orbit_sub_t;
 
 #include "message.h"
 #include "connect.h"
-#include "Control.h"
+#include "panel.h"
 
 /* The orbit_sub callbacktype */
 typedef void (*orbit_sub_callback_t)(void *rock, message_t message);
@@ -67,7 +67,7 @@ char *orbit_sub_get_title(orbit_sub_t self);
 /* Sets the receiver's connection */
 void orbit_sub_set_connection(orbit_sub_t self, connection_t connection);
 
-/* Sets the receiver's ControlPanel */
-void orbit_sub_set_control_panel(orbit_sub_t self, ControlPanel controlPanel);
+/* Sets the receiver's control panel */
+void orbit_sub_set_control_panel(orbit_sub_t self, control_panel_t control_panel);
 
 #endif /* ORBIT_SUBSCRIPTION_H */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: orbit_sub.c,v 1.2 1999/10/04 13:59:02 phelps Exp $";
+static const char cvsid[] = "$Id: orbit_sub.c,v 1.3 1999/10/05 02:57:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -50,11 +50,11 @@ struct orbit_sub
     /* The receiver's connection information */
     void *connection_info;
 
-    /* The receiver's ControlPanel */
-    ControlPanel control_panel;
+    /* The receiver's control panel */
+    control_panel_t control_panel;
 
-    /* The receiver's ControlPanel information */
-    void *control_panel_info;
+    /* The receiver's control panel information */
+    void *control_panel_rock;
 
     /* The receiver's callback function */
     orbit_sub_callback_t callback;
@@ -152,7 +152,7 @@ static void handle_notify(orbit_sub_t self, en_notify_t notification)
 
     /* Construct the message_t */
     message = message_alloc(
-	self -> control_panel_info, self -> title,
+	self -> control_panel_rock, self -> title,
 	user, text, *timeout_p,
 	mime_type, mime_args,
 	message_id, reply_id);
@@ -240,7 +240,7 @@ orbit_sub_t orbit_sub_alloc(char *title, char *id, orbit_sub_callback_t callback
     self -> connection = NULL;
     self -> connection_info = NULL;
     self -> control_panel = NULL;
-    self -> control_panel_info = NULL;
+    self -> control_panel_rock = NULL;
     self -> callback = callback;
     self -> rock = rock;
 
@@ -275,7 +275,7 @@ void orbit_sub_debug(orbit_sub_t self)
     printf("  connection = %p\n", self -> connection);
     printf("  connection_info = %p\n", self -> connection_info);
     printf("  control_panel = %p\n", self -> control_panel);
-    printf("  control_panel_info = %p\n", self -> control_panel_info);
+    printf("  control_panel_rock = %p\n", self -> control_panel_rock);
     printf("  callback = %p\n", self -> control_panel);
     printf("  rock = %p\n", self -> rock);
 }
@@ -308,9 +308,9 @@ void orbit_sub_set_title(orbit_sub_t self, char *title)
     /* Update our menu item */
     if (self -> control_panel != NULL)
     {
-	ControlPanel_retitleSubscription(
+	control_panel_retitle_subscription(
 	    self -> control_panel,
-	    self -> control_panel_info,
+	    self -> control_panel_rock,
 	    self -> title);
     }
 }
@@ -353,29 +353,29 @@ void orbit_sub_set_connection(orbit_sub_t self, connection_t connection)
     }
 }
 
-/* Sets the receiver's ControlPanel */
-void orbit_sub_set_control_panel(orbit_sub_t self, ControlPanel control_panel)
+/* Sets the receiver's control panel */
+void orbit_sub_set_control_panel(orbit_sub_t self, control_panel_t control_panel)
 {
-    /* Shortcut if we're with the same ControlPanel */
+    /* Shortcut if we're with the same control panel */
     if (self -> control_panel == control_panel)
     {
 	return;
     }
 
-    /* Unregister with the old ControlPanel */
+    /* Unregister with the old control panel */
     if (self -> control_panel != NULL)
     {
-	ControlPanel_removeSubscription(self -> control_panel, self -> control_panel_info);
+	control_panel_remove_subscription(self -> control_panel, self -> control_panel_rock);
     }
 
     self -> control_panel = control_panel;
 
-    /* Register with the new ControlPanel */
+    /* Register with the new control_panel */
     if (self -> control_panel != NULL)
     {
-	self -> control_panel_info = ControlPanel_addSubscription(
+	self -> control_panel_rock = control_panel_add_subscription(
 	    control_panel, self -> title,
-	    (ControlPanelCallback)send_message, self);
+	    (control_panel_callback_t)send_message, self);
     }
 }
 

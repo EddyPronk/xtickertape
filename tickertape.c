@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.27 1999/10/04 13:59:49 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.28 1999/10/05 02:57:30 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,12 +40,11 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.27 1999/10/04 13:59:49 phelps
 #include <errno.h>
 #include <X11/Intrinsic.h>
 #include <sys/utsname.h>
-#include "sanity.h"
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
 #include "Scroller.h"
-#include "Control.h"
+#include "panel.h"
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -57,11 +56,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.27 1999/10/04 13:59:49 phelps
 #ifdef ORBIT
 #include "orbit_sub.h"
 #endif /* ORBIT */
-
-#ifdef SANITY
-static char *sanity_value = "Ticker";
-static char *sanity_freed = "Freed Ticker";
-#endif /* SANITY */
 
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_GROUPS_FILE "groups"
@@ -124,7 +118,7 @@ struct tickertape
     connection_t connection;
 
     /* The control panel */
-    ControlPanel control_panel;
+    control_panel_t control_panel;
 
     /* The ScrollerWidget */
     ScrollerWidget scroller;
@@ -245,7 +239,6 @@ static int mkdirhier(char *dirname)
 static void publish_startup_notification(tickertape_t self)
 {
     en_notify_t notification;
-    SANITY_CHECK(self);
 
     /* If we haven't managed to connect, then don't try sending */
     if (self -> connection == NULL)
@@ -263,16 +256,13 @@ static void publish_startup_notification(tickertape_t self)
 /* Callback for a menu() action in the Scroller */
 static void menu_callback(Widget widget, tickertape_t self, message_t message)
 {
-    SANITY_CHECK(self);
-    ControlPanel_select(self -> control_panel, message);
-    ControlPanel_show(self -> control_panel);
+    control_panel_select(self -> control_panel, message);
+    control_panel_show(self -> control_panel);
 }
 
 /* Callback for an action() action in the Scroller */
 static void mime_callback(Widget widget, tickertape_t self, message_t message)
 {
-    SANITY_CHECK(self);
-
     /* Bail if no message provided */
     if (message == NULL)
     {
@@ -286,8 +276,6 @@ static void mime_callback(Widget widget, tickertape_t self, message_t message)
 /* Callback for a kill() action in the Scroller */
 static void kill_callback(Widget widget, tickertape_t self, message_t message)
 {
-    SANITY_CHECK(self);
-
     if (message == NULL)
     {
 	return;
@@ -299,8 +287,6 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 /* Receive a message_t matched by a subscription */
 static void receive_callback(tickertape_t self, message_t message)
 {
-    SANITY_CHECK(self);
-
     /* Add the message to the history */
     if (history_add(self -> history, message) == 0)
     {
@@ -572,7 +558,7 @@ static int find_group(group_sub_t *groups, int count, char *expression)
     return -1;
 }
 
-/* Request from the ControlPanel to reload groups file */
+/* Request from the control panel to reload groups file */
 void tickertape_reload_groups(tickertape_t self)
 {
     group_sub_t *old_groups = self -> groups;
@@ -634,7 +620,7 @@ void tickertape_reload_groups(tickertape_t self)
 }
 
 
-/* Request from the ControlPanel to reload usenet file */
+/* Request from the control panel to reload usenet file */
 void tickertape_reload_usenet(tickertape_t self)
 {
     /* Release the old usenet subscription */
@@ -657,7 +643,7 @@ static void init_ui(tickertape_t self)
 {
     int index;
 
-    self -> control_panel = ControlPanel_alloc(self, self -> top);
+    self -> control_panel = control_panel_alloc(self, self -> top);
 
     for (index = 0; index < self -> groups_count; index++)
     {
@@ -828,7 +814,6 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
     en_type_t type;
     char *id;
     char *tickertape;
-    SANITY_CHECK(self);
 
     /* Get the id of the zone (if provided) */
     if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
@@ -880,7 +865,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	/* Add the new subscription to the end */
 	add_orbit_sub(self, subscription);
 
-	/* Register the subscription with the connection and the ControlPanel */
+	/* Register the subscription with the connection and the control panel */
 	orbit_sub_set_connection(subscription, self -> connection);
 	orbit_sub_set_control_panel(subscription, self -> control_panel);
     }
@@ -1053,24 +1038,17 @@ void tickertape_free(tickertape_t self)
 
     if (self -> control_panel)
     {
-	ControlPanel_free(self -> control_panel);
+	control_panel_free(self -> control_panel);
     }
 
     /* How do we free a ScrollerWidget? */
-
-#ifdef SANITY
-    self -> sanity_check = sanity_freed;
-#else
     free(self);
-#endif /* SANITY */
 }
 
 #ifdef DEBUG
 /* Debugging */
 void tickertape_debug(tickertape_t self)
 {
-    SANITY_CHECK(self);
-
     printf("tickertape_t\n");
     printf("  user = \"%s\"\n", self -> user);
     printf("  tickerDir = \"%s\"\n", (self -> tickerDir == NULL) ? "null" : self -> tickerDir);

@@ -26,7 +26,7 @@
   the use or performance of this software.
 
    Description: 
-             Represents a Scroller and ControlPanel and manages the
+             Represents a Scroller and control panel and manages the
 	     connection between them, the notification service and the 
 	     user
 
@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.6 1999/09/09 14:29:51 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.7 1999/10/05 02:57:30 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;

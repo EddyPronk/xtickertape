@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.1 1999/10/02 16:45:10 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.2 1999/10/05 02:57:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -74,11 +74,11 @@ struct group_sub
     /* The receiver's connection information (for unsubscribing) */
     void *connection_info;
 
-    /* The receiver's ControlPanel */ 
-    ControlPanel control_panel;
+    /* The receiver's control panel */ 
+    control_panel_t control_panel;
 
-    /* The receiver's ControlPanel info (for unsubscribing/retitling) */
-    void *control_panel_info;
+    /* The receiver's control panel info (for unsubscribing/retitling) */
+    void *control_panel_rock;
 
     /* The receiver's callback */
     group_sub_callback_t callback;
@@ -213,7 +213,7 @@ static void handle_notify(group_sub_t self, en_notify_t notification)
 
     /* Construct a message */
     message = message_alloc(
-	self -> control_panel_info, self -> name,
+	self -> control_panel_rock, self -> name,
 	user, text, (unsigned long) timeout,
 	mime_type, mime_args,
 	message_id, reply_id);
@@ -316,7 +316,7 @@ group_sub_t group_sub_alloc(
     self -> min_time = min_time;
     self -> max_time = max_time;
     self -> control_panel = NULL;
-    self -> control_panel_info = NULL;
+    self -> control_panel_rock = NULL;
     self -> connection = NULL;
     self -> connection_info = NULL;
     self -> callback = callback;
@@ -355,7 +355,7 @@ void group_sub_debug(group_sub_t self)
     printf("  connection = %p\n", self -> connection);
     printf("  connection_info = %p\n", self -> connection_info);
     printf("  control_panel = %p\n", self -> control_panel);
-    printf("  control_panel_info = %p\n", self -> control_panel_info);
+    printf("  control_panel_rock = %p\n", self -> control_panel_rock);
     printf("  callback = %p\n", self -> callback);
     printf("  rock = %p\n", self -> rock);
 }
@@ -407,8 +407,8 @@ void group_sub_set_connection(group_sub_t self, connection_t connection)
 }
 
 
-/* Registers the receiver with the ControlPanel */
-void group_sub_set_control_panel(group_sub_t self, ControlPanel control_panel)
+/* Registers the receiver with the control panel */
+void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel)
 {
     /* If it's the same control panel we had before then bail */
     if (self -> control_panel == control_panel)
@@ -418,8 +418,8 @@ void group_sub_set_control_panel(group_sub_t self, ControlPanel control_panel)
 
     if (self -> control_panel != NULL)
     {
-	ControlPanel_removeSubscription(self -> control_panel, self -> control_panel_info);
-	self -> control_panel_info = NULL;
+	control_panel_remove_subscription(self -> control_panel, self -> control_panel_rock);
+	self -> control_panel_rock = NULL;
     }
 
     self -> control_panel = control_panel;
@@ -428,52 +428,56 @@ void group_sub_set_control_panel(group_sub_t self, ControlPanel control_panel)
     {
 	if (self -> in_menu)
 	{
-	    self -> control_panel_info = ControlPanel_addSubscription(
+	    self -> control_panel_rock = control_panel_add_subscription(
 		control_panel, self -> name,
-		(ControlPanelCallback)send_message, self);
+		(control_panel_callback_t)send_message, self);
 	}
 	else
 	{
-	    self -> control_panel_info = NULL;
+	    self -> control_panel_rock = NULL;
 	}
     }
 }
 
-/* Makes the receiver visible in the ControlPanel's group menu iff
+/* Makes the receiver visible in the control panel's group menu iff
  * inMenu is set, and makes sure it appears at the proper index */
 void group_sub_set_control_panel_index(
     group_sub_t self,
-    ControlPanel control_panel,
+    control_panel_t control_panel,
     int *index)
 {
-    /* If the ControlPanel is changing, then simply forward this to setControlPanel */
+    /* If the control panel is changing, then simply forward this to set_control_panel */
     if (self -> control_panel != control_panel)
     {
 	group_sub_set_control_panel(self, control_panel);
     }
     else
     {
-	/* If we were in the ControlPanel's menu but aren't now, then remove us */
-	if ((self -> control_panel_info != NULL) && (! self -> in_menu))
+	/* If we were in the control panel's menu but aren't now, then remove us */
+	if ((self -> control_panel_rock != NULL) && (! self -> in_menu))
 	{
-	    ControlPanel_removeSubscription(self -> control_panel, self -> control_panel_info);
-	    self -> control_panel_info = NULL;
+	    control_panel_remove_subscription(self -> control_panel, self -> control_panel_rock);
+	    self -> control_panel_rock = NULL;
 	}
 
-	/* If we weren't in the ControlPanel's menu but are now, then add us */
-	if ((self -> control_panel_info == NULL) && (self -> in_menu))
+	/* If we weren't in the control panel's menu but are now, then add us */
+	if ((self -> control_panel_rock == NULL) && (self -> in_menu))
 	{
-	    self -> control_panel_info = ControlPanel_addSubscription(
+	    self -> control_panel_rock = control_panel_add_subscription(
 		control_panel, self -> name,
-		(ControlPanelCallback)send_message, self);
+		(control_panel_callback_t)send_message, self);
 	}
     }
 
-    /* If the receiver is now in the ControlPanel's group menu, make
+    /* If the receiver is now in the control panel's group menu, make
      * sure it's at the appropriate index */
-    if (self -> control_panel_info != NULL)
+    if (self -> control_panel_rock != NULL)
     {
-	ControlPanel_setSubscriptionIndex(self -> control_panel, self -> control_panel_info, *index);
+	control_panel_set_index(
+	    self -> control_panel,
+	    self -> control_panel_rock,
+	    *index);
+
 	(*index)++;
     }
 }
