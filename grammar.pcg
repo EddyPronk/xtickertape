@@ -118,3 +118,7 @@
 	[function]
 <value> ::= ID LPAREN RPAREN
 	[function]
+
+# And any disjunction becomes a value in parenthesis
+<value> ::= LPAREN <disjunction> RPAREN
+	[function]
