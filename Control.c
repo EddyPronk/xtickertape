@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.38 1999/08/09 10:47:00 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.39 1999/08/11 06:12:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -745,25 +745,13 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     /* Manage the menubar */
     XtManageChild(menubar);
 
-    /* Create the history list */
-    historyForm = XtVaCreateWidget(
-	"historyForm", xmFormWidgetClass, form,
-	XmNleftAttachment, XmATTACH_FORM,
-	XmNrightAttachment, XmATTACH_FORM,
-	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, menubar,
-	NULL);
-
-    CreateHistoryBox(self, historyForm);
-    XtManageChild(historyForm);
-
     /* Create the top box */
     topForm = XtVaCreateWidget(
 	"topForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, historyForm,
+	XmNtopWidget, menubar,
 	NULL);
 
     CreateTopBox(self, topForm);
@@ -798,11 +786,23 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNbottomAttachment, XmATTACH_FORM,
 	XmNtopWidget, mimeForm,
 	NULL);
     CreateBottomBox(self, buttonForm);
     XtManageChild(buttonForm);
+
+    /* Create the history list */
+    historyForm = XtVaCreateWidget(
+	"historyForm", xmFormWidgetClass, form,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_WIDGET,
+	XmNbottomAttachment, XmATTACH_FORM,
+	XmNtopWidget, buttonForm,
+	NULL);
+
+    CreateHistoryBox(self, historyForm);
+    XtManageChild(historyForm);
 
     /* Manage the form widget */
     XtManageChild(form);
