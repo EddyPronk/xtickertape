@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.9 2000/11/08 07:23:54 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.10 2000/11/08 07:36:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -360,6 +360,12 @@ atom_t builtin_alloc(builtin_t value, elvin_error_t error)
     return atom;
 }
 
+
+/* Returns an atom's type */
+atom_type_t atom_get_type(atom_t atom)
+{
+    return atom -> type;
+}
 
 /* Frees an atom */
 int atom_free(atom_t atom, elvin_error_t error)
