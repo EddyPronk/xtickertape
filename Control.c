@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.22 1998/10/25 02:55:28 phelps Exp $ */
+/* $Id: Control.c,v 1.23 1998/10/28 07:42:14 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,44 +137,30 @@ static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
 /* Sets the value of a Widget's "label" resource */
 static void SetLabel(Widget widget, char *label)
 {
-    Arg arg;
-
-    arg.name = XtNlabel;
-    arg.value = (XtArgVal)label;
-    XtSetValues(widget, &arg, 1);
+    XtVaSetValues(widget, XtNlabel, label, NULL);
 }
 
 /* Answers the value of a Widget's "label" resource */
 static char *GetLabel(Widget widget)
 {
-    Arg arg;
     char *label;
 
-    arg.name = XtNlabel;
-    arg.value = (XtArgVal)&label;
-    XtGetValues(widget, &arg, 1);
+    XtVaGetValues(widget, XtNlabel, &label, NULL);
     return label;
 }
 
 /* Sets the value of a Widget's "string" resource */
 static void SetString(Widget widget, char *string)
 {
-    Arg arg;
-
-    arg.name = XtNstring;
-    arg.value = (XtArgVal)string;
-    XtSetValues(widget, &arg, 1);
+    XtVaSetValues(widget, XtNstring, string, NULL);
 }
 
 /* Answers the value of a Widget's "string" resource */
 static char *GetString(Widget widget)
 {
-    Arg arg;
     char *string;
 
-    arg.name = XtNstring;
-    arg.value = (XtArgVal)&string;
-    XtGetValues(widget, &arg, 1);
+    XtVaGetValues(widget, XtNstring, &string, NULL);
     return string;
 }
 
