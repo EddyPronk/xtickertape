@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.26 2003/01/15 22:58:26 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.27 2003/01/27 21:27:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -148,7 +148,11 @@ static void paint_string(
     if (rect_overlaps(
 	    bbox,
 	    x + sizes -> lbearing, y - sizes -> ascent,
-	    x + sizes -> rbearing, y + sizes -> descent))
+	    x + sizes -> rbearing, y + sizes -> descent) ||
+	(has_underline && rect_overlaps(
+	    bbox,
+	    x, y - sizes -> ascent,
+	    x + sizes -> width, y + sizes -> descent)))
     {
 	/* Set the foreground color */
 	/* FIX THIS: do we just assume that the font is set? */
