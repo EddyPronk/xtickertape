@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.11 2000/07/10 07:43:24 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.12 2000/07/10 11:21:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -43,7 +43,7 @@ static const char cvsid[] = "$Id: parser.c,v 2.11 2000/07/10 07:43:24 phelps Exp
 #include "parser.h"
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
-#define INITIAL_STACK_DEPTH 16
+#define INITIAL_STACK_DEPTH 4
 
 
 /* Test ch to see if it's valid as a non-initial ID character */
@@ -169,8 +169,31 @@ static int lex_id_esc(parser_t self, int ch, elvin_error_t error);
 /* Makes a deeper stack */
 static int grow_stack(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "grow_stack: not yet implemented\n");
-    abort();
+    size_t length = (self -> state_end - self -> state_stack) * 2;
+    int *state_stack;
+    ast_t *value_stack;
+
+    /* Allocate memory for the new state stack */
+    if (! (state_stack = (int *)ELVIN_REALLOC(self -> state_stack, length * sizeof(int), error)))
+    {
+	return 0;
+    }
+
+    /* Update the state stack's pointers */
+    self -> state_top = self -> state_top - self -> state_stack + state_stack;
+    self -> state_stack = state_stack;
+    self -> state_end = state_stack + length;
+
+    /* Allocate memory for the new value stack */
+    if (! (value_stack = (ast_t *)ELVIN_REALLOC(self -> value_stack, length * sizeof(ast_t), error)))
+    {
+	return 0;
+    }
+
+    /* Update the value stack's pointers */
+    self -> value_top = value_stack + (self -> value_top - self -> value_stack);
+    self -> value_stack = value_stack;
+    return 1;
 }
 
 /* Pushes a state and value onto the stack */
@@ -257,60 +280,194 @@ static ast_t identity2(parser_t self, elvin_error_t error)
 /* Appends a node to the end of an AST list */
 static ast_t append(parser_t self, elvin_error_t error)
 {
-    return ast_append(self -> value_top[0], self -> value_top[1], error);
+    ast_t list, value, result;
+
+    /* Pull the children values off the stack */
+    list = self -> value_top[0];
+    value = self -> value_top[1];
+
+    /* Append the value to the end of the list */
+    if (! (result = ast_append(list, value, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(value, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 
 /* <subscription> ::= <tag> LBRACE <statements> RBRACE SEMI */
 static ast_t make_sub(parser_t self, elvin_error_t error)
 {
-    return ast_sub_alloc(self -> value_top[0], self -> value_top[2], error);
+    ast_t tag, statements, result;
+
+    /* Extract the tag and statements from the stack */
+    tag = self -> value_top[0];
+    statements = self -> value_top[2];
+
+    /* Create a subscription node */
+    if (! (result = ast_sub_alloc(tag, statements, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(tag, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(statements, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <subscription> ::= <tag> LBRACE RBRACE SEMI */
 static ast_t make_default_sub(parser_t self, elvin_error_t error)
 {
-    return ast_sub_alloc(self -> value_top[0], NULL, error);
+    ast_t tag, result;
+
+    /* Extract the tag from the stack */
+    tag = self -> value_top[0];
+
+    /* Create an empty subscription node */
+    if (! (result = ast_sub_alloc(tag, NULL, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(tag, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <statement> ::= ID ASSIGN <disjunction> SEMI */
 static ast_t make_assignment(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_ASSIGN,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the components of the assignment node */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Make a new assignment node */
+    if (! (result = ast_binary_alloc(AST_ASSIGN, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <disjunction> ::= <disjunction> OR <conjunction> */
 static ast_t extend_disjunction(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_OR,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the components of the disjunction */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Make a new disjunction node */
+    if (! (result = ast_binary_alloc(AST_OR, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <conjunction> ::= <conjunction> AND <term> */
 static ast_t extend_conjunction(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_AND,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the components of the conjunction */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Make a new conjunction node */
+    if (! (result = ast_binary_alloc(AST_AND, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> EQ <value> */
 static ast_t make_eq(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_EQ,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the halves of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Make a new equality node */
+    if (! (result = ast_binary_alloc(AST_EQ, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> NEQ <value> */
@@ -323,11 +480,30 @@ static ast_t make_neq(parser_t self, elvin_error_t error)
 /* <term> ::= <term> LT <value> */
 static ast_t make_lt(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_LT,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the children of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Construct the comparison node */
+    if (! (result = ast_binary_alloc(AST_LT, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> LE <value> */
@@ -340,11 +516,30 @@ static ast_t make_le(parser_t self, elvin_error_t error)
 /* <term> ::= <term> GT <value> */
 static ast_t make_gt(parser_t self, elvin_error_t error)
 {
-    return ast_binary_alloc(
-	AST_GT,
-	self -> value_top[0],
-	self -> value_top[2],
-	error);
+    ast_t lvalue, rvalue, result;
+
+    /* Look up the children of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Construct the comparison node */
+    if (! (result = ast_binary_alloc(AST_GT, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> GE <value> */
@@ -357,20 +552,72 @@ static ast_t make_ge(parser_t self, elvin_error_t error)
 /* <value> ::= BANG <value> */
 static ast_t make_not(parser_t self, elvin_error_t error)
 {
-    return ast_unary_alloc(AST_NOT, self -> value_top[1], error);
+    ast_t value, result;
+
+    /* Get the value to negate */
+    value = self -> value_top[1];
+
+    /* Create a new not node */
+    if (! (result = ast_unary_alloc(AST_NOT, value, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(value, error))
+    {
+	return NULL;
+    }
+    
+    return result;
 }
 
 
-/* <values> ::= <values> COMMA <value> */
+/* <values> ::= <values> COMMA <disjunction> */
 static ast_t extend_values(parser_t self, elvin_error_t error)
 {
-    return ast_append(self -> value_top[0], self -> value_top[2], error);
+    ast_t list, value, result;
+
+    /* Get the children */
+    list = self -> value_top[0];
+    value = self -> value_top[2];
+
+    /* Extend the list */
+    if (! (result = ast_append(list, value, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(value, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <value> ::= LBRACE <values> RBRACE */
 static ast_t make_list(parser_t self, elvin_error_t error)
 {
-    return ast_list_alloc(self -> value_top[1], error);
+    ast_t value, result;
+
+    /* Get the child */
+    value = self -> value_top[1];
+
+    /* Create the list node */
+    if (! (result = ast_list_alloc(value, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(value, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <value> ::= LBRACE RBRACE */
@@ -383,7 +630,30 @@ static ast_t make_empty_list(parser_t self, elvin_error_t error)
 /* <value> ::= ID LPAREN <values> RPAREN */
 static ast_t make_function(parser_t self, elvin_error_t error)
 {
-    return ast_function_alloc(self -> value_top[0], self -> value_top[2], error);
+    ast_t id, args, result;
+
+    /* Look up the components of the function */
+    id = self -> value_top[0];
+    args = self -> value_top[2];
+
+    /* Create the function node */
+    if (! (result = ast_function_alloc(id, args, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(id, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(args, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <value> ::= ID LPAREN RPAREN */
@@ -396,7 +666,24 @@ static ast_t make_noarg_function(parser_t self, elvin_error_t error)
 /* <block> ::= LBRACKET <value> RBRACKET */
 static ast_t make_block(parser_t self, elvin_error_t error)
 {
-    return ast_block_alloc(self -> value_top[1], error);
+    ast_t value, result;
+
+    /* Look up the value */
+    value = self -> value_top[1];
+
+    /* Create the block */
+    if (! (result = ast_block_alloc(self -> value_top[1], error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(value, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 

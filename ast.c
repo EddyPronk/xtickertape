@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.7 2000/07/10 07:44:14 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.8 2000/07/10 11:21:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -839,6 +839,12 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    /* FIX THIS: clean up */
 	    return 0;
 	}
+
+	/* Clean up */
+	if (! value_free(&value, error))
+	{
+	    return 0;
+	}
     }
 
     /* Use the environment to initialize the subscription */
@@ -858,17 +864,6 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
     self -> ref_count = 1;
     self -> next = NULL;
     self -> value.sub = subscription;
-
-    /* Clean up */
-    if (! ast_free(tag, error))
-    {
-	return NULL;
-    }
-
-    if (! ast_free(statements, error))
-    {
-	return NULL;
-    }
 
     return self;
 }
@@ -895,9 +890,16 @@ int ast_free(ast_t self, elvin_error_t error)
 	return 1;
     }
 
+    /* Clean up any linked asts */
+    if (! ast_free(self -> next, error))
+    {
+	return 0;
+    }
+
     /* Clean up based on type */
     switch (self -> type)
     {
+	/* For simple types we just free self */
 	case AST_INT32:
 	case AST_INT64:
 	case AST_FLOAT:
@@ -905,6 +907,7 @@ int ast_free(ast_t self, elvin_error_t error)
 	    return ELVIN_FREE(self, error);
 	}
 
+	/* Must free the string first */
 	case AST_STRING:
 	{
 	    if (! ELVIN_FREE(self -> value.string, error))
@@ -915,10 +918,16 @@ int ast_free(ast_t self, elvin_error_t error)
 	    return ELVIN_FREE(self, error);
 	}
 
+	/* Must recursively free our values */
 	case AST_LIST:
 	{
-	    fprintf(stderr, "list\n");
-	    abort();
+	    /* Free our children */
+	    if (! ast_free(self -> value.list, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
 	}
 
 	case AST_ID:
@@ -953,7 +962,25 @@ int ast_free(ast_t self, elvin_error_t error)
 	}
 
 	case AST_FUNCTION:
+	{
+	    if (! ast_free(self -> value.func.args, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
+	}
+
 	case AST_BLOCK:
+	{
+	    if (! ast_free(self -> value.block, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
+	}
+
 	case AST_SUB:
 	{
 	    fprintf(stderr, "ast_free(): type %d is not yet supported\n", self -> type);
@@ -977,7 +1004,11 @@ ast_t ast_append(ast_t list, ast_t item, elvin_error_t error)
     for (ast = list; ast -> next != NULL; ast = ast -> next);
 
     /* Append the item */
-    ast -> next = item;
+    if (! (ast -> next = ast_clone(item, error)))
+    {
+	return NULL;
+    }
+
     return list;
 }
 
