@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.31 2000/05/31 05:46:25 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.32 2000/05/31 06:01:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1909,12 +1909,12 @@ static void prepare_reply(control_panel_t self, message_t message)
 	{
 	    self -> selection = tuple;
 	    set_group_selection(self, tuple);
-	}
 
-	id = message_get_id(message);
-	if (id != NULL)
-	{
-	    self -> message_id = strdup(id);
+	    id = message_get_id(message);
+	    if (id != NULL)
+	    {
+		self -> message_id = strdup(id);
+	    }
 	}
     }
 }
