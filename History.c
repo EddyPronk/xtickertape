@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.38 2002/01/24 17:27:22 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.39 2002/04/03 10:33:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -957,7 +957,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     /* Update our height */
     if (self -> core.height < height)
     {
-	delta_y = height - MAX(self -> history.height, self -> core.height);
+	delta_y = MAX(0, height - MAX(self -> history.height, self -> core.height));
     }
     else
     {
