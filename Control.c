@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.34 1999/05/03 10:07:30 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.35 1999/05/03 11:31:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -344,8 +344,10 @@ static Widget CreateAboutBox(ControlPanel self, Widget parent)
 	XmNsensitive, True,
 	XmNshowAsDefault, True,
 	XmNbottomAttachment, XmATTACH_FORM,
-	XmNleftAttachment, XmATTACH_FORM,
-	XmNrightAttachment, XmATTACH_FORM,
+	XmNleftAttachment, XmATTACH_POSITION,
+	XmNrightAttachment, XmATTACH_POSITION,
+	XmNleftPosition, 40,
+	XmNrightPosition, 60,
 	NULL);
     XtAddCallback(
 	button, XmNactivateCallback,
