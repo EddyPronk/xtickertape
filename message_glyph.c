@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.11 1999/09/07 14:36:27 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.12 1999/09/08 04:19:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -222,8 +222,9 @@ static unsigned int measure_string(XFontStruct *font, char *string)
     /* Include the right bearing of the last character in the width */
     for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
     {
-	result = width + per_char(font, *pointer) -> rbearing;
-	width += per_char(font, *pointer) -> width;
+	XCharStruct *char_info = per_char(font, *pointer);
+	result = width + char_info -> rbearing;
+	width += char_info -> width;
     }
 
     return result;
@@ -301,7 +302,7 @@ static void do_paint(
     int left;
     int right;
 
-    /* If the group string fits, draw it */
+    /* Draw the group string */
     left = offset;
     right = left + self -> group_width;
     paint_string(
@@ -310,7 +311,7 @@ static void do_paint(
 	left, right, baseline, Message_getGroup(self -> message), do_underline,
 	x, y, width, height);
 
-    /* If the separator fits, draw it */
+    /* Draw the separator */
     left = right;
     right = left + self -> separator_width;
     paint_string(
@@ -319,7 +320,7 @@ static void do_paint(
 	left, right, baseline, SEPARATOR, do_underline,
 	x, y, width, height);
 
-    /* If the user string fits, draw it */
+    /* Draw the user string */
     left = right;
     right = left + self -> user_width;
     paint_string(
@@ -328,7 +329,7 @@ static void do_paint(
 	left, right, baseline, Message_getUser(self -> message), do_underline,
 	x, y, width, height);
 
-    /* If the separator fits, draw it */
+    /* Draw the separator */
     left = right;
     right = left + self -> separator_width;
     paint_string(
@@ -337,7 +338,7 @@ static void do_paint(
 	left, right, baseline, SEPARATOR, do_underline,
 	x, y, width, height);
 
-    /* If the message string fits, draw it */
+    /* Draw the message */
     left = right;
     right = left + self -> string_width;
     paint_string(
