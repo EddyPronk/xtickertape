@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.10 1998/10/21 05:24:03 phelps Exp $ */
+/* $Id: Message.c,v 1.11 1998/10/21 08:19:40 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -216,6 +216,8 @@ void Message_debug(Message self)
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
+    printf("  mimeType = \"%s\"\n", (self -> mimeType == NULL) ? "<null>" : self -> mimeType);
+    printf("  mimeArgs = \"%s\"\n", (self -> mimeArgs == NULL) ? "<null>" : self -> mimeArgs);
     printf("  timeout = %ld\n", self -> timeout);
     printf("  msg_id = %ld\n", self -> msg_id);
     printf("  thread_id = %ld\n", self -> thread_id);
