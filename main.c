@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.76 2000/03/30 06:38:04 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.77 2000/04/10 01:23:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -61,7 +61,7 @@ static const char cvsid[] = "$Id: main.c,v 1.76 2000/03/30 06:38:04 phelps Exp $
 static struct option long_options[] =
 {
     { "elvin", required_argument, NULL, 'e' },
-    { "scope", required_argument, NULL, 's' },
+    { "scope", required_argument, NULL, 'S' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
@@ -98,7 +98,7 @@ static void usage(int argc, char *argv[])
     fprintf(stderr,
 	"usage: %s [OPTION]...\n"
 	"  -e elvin-url, --elvin=elvin-url\n"
-	"  -s scope,     --scope=scope\n"
+	"  -S scope,     --scope=scope\n"
 	"  -u username,  --user=username\n"
 	"  -G filename,  --groups=filename\n"
 	"  -U filename,  --usenet=filename\n"
@@ -183,7 +183,7 @@ static void parse_args(
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:s:u:D:U:G:vh", long_options,
+	"e:S:u:D:U:G:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -200,8 +200,8 @@ static void parse_args(
 		break;
 	    }
 
-	    /* --scope= or -s */
-	    case 's':
+	    /* --scope= or -S */
+	    case 'S':
 	    {
 		handle -> scope = optarg;
 		break;
