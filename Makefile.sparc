@@ -3,7 +3,6 @@
 #
 
 TICKERTAPE = xtickertape
-CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
 
