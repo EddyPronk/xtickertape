@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.37 1999/05/17 12:40:52 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.38 1999/08/09 10:47:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -103,6 +103,9 @@ struct ControlPanel_t
 
     /* The receiver's top-level widget */
     Widget top;
+
+    /* The receiver's history list widget */
+    Widget history;
 
     /* The receiver's user text widget */
     Widget user;
@@ -476,6 +479,22 @@ static Widget CreateTimeoutMenu(ControlPanel self, Widget parent)
     return widget;
 }
 
+/* Constructs the history list */
+static void CreateHistoryBox(ControlPanel self, Widget parent)
+{
+    Arg args[7];
+
+    XtSetArg(args[0], XmNleftAttachment, XmATTACH_FORM);
+    XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
+    XtSetArg(args[2], XmNtopAttachment, XmATTACH_FORM);
+    XtSetArg(args[3], XmNbottomAttachment, XmATTACH_FORM);
+    XtSetArg(args[4], XmNselectionPolicy, XmSINGLE_SELECT);
+    XtSetArg(args[5], XmNitemCount, 0);
+    XtSetArg(args[6], XmNvisibleItemCount, 3);
+    self -> history = XmCreateScrolledList(parent, "history", args, 7);
+    XtManageChild(self -> history);
+}
+
 /* Constructs the top box of the Control Panel */
 static void CreateTopBox(ControlPanel self, Widget parent)
 {
@@ -683,6 +702,7 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 {
     Widget form;
     Widget menubar;
+    Widget historyForm;
     Widget topForm;
     Widget textForm;
     Widget mimeForm;
@@ -725,6 +745,17 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     /* Manage the menubar */
     XtManageChild(menubar);
 
+    /* Create the history list */
+    historyForm = XtVaCreateWidget(
+	"historyForm", xmFormWidgetClass, form,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_WIDGET,
+	XmNtopWidget, menubar,
+	NULL);
+
+    CreateHistoryBox(self, historyForm);
+    XtManageChild(historyForm);
 
     /* Create the top box */
     topForm = XtVaCreateWidget(
@@ -732,8 +763,9 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
-	XmNtopWidget, menubar,
+	XmNtopWidget, historyForm,
 	NULL);
+
     CreateTopBox(self, topForm);
     XtManageChild(topForm);
 
@@ -1222,6 +1254,23 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
     {
 	SetGroupSelection(self, tuple);
     }
+}
+
+/* Adds a Message to the receiver's history list */
+void ControlPanel_addHistoryMessage(ControlPanel self, Message message)
+{
+    XmString entry;
+    char *group = Message_getGroup(message);
+    char *user = Message_getUser(message);
+    char *string = Message_getString(message);
+    char *buffer = (char *) alloca(strlen(group) + strlen(user) + strlen(string) + 3);
+
+    sprintf(buffer, "%s:%s:%s", group, user, string);
+
+    /* Add a string to the end of the list */
+    entry = XmStringCreateSimple(buffer);
+    XmListAddItem(self -> history, entry, 0);
+    XmStringFree(entry);
 }
 
 

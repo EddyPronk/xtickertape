@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.40 1999/08/01 06:46:16 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.41 1999/08/09 10:47:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -45,7 +45,6 @@ static const char cvsid[] = "$Id: Tickertape.c,v 1.40 1999/08/01 06:46:16 phelps
 #include "StringBuffer.h"
 #include "Scroller.h"
 #include "Control.h"
-#include "message_thread.h"
 #include "Subscription.h"
 #include "UsenetSubscription.h"
 #include "MailSubscription.h"
@@ -85,9 +84,6 @@ struct Tickertape_t
 
     /* The top-level widget */
     Widget top;
-
-    /* The message threads */
-    message_thread_t messages;
 
     /* The receiver's subscriptions (from the groups file) */
     List subscriptions;
@@ -225,8 +221,7 @@ static void ReceiveMessage(Tickertape self, Message message)
 
     printf("new message received:\n");
     Message_debug(message);
-    self -> messages = message_thread_add(self -> messages, message);
-    message_thread_debug(self -> messages);
+    ControlPanel_addHistoryMessage(self -> controlPanel, message);
 }
 
 /* Read from the Groups file.  Returns a List of subscriptions if

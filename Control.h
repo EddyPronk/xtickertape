@@ -31,7 +31,7 @@
 #define CONTROLPANEL_H
 
 #ifndef lint
-static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.10 1998/12/24 05:48:27 phelps Exp $";
+static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.11 1999/08/09 10:47:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -73,6 +73,8 @@ void ControlPanel_setSubscriptionIndex(ControlPanel self, void *info, int index)
 /* Retitles an entry */
 void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title);
 
+/* Adds a Message to the receiver's history list */
+void ControlPanel_addHistoryMessage(ControlPanel self, Message message);
 
 /* Makes the ControlPanel window visible */
 void ControlPanel_show(ControlPanel self, Message message);
