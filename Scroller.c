@@ -28,16 +28,18 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.29 1999/06/21 11:59:21 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.30 1999/06/21 12:38:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 
 #include "ScrollerP.h"
+#include "StringBuffer.h"
 #include "glyph.h"
 
 
@@ -1126,22 +1128,78 @@ void menu(Widget widget, XEvent *event)
 /* Spawn metamail to decode the Message's MIME attachment */
 static void decode_mime(Widget widget, XEvent *event)
 {
-    printf("decode mime\n");
-#if 0
+#ifdef METAMAIL
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = MessageAtEvent(self, event);
-    
-    if (view)
-    {
-	MessageView_decodeMime(view);
-    }
-    else
+    glyph_t glyph = glyph_at_event(self, event);
+    Message message = glyph -> get_message(glyph);
+    StringBuffer buffer;
+    char *mime_type;
+    char *mime_args;
+    char *filename;
+    FILE *file;
+
+    /* If there's no message, then we can't decode any mime */
+    if (message == NULL)
     {
 #ifdef DEBUG
-	fprintf(stderr, "none\n");
+	printf("missed!\n");
 #endif /* DEBUG */
+	return;
     }
-#endif /* 0 */
+
+    /* Make sure there's a mime type and args */
+    if (((mime_type = Message_getMimeType(message)) == NULL) ||
+	((mime_args = Message_getMimeArgs(message)) == NULL))
+    {
+#ifdef DEBUG
+	printf("no mime\n");
+#endif /* DEBUG */
+	return;
+    }
+
+#ifdef DEBUG
+    printf("MIME: %s %s\n", mime_type, mime_args);
+#endif /* DEBUG */
+
+    /* Write the mime_args to a file */
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "/tmp/ticker");
+    StringBuffer_appendInt(buffer, getpid());
+#ifdef HAVE_ALLOCA
+    filename = (char *)alloca(StringBuffer_length(buffer) + 1);
+    strcpy(filename, StringBuffer_getBuffer(buffer));
+#else /* HAVE_ALLOCA */
+    filename = strdup(StringBuffer_getBuffer(buffer));
+#endif /* HAVE_ALLOCA */
+
+    /* If we can't open the file then print an error and give up */
+    if ((file = fopen(filename,"wb")) == NULL)
+    {
+	fprintf(stderr, "*** unable to open temporary file %s\n", filename);
+	return;
+    }
+
+    fputs(mime_args, file);
+    fclose(file);
+
+    /* Invoke metamail to display the message */
+    StringBuffer_clear(buffer);
+    StringBuffer_append(buffer, METAMAIL);
+    StringBuffer_append(buffer, " -B -q -b -c ");
+    StringBuffer_append(buffer, mime_type);
+    StringBuffer_appendChar(buffer, ' ');
+    StringBuffer_append(buffer, filename);
+    StringBuffer_append(buffer, " > /dev/null 2>&1");
+    system(StringBuffer_getBuffer(buffer));
+
+    /* Remove the temporary file */
+    unlink(filename);
+#ifndef HAVE_ALLOCA
+    free(filename);
+#endif /* HAVE_ALLOCA */
+
+    StringBuffer_free(buffer);
+#endif /* METAMAIL */
 }
 
 
