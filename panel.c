@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.16 1999/11/11 02:25:36 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.17 1999/11/19 04:10:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -101,6 +101,13 @@ static unsigned int button_masks[] =
     Button4Mask ^ AnyButtonMask,
     Button5Mask ^ AnyButtonMask,
 };
+
+/* The characters to use in the salt when encrypting the host id */
+static char crypt_chars[] =
+	"abcdefghijklmnopqrstuvwxyz"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"0123456789./";
+
 
 /* Used in callbacks to indicate both a control_panel_t and a callback */
 typedef struct menu_item_tuple *menu_item_tuple_t;
@@ -1376,14 +1383,12 @@ static char *get_mime_args(control_panel_t self)
 /* Transforms an integer into a digit for use in a crypt salt */
 static char *crypt_id(time_t now)
 {
-    static char chars[] = 
-	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
     char hostid[9];
     char salt[3];
 
     /* Construct a salt out of the current time */
-    salt[0] = chars[now & 0x3f];
-    salt[1] = chars[(now >> 6) & 0x3f];
+    salt[0] = crypt_chars[now & 0x3f];
+    salt[1] = crypt_chars[(now >> 6) & 0x3f];
     salt[2] = '\0';
 
     /* Print the hostid into a buffer */
