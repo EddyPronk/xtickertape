@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.52 1999/10/01 06:23:07 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.53 1999/10/02 06:56:19 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -283,7 +283,29 @@ static void CreateOptionsMenu(ControlPanel self, Widget parent)
 }
 
 
-/* Creates the About box */
+/* Sets the minimum size of the `About Box' to its initial dimensions */
+static void ConfigureAboutBox(Widget shell, XtPointer rock, XConfigureEvent *event)
+{
+    /* Ignore events that aren't about the structure */
+    if (event -> type != ConfigureNotify)
+    {
+	return;
+    }
+
+    /* We won't need to be called again */
+    XtRemoveEventHandler(
+	shell, StructureNotifyMask, False,
+	(XtEventHandler)ConfigureAboutBox, rock);
+
+    /* Set the minimum width/height to be the current width/height */
+    XtVaSetValues(
+	shell,
+	XmNminWidth, event -> width,
+	XmNminHeight, event -> height,
+	NULL);
+}
+
+/* Creates the `About Box' */
 static Widget CreateAboutBox(ControlPanel self, Widget parent)
 {
     Widget top;
@@ -298,6 +320,7 @@ static Widget CreateAboutBox(ControlPanel self, Widget parent)
     char buffer[sizeof(PACKAGE) + sizeof(VERSION)];
 
     /* Create the shell widget */
+    /* FIX THIS: we should be able to use XmUNMAP it breaks lesstif */
     top = XtVaCreatePopupShell(
 	"aboutBox", topLevelShellWidgetClass, parent,
 	XmNdeleteResponse, XmDO_NOTHING,
@@ -305,7 +328,14 @@ static Widget CreateAboutBox(ControlPanel self, Widget parent)
 
     /* Add a handler for the WM_DELETE_WINDOW protocol */
     wm_delete_window = XmInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", False);
-    XmAddWMProtocolCallback(top, wm_delete_window, (XtCallbackProc)ActionDismiss, (XtPointer)self);
+    XmAddWMProtocolCallback(
+	top, wm_delete_window,
+	(XtCallbackProc)ActionDismiss, (XtPointer)self);
+
+    /* Add an event handler so that we can set the minimum size to be the initial size */
+    XtAddEventHandler(
+	top, StructureNotifyMask, False, 
+	(XtEventHandler)ConfigureAboutBox, (XtPointer)NULL);
 
     /* Create a Form widget to manage the dialog box's children */
     form = XtVaCreateWidget(
@@ -757,6 +787,37 @@ static void CreateBottomBox(ControlPanel self, Widget parent)
 	(XtCallbackProc)ActionCancel, (XtPointer)self);
 }
 
+/* Configures the control panel's minimum dimensions */
+static void ConfigureControlPanel(Widget top, XtPointer rock, XConfigureEvent *event)
+{
+    ControlPanel self = (ControlPanel)rock;
+    Dimension history_height;
+
+    /* Make sure we've got a ConfigureNotify event */
+    if (event -> type != ConfigureNotify)
+    {
+	return;
+    }
+
+    /* We're no longer interested in configure events */
+    XtRemoveEventHandler(
+	top, StructureNotifyMask, False,
+	(XtEventHandler)ConfigureControlPanel, rock);
+
+    /* Figure out how tall the history list is */
+    XtVaGetValues(
+	self -> history,
+	XmNheight, &history_height,
+	NULL);
+
+    /* Set the minimum width and height */
+    XtVaSetValues(
+	top,
+	XmNminWidth, event -> width,
+	XmNminHeight, event -> height - history_height,
+	NULL);
+}
+
 /* Constructs the entire control panel */
 static void InitializeUserInterface(ControlPanel self, Widget parent)
 {
@@ -782,6 +843,11 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     /* Add a handler for the WM_DELETE_WINDOW protocol */
     wm_delete_window = XmInternAtom(XtDisplay(self -> top), "WM_DELETE_WINDOW", False);
     XmAddWMProtocolCallback(self -> top, wm_delete_window, (XtCallbackProc)ActionCancel, (XtPointer)self);
+
+    /* Register an event handler for the first structure event */
+    XtAddEventHandler(
+	self -> top, StructureNotifyMask, False,
+	(XtEventHandler)ConfigureControlPanel, (XtPointer)self);
 
     /* Create a form widget to manage the dialog box's children */
     form = XtVaCreateWidget(
@@ -1066,7 +1132,7 @@ char *GenerateUUID(ControlPanel self)
     cryptid = crypt_id(now);
 
     /* Construct the UUID */
-    buffer = (char *)malloc(sizeof("YYYMMDDHHMMSS--1234-12") + strlen(cryptid));
+    buffer = (char *)malloc(sizeof("YYYYMMDDHHMMSS--1234-12") + strlen(cryptid));
     sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%s-%04x-%02x",
 	    tm_gmt -> tm_year + 1900, tm_gmt -> tm_mon + 1, tm_gmt -> tm_mday,
 	    tm_gmt -> tm_hour, tm_gmt -> tm_min, tm_gmt -> tm_sec,
