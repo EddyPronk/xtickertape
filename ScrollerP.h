@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.12 1999/06/22 08:18:57 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.13 1999/06/23 08:31:11 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -76,27 +76,33 @@ typedef struct
     /* Private state */
     int isStopped;
 
-    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
-    int left_offset;
-
-    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
-    int right_offset;
+    /* The width of the widget before the last resize */
+    int width;
 
     /* The circular queue containing all glyphs */
     glyph_t glyphs;
 
-    /* The leftmost visible glyph */
-    glyph_t left_glyph;
+    /* An array containing all glyphs that are currently visible */
+    glyph_t *visible;
 
-    /* The rightmost visible glyph */
-    glyph_t right_glyph;
+    /* The index into the visible array of the current leftmost visible glyph */
+    unsigned int left_index;
 
-    /* The width of the `effective' last glyph on the queue */
-    int last_width;
+    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
+    int left_offset;
 
-    /* The queue containing glyphs which need to be added */
-    glyph_t pending;
+    /* The index into the visible array of the current rightmost visible glyph */
+    unsigned int right_index;
 
+    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
+    int right_offset;
+
+    /* The width of the unexpired glyphs in the circular queue the
+     * last time that a gap was added */
+    int glyphs_width;
+
+    /* The width of the unexpired glyphs in the circular queue */
+    int next_glyphs_width;
 
     /* The off-screen pixmap */
     Pixmap pixmap;
@@ -176,6 +182,9 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer);
 
 /* Repaints the given glyph (if visible) */
 void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);
+
+/* Callback for expiring glyphs */
+void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
 
 /* Answers the width of the gap glyph */
 int ScGapWidth(ScrollerWidget self);
