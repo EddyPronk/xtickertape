@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.45 1999/12/16 07:32:43 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.46 1999/12/16 07:52:11 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -143,12 +144,12 @@ struct tickertape
  *
  */
 static int mkdirhier(char *dirname);
-static void publish_startup_notification(tickertape_t self);
 static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(tickertape_t self, message_t message);
 static int parse_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
 #if 0
+static void publish_startup_notification(tickertape_t self);
 static void disconnect_callback(tickertape_t self, connection_t connection);
 static void reconnect_callback(tickertape_t self, connection_t connection);
 #endif /* 0 */
@@ -217,49 +218,6 @@ static int mkdirhier(char *dirname)
     }
 
     return -1;
-}
-
-/* Publishes a notification indicating that the receiver has started */
-static void publish_startup_notification(tickertape_t self)
-{
-    elvin_notification_t notification;
-
-    /* If we haven't managed to connect, then don't try sending */
-    if (self -> handle == NULL)
-    {
-	return;
-    }
-
-    /* Create a nice startup notification */
-    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
-    {
-	fprintf(stderr, "elvin_notification_alloc(): failed\n");
-	abort();
-    }
-
-    if (elvin_notification_add_string(
-	notification,
-	F_TICKERTAPE_STARTUP,
-	VERSION,
-	self -> error) == 0)
-    {
-	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
-    }
-
-    if (elvin_notification_add_string(
-	notification,
-	F_USER,
-	self -> user,
-	self -> error) == 0)
-    {
-	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
-    }
-
-    /* No keys support yet */
-    elvin_async_notify(self -> handle, notification, NULL, self -> error);
-    elvin_notification_free(notification, self -> error);
 }
 
 /* Callback for a menu() action in the Scroller */
@@ -719,6 +677,49 @@ static void init_ui(tickertape_t self)
 
 
 #if 0
+/* Publishes a notification indicating that the receiver has started */
+static void publish_startup_notification(tickertape_t self)
+{
+    elvin_notification_t notification;
+
+    /* If we haven't managed to connect, then don't try sending */
+    if (self -> handle == NULL)
+    {
+	return;
+    }
+
+    /* Create a nice startup notification */
+    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
+    {
+	fprintf(stderr, "elvin_notification_alloc(): failed\n");
+	abort();
+    }
+
+    if (elvin_notification_add_string(
+	notification,
+	F_TICKERTAPE_STARTUP,
+	VERSION,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
+	abort();
+    }
+
+    if (elvin_notification_add_string(
+	notification,
+	F_USER,
+	self -> user,
+	self -> error) == 0)
+    {
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
+	abort();
+    }
+
+    /* No keys support yet */
+    elvin_async_notify(self -> handle, notification, NULL, self -> error);
+    elvin_notification_free(notification, self -> error);
+}
+
 /* This is called when we get our elvin connection back */
 static void reconnect_callback(tickertape_t self, connection_t connection)
 {

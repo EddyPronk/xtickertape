@@ -28,11 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: orbit_sub.c,v 1.4 1999/11/18 07:14:53 phelps Exp $";
+static const char cvsid[] = "$Id: orbit_sub.c,v 1.5 1999/12/16 07:52:10 phelps Exp $";
 #endif /* lint */
 
 #ifdef ORBIT
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "orbit_sub.h"

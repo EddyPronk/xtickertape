@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.79 1999/11/23 00:54:37 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.80 1999/12/16 07:52:07 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.6 1999/10/05 06:01:43 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.7 1999/12/16 07:52:09 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.24 1999/12/09 13:18:51 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.25 1999/12/16 07:52:11 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
