@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.29 1998/12/24 05:48:27 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.30 1999/03/19 06:52:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -433,9 +433,14 @@ static Widget CreateMimeTypeMenu(ControlPanel self, Widget parent)
     XtSetArg(args[1], XmNtraversalOn, False);
     widget = XmCreateOptionMenu(parent, "mimeType", args, 2);
 
-    /* Add a single child to it */
+    /* Add the old URL mime type to it */
     XtVaCreateManagedWidget(
 	"x-elvin/url", xmPushButtonGadgetClass, pulldown,
+	NULL);
+
+    /* Add the accepted URL mime type to it */
+    XtVaCreateManagedWidget(
+	"text/uri-list", xmPushButtonGadgetClass, pulldown,
 	NULL);
 
     /* Manage the option button and return it */
