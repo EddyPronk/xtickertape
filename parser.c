@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.18 2000/07/11 04:26:51 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.19 2000/07/11 07:12:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -41,6 +41,7 @@ static const char cvsid[] = "$Id: parser.c,v 2.18 2000/07/11 04:26:51 phelps Exp
 #include <elvin/errors/unix.h>
 #include "errors.h"
 #include "ast.h"
+#include "subscription.h"
 #include "parser.h"
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
@@ -822,6 +823,8 @@ static int do_accept(parser_t self, elvin_error_t error)
 	    subscription_array_free(count, subs, NULL);
 	    return 0;
 	}
+
+	return 1;
     }
 
     return subscription_array_free(count, subs, NULL);
