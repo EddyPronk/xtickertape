@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.18 1999/09/13 07:04:41 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.19 1999/09/13 12:19:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -362,7 +362,7 @@ static void do_paint(
     if ((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width))
     {
 	paint_string(
-	    self, display, drawable, ScGCForGroup(self -> widget, level),
+	    self, display, drawable, ScGCForGroup(self -> widget, level, x, y, width, height),
 	    ScFontForGroup(self -> widget),
 	    left, self -> group_width, baseline,
 	    message_get_group(self -> message), do_underline,
@@ -375,7 +375,7 @@ static void do_paint(
     if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
     {
 	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level),
+	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
 	    ScFontForSeparator(self -> widget),
 	    left, self -> separator_width, baseline,
 	    SEPARATOR, do_underline,
@@ -388,7 +388,7 @@ static void do_paint(
     if ((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width))
     {
 	paint_string(
-	    self, display, drawable, ScGCForUser(self -> widget, level),
+	    self, display, drawable, ScGCForUser(self -> widget, level, x, y, width, height),
 	    ScFontForUser(self -> widget),
 	    left, self -> user_width, baseline,
 	    message_get_user(self -> message), do_underline,
@@ -401,7 +401,7 @@ static void do_paint(
     if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
     {
 	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level),
+	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
 	    ScFontForSeparator(self -> widget),
 	    left, self -> separator_width, baseline,
 	    SEPARATOR, do_underline,
@@ -414,7 +414,7 @@ static void do_paint(
     if ((x <= left + self -> string_rbearing) && (left + self -> separator_lbearing <= x + width))
     {
 	paint_string(
-	    self, display, drawable, ScGCForString(self -> widget, level),
+	    self, display, drawable, ScGCForString(self -> widget, level, x, y, width, height),
 	    ScFontForString(self -> widget),
 	    left, self -> string_width, baseline,
 	    message_get_string(self -> message), do_underline,

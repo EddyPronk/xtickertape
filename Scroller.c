@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.67 1999/09/09 14:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.68 1999/09/13 12:19:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -471,40 +471,48 @@ GC ScGCForBackground(ScrollerWidget self)
 }
 
 /* Answers a GC for displaying the Group field of a message at the given fade level */
-GC ScGCForGroup(ScrollerWidget self, int level)
+GC ScGCForGroup(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
     XGCValues values;
+    XRectangle rectangle = { x, y, width, height };
 
+    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
     values.foreground = self -> scroller.groupPixels[level];
     XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     return self -> scroller.gc;
 }
 
 /* Answers a GC for displaying the User field of a message at the given fade level */
-GC ScGCForUser(ScrollerWidget self, int level)
+GC ScGCForUser(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
     XGCValues values;
+    XRectangle rectangle = { x, y, width, height };
 
+    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
     values.foreground = self -> scroller.userPixels[level];
     XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     return self -> scroller.gc;
 }
 
 /* Answers a GC for displaying the String field of a message at the given fade level */
-GC ScGCForString(ScrollerWidget self, int level)
+GC ScGCForString(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
     XGCValues values;
+    XRectangle rectangle = { x, y, width, height };
 
+    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
     values.foreground = self -> scroller.stringPixels[level];
     XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     return self -> scroller.gc;
 }
 
 /* Answers a GC for displaying the field separators at the given fade level */
-GC ScGCForSeparator(ScrollerWidget self, int level)
+GC ScGCForSeparator(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
     XGCValues values;
+    XRectangle rectangle = { x, y, width, height };
 
+    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
     values.foreground = self -> scroller.separatorPixels[level];
     XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     return self -> scroller.gc;
