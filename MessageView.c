@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.9 1997/02/12 12:36:31 phelps Exp $ */
+/* $Id: MessageView.c,v 1.10 1997/02/12 13:53:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +12,8 @@
 #define SPACING 10
 #define SEPARATOR ":"
 
-#define SANITY_CHECK(x) SanityCheck(x)
-/*#define SANITY_CHECK(x)*/
+/*#define SANITY_CHECK(x) SanityCheck(x)*/
+#define SANITY_CHECK(x)
 
 struct MessageView_t
 {

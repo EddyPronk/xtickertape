@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.5 1997/02/10 14:45:00 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.6 1997/02/12 13:53:19 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -103,5 +103,8 @@ Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width);
 /* Sets a timer to go off in interval milliseconds */
 XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
 			  XtTimerCallbackProc proc, XtPointer client_data);
+
+/* Stops a timer from going off */
+void TtStopTimer(TickertapeWidget self, XtIntervalId timer);
 
 #endif /* TickertapeP_H */

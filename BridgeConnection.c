@@ -1,7 +1,8 @@
-/* $Id: BridgeConnection.c,v 1.1 1997/02/12 07:33:59 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.2 1997/02/12 13:53:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -38,10 +39,11 @@ struct BridgeConnection_t
 static void sendItemSubscribe(char *name, BridgeConnection self);
 
 /* Sends a subscription expression to the bridge */
-static void sendSubscribe(BridgeConnection self);
+static void subscribe(BridgeConnection self);
 
 /* Reads from the input stream until a separator character is encountered */
 static int readToSeparator(BridgeConnection self, char *buffer);
+
 
 
 /* Sends a subscription for a single item expression to the bridge */
@@ -69,8 +71,6 @@ static void subscribe(BridgeConnection self)
 /* Reads from the input stream until a separator character is encountered */
 static int readToSeparator(BridgeConnection self, char *buffer)
 {
-    char *pointer = buffer;
-
     while (1)
     {
 	char ch = fgetc(self -> in);

@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.8 1997/02/12 05:50:30 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.9 1997/02/12 13:53:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -460,9 +460,9 @@ XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
 }
 
 /* Stops a timer from going off */
-void TtStopTimer(TickertapeWidget self, XtIntervalId id)
+void TtStopTimer(TickertapeWidget self, XtIntervalId timer)
 {
-     XtRemoveTimeOut(id);
+     XtRemoveTimeOut(timer);
 }
 
 
