@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.1 2002/04/14 20:44:01 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.2 2002/04/14 22:29:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -151,8 +151,7 @@ static int accept_key(keys_parser_t self)
         }
 
         /* Allocate enough space to hold it. */
-        self -> key_data = realloc(self -> key_data, file_stat.st_size);
-        if (self -> key_data == NULL)
+        if ((self -> key_data = realloc(self -> key_data, file_stat.st_size)) == NULL)
         {
             close(fd);
             return -1;
@@ -178,8 +177,7 @@ static int accept_key(keys_parser_t self)
         hex = self -> key_data;
 
         /* Allocate some memory to store the key contents in. */
-        self -> key_data = malloc(self -> key_length / 2);
-        if (self -> key_data == NULL)
+        if ((self -> key_data = malloc(self -> key_length / 2)) == NULL)
         {
             free(hex);
             return -1;
@@ -193,7 +191,7 @@ static int accept_key(keys_parser_t self)
 	    int ch = hex[hex_index];
 
             /* Skip white space. */
-            if (isspace(ch)
+            if (isspace(ch))
             {
                 continue;
             }
@@ -562,6 +560,7 @@ static int lex_data(keys_parser_t self, int ch)
 	}
 
         self -> key_data = strdup(self -> token);
+	self -> key_length = self -> token_pointer - self -> token - 1;
         self -> token_pointer = self -> token;
 
 	/* Accept the key */
