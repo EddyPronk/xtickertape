@@ -69,10 +69,6 @@ History Widget
   HH:MM(am|pm), and should be internationalized.  It should be
   possible to switch between date formats at runtime.
 
-- Messages should be indented to indicate threading.  This will expose
-  a bit of unimplemented functionality in regards to inserting a
-  message somewhere other than the end of the list.
-
 - Keyboard initiated scrolling should make the margin visible when the
   user attempts to select before the first message or after the last one.
 
