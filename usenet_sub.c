@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.17 2000/04/11 13:58:25 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.18 2000/04/11 14:04:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -88,7 +88,7 @@ struct usenet_sub
     /* The argument for the receiver's callback */
     void *rock;
 
-    /* Non-zero if we're waiting on a change to the subscription */
+    /* Non-zero if the receiver is waiting on a change to the subscription */
     int is_pending;
 };
 
@@ -599,7 +599,7 @@ static void unsubscribe_cb(
     usenet_sub_t self = (usenet_sub_t)rock;
     self -> is_pending = 0;
 
-    /* Free the receiver if we were pending when we were freed */
+    /* Free the receiver if it was pending when it was freed */
     if (self -> expression == NULL)
     {
 	usenet_sub_free(self);
