@@ -25,3 +25,9 @@ Things that would be nice to have in future versions of xtickertape:
 - The length of the history should be configurable (how?
   configuration file?  I'd like to do this via a resource but it
   doesn't look like it'll be easy without building a widget...)
+
+- It should be possible to specify the location of `metamail' at
+  both configure-time and run-time.  It should also be possible to
+  *not* redirect its output to /dev/null so that its possible to debug 
+  metamail-related problems without having to recompile.
+
