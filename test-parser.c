@@ -392,8 +392,8 @@ static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 	return 0;
     }
 
-    /* Set it */
-    if (! env_set(env, symbol, *result, error))
+    /* Assign it */
+    if (! env_assign(env, symbol, *result, error))
     {
 	return 0;
     }

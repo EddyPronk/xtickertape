@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.5 2000/11/09 07:35:32 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.6 2000/11/10 07:47:03 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -151,6 +151,9 @@ int env_get(env_t env, sexp_t sexp, sexp_t *result, elvin_error_t error);
 
 /* Sets a symbol's value in the environment */
 int env_set(env_t env, sexp_t sexp, sexp_t value, elvin_error_t error);
+
+/* Sets a symbol's value in the appropriate environment */
+int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error);
 
 
 /* Sets the named symbol's value to the int32 value in env */

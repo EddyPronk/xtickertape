@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.9 2000/11/10 06:51:06 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.10 2000/11/10 07:47:03 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -950,20 +950,34 @@ int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 /* Sets a symbol's value in the environment */
 int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
-    /* Make sure it isn't in the hashtable */
+    /* Free our reference to the old value */
     elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error);
 
-    /* Use it to register the value in the map (automatically increases the ref_count) */
-    if (elvin_hash_add(
-	    env -> map,
-	    (elvin_hashkey_t)symbol,
-	    (elvin_hashdata_t)value,
-	    error) == 0)
+    /* Register the new value */
+    return elvin_hash_add(
+	env -> map,
+	(elvin_hashkey_t)symbol,
+	(elvin_hashdata_t)value,
+	error);
+}
+
+/* Sets a symbol's value in the appropriate environment */
+int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
+{
+    /* Try to find an environment which contains the symbol */
+    while (elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error) == 0 &&
+	   env -> parent != NULL)
     {
-	return 0;
+	env = env -> parent;
     }
 
-    return 1;
+    /* We've either found the defining environment or we're looking at
+     * the root environment.  Either way, record the value. */
+    return elvin_hash_add(
+	env -> map,
+	(elvin_hashkey_t)symbol,
+	(elvin_hashdata_t)value,
+	error);
 }
 
 /* Sets the named symbol's value */
