@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.36 2003/01/22 14:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.37 2003/01/27 00:14:09 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -292,7 +292,7 @@ static void notify_cb(
     if ((message = message_alloc(
 	NULL, newsgroups, name, subject, 60,
 	attachment, length - 1,
- 	NULL, NULL, NULL)) != NULL)
+ 	NULL, NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */
 	(*self -> callback)(self -> rock, message, False);

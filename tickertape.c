@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.102 2003/01/22 14:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.103 2003/01/27 00:14:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1100,7 +1100,7 @@ static void status_cb(
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
 	NULL, "internal", "tickertape", string, 30,
-	NULL, 0, NULL, NULL, NULL)) != NULL)
+	NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
     {
 	receive_callback(self, message, False);
 	message_free(message);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.36 2003/01/22 14:29:51 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.37 2003/01/27 00:14:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -165,7 +165,7 @@ static void notify_cb(
     message = message_alloc(
 	NULL, folder, from, subject, 60,
 	NULL, 0,
-	NULL, NULL, NULL);
+	NULL, NULL, NULL, NULL);
 
     (*self -> callback)(self -> rock, message, False);
 
