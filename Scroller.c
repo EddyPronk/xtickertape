@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.49 1999/07/30 06:00:36 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.50 1999/07/30 06:47:23 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1014,19 +1014,21 @@ static void Resize(Widget widget)
 	return;
     }
 
-    /* If the scroller is stalled, then we simply need to expand the gap */
-    if (self -> scroller.is_stopped)
-    {
-	self -> scroller.left_holder -> width = self -> core.width;
-	return;
-    }
-
     /* Otherwise we need a new pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(widget), XtWindow(widget),
 	self -> core.width, self -> scroller.height,
 	self -> core.depth);
+
+    /* If the scroller is stalled, then we simply need to expand the gap */
+    if (self -> scroller.is_stopped)
+    {
+	self -> scroller.left_holder -> width = self -> core.width;
+	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
+	Redisplay(widget, NULL, 0);
+	return;
+    }
 
     /* Adjust the glyph_holders and offsets to compensate */
     if (self -> scroller.step < 0)
