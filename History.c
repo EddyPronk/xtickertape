@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.35 2001/09/03 03:41:17 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.36 2001/09/03 04:11:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -400,6 +400,8 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     HistoryWidget self = (HistoryWidget)widget;
     Widget scrollbar;
 
+    dprintf(("History.init()\n"));
+
     /* Set the initial width/height if none are supplied */
     self -> core.width = 400;
     self -> core.height = 80;
@@ -474,8 +476,6 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     XtAddCallback(scrollbar, XmNtoBottomCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_scrollbar_cb, self);
     self -> history.vscrollbar = scrollbar;
-
-    printf("History: init()\n");
 }
 
 /* Updates the scrollbars after either the widget or the data it is
@@ -546,7 +546,7 @@ static void realize(
     Display *display = XtDisplay(self);
     XGCValues values;
 
-    dprintf(("History: realize()\n"));
+    dprintf(("History.realize()\n"));
 
     /* Create our window */
     XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
@@ -1141,7 +1141,7 @@ static void set_selection_index(HistoryWidget self, unsigned int index)
 /* Destroy the widget */
 static void destroy(Widget self)
 {
-    dprintf(("History: destroy()\n"));
+    dprintf(("History.destroy()\n"));
 }
 
 
@@ -1151,7 +1151,7 @@ static void resize(Widget widget)
     HistoryWidget self = (HistoryWidget)widget;
     int page_inc;
 
-    dprintf(("History: resize() w=%d, h=%d\n", self -> core.width, self -> core.height));
+    dprintf(("History.resize(w=%d, h=%d)\n", self -> core.width, self -> core.height));
 
     /* Update the page increment of the horizontal scrollbar */
     page_inc = self -> core.height;
@@ -1159,7 +1159,6 @@ static void resize(Widget widget)
 	self -> history.hscrollbar,
 	XmNpageIncrement, self -> core.width,
 	NULL);
-    printf("hscrollbar.page_inc: %d\n", page_inc);
 
     /* Update the page increment of the vertical scrollbar */
     page_inc = self -> core.height;
@@ -1167,7 +1166,6 @@ static void resize(Widget widget)
 	self -> history.vscrollbar,
 	XmNpageIncrement, page_inc,
 	NULL);
-    printf("vscrollbar.page_inc: %d\n", page_inc);
 
     /* Update the scrollbar sizes */
     update_scrollbars(widget);
@@ -1182,7 +1180,7 @@ static Boolean set_values(
     ArgList args,
     Cardinal *num_args)
 {
-    dprintf(("History: set_values()\n"));
+    dprintf(("History.set_values()\n"));
     return False;
 }
 
@@ -1193,7 +1191,7 @@ static XtGeometryResult query_geometry(
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred)
 {
-    dprintf(("History: query_geometry()\n"));
+    dprintf(("History.query_geometry()\n"));
     return XtGeometryYes;
 }
 
@@ -1201,6 +1199,8 @@ static XtGeometryResult query_geometry(
 static void border_highlight(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
+
+    dprintf(("History.border_highlight()\n"));
 
     /* Skip out if we're already highlighted */
     if (self -> primitive.highlighted)
@@ -1219,6 +1219,8 @@ static void border_highlight(Widget widget)
 static void border_unhighlight(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
+
+    dprintf(("History.border_unhighlight()\n"));
 
     /* No longer highlighting */
     self -> primitive.highlighted = False;
