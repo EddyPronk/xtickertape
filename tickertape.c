@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.110 2003/10/01 12:39:08 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.111 2004/02/02 22:01:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -504,12 +504,12 @@ static int read_config_file(tickertape_t self, elvin_error_t error)
 
 /* The callback for the groups file parser */
 static int parse_groups_callback(
-    tickertape_t self, char *name,
+    void *rock, char *name,
     int in_menu, int has_nazi,
     int min_time, int max_time,
-    elvin_keys_t notification_keys,
-    elvin_keys_t subscription_keys)
+    char **key_names, int key_count)
 {
+    tickertape_t self = (tickertape_t)rock;
     size_t length;
     char *expression;
     group_sub_t subscription;
@@ -528,7 +528,7 @@ static int parse_groups_callback(
 	    name, expression,
 	    in_menu, has_nazi,
 	    min_time, max_time,
-	    notification_keys, subscription_keys,
+            self -> keys, key_names, key_count,
 	    receive_callback, self)) == NULL)
     {
 	return -1;
@@ -553,8 +553,9 @@ static int parse_groups_file(tickertape_t self)
 
     /* Allocate a new groups file parser */
     if ((parser = groups_parser_alloc(
-	(groups_parser_callback_t)parse_groups_callback,
-	self, filename, self -> keys)) == NULL)
+             parse_groups_callback,
+             self,
+             filename)) == NULL)
     {
 	return -1;
     }

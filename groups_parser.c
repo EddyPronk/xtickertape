@@ -29,7 +29,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.29 2003/02/10 01:51:16 croy Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.30 2004/02/02 22:01:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -48,11 +48,8 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.29 2003/02/10 01:51:16 cro
 #ifdef HAVE_STRINGS_H
 #include <strings.h> /* strcasecmp */
 #endif
-#include <elvin/elvin.h>
-#include <elvin/sha1.h>
 #include "globals.h"
 #include "replace.h"
-#include "key_table.h"
 #include "groups_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
@@ -62,12 +59,6 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.29 2003/02/10 01:51:16 cro
 #define TIMEOUT_ERROR_MSG "illegal timeout value `%s'"
 #define KEY_ERROR_MSG "unknown key: `%s'"
 #define EXTRA_ERROR_MSG "superfluous characters: `%s'"
-
-
-/* libvin 4.0 has a poorly named macro */
-#if ! defined(ELVIN_SHA1_DIGESTLEN)
-#define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
-#endif
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -114,26 +105,11 @@ struct groups_parser
     /* The maximum timeout value for the current group */
     int max_time;
 
-    /* The table of keys to use */
-    key_table_t key_table;
+    /* The number keys */
+    int key_count;
 
-    /* The number of private keys */
-    int private_key_count;
-
-    /* The private keys */
-    char **private_keys;
-
-    /* The length of each private key */
-    int *private_key_lengths;
-
-    /* The number of public keys */
-    int public_key_count;
-
-    /* The public keys */
-    char **public_keys;
-
-    /* The length of each public key */
-    int *public_key_lengths;
+    /* The keys names */
+    char **key_names;
 };
 
 
@@ -157,8 +133,6 @@ static int accept_subscription(groups_parser_t self)
 {
     int result;
     int i;
-    elvin_keys_t notification_keys = NULL;
-    elvin_keys_t subscription_keys = NULL;
 
     /* Make sure there is a callback */
     if (self -> callback == NULL)
@@ -166,198 +140,26 @@ static int accept_subscription(groups_parser_t self)
 	return 0;
     }
 
-    /* If there are keys then make a key block */
-    if (self -> private_key_count != 0 || self -> public_key_count != 0)
-    {
-#if ! defined(ELVIN_VERSION_AT_LEAST)
-	/* Construct a notification key block */
-	if ((notification_keys = elvin_keys_alloc(NULL)) == NULL)
-	{
-	    abort();
-	}
-
-	/* Construct a subscription key block */
-	if ((subscription_keys = elvin_keys_alloc(NULL)) == NULL)
-	{
-	    abort();
-	}
-#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-	/* Construct a notification key block */
-	if ((notification_keys = elvin_keys_alloc(client, NULL)) == NULL)
-	{
-	    abort();
-	}
-
-	/* Construct a subscription key block */
-	if ((subscription_keys = elvin_keys_alloc(client, NULL)) == NULL)
-	{
-	    abort();
-	}
-#else
-#error "Unsupported Elvin library version"
-#endif
-
-	/* Add the private keys to the notification block */
-	for (i = 0; i < self -> private_key_count; i++)
-	{
-	    /* SHA-1 dual */
-	    if (! elvin_keys_add(notification_keys,
-				 ELVIN_KEY_SCHEME_SHA1_DUAL,
-				 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
-				 self -> private_keys[i],
-				 self -> private_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                 NULL,
-#endif
-				 NULL))
-	    {
-		return -1;
-	    }
-	}
-
-	/* Add the public keys to the notification key blcok */
-	for (i = 0; i < self -> public_key_count; i++)
-	{
-	    if (self -> private_key_count != 0)
-	    {
-		/* SHA-1 dual */
-		if (! elvin_keys_add(notification_keys,
-				     ELVIN_KEY_SCHEME_SHA1_DUAL,
-				     ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-				     self -> public_keys[i],
-				     self -> public_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                     NULL,
-#endif
-				     NULL))
-		{
-		    return -1;
-		}
-	    }
-
-	    /* SHA-1 consumer */
-	    if (! elvin_keys_add(notification_keys,
-				 ELVIN_KEY_SCHEME_SHA1_CONSUMER,
-				 ELVIN_KEY_SHA1_CONSUMER_INDEX,
-				 self -> public_keys[i],
-				 self -> public_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                 NULL,
-#endif
-				 NULL))
-	    {
-		return -1;
-	    }
-	}
-
-	/* Add the private keys to the subscription key block */
-	for (i = 0; i < self -> private_key_count; i++)
-	{
-	    /* SHA-1 dual */
-	    if (! elvin_keys_add(subscription_keys,
-				 ELVIN_KEY_SCHEME_SHA1_DUAL,
-				 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-				 self -> private_keys[i],
-				 self -> private_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                 NULL,
-#endif
-				 NULL))
-	    {
-		return -1;
-	    }
-	}
-
-	/* Add the public keys to the subscription key block */
-	for (i = 0; i < self -> public_key_count; i++)
-	{
-	    if (self -> private_key_count != 0)
-	    {
-		/* SHA-1 dual */
-		if (! elvin_keys_add(subscription_keys,
-				     ELVIN_KEY_SCHEME_SHA1_DUAL,
-				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
-				     self -> public_keys[i],
-				     self -> public_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                     NULL,
-#endif
-				     NULL))
-		{
-		    return -1;
-		}
-	    }
-
-	    /* SHA-1 producer */
-	    if (! elvin_keys_add(subscription_keys,
-				 ELVIN_KEY_SCHEME_SHA1_PRODUCER,
-				 ELVIN_KEY_SHA1_PRODUCER_INDEX,
-				 self -> public_keys[i],
-				 self -> public_key_lengths[i],
-#if defined(ELVIN_VERSION_AT_LEAST)
-                                 NULL,
-#endif
-				 NULL))
-	    {
-		return -1;
-	    }
-	}
-    }
-
     /* Call it with the information */
-    result = (self -> callback)(
+    result = self -> callback(
 	self -> rock, self -> name,
 	self -> in_menu, self -> has_nazi,
 	self -> min_time, self -> max_time,
-	notification_keys,
-	subscription_keys);
-
-    /* Free the key blocks */
-    if (notification_keys)
-    {
-	elvin_keys_free(notification_keys, NULL);
-    }
-
-    if (subscription_keys)
-    {
-	elvin_keys_free(subscription_keys, NULL);
-    }
-
-    /* Free the private keys */
-    for (i = 0; i < self -> private_key_count; i++)
-    {
-	free(self -> private_keys[i]);
-    }
-
-    if (self -> private_keys != NULL)
-    {
-	free(self -> private_keys);
-	self -> private_keys = NULL;
-
-	free(self -> private_key_lengths);
-	self -> private_key_lengths = NULL;
-
-	self -> private_key_count = 0;
-    }
-
-    /* Free the public keys */
-    for (i = 0; i < self -> public_key_count; i++)
-    {
-	free(self -> public_keys[i]);
-    }
-
-    if (self -> public_keys != NULL)
-    {
-	free(self -> public_keys);
-	self -> public_keys = NULL;
-
-	free(self -> public_key_lengths);
-	self -> public_key_lengths = NULL;
-
-	self -> public_key_count = 0;
-    }
+        self -> key_names, self -> key_count);
 
     /* Clean up */
+    for (i = 0; i < self -> key_count; i++)
+    {
+        free(self -> key_names[i]);
+    }
+
+    if (self -> key_names)
+    {
+        free(self -> key_names);
+        self -> key_names = NULL;
+        self -> key_count = 0;
+    }
+
     free(self -> name);
     return result;
 }
@@ -371,106 +173,23 @@ static void parse_error(groups_parser_t self, char *message)
 /* Adds a key to the current list */
 static int accept_key(groups_parser_t self, char *name)
 {
-    char *data;
-    int length;
-    int is_private;
-    void *new_names;
-    void *new_lengths;
-    char public_key[ELVIN_SHA1_DIGESTLEN];
+    char **new_names;
 
-    /* Look up the key in the table */
-    if (key_table_lookup(
-	    self -> key_table, name,
-	    &data, &length, &is_private) < 0)
+    /* Make room in the list of keys */
+    if ((new_names = (char **)realloc(
+             self->key_names,
+             (self->key_count + 1) * sizeof(char *))) == NULL)
     {
-	int len = strlen(KEY_ERROR_MSG) + strlen(name) + 1;
-	char *buffer;
+        return -1;
+    }
+    self -> key_names = new_names;
 
-	if ((buffer = (char *)malloc(len)) != NULL)
-	{
-	    snprintf(buffer, len, KEY_ERROR_MSG, name);
-	    parse_error(self, buffer);
-	    free(buffer);
-	}
-
-	return -1;
+    /* Record the new key name */
+    if ((new_names[self->key_count++] = strdup(name)) == NULL)
+    {
+        return -1;
     }
 
-    if (is_private)
-    {
-	/* Grow the array of private keys */
-	if ((new_names = realloc(
-		 self -> private_keys,
-		 (self -> private_key_count + 1) * sizeof(char *))) == NULL)
-	{
-	    return -1;
-	}
-
-	self -> private_keys = new_names;
-
-	/* Grow the array of private key lengths */
-	if ((new_lengths = realloc(
-		 self -> private_key_lengths,
-		 (self -> private_key_count + 1) * sizeof(char *))) == NULL)
-	{
-	    return -1;
-	}
-
-	self -> private_key_lengths = new_lengths;
-
-	/* Store the new private key */
-	if ((self -> private_keys[self -> private_key_count] = malloc(length)) == NULL)
-	{
-	    return -1;
-	}
-	memcpy(self -> private_keys[self -> private_key_count], data, length);
-
-	self -> private_key_lengths[self -> private_key_count] = length;
-	self -> private_key_count++;
-
-#if ! defined(ELVIN_VERSION_AT_LEAST)
-	/* Calculate the public key */
-	if (! elvin_sha1digest(data, length, public_key))
-	{
-	    return -1;
-	}
-#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-	/* Calculate the public key */
-	if (! elvin_sha1_digest(client, data, length, public_key, NULL))
-	{
-	    return -1;
-	}
-#else
-#error "Unsupported Elvin library version"
-#endif /* ELVIN_VERSION_AT_LEAST */
-
-	length = ELVIN_SHA1_DIGESTLEN;
-	data = public_key;
-    }
-
-    /* Grow the array of public keys */
-    if ((new_names = realloc(self -> public_keys, (self -> public_key_count + 1) * sizeof(char *))) == NULL)
-    {
-	return -1;
-    }
-    self -> public_keys = new_names;
-
-    /* Grow the array of public key lengths */
-    if ((new_lengths = realloc(self -> public_key_lengths, (self -> public_key_count + 1) * sizeof(int))) == NULL)
-    {
-	return -1;
-    }
-    self -> public_key_lengths = new_lengths;
-
-    /* Store the new public key */
-    if ((self -> public_keys[self -> public_key_count] = malloc(length)) == NULL)
-    {
-	return -1;
-    }
-    memcpy(self -> public_keys[self -> public_key_count], data, length);
-
-    self -> public_key_lengths[self -> public_key_count] = length;
-    self -> public_key_count++;
     return 0;
 }
 
@@ -1063,8 +782,7 @@ static int parse_char(groups_parser_t self, int ch)
 groups_parser_t groups_parser_alloc(
     groups_parser_callback_t callback,
     void *rock,
-    char *tag,
-    key_table_t keys)
+    char *tag)
 {
     groups_parser_t self;
 
@@ -1096,7 +814,6 @@ groups_parser_t groups_parser_alloc(
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
     self -> state = lex_start;
     self -> line_num = 1;
-    self -> key_table = keys;
     return self;
 }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.50 2003/04/07 14:52:50 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.51 2004/02/02 22:01:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -48,6 +48,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.50 2003/04/07 14:52:50 phelps 
 #include <elvin/elvin.h>
 #include "globals.h"
 #include "replace.h"
+#include "key_table.h"
 #include "group_sub.h"
 
 #define F3_USER_AGENT "User-Agent"
@@ -75,13 +76,29 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.50 2003/04/07 14:52:50 phelps 
 /* The size of the MIME args buffer */
 #define BUFFER_SIZE (32)
 
-/* compatability code for return code of callbacks */
+/* libelvin compatibility hackery */
 #if !defined(ELVIN_VERSION_AT_LEAST)
+#  define ELVIN_RETURN_TYPE void
 #  define ELVIN_RETURN_FAILURE
 #  define ELVIN_RETURN_SUCCESS
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#  define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
+#  define elvin_sha1_digest(client, data, length, public_key, error) \
+    elvin_sha1digest(data, length, public_key)
+#  define ELVIN_NOTIFICATION_ALLOC(client, error) \
+    elvin_notification_alloc(error)
+#  define ELVIN_KEYS_ALLOC(client, error) \
+    elvin_keys_alloc(error)
+#  define ELVIN_KEYS_ADD(keys, scheme, key_set_index, bytes, length, rock, error) \
+    elvin_keys_add(keys, scheme, key_set_index, bytes, length, error)
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+#  define ELVIN_RETURN_TYPE int
 #  define ELVIN_RETURN_FAILURE 0
 #  define ELVIN_RETURN_SUCCESS 1
+#  define ELVIN_NOTIFICATION_ALLOC elvin_notification_alloc
+#  define ELVIN_KEYS_ALLOC elvin_keys_alloc
+#  define ELVIN_KEYS_ADD elvin_keys_add
+#else
+#  error "Unsupported libelvin version"
 #endif
 
 
@@ -94,11 +111,17 @@ struct group_sub
     /* The receiver's subscription expression */
     char *expression;
 
-    /* The receiver's notification keys */
-    elvin_keys_t notification_keys;
+    /* The table of keys */
+    key_table_t key_table;
 
-    /* The receiver's subscription keys */
-    elvin_keys_t subscription_keys;
+    /* The names of the keys */
+    char **key_names;
+
+    /* The number of key names */
+    int key_count;
+
+    /* Non-zero if one of the key_names refers to a private key */
+    int has_private_key;
 
     /* Non-zero if the receiver should appear in the groups menu */
     int in_menu;
@@ -143,6 +166,160 @@ struct group_sub
  * Static functions
  *
  */
+
+/* Adds a subscription key to an elvin_keys_t */
+static void add_named_key(
+    elvin_keys_t keys,
+    int has_private_key,
+    int is_for_notify,
+    key_table_t key_table,
+    char *name)
+{
+    char *data;
+    int length;
+    int is_private;
+    char digest[ELVIN_SHA1_DIGESTLEN];
+
+    /* Look up the key */
+    if (key_table_lookup(key_table, name, &data, &length, &is_private) < 0)
+    {
+        printf("unknown key %s\n", name);
+        return;
+    }
+
+    if (is_private)
+    {
+        if (! ELVIN_KEYS_ADD(
+                keys,
+                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                is_for_notify ? 
+                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+                ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+                data, length, NULL,
+                NULL))
+        {
+            fprintf(stderr, "elvin_keys_add failed for key %s\n", name);
+        }
+
+        /* Digest it to get a public key */
+        if (! elvin_sha1_digest(client, data, length, digest, NULL))
+        {
+            abort();
+        }
+
+        /* Arrange to add the public key too */
+        data = digest;
+        length = ELVIN_SHA1_DIGESTLEN;
+    }
+
+    /* Add the public key */
+    if (has_private_key)
+    {
+        /* We needn't bother adding the public key to the SHA1 dual
+         * block if we don't have a private key since we can't match
+         * without one */
+        if (! ELVIN_KEYS_ADD(
+                keys,
+                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                is_for_notify ?
+                ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
+                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+                data, length, NULL,
+                NULL))
+        {
+            fprintf(stderr, "elvin_keys_add failed for key %s\n", name);
+        }
+    }
+
+    /* Add it as a normal key too */
+    if (! ELVIN_KEYS_ADD(
+            keys,
+            ELVIN_KEY_SCHEME_SHA1_PRODUCER,
+            is_for_notify ?
+            ELVIN_KEY_SHA1_CONSUMER_INDEX :
+            ELVIN_KEY_SHA1_PRODUCER_INDEX,
+            data, length, NULL,
+            NULL))
+    {
+        fprintf(stderr, "elvin_keys_add failed for key %s\n", name);
+    }
+}
+
+#if 0
+static void remove_named_key(
+    elvin_keys_t keys,
+    int has_private_key,
+    int is_for_notify,
+    key_table_t key_table,
+    char *name)
+{
+    char *data;
+    int length;
+    int is_private;
+    char digest[ELVIN_SHA1_DIGESTLEN];
+
+    /* Look up the key */
+    if (key_table_lookup(key_table, name, &data, &length, &is_private) < 0)
+    {
+        printf("unknown key %s\n", name);
+        return;
+    }
+
+    if (is_private)
+    {
+        if (! elvin_keys_remove(
+                keys,
+                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                is_for_notify ?
+                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+                ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+                data, length, NULL))
+        {
+            fprintf(stderr, "elvin_keys_remove failed for key %s\n", name);
+        }
+
+        /* Digest it to get the public key */
+        if (! elvin_sha1_digest(client, data, length, digest, NULL))
+        {
+            abort();
+        }
+
+        /* Arrange to remove the public key too */
+        data = digest;
+        length = ELVIN_SHA1_DIGESTLEN;
+    }
+
+    /* Remove the public key */
+    if (has_private_key)
+    {
+        /* We won't have registered the public key with the SHA1 dual
+         * block unless we have at least one private key to make a
+         * match possible. */
+        if (! elvin_keys_remove(
+                keys,
+                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                is_for_notify ?
+                ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
+                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+                data, length, NULL))
+        {
+            fprintf(stderr, "elvin_keys_remove failed for key %s\n", name);
+        }
+    }
+
+    /* Remove the normal key */
+    if (! elvin_keys_remove(
+            keys,
+            ELVIN_KEY_SCHEME_SHA1_PRODUCER,
+            is_for_notify ?
+            ELVIN_KEY_SHA1_CONSUMER_INDEX :
+            ELVIN_KEY_SHA1_PRODUCER_INDEX,
+            data, length, NULL))
+    {
+        fprintf(stderr, "elvin_keys_remove failed for key %s\n", name);
+    }
+}
+#endif
 
 #if ! defined(ELVIN_VERSION_AT_LEAST)    
 /* Delivers a notification which matches the receiver's subscription expression */
@@ -742,6 +919,8 @@ static void send_message(group_sub_t self, message_t message)
     char *buffer = NULL;
     char *mime_type;
     char *mime_args;
+    elvin_keys_t keys;
+    int i;
     
     /* Pull information out of the message */
     timeout = message_get_timeout(message);
@@ -751,25 +930,13 @@ static void send_message(group_sub_t self, message_t message)
     length = message_get_attachment(message, &attachment);
     message_decode_attachment(message, &mime_type, &mime_args);
 
-#if ! defined(ELVIN_VERSION_AT_LEAST)
     /* Allocate a new notification */
-    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
-    {
-	fprintf(stderr, PACKAGE ": elvin_notification_alloc() failed\n");
-	elvin_error_fprintf(stderr, self -> error);
-	exit(1);
-    }
-#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    /* Allocate a new notification */
-    if ((notification = elvin_notification_alloc(client, self -> error)) == NULL)
+    if ((notification = ELVIN_NOTIFICATION_ALLOC(client, self -> error)) == NULL)
     {
 	fprintf(stderr, PACKAGE ": elvin_notification_alloc(): failed\n");
 	elvin_error_fprintf(stderr, self -> error);
 	exit(1);
     }
-#else
-#error "Unsupported Elvin library version"
-#endif
 
     /* Add an xtickertape user agent tag */
     if (elvin_notification_add_string(
@@ -946,13 +1113,39 @@ static void send_message(group_sub_t self, message_t message)
 	}
     }
 
-    /* Send the notification */
-    elvin_async_notify(
-	self -> handle,
-	notification, 
-	(self -> notification_keys == NULL) ? 1 : 0,
-	self -> notification_keys,
-	self -> error);
+    /* Put together the list of keys */
+    if (self -> key_count == 0)
+    {
+        keys = NULL;
+    }
+    else
+    {
+        if ((keys = ELVIN_KEYS_ALLOC(client, self -> error)) == NULL)
+        {
+            fprintf(stderr, "elvin_keys_alloc failed\n");
+            elvin_error_fprintf(stderr, self -> error);
+            abort();
+        }
+
+        for (i = 0; i < self -> key_count; i++)
+        {
+            add_named_key(
+                keys,
+                self -> has_private_key, 1,
+                self -> key_table, self -> key_names[i]);
+        }
+    }
+
+    if (!elvin_async_notify(
+            self -> handle,
+            notification,
+            (self -> key_count == 0), keys,
+            self -> error))
+    {
+        fprintf(stderr, "elvin_async_notify failed\n");
+        elvin_error_fprintf(stderr, self -> error);
+        elvin_error_clear(self -> error);
+    }
 
     /* And clean up */
     elvin_notification_free(notification, self -> error);
@@ -960,7 +1153,244 @@ static void send_message(group_sub_t self, message_t message)
     {
 	free(buffer);
     }
+
+    if (keys)
+    {
+        if (! elvin_keys_free(keys, self -> error))
+        {
+            fprintf(stderr, "elvin_keys_free failed\n");
+            elvin_error_fprintf(stderr, self -> error);
+            abort();
+        }
+    }
 }
+
+
+/* Returns the index of name is in key_names, or -1 if not present */
+static int key_index(char **key_names, int key_count, char *name)
+{
+    int i;
+
+    for (i = 0; i < key_count; i++)
+    {
+        if (strcmp(key_names[i], name) == 0)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+/* Updates a group sub's keys to match a new list */
+static void group_sub_update_keys(
+    group_sub_t self,
+    char **key_names,
+    int key_count,
+    elvin_keys_t *keys_to_add_out,
+    elvin_keys_t *keys_to_remove_out)
+{
+    char **old_keys;
+    int old_count;
+    int index;
+    int i;
+    char *data;
+    int length;
+    int is_private;
+    int has_private_key;
+
+    /* Decide whether or not any of the key_names refers to a private key */
+    has_private_key = 0;
+    for (i = 0; i < key_count; i++)
+    {
+        if (key_table_lookup(
+                self -> key_table, key_names[i],
+                NULL, NULL, &is_private) < 0)
+        {
+            continue;
+        }
+
+        if (is_private)
+        {
+            has_private_key = 1;
+            break;
+        }
+    }
+
+    /* Remember our old set of keys */
+    old_keys = self -> key_names;
+    old_count = self -> key_count;
+
+    /* Allocate memory for a new set */
+    if (!key_count)
+    {
+        self -> key_names = NULL;
+    }
+    else
+    {
+        if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL)
+        {
+            abort();
+        }
+    }
+
+    /* Go through the new set of keys */
+    for (i = 0; i < key_count; i++)
+    {
+        /* See if we have this key */
+        index = key_index(old_keys, old_count, key_names[i]);
+
+        if (index < 0)
+        {
+            /* New key */
+            if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
+            {
+                abort();
+            }
+
+            /* Are we returning keys to add */
+            if (keys_to_add_out)
+            {
+                /* Make sure we have a table */
+                if (! (*keys_to_add_out))
+                {
+                    if ((*keys_to_add_out = ELVIN_KEYS_ALLOC(client, NULL)) == NULL)
+                    {
+                        abort();
+                    }
+                }
+
+                /* Add the key */
+                add_named_key(*keys_to_add_out,
+                              has_private_key, 0,
+                              self -> key_table, key_names[i]);
+            }
+        }
+        else
+        {
+            self -> key_names[i] = old_keys[index];
+            old_keys[index] = old_keys[--old_count];
+
+            /* Will we need to add a public key? */
+            if (! self -> has_private_key && has_private_key)
+            {
+                /* Are we returning keys to add? */
+                if (keys_to_add_out)
+                {
+                    /* Make sure we have a table */
+                    if (! (*keys_to_add_out))
+                    {
+                        if ((*keys_to_add_out = ELVIN_KEYS_ALLOC(client, NULL)) == NULL)
+                        {
+                            abort();
+                        }
+                    }
+
+                    /* Look up the key */
+                    if (key_table_lookup(
+                            self -> key_table, key_names[i],
+                            &data, &length, &is_private) < 0) {
+                        fprintf(stderr, "Group %s refers to unknown key %s\n",
+                                self -> name, key_names[i]);
+                    }
+                    else
+                    {
+                        /* Sanity check: we shouldn't get here if the key is private */
+                        assert(!is_private);
+
+                        /* Add the key to the SHA1 dual key block */
+                        if (!ELVIN_KEYS_ADD(
+                                *keys_to_add_out,
+                                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+                                data, length, NULL,
+                                NULL))
+                        {
+                            fprintf(stderr, "elvin_keys_add_failed for group %s key %s\n",
+                                    self -> name, key_names[i]);
+                        }
+                    }
+                }
+            }
+            else if (self -> has_private_key && ! has_private_key)
+            {
+                /* Are we returning keys to remove? */
+                if (keys_to_remove_out)
+                {
+                    /* Make sure we have a table */
+                    if (! (*keys_to_remove_out))
+                    {
+                        if ((*keys_to_remove_out = ELVIN_KEYS_ALLOC(client, NULL)) == NULL)
+                        {
+                            abort();
+                        }
+                    }
+
+                    /* Look up the key */
+                    if (key_table_lookup(
+                            self -> key_table, key_names[i],
+                            &data, &length, &is_private) < 0)
+                    {
+                        fprintf(stderr, "Group %s refers to unknown key %s\n",
+                                self -> name, key_names[i]);
+                    }
+                    else
+                    {
+                        /* Sanity check: we shouldn't get here if the key is private */
+                        assert(!is_private);
+
+                        /* Remove the key from the SHA1 dual block */
+                        if (!ELVIN_KEYS_ADD(
+                                *keys_to_remove_out,
+                                ELVIN_KEY_SCHEME_SHA1_DUAL,
+                                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+                                data, length, NULL,
+                                NULL))
+                        {
+                            fprintf(stderr, "elvin_keys_remove failed for gorup %s key %s\n",
+                                    self -> name, key_names[i]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    self -> key_count = key_count;
+
+    /* Discard the old keys */
+    for (i = 0; i < old_count; i++)
+    {
+        /* Are we returning keys to remove? */
+        if (keys_to_remove_out)
+        {
+            /* Make sure we have a table */
+            if (! (*keys_to_remove_out))
+            {
+                if ((*keys_to_remove_out = ELVIN_KEYS_ALLOC(client, NULL)) == NULL)
+                {
+                    abort();
+                }
+            }
+
+            add_named_key(
+                *keys_to_remove_out,
+                self -> has_private_key, 0,
+                self -> key_table, old_keys[i]);
+        }
+
+        free(old_keys[i]);
+    }
+
+    self -> has_private_key = has_private_key;
+
+    /* Clean up */
+    if (old_keys)
+    {
+        free(old_keys);
+    }
+}
+                                 
+
 
 /*
  *
@@ -977,12 +1407,14 @@ group_sub_t group_sub_alloc(
     int has_nazi,
     int min_time,
     int max_time,
-    elvin_keys_t notification_keys,
-    elvin_keys_t subscription_keys,
+    key_table_t key_table,
+    char **key_names,
+    int key_count,
     group_sub_callback_t callback,
     void *rock)
 {
     group_sub_t self;
+    int i, is_private;
 
     /* Allocate memory for the new group_sub_t */
     if ((self = (group_sub_t)malloc(sizeof(struct group_sub))) == NULL)
@@ -1005,19 +1437,38 @@ group_sub_t group_sub_alloc(
 	return NULL;
     }
 
-    /* Copy the notification keys (if there are any) */
-    if (notification_keys != NULL)
+    /* Allocate room for a copy of the list of key names */
+    if (key_count)
     {
-	self -> notification_keys = elvin_keys_clone(notification_keys, NULL);
-    }
+        if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL)
+        {
+            abort();
+        }
 
-    /* Copy the subscription keys (if there are any) */
-    if (subscription_keys != NULL)
-    {
-	self -> subscription_keys = elvin_keys_clone(subscription_keys, NULL);
+        /* Copy each key name */
+        for (i = 0; i < key_count; i++)
+        {
+            if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
+            {
+                abort();
+            }
+
+            /* Look up the key */
+            if (key_table_lookup(key_table, key_names[i], NULL, NULL, &is_private) < 0)
+            {
+                fprintf(stderr, "Unknown key \"%s\" in group \"%s\"\n", key_names[i], name);
+            }
+            else
+            {
+                self -> has_private_key |= is_private;
+            }
+        }
+
+        self -> key_count = key_count;
     }
 
     /* Copy the rest of the initializers */
+    self -> key_table = key_table;
     self -> in_menu = in_menu;
     self -> has_nazi = has_nazi;
     self -> min_time = min_time;
@@ -1030,6 +1481,8 @@ group_sub_t group_sub_alloc(
 /* Releases resources used by a Subscription */
 void group_sub_free(group_sub_t self)
 {
+    int i;
+
     if (self -> name)
     {
 	free(self -> name);
@@ -1042,16 +1495,14 @@ void group_sub_free(group_sub_t self)
 	self -> expression = NULL;
     }
 
-    if (self -> notification_keys)
+    if (self -> key_names)
     {
-	elvin_keys_free(self -> notification_keys, NULL);
-	self -> notification_keys = NULL;
-    }
-
-    if (self -> subscription_keys)
-    {
-	elvin_keys_free(self -> subscription_keys, NULL);
-	self -> subscription_keys = NULL;
+        for (i = 0; i < self -> key_count; i++)
+        {
+            free(self -> key_names[i]);
+        }
+        free(self -> key_names);
+        self -> key_names = NULL;
     }
 
     /* Don't free a pending subscription */
@@ -1069,136 +1520,90 @@ char *group_sub_expression(group_sub_t self)
     return self -> expression;
 }
 
-/* Compares two key blocks (possibly NULL) and returns whether they
- * are equivalent.  It would be convenient if libelvin could do
- * this. */
-static int keys_equal(elvin_keys_t self, elvin_keys_t keys)
-{
-#if defined(ELVIN_VERSION_AT_LEAST)
-#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    int matched;
-#else
-#error "Unsupported Elvin library version"
-#endif
-#endif
-
-    /* Shortcut: if self is NULL then the decision is equal */
-    if (self == NULL)
-    {
-	return keys == NULL ? 1 : 0;
-    }
-
-    /* If keys is NULL then they can't match */
-    if (keys == NULL)
-    {
-	return 0;
-    }
-
-    /* Are the key blocks subsets of each other? */
-#if ! defined(ELVIN_VERSION_AT_LEAST)
-    return elvin_keys_contains_all(self, keys, NULL) &&
-	elvin_keys_contains_all(keys, self, NULL);
-#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    /* Is self a superset of keys? */
-    if (! elvin_keys_contains_all(self, keys, &matched, NULL))
-    {
-	return -1;
-    }
-
-    if (! matched)
-    {
-	return 0;
-    }
-
-    /* Is keys a superset of self? */
-    if (! elvin_keys_contains_all(keys, self, &matched, NULL))
-    {
-	return -1;
-    }
-
-    return matched;
-#else
-#error "Unsupported Elvin library version"
-#endif /* ELVIN_VERSION_AT_LEAST */
-}
-
 /* Updates the receiver to look just like subscription in terms of
- * name, in_menu, autoMime, min_time, max_time, keys, callback and
- * rock, but NOT expression */
+ * name, expression, in_menu, has_nazi, min_time, max_time, keys,
+ * callback and rock */
 void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 {
-    int sub_changed = 0;
+    char *expression = NULL;
+    elvin_keys_t keys_to_add = NULL;
+    elvin_keys_t keys_to_remove = NULL;
+    int accept_insecure;
 
-    /* Release any dynamically allocated strings in the receiver */
-    free(self -> name);
-
-    /* Compare the notification keys */
-    if (! keys_equal(self -> notification_keys, subscription -> notification_keys))
+    /* Update the subscription name */
+    if (strcmp(self -> name, subscription -> name) != 0)
     {
-	sub_changed = 1;
-
-	/* Free the old key block */
-	if (self -> notification_keys != NULL)
-	{
-	    elvin_keys_free(self -> notification_keys, NULL);
-	    self -> notification_keys = NULL;
-	}
-
-	/* Clone the new key block */
-	if (subscription -> notification_keys != NULL)
-	{
-	    self -> notification_keys = elvin_keys_clone(
-		subscription -> notification_keys, NULL);
-	}
+        free(self -> name);
+        if ((self -> name = strdup(subscription -> name)) == NULL)
+        {
+            /* FIX THIS: error reporting?! */
+            abort();
+        }
     }
 
-    /* Compare the subscription keys */
-    if (! keys_equal(self -> subscription_keys, subscription -> subscription_keys))
+    /* Update the expression if it has changed */
+    if (strcmp(self -> expression, subscription -> expression) != 0)
     {
-	sub_changed = 1;
+        free(self -> expression);
+        if ((self -> expression = strdup(subscription -> expression)) == NULL)
+        {
+            /* FIX THIS: error reporting? */
+            abort();
+        }
 
-	/* Free the old key block */
-	if (self -> subscription_keys != NULL)
-	{
-	    elvin_keys_free(self -> subscription_keys, NULL);
-	    self -> subscription_keys = NULL;
-	}
-
-	/* Clone the new key block */
-	if (subscription -> subscription_keys != NULL)
-	{
-	    self -> subscription_keys = elvin_keys_clone(
-		subscription -> subscription_keys, NULL);
-	}
+        /* We have a new epxression */
+        expression = self -> expression;
     }
 
-    /* Update the key blocks */
-    if (sub_changed)
-    {
-	/* Modify the subscription on the server */
-	/* FIX THIS: blech! */
-	abort();
-    }
-    
+    group_sub_update_keys(self, subscription -> key_names, subscription -> key_count,
+                          &keys_to_add, &keys_to_remove);
+    accept_insecure = (self -> key_count == 0);
+
     /* Copy various fields */
-    self -> name = strdup(subscription -> name);
     self -> in_menu = subscription -> in_menu;
     self -> has_nazi = subscription -> has_nazi;
     self -> min_time = subscription -> min_time;
     self -> max_time = subscription -> max_time;
     self -> callback = subscription -> callback;
     self -> rock = subscription -> rock;
+
+    /* Update the subscription if necessary */
+    if (expression != NULL ||
+        keys_to_add != NULL ||
+        keys_to_remove != NULL)
+    {
+	/* Modify the subscription on the server */
+        if (! elvin_async_modify_subscription(
+                self -> handle,
+                self -> subscription,
+                expression,
+                keys_to_add,
+                keys_to_remove,
+                &accept_insecure,
+                NULL, NULL,
+                NULL, NULL,
+                NULL))
+        {
+            fprintf(stderr, "elvin_async_modify_subscription failed\n");
+            abort();
+        }
+    }
+
+    /* Clean up */
+    if (keys_to_add)
+    {
+        elvin_keys_free(keys_to_add, NULL);
+    }
+
+    if (keys_to_remove)
+    {
+        elvin_keys_free(keys_to_remove, NULL);
+    }
 }
 
 
 /* Callback for a subscribe request */
-static 
-#if !defined(ELVIN_VERSION_AT_LEAST)
-void
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
-int
-#endif
-subscribe_cb(
+static ELVIN_RETURN_TYPE subscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -1217,13 +1622,7 @@ subscribe_cb(
 }
 
 /* Callback for an unsubscribe request */
-static 
-#if !defined(ELVIN_VERSION_AT_LEAST)
-void
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
-int
-#endif
-unsubscribe_cb(
+static ELVIN_RETURN_TYPE unsubscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -1241,8 +1640,14 @@ unsubscribe_cb(
 }
 
 /* Sets the receiver's connection */
-void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_error_t error)
+void group_sub_set_connection(
+    group_sub_t self,
+    elvin_handle_t handle,
+    elvin_error_t error)
 {
+    elvin_keys_t keys;
+    int i;
+
     if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
 	if (elvin_async_delete_subscription(
@@ -1262,17 +1667,48 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 
     if (self -> handle != NULL)
     {
-	if (elvin_async_add_subscription(
-	    self -> handle, self -> expression,
-	    self -> subscription_keys,
-	    (self -> subscription_keys == NULL) ? 1 : 0,
-	    notify_cb, self,
-	    subscribe_cb, self,
-	    error) == 0)
-	{
-	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
-	    exit(1);
-	}
+        /* Compute the keys */
+        if (self -> key_count == 0)
+        {
+            keys = NULL;
+        }
+        else
+        {
+            if ((keys = ELVIN_KEYS_ALLOC(client, NULL)) == NULL)
+            {
+                abort();
+            }
+
+            for (i = 0; i < self -> key_count; i++)
+            {
+                add_named_key(
+                    keys,
+                    self -> has_private_key, 0,
+                    self -> key_table, self -> key_names[i]);
+            } 
+        }
+
+        if (!elvin_async_add_subscription(
+                self -> handle,
+                self -> expression,
+                keys, (self -> key_count == 0),
+                notify_cb, self,
+                subscribe_cb, self,
+                error))
+        {
+            fprintf(stderr, "elvin_async_add_subscription() failed\n");
+            elvin_error_fprintf(stderr, error);
+        }
+
+        if (keys)
+        {
+            if (!elvin_keys_free(keys, error))
+            {
+                fprintf(stderr, "elvin_keys_free failed\n");
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
+        }
 
 	self -> is_pending = 1;
     }

@@ -34,7 +34,7 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.10 2002/04/14 22:33:16 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.11 2004/02/02 22:01:19 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -54,8 +54,9 @@ group_sub_t group_sub_alloc(
     int has_nazi,
     int min_time,
     int max_time,
-    elvin_keys_t notification_keys,
-    elvin_keys_t subscription_keys,
+    key_table_t key_table,
+    char **key_names,
+    int key_count,
     group_sub_callback_t callback,
     void *rock);
 
@@ -66,8 +67,8 @@ void group_sub_free(group_sub_t self);
 char *group_sub_expression(group_sub_t self);
 
 /* Updates the receiver to look just like subscription in terms of
- * group, in_menu, has_nazi, min_time, max_time, callback and rock,
- * but NOT expression */
+ * name, expression, in_menu, has_nazi, min_time, max_time, keys,
+ * callback and rock */
 void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription);
 
 /* Sets the receiver's connection */
