@@ -34,7 +34,7 @@
 #define KEYS_PARSER_H
 
 #ifndef lint
-static const char cvs_KEYS_PARSER_H[] = "$Id: keys_parser.h,v 1.1 2002/04/14 20:44:01 phelps Exp $";
+static const char cvs_KEYS_PARSER_H[] = "$Id: keys_parser.h,v 1.2 2003/01/11 13:25:37 phelps Exp $";
 #endif /* lint */
 
 #include <elvin/elvin.h>
@@ -52,6 +52,7 @@ typedef int (*keys_parser_callback_t)(
 
 /* Allocates and initializes a new keys file parser */
 keys_parser_t keys_parser_alloc(
+    char *tickerdir,
     keys_parser_callback_t callback,
     void *rock,
     char *tag);

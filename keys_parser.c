@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.5 2002/04/23 17:09:16 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.6 2003/01/11 13:25:37 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -83,6 +83,9 @@ struct keys_parser
 
     /* The client data for the callback */
     void *rock;
+
+    /* The tickertape preferences directory */
+    char *ticker_dir;
 
     /* The tag for error messages */
     char *tag;
@@ -146,6 +149,27 @@ static int accept_key(keys_parser_t self)
     {
         int fd;
         struct stat file_stat;
+
+	/* If the path is relative then make it relative to the ticker_dir */
+	if (self -> key_data[0] != '/')
+	{
+	    size_t length;
+	    char *string;
+
+	    /* Allocate memory for the absolute path */
+	    length = strlen(self -> ticker_dir) + 1 + strlen(self -> key_data) + 1;
+	    if ((string = (char *)malloc(length)) == NULL)
+	    {
+		return -1;
+	    }
+
+	    /* Construct the absolute path */
+	    snprintf(string, length, "%s/%s", self -> ticker_dir, self -> key_data);
+
+	    /* Replace key_data with the absolute path */
+	    free(self -> key_data);
+	    self -> key_data = string;
+	}
 
         /* Open the key file. */
         if ((fd = open(self -> key_data, O_RDONLY)) < 0)
@@ -636,6 +660,7 @@ static int parse_char(keys_parser_t self, int ch)
 
 /* Allocates and initializes a new keys file parser */
 keys_parser_t keys_parser_alloc(
+    char *ticker_dir,
     keys_parser_callback_t callback,
     void *rock,
     char *tag)
@@ -647,11 +672,19 @@ keys_parser_t keys_parser_alloc(
     {
 	return NULL;
     }
+    memset(self, 0, sizeof(struct keys_parser));
+
+    /* Copy the ticker_dir string */
+    if ((self -> ticker_dir = strdup(ticker_dir)) == NULL)
+    {
+	keys_parser_free(self);
+	return NULL;
+    }
 
     /* Copy the tag string */
     if ((self -> tag = strdup(tag)) == NULL)
     {
-	free(self);
+	keys_parser_free(self);
 	return NULL;
     }
 
@@ -677,8 +710,16 @@ keys_parser_t keys_parser_alloc(
 /* Frees the resources consumed by the receiver */
 void keys_parser_free(keys_parser_t self)
 {
-    free(self -> tag);
-    free(self -> token);
+    if (self -> tag != NULL)
+    {
+	free(self -> tag);
+    }
+
+    if (self -> token != NULL)
+    {
+	free(self -> token);
+    }
+
     free(self);
 }
 

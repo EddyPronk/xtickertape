@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.100 2002/11/16 21:50:57 croy Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.101 2003/01/11 13:25:37 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -700,7 +700,10 @@ static int parse_keys_file(tickertape_t self)
     int fd;
 
     /* Allocate a new keys file parser */
-    if ((parser = keys_parser_alloc(parse_keys_callback, self, filename)) == NULL)
+    if ((parser = keys_parser_alloc(
+	     self -> ticker_dir,
+	     parse_keys_callback, self,
+	     filename)) == NULL)
     {
 	return -1;
     }
