@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.116 2001/05/08 03:29:47 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.117 2001/06/07 02:00:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -290,7 +290,7 @@ static int queue_is_empty(glyph_t head)
 
     while (glyph != head)
     {
-	if (glyph -> is_expired(glyph))
+	if (! glyph -> is_expired(glyph))
 	{
 	    return 0;
 	}
