@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.34 2002/04/09 22:07:35 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.35 2002/04/09 22:30:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -684,21 +684,35 @@ static void notify_cb(
  * therefore be confident of its format. */
 static void decode_attachment(
     char *attachment,
-    char *buffer, size_t length,
+    size_t length,
+    char *buffer, size_t buflen,
     char **pointer_out)
 {
     char *point;
     char *mark;
+    int count;
+    int ch;
 
     /* The Content-Type field starts a fixed distance from the start */
     point = attachment + 32;
     mark = strchr(point, ';');
     assert(mark != NULL);
 
-    strncpy(buffer, point, length < mark - point ? length : mark - point);
+    /* Copy the content into the buffer */
+    count = length < mark - point ? length - 1 : mark - point - 1;
+    strncpy(buffer, point, count);
+    buffer[count] = '\0';
+
+    /* Replace the last byte of the body (a newline) with a null */
+    ch = attachment[length - 1];
+    assert(ch == '\n');
+    attachment[length - 1] = '\0';
 
     /* The body starts a fixed distance from the semicolon */
-    *pointer_out = mark + 20;
+    *pointer_out = strdup(mark + 20);
+
+    /* Put the byte back */
+    attachment[length - 1] = ch;
 }
 
 /* Sends a message_t using the receiver's information */
@@ -710,8 +724,9 @@ static void send_message(group_sub_t self, message_t message)
     char *reply_id;
     char *attachment;
     uint32_t length;
-    char *mime_args;
+    char *buffer = NULL;
     char mime_type[BUFFER_SIZE];
+    char *mime_args = NULL;
     
     /* Pull information out of the message */
     timeout = message_get_timeout(message);
@@ -722,7 +737,8 @@ static void send_message(group_sub_t self, message_t message)
     /* If there's an attachment then try to extract the type and body */
     if (attachment != NULL)
     {
-	decode_attachment(attachment, mime_type, BUFFER_SIZE, &mime_args);
+	decode_attachment(attachment, length, mime_type, BUFFER_SIZE, &buffer);
+	mime_args = buffer;
     }
 
     /* Allocate a new notification */
@@ -831,27 +847,25 @@ static void send_message(group_sub_t self, message_t message)
 	    elvin_error_fprintf(stderr, self -> error);
 	    exit(1);
 	}
-    }
 
-    /* Add mime information if both mime_args and mime_type are provided */
-    if ((mime_args != NULL) && (mime_type != NULL))
-    {
+	/* Add the hacked-up mime args */
 	if (elvin_notification_add_string(
-	    notification,
-	    F2_MIME_ARGS,
-	    mime_args,
-	    self -> error) == 0)
+		notification,
+		F2_MIME_ARGS,
+		mime_args,
+		self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    elvin_error_fprintf(stderr, self -> error);
 	    exit(1);
 	}
 
+	/* And the hacked-up mime type */
 	if (elvin_notification_add_string(
-	    notification,
-	    F2_MIME_TYPE,
-	    mime_type,
-	    self -> error) == 0)
+		notification,
+		F2_MIME_TYPE,
+		mime_type,
+		self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    elvin_error_fprintf(stderr, self -> error);
@@ -897,6 +911,10 @@ static void send_message(group_sub_t self, message_t message)
 
     /* And clean up */
     elvin_notification_free(notification, self -> error);
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
 }
 
 /*
