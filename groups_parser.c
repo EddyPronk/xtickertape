@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.22 2002/04/15 14:41:04 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.23 2002/04/22 10:57:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -263,6 +263,17 @@ static int accept_subscription(groups_parser_t self)
 	self -> min_time, self -> max_time,
 	notification_keys,
 	subscription_keys);
+
+    /* Free the key blocks */
+    if (notification_keys)
+    {
+	elvin_keys_free(notification_keys, NULL);
+    }
+
+    if (subscription_keys)
+    {
+	elvin_keys_free(subscription_keys, NULL);
+    }
 
     /* Free the private keys */
     for (i = 0; i < self -> private_key_count; i++)
