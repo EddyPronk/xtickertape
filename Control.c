@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.31 1999/04/13 10:14:38 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.32 1999/04/25 02:02:53 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -169,7 +169,9 @@ struct ControlPanel_t
 static void FileGroups(Widget widget, ControlPanel self, XtPointer unused);
 static void FileUsenet(Widget widget, ControlPanel self, XtPointer unused);
 static void FileExit(Widget widget, ControlPanel self, XtPointer unused);
+static void HelpAbout(Widget widget, ControlPanel self, XtPointer unused);
 static void CreateFileMenu(ControlPanel self, Widget parent);
+static void CreateHelpMenu(ControlPanel self, Widget parent);
 static Widget CreateGroupMenu(ControlPanel self, Widget parent);
 static Widget CreateTimeoutMenu(ControlPanel self, Widget parent);
 static void CreateTopBox(ControlPanel self, Widget parent);
@@ -225,7 +227,6 @@ static void CreateFileMenu(ControlPanel self, Widget parent)
 {
     Widget menu;
     Widget item;
-    Widget cascade;
     SANITY_CHECK(self);
 
     /* Create the menu itself */
@@ -247,10 +248,42 @@ static void CreateFileMenu(ControlPanel self, Widget parent)
     XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)FileExit, (XtPointer)self);
 
     /* Create the menu's cascade button */
-    cascade = XtVaCreateManagedWidget(
-	"file", xmCascadeButtonWidgetClass, parent,
+    XtVaCreateManagedWidget(
+	"fileMenu", xmCascadeButtonWidgetClass, parent,
 	XmNsubMenuId, menu,
 	NULL);
+}
+
+
+/* Pop up an about box */
+static void HelpAbout(Widget widget, ControlPanel self, XtPointer unused)
+{
+    fprintf(stderr, "*** Hello sailor\n");
+}
+
+/* Construct the Help menu widget */
+static void CreateHelpMenu(ControlPanel self, Widget parent)
+{
+    Widget menu;
+    Widget item;
+    Widget cascade;
+    SANITY_CHECK(self);
+
+    /* Create the menu itself */
+    menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
+
+    /* Create the "about" menu item */
+    item = XtVaCreateManagedWidget("about", xmPushButtonGadgetClass, menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)HelpAbout, (XtPointer)self);
+
+    /* Create the menu's cascade button */
+    cascade = XtVaCreateManagedWidget(
+	"helpMenu", xmCascadeButtonWidgetClass, parent,
+	XmNsubMenuId, menu,
+	NULL);
+
+    /* Tell the menubar that this menu is the help menu */
+    XtVaSetValues(parent, XmNmenuHelpWidget, cascade, NULL);
 }
 
 
@@ -540,6 +573,7 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 {
     Widget form;
     Widget menubar;
+    Widget helpMenu;
     Widget topForm;
     Widget textForm;
     Widget mimeForm;
@@ -566,8 +600,11 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 	XmNtopAttachment, XmATTACH_FORM,
 	NULL);
 
-    /* Create the file menu */
+    /* Create the `file' menu */
     CreateFileMenu(self, menubar);
+
+    /* Create the `help' menu and tell Motif that it's the Help menu */
+    CreateHelpMenu(self, menubar);
 
     /* Manage the menubar */
     XtManageChild(menubar);
