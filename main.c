@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.25 1998/10/15 04:11:23 phelps Exp $ */
+/* $Id: main.c,v 1.26 1998/10/15 09:11:48 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,17 +23,23 @@
 #endif /* ELVIN_HOSTNAME */
 #define BUFFERSIZE 8192
 
-/* Notification of something */
+/* Static function headers */
 static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
-
-/* Shuts everything down and go away */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
+static void Click(Widget widget, XtPointer ignored, XtPointer context);
+static void SendMessage(Message message, void *context);
+static void ReceiveMessage(Message message, void *context);
+static FILE *GetGroupFile();
+
 
 /* The ControlPanel popup */
 static ControlPanel controlPanel;
 
 /* The top-level widget */
-Widget top;
+static Widget top;
+
+/* The application context */
+static XtAppContext context;
 
 /* The tickertape widget */
 TickertapeWidget tickertape;
@@ -74,8 +80,32 @@ static void Click(Widget widget, XtPointer ignored, XtPointer context)
     ControlPanel_show(controlPanel, (Message) context);
 }
 
+
+/* Registers an ElvinConnection with the Xt event loop */
+static void *RegisterInput(int fd, void *callback, void *rock)
+{
+    fprintf(stderr, "*** RegisterInput %d\n", fd);
+    return (void *) XtAppAddInput(
+	context,
+	fd, (XtPointer) XtInputReadMask,
+	(XtInputCallbackProc) callback, (XtPointer) rock);
+}
+
+/* Unregisters an ElvinConnection with the Xt event loop */
+static void UnregisterInput(void *rock)
+{
+    fprintf(stderr, "*** UnregisterInput\n");
+    XtRemoveInput((XtInputId) rock);
+}
+
+/* Registers an ElvinConnection timer with the Xt event loop */
+static void RegisterTimer(unsigned long interval, void *callback, void *rock)
+{
+    XtAppAddTimeOut(context, interval, (XtTimerCallbackProc) callback, (XtPointer) rock);
+}
+
 /* Callback for message to send from control panel */
-static void sendMessage(Message message, void *context)
+static void SendMessage(Message message, void *context)
 {
     ElvinConnection connection = (ElvinConnection)context;
 
@@ -84,7 +114,7 @@ static void sendMessage(Message message, void *context)
 }
 
 /* Callback for message to show in scroller */
-static void receiveMessage(Message message, void *context)
+static void ReceiveMessage(Message message, void *context)
 {
     TickertapeWidget tickertape = (TickertapeWidget)context;
     TtAddMessage(tickertape, message);
@@ -92,7 +122,7 @@ static void receiveMessage(Message message, void *context)
 
 
 /* Answers the user's group file */
-static FILE *getGroupFile()
+static FILE *GetGroupFile()
 {
     char buffer[BUFFERSIZE];
     char *dir;
@@ -119,7 +149,6 @@ int main(int argc, char *argv[])
     ElvinConnection connection;
     FILE *file;
     List subscriptions;
-    XtAppContext context;
     Atom deleteAtom;
     char *hostname = HOSTNAME;
     int port = PORT;
@@ -154,7 +183,7 @@ int main(int argc, char *argv[])
 
     /* Read subscriptions from the groups file */
     subscriptions = List_alloc();
-    file = getGroupFile();
+    file = GetGroupFile();
     if (file == NULL)
     {
 	printf("*** unable to read ${TICKERDIR}/groups\n");
@@ -162,29 +191,27 @@ int main(int argc, char *argv[])
     }
     else
     {
-	Subscription_readFromGroupFile(file, subscriptions, receiveMessage, tickertape);
+	Subscription_readFromGroupFile(file, subscriptions, ReceiveMessage, tickertape);
 	fclose(file);
     }
 
 
-    /* listen for messages from the bridge */
-    connection = ElvinConnection_alloc(hostname, port, subscriptions);
-
-    XtAppAddInput(
-	context,
-	ElvinConnection_getFD(connection),
-	(XtPointer) XtInputReadMask,
-	(XtInputCallbackProc) ElvinConnection_read,
-	connection);
+    /* listen for messages from elvin */
+    connection = ElvinConnection_alloc(
+	hostname, port, subscriptions,
+	Subscription_alloc("tickertape", "", 0, 0, 10, 10, ReceiveMessage, tickertape));
 
     /* Build the widget */
-    controlPanel = ControlPanel_alloc(top, subscriptions, sendMessage, connection);
+    controlPanel = ControlPanel_alloc(top, subscriptions, SendMessage, connection);
     XtRealizeWidget(top);
 
     /* Quit when the window is closed */
     XtOverrideTranslations(top, XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));
     deleteAtom = XInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", FALSE);
     XSetWMProtocols(XtDisplay(top), XtWindow(top), &deleteAtom, 1);
+
+    /* Register the elvin connection with the event loop */
+    ElvinConnection_register(connection, RegisterInput, UnregisterInput, RegisterTimer);
 
     /* Let 'er rip! */
     XtAppMainLoop(context);
