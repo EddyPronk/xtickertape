@@ -45,16 +45,6 @@ dnl AC_SUBST($systypedef)
 dnl Checks for headers and libraries.
 dnl =====================
 
-dnl Look in the places where X11 and Motif live
-for inc_dir in "/usr/openwin/include" "/usr/dt/include" "/usr/X11R6/include" ; do
-	if test -d "$inc_dir" ; then
-		CPPFLAGS="-I$inc_dir $CPPFLAGS"
-	fi
-done
-
-dnl Configure the X path
-AC_PATH_X
-
 dnl The elvin C library requires pthreads
 dnl See if the compiler accepts the -threads flag (DEC cc, egcs)
 AC_MSG_CHECKING(whether $CC accepts -threads)
@@ -93,7 +83,7 @@ fi
 
 dnl Make sure that an elvin library can be found
 elvinlibdir=$DSTCDIR/$systype/lib
-LDFLAGS="$LDFLAGS -L$elvinlibdir"
+LDFLAGS="-L$elvinlibdir $LDFLAGS"
 AC_CHECK_LIB(vin, elvin_connect, LIBS="-lvin -ldstc_std $LIBS" ; ok=yes, ok=no, -ldstc_std)
 if test $ok = "no" ; then
 	echo "ERROR: \`libvin' is missing on your system.  Try downloading"
@@ -101,15 +91,11 @@ if test $ok = "no" ; then
 	exit 1
 fi
 
-
-
-dnl Look for the core X11 library
-AC_CHECK_LIB(X11, XOpenDisplay, LIBS="-lX11 $LIBS" ; ok=yes, ok=no)
-if test $ok = "no" ; then
-	echo "ERROR: \`libX11' is missing on your system.  Try downloading"
-	echo "       it from the X consortium at ftp://ftp.x.org/"
-	exit 1
-fi
+dnl Discover the X path
+AC_PATH_XTRA
+CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+LDFLAGS="$X_LIBS $LDFLAGS"
+LIBS="$X_EXTRA_LIBS -lX11 $X_PRE_LIBS $LIBS"
 
 dnl Check for the X11 extensions library to see if we can make a shaped icon
 AC_CHECK_LIB(Xext, XShapeCombineMask)
@@ -130,6 +116,12 @@ fi
 
 
 dnl Check for the Motif headers
+dnl Check to see if Motif is hiding in some obscure place
+if test -d "/usr/dt/include" -a -d "/usr/dt/lib" ; then
+	CPPFLAGS="$CPPFLAGS -I/usr/dt/include"
+	LDFLAGS="$LDFLAGS -L/usr/dt/lib"
+fi
+
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
 if test $ok = "no" ; then
 	echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
