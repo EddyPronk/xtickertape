@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.50 2000/04/10 01:24:12 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.51 2000/04/10 03:48:49 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1018,7 +1018,7 @@ static void connect_cb(
 
 /* Callback for elvin status changes */
 static void status_cb(
-    elvin_handle_t handle, elvin_url_t url,
+    elvin_handle_t handle, char *url,
     elvin_status_event_t event,
     void *rock,
     elvin_error_t error)
@@ -1037,12 +1037,12 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, True);
 	    
 	    /* Make room for a combined string and URL */
-	    if ((buffer = (char *)malloc(sizeof(CONNECT_MSG) + strlen(url->url) - 2)) == NULL)
+	    if ((buffer = (char *)malloc(sizeof(CONNECT_MSG) + strlen(url) - 2)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, CONNECT_MSG, url->url);
+	    sprintf(buffer, CONNECT_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -1053,12 +1053,12 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a combined string and URL */
-	    if ((buffer = (char *)malloc(sizeof(LOST_CONNECT_MSG) + strlen(url->url) - 2)) == NULL)
+	    if ((buffer = (char *)malloc(sizeof(LOST_CONNECT_MSG) + strlen(url) - 2)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, LOST_CONNECT_MSG, url->url);
+	    sprintf(buffer, LOST_CONNECT_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -1069,12 +1069,12 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a message string */
-	    if ((buffer = (char *)malloc(sizeof(CONN_CLOSED_MSG) + strlen(url->url) - 2)) == NULL)
+	    if ((buffer = (char *)malloc(sizeof(CONN_CLOSED_MSG) + strlen(url) - 2)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, CONN_CLOSED_MSG, url->url);
+	    sprintf(buffer, CONN_CLOSED_MSG, url);
 	    string = buffer;
 	    break;
 	}
