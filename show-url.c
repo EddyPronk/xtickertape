@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.5 2002/10/16 01:05:29 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.6 2002/10/16 03:58:38 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -74,21 +74,43 @@ static struct option long_options[] =
 #endif
 
 /* A table converting a number into a hex nibble */
-static char hex[16] =
+static char hex[] =
 {
     '0', '1', '2', '3', '4', '5', '6', '7', '8',
     '9', 'a', 'b', 'c', 'd', 'e', 'f'
 };
 
-/* A table of characters which should be escaped */
-static char do_esc[128] =
+/* Characters which should be escaped */
+static char no_esc[] =
 {
-    1, 1, 1, 1,  1, 0, 1, 1,  1, 1, 1, 0,  0, 0, 0, 0,  /* 0x20 */
-    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1,  1, 0, 1, 0,  /* 0x30 */
+    2, 1, 1, 0,  1, 0, 1, 1,  1, 2, 1, 0,  2, 0, 0, 0,  /* 0x20 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1,  1, 0, 1, 1,  /* 0x30 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x40 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  /* 0x50 */
     1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x60 */
-    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 1,  /* 0x70 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 2,  /* 0x70 */
+};
+
+/* Characters which need to be escaped inside double-quotes */
+static char dq_esc[] =
+{
+    2, 2, 1, 0,  1, 0, 0, 0,  0, 2, 0, 0,  2, 0, 0, 0,  /* 0x20 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x30 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x40 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x50 */
+    1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x60 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 2,  /* 0x70 */
+};
+
+/* Characters which need to be escaped inside single-quotes */
+static char sq_esc[] =
+{
+    2, 0, 0, 0,  0, 0, 0, 2,  0, 2, 0, 0,  2, 0, 0, 0,  /* 0x20 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x30 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x40 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x50 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x60 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x70 */
 };
 
 /* The buffer used to construct the command */
@@ -139,14 +161,44 @@ static void append_char(int ch)
 }
 
 /* Appends an URL to the command buffer, apply escapes as appropriate */
-static void append_url(char *url)
+static void append_url(char *url, int quote_count)
 {
     char *point;
+    char *esc_table;
+
+    /* Figure out which escape table to use */
+    switch (quote_count)
+    {
+	case 0:
+	{
+	    esc_table = no_esc;
+	    break;
+	}
+
+	case 1:
+	{
+	    esc_table = sq_esc;
+	    break;
+	}
+
+	case 2:
+	{
+	    esc_table = dq_esc;
+	    break;
+	}
+
+	default:
+	{
+	    /* Funny kind of quoting */
+	    abort();
+	}
+    }
 
     point = url;
     while (1)
     {
 	int ch = *point;
+	int esc_type;
 
 	/* Watch for the end of line/input */
 	if (ch == '\0' || ch == '\n')
@@ -154,16 +206,39 @@ static void append_url(char *url)
 	    return;
 	}
 
-	/* Escape other stuff that can confuse the shell */
-	if (ch < 32 || ch > 127 || do_esc[ch - 32])
+	/* Figure out how to escape this character */
+	esc_type = (ch < 32 || ch > 127) ? 2 : esc_table[ch - 32];
+	switch (esc_type)
 	{
-	    append_char('%');
-	    append_char(hex[(ch >> 4) & 0xf]);
-	    append_char(hex[ch & 0xf]);
-	}
-	else
-	{
-	    append_char(ch);
+	    /* No escape required */
+	    case 0:
+	    {
+		append_char(ch);
+		break;
+	    }
+
+	    /* Escape with a backslash */
+	    case 1:
+	    {
+		append_char('\\');
+		append_char(ch);
+		break;
+	    }
+
+	    /* URL escape */
+	    case 2:
+	    {
+		append_char('%');
+		append_char(hex[(ch >> 4) & 0xf]);
+		append_char(hex[ch & 0xf]);
+		break;
+	    }
+
+	    /* Trouble */
+	    default:
+	    {
+		abort();
+	    }
 	}
 
 	point++;
@@ -176,6 +251,7 @@ char *invoke(char *browser, char *url)
     int did_subst = 0;
     char *point = browser;
     cmd_index = 0;
+    int quote_count = 0;
 
     /* Copy from the browser string */
     while (1)
@@ -194,7 +270,7 @@ char *invoke(char *browser, char *url)
 		if (! did_subst)
 		{
 		    append_char(' ');
-		    append_url(url);
+		    append_url(url, quote_count);
 		}
 
 		/* Null-terminate the command */
@@ -232,12 +308,46 @@ char *invoke(char *browser, char *url)
 		return ch == '\0' ? point : point + 1;
 	    }
 
+	    /* Watch for double-quotes */
+	    case '"':
+	    {
+		/* Toggle double-quotes if appropriate */
+		if (quote_count == 2)
+		{
+		    quote_count = 0;
+		}
+		else if (quote_count == 0)
+		{
+		    quote_count = 2;
+		}
+
+		append_char(ch);
+		break;
+	    }
+
+	    /* Watch for single-quotes */
+	    case '\'':
+	    {
+		/* Toggle single-quotes if appropriate */
+		if (quote_count == 1)
+		{
+		    quote_count = 0;
+		}
+		else if (quote_count == 0)
+		{
+		    quote_count = 1;
+		}
+
+		append_char(ch);
+		break;
+	    }
+
 	    /* Watch for %s */
 	    case '%':
 	    {
 		if (point[1] == 's')
 		{
-		    append_url(url);
+		    append_url(url, quote_count);
 
 		    /* Skip ahead */
 		    did_subst = 1;
