@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.38 1999/05/22 08:34:43 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.39 1999/07/27 04:57:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -140,6 +140,7 @@ static void SubscribeToOrbit(Tickertape self);
 static int mkdirhier(char *dirname)
 {
     char *pointer;
+    struct stat statbuf;
 
     /* End the recursion */
     if (*dirname == '\0')
@@ -165,14 +166,25 @@ static int mkdirhier(char *dirname)
 	}
     }
 
-    /* Try to make the directory */
-    if (mkdir(dirname, 0777) == 0)
+    /* If a file named `dirname' exists then make sure it's a directory */
+    if (stat(dirname, &statbuf) == 0)
     {
+	if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
+	{
+	    errno = EEXIST;
+	    return -1;
+	}
+	
 	return 0;
     }
 
-    /* Directory already exists is the same as success! */
-    return (errno == EEXIST) ? 0 : -1;
+    /* If the directory doesn't exist then try to create it */
+    if (errno == ENOENT)
+    {
+	return mkdir(dirname, 0777);
+    }
+
+    return -1;
 }
 
 /* Publishes a notification indicating that the receiver has started */
@@ -727,7 +739,11 @@ char *Tickertape_tickerDir(Tickertape self)
      * Note: we're being clever here and assuming that nothing will
      * call Tickertape_tickerDir() if both groupsFile and usenetFile
      * are set */
-    mkdirhier(self -> tickerDir);
+    if (mkdirhier(self -> tickerDir) < 0)
+    {
+	perror("unable to create tickertape directory");
+    }
+
     return self -> tickerDir;
 }
 
