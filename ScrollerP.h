@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.6 1999/06/20 12:39:18 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.7 1999/06/20 14:45:14 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -77,6 +77,12 @@ typedef struct
     /* Private state */
     int isStopped;
 
+    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
+    int left_offset;
+
+    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
+    int right_offset;
+
     /* The circular queue containing all glyphs */
     glyph_t glyphs;
 
@@ -86,18 +92,11 @@ typedef struct
     /* The rightmost visible glyph */
     glyph_t right_glyph;
 
-    /* The total width of the glyphs (including expired ones) */
+    /* The total width of the glyphs (not adjusted for expired ones) */
     unsigned long glyphs_width;
 
-    /* The total width of the glyphs (not including recently expired ones) */
+    /* The total width of the glyphs (adjusted for expired ones) */
     unsigned long next_glyphs_width;
-
-    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
-    int left_offset;
-
-    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
-    int right_offset;
-
     /* The queue containing glyphs which need to be added */
     glyph_t pending;
 
