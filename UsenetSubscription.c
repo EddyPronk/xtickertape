@@ -1,4 +1,4 @@
-/* $Id: UsenetSubscription.c,v 1.8 1998/10/30 08:14:05 phelps Exp $ */
+/* $Id: UsenetSubscription.c,v 1.9 1998/11/12 04:43:22 phelps Exp $ */
 
 #include "UsenetSubscription.h"
 #include <stdlib.h>
@@ -408,6 +408,10 @@ static void ReadUsenetFile(FILE *file, StringBuffer buffer)
     char *token;
     int isFirst = 1;
 
+    /* Write the beginning of the subscription expression */
+    StringBuffer_append(buffer, "ELVIN_CLASS == \"NEWSWATCHER\" && ");
+    StringBuffer_append(buffer, "ELVIN_SUBCLASS == \"MONITOR\" && ( ");
+
     /* Locate a non-empty line which doesn't begin with a '#' */
     while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
     {
@@ -430,6 +434,17 @@ static void ReadUsenetFile(FILE *file, StringBuffer buffer)
 
 	    ReadNextLine(tokenizer, token, buffer);
 	}
+    }
+
+    /* If we read no expressions, then clear the buffer */
+    if (isFirst)
+    {
+	StringBuffer_clear(buffer);
+    }
+    else
+    {
+	/* Write the end of the expression */
+	StringBuffer_append(buffer, " )");
     }
 
     FileStreamTokenizer_free(tokenizer);
@@ -569,18 +584,20 @@ UsenetSubscription UsenetSubscription_readFromUsenetFile(
     UsenetSubscription subscription;
     StringBuffer buffer = StringBuffer_alloc();
 
-    /* Write the beginning of our expression */
-    StringBuffer_append(buffer, "ELVIN_CLASS == \"NEWSWATCHER\" && ");
-    StringBuffer_append(buffer, "ELVIN_SUBCLASS == \"MONITOR\" && ( ");
-
     /* Get the subscription expressions for each individual line */
     ReadUsenetFile(usenet, buffer);
 
-    /* Close off our subscription expression */
-    StringBuffer_append(buffer, " )");
-    subscription = UsenetSubscription_alloc(StringBuffer_getBuffer(buffer), callback, context);
-    StringBuffer_free(buffer);
+    /* If no usenet expressions found, then return NULL */
+    if (StringBuffer_length(buffer) == 0)
+    {
+	subscription = NULL;
+    }
+    else
+    {
+	subscription = UsenetSubscription_alloc(StringBuffer_getBuffer(buffer), callback, context);
+    }
 
+    StringBuffer_free(buffer);
     return subscription;
 }
 
