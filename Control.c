@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.12 1998/10/15 06:15:06 phelps Exp $ */
+/* $Id: Control.c,v 1.13 1998/10/15 09:24:53 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +63,7 @@ static void SetText(ControlPanel self, char *text);
 static int GetTimeout(ControlPanel self);
 static void SetTimeout(ControlPanel self, int timeout);
 static void MatchSubscription(Subscription self, char *group, Subscription *result);
-static Subscription SubscriptionForGroup(ControlPanel self, char *group);
+static Subscription SubscriptionForMessage(ControlPanel self, Message message);
 static void ActionOK(Widget button, XtPointer context, XtPointer ignored);
 static void ActionClear(Widget button, XtPointer context, XtPointer ignored);
 static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
@@ -502,11 +502,12 @@ static void MatchSubscription(Subscription self, char *group, Subscription *resu
     }
 }
 
-/* Answers the subscription matching the given group */
-static Subscription SubscriptionForGroup(ControlPanel self, char *group)
+/* Answers the subscription which produced the message */
+/* FIX THIS: can't guarantee groups will match for much longer... */
+static Subscription SubscriptionForMessage(ControlPanel self, Message message)
 {
     Subscription result = NULL;
-    List_doWithWith(self -> subscriptions, MatchSubscription, group, &result);
+    List_doWithWith(self -> subscriptions, MatchSubscription, Message_getGroup(message), &result);
     return result;
 }
 
@@ -602,8 +603,8 @@ void ControlPanel_show(ControlPanel self, Message message)
     /* If a Message has been provided then select its group in the menu */
     if (message)
     {
-	Subscription subscription = SubscriptionForGroup(self, Message_getGroup(message));
-	if (Subscription_isInMenu(subscription))
+	Subscription subscription = SubscriptionForMessage(self, message);
+	if ((subscription != NULL) && (Subscription_isInMenu(subscription)))
 	{
 	    SetGroup(self, Subscription_getGroup(subscription));
 	}
