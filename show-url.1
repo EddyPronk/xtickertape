@@ -6,9 +6,15 @@
 show-url \- show a URL in netscape
 .SH SYNOPSIS
 .nf
-show-url filename | url
+show-url [-nw] filename | url
 .fi
 .SH OPTIONS
+\*(Su may be invoked with the following command-line option:
+.TP
+.B -nw
+Do not create a new netscape window to show the URL, rather use an
+existing Netscape window, chosen seemingly at random.
+.PP
 If the argument to \*(su names a readable file, then the contents
 of that file are used as the URL.  If not, the argument is assumed to
 be the URL itself.
