@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.12 2000/07/11 07:11:41 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.13 2000/07/11 07:48:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1650,6 +1650,20 @@ static int eval_binary(
     }
 }
 
+
+/* Evaluates a `format' function */
+static int eval_func_format(
+    env_t env,
+    ast_t args,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    /* FIX THIS: really implement this... */
+    value_out -> type = VALUE_STRING;
+    value_out -> value.string = ELVIN_STRDUP("[format]", error);
+    return 1;
+}
+
 /* Evaluates a function operation ast in the given environment */
 static int eval_function(
     ast_t self,
@@ -1657,8 +1671,19 @@ static int eval_function(
     value_t *value_out,
     elvin_error_t error)
 {
-    fprintf(stderr, "eval_function(): not yet implemented\n");
-    abort();
+    switch (self -> value.func.op)
+    {
+	case FUNC_FORMAT:
+	{
+	    return eval_func_format(env, self -> value.func.args, value_out, error);
+	}
+
+	default:
+	{
+	    fprintf(stderr, "invalid function: %d\n", self -> value.func.op);
+	    abort();
+	}
+    }
 }
 
 /* Evaluates a block ast in the given environment */
