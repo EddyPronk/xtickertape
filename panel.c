@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.23 1999/12/06 13:08:41 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.24 1999/12/09 13:18:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -41,6 +41,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.23 1999/12/06 13:08:41 phelps Exp 
 #endif /* HAVE_CRYPT_H */
 #include <time.h>
 #include <pwd.h>
+#include <elvin/elvin.h>
 #include "history.h"
 #include "panel.h"
 
