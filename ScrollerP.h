@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.3 1999/05/17 12:56:52 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.4 1999/05/17 14:23:19 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -42,6 +42,10 @@ static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.3 1999/05/17 12:56:5
 #include "Scroller.h"
 #include "MessageView.h"
 #include "List.h"
+
+/* The structure of a view_holder_t */
+typedef struct view_holder *view_holder_t;
+
 
 /* New fields for the Scroller widget record */
 typedef struct
@@ -75,7 +79,9 @@ typedef struct
     /* Private state */
     int isStopped;
     List messages;
-    List holders;
+    view_holder_t holders;
+    view_holder_t last_holder;
+    view_holder_t spacer;
     long offset;
     long visibleWidth;
     unsigned int nextVisible;
