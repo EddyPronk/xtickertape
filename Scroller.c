@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.20 1999/06/16 04:41:37 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.21 1999/06/16 04:48:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -594,7 +594,9 @@ void ScRepaintMessageView(ScrollerWidget self, MessageView view)
     offset = -self -> scroller.offset;
     for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
     {
-	/* If we find the chosen one, then repaint it and we're done */
+	/* If we find the chosen one, then repaint it.
+	 * NOTE: this message might appear more than once in the
+	 * scroller, so we have to scan all of the view_holders. */
 	if (holder -> view == view)
 	{
 	    MessageView_redisplay(
@@ -602,7 +604,6 @@ void ScRepaintMessageView(ScrollerWidget self, MessageView view)
 		0, 0, self -> core.width, self -> core.height);
 
 	    Redisplay((Widget)self, NULL, NULL);
-	    return;
 	}
 
 	offset += holder -> width;
