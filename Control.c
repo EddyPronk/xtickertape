@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.39 1999/08/11 06:12:00 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.40 1999/08/13 13:25:27 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -48,6 +48,9 @@ static const char cvsid[] = "$Id: Control.c,v 1.39 1999/08/11 06:12:00 phelps Ex
 static char *sanity_value = "ControlPanel";
 static char *sanity_freed = "Freed ControlPanel";
 #endif /* SANITY */
+
+/* Size of the history list */
+#define MAX_HISTORY_COUNT 30
 
 
 /*
@@ -104,9 +107,6 @@ struct ControlPanel_t
     /* The receiver's top-level widget */
     Widget top;
 
-    /* The receiver's history list widget */
-    Widget history;
-
     /* The receiver's user text widget */
     Widget user;
 
@@ -133,6 +133,12 @@ struct ControlPanel_t
 
     /* The receiver's "Send" button widget */
     Widget send;
+
+    /* The receiver's history list widget */
+    Widget history;
+
+    /* The number of messages in the history list */
+    int history_count;
 
     /* The receiver's about box widget */
     Widget aboutBox;
@@ -527,25 +533,25 @@ static void CreateTopBox(ControlPanel self, Widget parent)
     /* Manage the form widget now that all of its children are created */
     XtManageChild(form);
 
+    /* The "Timeout" label */
+    self -> timeout = CreateTimeoutMenu(self, parent);
+    XtVaSetValues(
+	self -> timeout,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_FORM,
+	XmNbottomAttachment, XmATTACH_FORM,
+	NULL);
+
     /* The "Group" menu button */
     self -> group = CreateGroupMenu(self, parent);
     XtVaSetValues(
 	self -> group,
 	XmNleftAttachment, XmATTACH_WIDGET,
+	XmNrightAttachment, XmATTACH_WIDGET,
 	XmNtopAttachment, XmATTACH_FORM,
 	XmNbottomAttachment, XmATTACH_FORM,
 	XmNleftWidget, form,
-	NULL);
-
-    /* The "Timeout" label */
-    self -> timeout = CreateTimeoutMenu(self, parent);
-    XtVaSetValues(
-	self -> timeout,
-	XmNleftAttachment, XmATTACH_WIDGET,
-	XmNrightAttachment, XmATTACH_FORM,
-	XmNtopAttachment, XmATTACH_FORM,
-	XmNbottomAttachment, XmATTACH_FORM,
-	XmNleftWidget, self -> group,
+	XmNrightWidget, self -> timeout,
 	NULL);
 }
 
@@ -1075,6 +1081,8 @@ ControlPanel ControlPanel_alloc(
     self -> mimeArgs = NULL;
     self -> text = NULL;
     self -> send = NULL;
+    self -> history = NULL;
+    self -> history_count = 0;
     self -> selection = NULL;
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
@@ -1265,9 +1273,19 @@ void ControlPanel_addHistoryMessage(ControlPanel self, Message message)
     char *string = Message_getString(message);
     char *buffer = (char *) alloca(strlen(group) + strlen(user) + strlen(string) + 3);
 
-    sprintf(buffer, "%s:%s:%s", group, user, string);
+    /* Update the number of messages in the history */
+    if (self -> history_count < MAX_HISTORY_COUNT)
+    {
+	self -> history_count++;
+    }
+    else
+    {
+	/* Delete the first message if we have too many */
+	XmListDeletePos(self -> history, 1);
+    }
 
     /* Add a string to the end of the list */
+    sprintf(buffer, "%s:%s:%s", group, user, string);
     entry = XmStringCreateSimple(buffer);
     XmListAddItem(self -> history, entry, 0);
     XmStringFree(entry);
