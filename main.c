@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.32 1998/10/23 03:32:52 phelps Exp $ */
+/* $Id: main.c,v 1.33 1998/10/29 04:23:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +7,12 @@
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
-
+#include <X11/extensions/shape.h>
 #include "Ticker.h"
+
+#include "red.xbm"
+#include "white.xbm"
+#include "mask.xbm"
 
 #define HOST "elvin"
 #define PORT 5678
@@ -26,6 +30,7 @@ static void ParseArgs(
     char **user_return,
     char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return);
+static Window CreateIcon(Widget shell);
 
 
 /* The Tickertape */
@@ -214,6 +219,60 @@ static void ParseArgs(
 }
 
 
+/* Create the icon window */
+static Window CreateIcon(Widget shell)
+{
+    Display *display = XtDisplay(shell);
+    Screen *screen = XtScreen(shell);
+    Colormap colormap = XDefaultColormapOfScreen(screen);
+    int depth = DefaultDepthOfScreen(screen);
+    unsigned long black = BlackPixelOfScreen(screen);
+    Window window;
+    Pixmap pixmap, mask;
+    XColor color;
+    GC gc;
+    XGCValues values;
+
+    /* Create the actual icon window */
+    window = XCreateSimpleWindow(
+	display, RootWindowOfScreen(screen),
+	0, 0, mask_width, mask_height, 0,
+	CopyFromParent, CopyFromParent);
+
+    /* Create a pixmap from the red bitmap data */
+    color.red = 0xFFFF;
+    color.green = 0x0000;
+    color.blue = 0x0000;
+    color.flags = DoRed | DoGreen | DoBlue;
+    XAllocColor(display, colormap, &color);
+    pixmap = XCreatePixmapFromBitmapData(
+	display, window, red_bits, red_width, red_height,
+	color.pixel, black, depth);
+
+    /* Create a graphics context */
+    values.function = GXor;
+    gc = XCreateGC(display, pixmap, GCFunction, &values);
+
+    /* Create a pixmap for the white 'e' and paint it on top */
+    mask = XCreatePixmapFromBitmapData(
+	display, pixmap, white_bits, white_width, white_height,
+	WhitePixelOfScreen(screen), black, depth);
+    XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
+    XFreePixmap(display, mask);
+
+    /* Create a shape mask and apply it to the window */
+    mask = XCreatePixmapFromBitmapData(
+	display, pixmap, mask_bits, mask_width, mask_height,
+	0, 1, 1);
+    XShapeCombineMask(display, window, 0, 0, 0, mask, X_ShapeCombine);
+
+    /* Set the window's background to be the pixmap */
+    XSetWindowBackgroundPixmap(display, window, pixmap);
+
+    return window;
+}
+
+
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
@@ -239,6 +298,9 @@ int main(int argc, char *argv[])
 
     /* Scan what's left of the arguments */
     ParseArgs(argc, argv, &user, &groupsFile, &usenetFile, &host, &port);
+
+    /* Create an Icon for the root shell */
+    XtVaSetValues(top, XtNiconWindow, CreateIcon(top), NULL);
 
     /* Create a Tickertape */
     tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
