@@ -76,7 +76,39 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 }
 
 
-/* A primitive function */
+/* The `quote' primitive function */
+static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    /* Make sure we have at least one arg */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((*result = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Go to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure that there are no more */
+    if (atom_get_type(args) != ATOM_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    return 1;
+}
+
+/* The `setq' primitive function */
 static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error)
 {
     atom_t symbol;
@@ -85,7 +117,7 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     /* Make sure we have at least one arg */
     if (atom_get_type(args) != ATOM_CONS)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
     }
 
@@ -111,7 +143,7 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     /* Make sure we have at least one more arg left */
     if (atom_get_type(args) != ATOM_CONS)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
     }
 
@@ -130,7 +162,7 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     /* Make sure we're now out of args */
     if (atom_get_type(args) != ATOM_NIL)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
@@ -161,6 +193,13 @@ static env_t root_env_alloc(elvin_error_t error)
 
     /* Register the constant `pi' */
     if (env_set_float(env, "pi", M_PI, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `quote' */
+    if (env_set_builtin(env, "quote", prim_quote, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
