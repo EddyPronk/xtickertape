@@ -94,6 +94,15 @@ viewer for URL attachements.  We reommend that you specify it as your
 \fBtext/uri-list\fP viewer and, for backwards compatibility, as your
 \fBx-elvin/url\fP viewer in your .mailcap file.
 .PP
+The scrolling speed of the tickertape can be adjusted through a number 
+of keystrokes, all of which may be adjusted by overriding the
+scroller's translations.  By default, the `-' key slows the scrolling
+speed and the `=' key hastens it.  Also, the ',' key scrolls the text
+slightly more quickly to the left (or slightly less quickly to the
+right) and the '.' key does the same except to the right.
+Additionally, each number key sets the scroll speed to exactly that
+speed (`0' will make the scroller stop).
+.PP
 The scrolling speed of the tickertape can be adjusted with the `-' and
 `=' keys.  These increment and decrement the number of pixels a
 message should move each time the scroller is updated (see the
