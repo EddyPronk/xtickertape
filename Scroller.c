@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.101 2000/05/20 00:53:44 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.102 2000/05/28 08:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1288,10 +1288,6 @@ static void pending_recover(ScrollerWidget self)
  * NoExpose) events were received */
 static void overflow_recover(ScrollerWidget self)
 {
-    Display *display = XtDisplay((Widget)self);
-    glyph_holder_t holder;
-    int offset = 0 - self -> scroller.left_offset;
-
     /* Do the pending recovery stuff first */
     pending_recover(self);
 
@@ -1335,6 +1331,11 @@ static void recover(ScrollerWidget self, scroller_state_t old_state)
 	{
 	    pending_recover(self);
 	    overflow_recover(self);
+	    break;
+	}
+
+	default:
+	{
 	    break;
 	}
     }
