@@ -3,31 +3,41 @@
 ##
 ## MIME helper to show a URL
 ##
-## $Id: show-url,v 1.5 1999/01/26 12:24:44 phelps Exp $
+## $Id: show-url,v 1.6 1999/04/06 04:53:58 phelps Exp $
 ##
 
 # Where to find netscape
 NETSCAPE=/usr/local/bin/netscape
 
-# Assert that we have exactly one argument
-# and it is the name of the file containing the URL
+# See if the user wants to avoid opening a new window
+if [ "$1" = "-nw" ] ; then
+    WINDOW_ARGS=""
+    shift
+else
+    WINDOW_ARGS=",new-window"
+fi
+
+# Assert that we have exactly one argument remaining
 if [ $# -ne "1" ] ; then
-    echo "usage: $0 filename | url"
+    echo "usage: $0 [-nw] filename | url"
     exit 1
 fi
 
 # If $1 is a filename, then read its contents as a URL
 # otherwise, assume that $1 *IS* the URL.
-# Also run it through sed to get rid of troublesome characters
 if [ -r $1 ] ; then
-    URL=`sed -e 's/,/%2c/g' -e 's/)/%29/g' $1`
+    URL=`cat $1`
 else
-    URL=`echo $1 | sed -e 's/,/%2c/g' -e 's/)/%29/g'`
+    URL="$1"
 fi
 
+# Run the URL through sed to get rid of some troublesome characters.
+# Also figure out what to pass to Netscape in order to show the URL
+ARGS="openURL(`echo $URL | sed -e 's/,/%2c/g' -e 's/)/%29/g'`$WINDOW_ARGS)"
+
 # Try to get netscape to open the URL
-$NETSCAPE -noraise -remote "openURL($URL,new-window)" > /dev/null 2>&1
-if [ $? -eq "0" ] ; then
+$NETSCAPE -noraise -remote $ARGS > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
     exit 0
 fi
 
