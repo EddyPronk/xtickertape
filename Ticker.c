@@ -1,11 +1,12 @@
 /*
- * $Id: Ticker.c,v 1.5 1998/10/21 05:24:39 phelps Exp $
+ * $Id: Ticker.c,v 1.6 1998/10/21 05:36:40 phelps Exp $
  * COPYRIGHT!
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Intrinsic.h>
+#include <alloca.h>
 #include "sanity.h"
 #include "Ticker.h"
 #include "Hash.h"
@@ -295,6 +296,7 @@ Tickertape Tickertape_alloc(char *user, char *file, char *host, int port, Widget
     self -> groupsFile = strdup(file);
     self -> top = top;
     self -> subscriptions = ReadGroupsFile(self);
+    self -> connection = NULL;
 
     InitializeUserInterface(self);
 
