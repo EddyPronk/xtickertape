@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.97 2002/07/02 15:19:22 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.98 2002/07/03 05:09:22 arnold Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -105,10 +105,17 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.97 2002/07/02 15:19:22 phelps
 
 #define CONNECT_MSG "Connected to elvin server: %s"
 #define LOST_CONNECT_MSG "Lost connection to elvin server %s"
-#define CONN_CLOSED_MSG "Connection closed by server: %s"
 #define PROTOCOL_ERROR_MSG "Protocol error encountered with server: %s"
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 #define DROP_WARN_MSG "One or more packets were dropped"
+
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+# define CONN_CLOSED_MSG "Connection closed by server: %s"
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+# define CONN_CLOSED_MSG "Connection closed by server"
+#else
+# error unknown elvin library version
+#endif
 
 #define GROUP_SUB "TICKERTAPE == \"%s\" || Group == \"%s\""
 
@@ -1010,14 +1017,14 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a message string */
-	    length = strlen(CONN_CLOSED_MSG) + strlen(url) - 1;
+	    length = strlen(CONN_CLOSED_MSG) + 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		perror(PACKAGE ": malloc() failed");
 		exit(1);
 	    }
 
-	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
+	    snprintf(buffer, length, CONN_CLOSED_MSG);
 	    string = buffer;
 	    break;
 	}
@@ -1109,7 +1116,7 @@ static int status_cb(
 	case ELVIN_STATUS_CONNECTION_FAILED:
 	{
 	    fprintf(stderr, PACKAGE ": unable to connect\n");
-	    elvin_error_fprintf(stderr, error);
+	    elvin_error_fprintf(stderr, event -> details.connection_failed.error);
 	    exit(1);
 	}
 
@@ -1118,7 +1125,7 @@ static int status_cb(
 	    char *url;
 
 	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    if ((url = elvin_url_get_canonical(event -> details.connection_found.url, error)) == NULL)
 	    {
 		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
 		elvin_error_fprintf(stderr, error);
@@ -1146,7 +1153,7 @@ static int status_cb(
 	    char *url;
 
 	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    if ((url = elvin_url_get_canonical(event -> details.connection_lost.url, error)) == NULL)
 	    {
 		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
 		elvin_error_fprintf(stderr, error);
@@ -1171,28 +1178,18 @@ static int status_cb(
 
 	case ELVIN_STATUS_CONNECTION_CLOSED:
 	{
-	    char *url;
-
-	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
-	    {
-		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-		elvin_error_fprintf(stderr, error);
-		exit(1);
-	    }
-
 	    /* Tell the control panel that we're no longer connected */
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a message string */
-	    length = strlen(CONN_CLOSED_MSG) + strlen(url) - 1;
+	    length = strlen(CONN_CLOSED_MSG) + 1;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		perror(PACKAGE ": malloc() failed");
 		exit(1);
 	    }
 
-	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
+	    snprintf(buffer, length, CONN_CLOSED_MSG);
 	    string = buffer;
 	    break;
 	}
@@ -1208,7 +1205,7 @@ static int status_cb(
 	    }
 	    
 	    /* Print the error message into it */
-	    elvin_error_snprintf(buffer, BUFFER_SIZE, error);
+	    elvin_error_snprintf(buffer, BUFFER_SIZE, event -> details.connection_warn.error);
 	    string = buffer;
 
 	    /* Display it on the status line */
@@ -1230,7 +1227,7 @@ static int status_cb(
 	    char *url;
 
 	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.url, error)) == NULL)
+	    if ((url = elvin_url_get_canonical(event -> details.protocol_error.url, error)) == NULL)
 	    {
 		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
 		elvin_error_fprintf(stderr, error);
@@ -1256,14 +1253,14 @@ static int status_cb(
 	case ELVIN_STATUS_IGNORED_ERROR:
 	{
 	    fprintf(stderr, "%s: status ignored\n", PACKAGE);
-	    elvin_error_fprintf(stderr, error);
+	    elvin_error_fprintf(stderr, event -> details.ignored_error.error);
 	    exit(1);
 	}
 
 	case ELVIN_STATUS_CLIENT_ERROR:
 	{
 	    fprintf(stderr, "%s: client error\n", PACKAGE);
-	    elvin_error_fprintf(stderr, error);
+	    elvin_error_fprintf(stderr, event -> details.client_error.error);
 	    exit(1);
 	}
 
