@@ -2,6 +2,9 @@
 bin_PROGRAMS = xtickertape
 bin_SCRIPTS = show-url
 
+# Don't forget to set up the packagers
+SUBDIRS = packages
+
 # Automatically generated sources
 BUILT_SOURCES = errors.h
 
