@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.11 2001/02/22 01:57:26 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.12 2001/05/06 23:06:49 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -123,14 +123,16 @@ message_t message_alloc(
     }
     else
     {
-	/* Copy the mime_args string */
-	if ((self -> mime_args = (char *)malloc(mime_length)) == NULL)
+	/* Allocate some room for a copy of the mime args */
+	if ((self -> mime_args = (char *)malloc(mime_length + 1)) == NULL)
 	{
 	    self -> mime_length = 0;
 	}
 	else
 	{
+	    /* Copy the mime args and null terminate them */
 	    memcpy(self -> mime_args, mime_args, mime_length);
+	    self -> mime_args[mime_length] = '\0';
 	}
     }
 
