@@ -89,7 +89,7 @@ fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(arpa/inet.h fcntl.h getopt.h libintl.h netdb.h netinet/in.h sys/socket.h sys/time.h unistd.h)
+AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h netdb.h pwd.h string.h strings.h signal.h sys/utsname.h time.h unistd.h])
 
 # See if we can track down Motif/LessTif
 AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
@@ -132,21 +132,20 @@ AC_HEADER_STDC
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
-AC_C_CONST
+dnl AC_C_CONST
 AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_STAT
-AC_FUNC_STRTOD
+dnl AC_FUNC_MALLOC
+dnl AC_FUNC_STAT
 AC_HEADER_SYS_WAIT
-AC_STRUCT_TM
-AC_TYPE_PID_T
-AC_TYPE_SIGNAL
-AC_TYPE_SIZE_T
+dnl AC_STRUCT_TM
+dnl AC_TYPE_PID_T
+dnl AC_TYPE_SIGNAL
+dnl AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
 dnl =============================
-AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memmove memset mkdir setlocale socket strcasecmp strchr strdup strerror strrchr uname])
-
+dnl AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memmove memset mkdir setlocale socket strcasecmp strchr strdup strerror strrchr uname])
+AC_CHECK_FUNCS([dup2])
 
 
 dnl Checks for misc features
