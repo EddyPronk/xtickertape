@@ -1,5 +1,6 @@
-/* $Id: MailSubscription.c,v 1.2 1998/10/30 09:15:41 phelps Exp $ */
+/* $Id: MailSubscription.c,v 1.3 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdlib.h>
 #include "StringBuffer.h"
 #include "MailSubscription.h"

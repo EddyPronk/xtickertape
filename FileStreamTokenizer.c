@@ -1,8 +1,9 @@
-/* $Id: FileStreamTokenizer.c,v 1.5 1998/10/24 04:52:56 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.6 1998/12/18 07:56:44 phelps Exp $ */
 
-#include "FileStreamTokenizer.h"
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
+#include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
 #include "sanity.h"
 

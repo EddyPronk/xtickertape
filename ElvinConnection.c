@@ -1,5 +1,6 @@
-/* $Id: ElvinConnection.c,v 1.29 1998/10/29 06:16:39 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.30 1998/12/18 07:56:44 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <elvin3/subscription.h>

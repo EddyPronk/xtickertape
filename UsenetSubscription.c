@@ -1,7 +1,8 @@
-/* $Id: UsenetSubscription.c,v 1.9 1998/11/12 04:43:22 phelps Exp $ */
+/* $Id: UsenetSubscription.c,v 1.10 1998/12/18 07:56:46 phelps Exp $ */
 
-#include "UsenetSubscription.h"
+#include <config.h>
 #include <stdlib.h>
+#include "UsenetSubscription.h"
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
 #include "sanity.h"

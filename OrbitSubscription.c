@@ -1,5 +1,6 @@
-/* $Id: OrbitSubscription.c,v 1.12 1998/11/05 01:51:39 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.13 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "OrbitSubscription.h"

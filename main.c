@@ -1,5 +1,6 @@
-/* $Id: main.c,v 1.35 1998/12/17 01:26:13 phelps Exp $ */
+/* $Id: main.c,v 1.36 1998/12/18 07:56:46 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

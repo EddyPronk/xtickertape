@@ -1,9 +1,9 @@
-/* $Id: Message.c,v 1.14 1998/10/25 07:14:18 phelps Exp $ */
+/* $Id: Message.c,v 1.15 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "sanity.h"
 #include "Message.h"
 

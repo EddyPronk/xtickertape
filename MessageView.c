@@ -1,5 +1,6 @@
-/* $Id: MessageView.c,v 1.30 1998/12/17 01:26:13 phelps Exp $ */
+/* $Id: MessageView.c,v 1.31 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,7 +9,6 @@
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
 #include <X11/StringDefs.h>
-
 #include "sanity.h"
 #include "ScrollerP.h"
 #include "MessageView.h"

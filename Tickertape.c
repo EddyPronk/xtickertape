@@ -1,8 +1,9 @@
 /*
- * $Id: Tickertape.c,v 1.31 1998/12/18 01:22:26 phelps Exp $
+ * $Id: Tickertape.c,v 1.32 1998/12/18 07:56:45 phelps Exp $
  * COPYRIGHT!
  */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Intrinsic.h>

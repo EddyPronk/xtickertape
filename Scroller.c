@@ -1,5 +1,6 @@
-/* $Id: Scroller.c,v 1.6 1998/12/17 01:24:50 phelps Exp $ */
+/* $Id: Scroller.c,v 1.7 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>

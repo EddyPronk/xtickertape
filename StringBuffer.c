@@ -1,5 +1,6 @@
-/* $Id: StringBuffer.c,v 1.3 1998/10/24 04:55:07 phelps Exp $ */
+/* $Id: StringBuffer.c,v 1.4 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "StringBuffer.h"

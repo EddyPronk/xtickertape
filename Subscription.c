@@ -1,5 +1,6 @@
-/* $Id: Subscription.c,v 1.19 1998/11/05 01:52:17 phelps Exp $ */
+/* $Id: Subscription.c,v 1.20 1998/12/18 07:56:45 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

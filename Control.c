@@ -1,10 +1,10 @@
-/* $Id: Control.c,v 1.26 1998/11/10 00:03:07 phelps Exp $ */
+/* $Id: Control.c,v 1.27 1998/12/18 07:56:44 phelps Exp $ */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
-
 #include "sanity.h"
 #include "Control.h"
 #include "List.h"
