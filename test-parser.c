@@ -7,71 +7,53 @@
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include "errors.h"
-#include "ast.h"
-#include "subscription.h"
+#include "atom.h"
 #include "parser.h"
 
 
-/* Callback for completion of the parsing */
-static int parsed(void *rock, uint32_t count, subscription_t *subs, elvin_error_t error)
+
+/* Parser callback */
+int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
 {
-    elvin_notification_t notification = (elvin_notification_t)rock;
-    uint32_t i;
-
-    /* Test each notification to see what message it generates */
-    for (i = 0; i < count; i++)
-    {
-	message_t message;
-
-	/* Get the subscription to transmute the message */
-	if (! (message = subscription_transmute(subs[i], notification, error)))
-	{
-	    return 0;
-	}
-    }
-
-    /* Clean up */
-    for (i = 0; i < count; i++)
-    {
-	subscription_free(subs[i], error);
-    }
-
-    /* Free the subscription array */
-    ELVIN_FREE(subs, error);
+    atom_print(atom_eval(sexp, error));
+    printf("\n");
     return 1;
 }
 
-/* Constructs a simple notification */
-static elvin_notification_t notification_alloc(elvin_error_t error)
+/* Parse a file */
+static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t error)
 {
-    elvin_notification_t notification;
+    char buffer[4096];
+    ssize_t length;
 
-    /* Allocate a new notification */
-    if (! (notification = elvin_notification_alloc(error)))
+    /* Keep reading until we run dry */
+    while (1)
     {
-	return NULL;
-    }
+	/* Read some of the file */
+	if ((length = read(fd, buffer, 4096)) < 0)
+	{
+	    perror("read(): failed");
+	    exit(1);
+	}
 
-    /* Populate it */
-    elvin_notification_add_int32(notification, "elvinmail", 2, error);
-    elvin_notification_add_int32(notification, "elvinmail.minor", 0, error);
-    elvin_notification_add_string(notification, "folder", "Inbox", error);
-    elvin_notification_add_string(notification, "from", "phelps@dstc.edu.au Tue Jul 11 17:37:08 2000", error);
-    elvin_notification_add_string(notification, "From", "Ted Phelps <phelps@dstc.edu.au>", error);
-    elvin_notification_add_string(notification, "Received", "from sequoia.dstc.edu.au (sequoia.dstc.edu.au [130.102.176.186]) by piglet.dstc.edu.au (8.10.1/8.10.1) with ESMTP id e6B7b8b08586 for <phelps@piglet.dstc.edu.au>; Tue, 11 Jul 2000 17:37:08 +1000 (EST)", error);
-    elvin_notification_add_string(notification, "user", "phelps", error);
-    elvin_notification_add_string(notification, "Message-Id", "<200007110737.RAA27103@sequoia.dstc.edu.au>", error);
-    elvin_notification_add_string(notification, "Subject", "bite me", error);
-    elvin_notification_add_string(notification, "Content-Type", "text", error);
-    elvin_notification_add_int32(notification, "index", 280, error);
-    return notification;
+	/* Run it through the parser */
+	if (parser_read_buffer(parser, buffer, length, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* See if that was the end of the file */
+	if (length == 0)
+	{
+	    return 1;
+	}
+    }
 }
 
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
     elvin_error_t error;
-    elvin_notification_t notification;
     parser_t parser;
     int i;
 
@@ -82,15 +64,8 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
-    /* Construct a notification to play with */
-    if (! (notification = notification_alloc(error)))
-    {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-
     /* Allocate a new parser */
-    if ((parser = parser_alloc(parsed, notification, error)) == NULL)
+    if ((parser = parser_alloc(parsed, NULL, error)) == NULL)
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);
@@ -99,9 +74,9 @@ int main(int argc, char *argv[])
     /* If we have no args, then read from stdin */
     if (argc < 2)
     {
-	if (! parser_parse_file(parser, STDIN_FILENO, "[stdin]", error))
+	if (! parse_file(parser, STDIN_FILENO, "[stdin]", error))
 	{
-	    fprintf(stderr, "parser_parse_file(): failed\n");
+	    fprintf(stderr, "parse_file(): failed\n");
 	    elvin_error_fprintf(stderr, error);
 	}
     }
@@ -122,9 +97,9 @@ int main(int argc, char *argv[])
 	    }
 
 	    /* Parse its contents */
-	    if (! parser_parse_file(parser, fd, filename, error))
+	    if (! parse_file(parser, fd, filename, error))
 	    {
-		fprintf(stderr, "parser_parse_file(): failed\n");
+		fprintf(stderr, "parse_file(): failed\n");
 		elvin_error_fprintf(stderr, error);
 	    }
 
@@ -145,7 +120,6 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
-    elvin_notification_free(notification, error);
     elvin_error_free(error);
 
     /* Report on memory usage */

@@ -31,35 +31,53 @@
 #define PARSER_H
 
 #ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.4 2000/07/11 03:59:38 phelps Exp $";
+static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.5 2000/11/01 02:07:58 phelps Exp $";
 #endif /* lint */
 
-/* The parser data type */
 typedef struct parser *parser_t;
 
-/* The parser's callback type */
-typedef int (*parser_callback_t)(
-    void *rock,
-    uint32_t count,
-    subscription_t *subscription,
-    elvin_error_t error);
 
-/* Allocate space for a parser and initialize its contents */
-parser_t parser_alloc(
-    parser_callback_t callback,
-    void *rock,
-    elvin_error_t error);
+/* The format of a parser callback function. */
+typedef int (*parser_callback_t)(void *rock, parser_t parser, atom_t sexp, elvin_error_t error);
+
+
+/*
+ * Allocates and initializes a new parser_t for esh's lisp-like
+ * language.  This constructs a thread-safe parser which may be used
+ * to convert input characters into lisp atoms and lists.  Whenever
+ * the parser completes reading an s-expression it calls the callback
+ * function.
+ *
+ * return values:
+ *     success: a valid parser_t
+ *     failure: NULL
+ */
+parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t error);
 
 /* Frees the resources consumed by the parser */
 int parser_free(parser_t self, elvin_error_t error);
 
-/* Resets the parser to accept new input */
-int parser_reset(parser_t self, elvin_error_t error);
 
-/* Runs the characters in the buffer through the parser */
-int parser_parse(parser_t self, char *buffer, size_t length, elvin_error_t error);
-
-/* Parses the input from fd */
-int parser_parse_file(parser_t self, int fd, char *tag, elvin_error_t error);
+/* The parser will read characters from `buffer' and use them generate 
+ * lisp s-expressions.  Each time an s-expression is completed, the
+ * parser's callback is called with that s-expression.  If an error is 
+ * encountered, the buffer pointer will point to the character where
+ * the error was first noticed.  The parser does *not* reset its state 
+ * between calls to parser_read_buffer(), so it is possible to
+ * construct an s-expression which is much longer than the buffer size 
+ * and it is also not necessary to ensure that a complete s-expression 
+ * is in the buffer when this function is called.  The parser state
+ * *is* reset whenever an error is encountered.  A buffer of zero
+ * length is interpreted as the end of input.
+ *
+ * return values:
+ *     success: 0
+ *     failure: -1 (and buffer will point to first error character)
+ */
+int parser_read_buffer(
+    parser_t self, 
+    const char *buffer,
+    ssize_t length,
+    elvin_error_t error);
 
 #endif /* PARSER_H */
