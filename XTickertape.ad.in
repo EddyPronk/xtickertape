@@ -4,7 +4,8 @@
 ! A Motif(tm) tickertape application which displays elvin notifications
 !
 
-XTickertape.versionTag: @PACKAGE@ @VERSION@
+XTickertape.versionTag: @PACKAGE@-@VERSION@
+XTickertape.metamailPath: @METAMAIL@
 
 !
 ! Layout

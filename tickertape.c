@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.95 2002/04/23 22:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.96 2002/06/07 15:13:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -119,6 +119,9 @@ struct tickertape
 {
     /* A convenient error context */
     elvin_error_t error;
+
+    /* The application-shell resources */
+    XTickertapeRec *resources;
 
     /* The elvin connection handle */
     elvin_handle_t handle;
@@ -1705,6 +1708,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 /* Answers a new tickertape_t for the given user using the given file as
  * her groups file and connecting to the notification service */
 tickertape_t tickertape_alloc(
+    XTickertapeRec *resources,
     elvin_handle_t handle,
     char *user, char *domain, 
     char *ticker_dir,
@@ -1724,6 +1728,7 @@ tickertape_t tickertape_alloc(
     }
 
     /* Initialize its contents to sane values */
+    self -> resources = resources;
     self -> error = error;
     self -> handle = NULL;
     self -> user = strdup(user);
@@ -2021,7 +2026,7 @@ static char *tickertape_keys_filename(tickertape_t self)
 /* Displays a message's MIME attachment */
 int tickertape_show_attachment(tickertape_t self, message_t message)
 {
-#if defined(METAMAIL) && defined(HAVE_DUP2) && defined(HAVE_FORK)
+#if defined(HAVE_DUP2) && defined(HAVE_FORK)
     char *attachment;
     size_t count;
     char *pointer;
@@ -2029,6 +2034,16 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     pid_t pid;
     int fds[2];
     int status;
+
+    /* If metamail is not defined then we're done */
+    if (self -> resources -> metamail_path == NULL ||
+	*self -> resources -> metamail_path == '\0')
+    {
+#if defined(DEBUG)
+	printf("metamail not defined\n");
+#endif /* DEBUG */
+	return -1;
+    }
 
     /* If the message has no attachment then we're done */
     if ((count = message_get_attachment(message, &attachment)) == 0)
@@ -2065,7 +2080,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 
 	/* Invoke metamail */
 	execl(
-	    METAMAIL, METAMAIL,
+	    self -> resources -> metamail_path,
+	    self -> resources -> metamail_path,
 	    METAMAIL_OPTIONS,
 	    NULL);
 
@@ -2121,7 +2137,9 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     /* Did it exit badly? */
     if (WIFEXITED(status))
     {
-	fprintf(stderr, METAMAIL " exit status: %d\n", WEXITSTATUS(status));
+	fprintf(stderr, "%s exit status: %d\n",
+		self -> resources -> metamail_path,
+		WEXITSTATUS(status));
 	return -1;
     }
 

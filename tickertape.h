@@ -36,16 +36,27 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.15 2002/04/14 22:33:17 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.16 2002/06/07 15:13:20 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
 
 #include <X11/Intrinsic.h>
 
+/* The structure of the application shell resources */
+typedef struct
+{
+    /* The version tag from the app-defaults file */
+    char *version_tag;
+
+    /* The path to the metamail executable */
+    char *metamail_path;
+} XTickertapeRec;
+
 /* Answers a new Tickertape for the given user using the given file as
  * her groups file and connecting to the notification service */
 tickertape_t tickertape_alloc(
+    XTickertapeRec *resources,
     elvin_handle_t handle,
     char *user, char *domain,
     char *ticker_dir,

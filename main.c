@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.109 2002/06/07 11:45:38 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.110 2002/06/07 15:13:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -98,6 +98,28 @@ static struct option long_options[] =
     { NULL, no_argument, NULL, '\0' }
 };
 #endif /* GETOPT_LONG */
+
+
+#define XtNversionTag "versionTag"
+#define XtNmetamailPath "metamailPath"
+
+/* The application shell window also has resources */
+#define offset(field) XtOffsetOf(XTickertapeRec, field)
+static XtResource resources[] =
+{
+    /* char *version_tag */
+    {
+	XtNversionTag, XtCString, XtRString, sizeof(char *),
+	offset(version_tag), XtRString, (XtPointer)NULL
+    },
+
+    /* Char *metamail_path */
+    {
+	XtNmetamailPath, XtCString, XtRString, sizeof(char *),
+	offset(metamail_path), XtRString, (XtPointer)NULL
+    }
+};
+#undef offset
 
 /* Static function headers */
 static void do_quit(
@@ -487,48 +509,22 @@ static RETSIGTYPE reload_subs(int signum)
     tickertape_reload_usenet(tickertape);
 }
 
-/* Make sure the app-default's file version number is correct */
-static void assert_app_defaults_version(Widget top)
+/* Print an error message indicating that the app-defaults file is bogus */
+static void app_defaults_version_error(char *message)
 {
-    char *string;
-    XtResource resources[] = {
-	{
-	    "versionTag", XtCString, XtRString, sizeof(char *),
-	    0, XtRString, (XtPointer)NULL
-	}
-    };
-    
-    /* Get the About Box's title string */
-    XtGetApplicationResources(top, &string, resources, 1, NULL, 0);
-
-    /* Make sure it matches the PACKAGE and VERSION */
-    if (string == NULL)
-    {
-	fprintf(stderr, PACKAGE ": app-defaults file not found or out of date\n\n");
-    }
-    else if (strcmp(string, PACKAGE " " VERSION) != 0)
-    {
-	fprintf(stderr, PACKAGE ": app-defaults file has the wrong version number\n\n");
-    }
-    else
-    {
-	return;
-    }
-
-    /* Refuse to run if the version number doesn't match */
-    fprintf(stderr,
+    fprintf(stderr, PACKAGE ": %s\n\n"
 	    "This probably because the app-defaults file (XTickertape) is not installed in\n"
 	    "the X11 directory tree.  This may be fixed either by moving the app-defaults\n"
 	    "file to the correct location or by setting your XFILESEARCHPATH environment\n"
 	    "variable to something like /usr/local/lib/X11/%%T/%%N:%%D.  See the man page for\n"
-	    "XtResolvePathname for more information.\n");
-    exit(1);
+	    "XtResolvePathname for more information.\n", message);
 }
 
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
     XtAppContext context;
+    XTickertapeRec rc;
     elvin_handle_t handle;
     elvin_error_t error;
     char *user;
@@ -549,8 +545,22 @@ int main(int argc, char *argv[])
 	XtNborderWidth, 0,
 	NULL);
 
-    /* Make sure the right application defaults were loaded */
-    assert_app_defaults_version(top);
+    /* Load the application shell resources */
+    XtGetApplicationResources(top, &rc, resources, XtNumber(resources), NULL, 0);
+
+    /* Make sure our app-defaults file has a version number */
+    if (rc.version_tag == NULL)
+    {
+	app_defaults_version_error("app-defaults file not found or or out of date");
+	exit(1);
+    }
+
+    /* Make sure that version number is the one we want */
+    if (strcmp(rc.version_tag, PACKAGE "-" VERSION) != 0)
+    {
+	app_defaults_version_error("app-defaults file has the wrong version number");
+	exit(1);
+    }
 
     /* Add a calback for when it gets destroyed */
     XtAppAddActions(context, actions, XtNumber(actions));
@@ -605,7 +615,7 @@ int main(int argc, char *argv[])
 
     /* Create a tickertape */
     tickertape = tickertape_alloc(
-	handle,
+	&rc, handle,
 	user, domain,
 	ticker_dir, config_file,
 	groups_file, usenet_file, keys_file,
