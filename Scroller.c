@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.24 1999/06/21 01:12:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.25 1999/06/21 01:19:13 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1027,49 +1027,24 @@ static void Destroy(Widget widget)
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
-#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
-    view_holder_t spacer;
 
-#if DEBUG
-    fprintf(stderr, "Resize %p\n", widget);
-#endif /* DEBUG */
-
-    /* If we haven't had a chance to realize the widget yet, then just replace the spacer */
+    /* Nothing to do if we're not yet realized */
     if (! XtIsRealized(widget))
     {
-	/* Throw away our original spacer and replace it with a new one */
-	view_holder_free(DequeueViewHolder(self));
-	EnqueueViewHolder(self, view_holder_alloc(NULL, self -> core.width));
-	self -> scroller.spacer = self -> scroller.last_holder;
 	return;
     }
 
-    /* Resize our offscreen pixmap */
+    /* Otherwise we need a new pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(widget), XtWindow(widget),
 	self -> core.width, self -> core.height,
 	self -> core.depth);
 
-    /* Update the size of the spacer (and our visible width) */
-    if ((spacer = self -> scroller.spacer) != NULL)
-    {
-	long width = self -> core.width - spacer -> previous_width;
-
-	self -> scroller.visibleWidth -= spacer -> width;
-	spacer -> width = (width < END_SPACING) ? END_SPACING : width;
-	self -> scroller.visibleWidth += spacer -> width;
-    }
-
-    /* Make sure we have the right number of things visible */
-    OutWithTheOld(self);
-    InWithTheNew(self);
-
-    /* Repaint our offscreen pixmap and copy it to the display*/
+    /* Update the display on that pixmap */
     Paint(self, 0, 0, self -> core.width, self -> core.height);
     Redisplay(widget, NULL, 0);
-#endif /* 0 */
 }
 
 /* What should this do? */
