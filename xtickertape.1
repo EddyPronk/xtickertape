@@ -1,0 +1,170 @@
+.TH XTICKERTAPE 1 "1998 December 23"
+.ds xt \fIxtickertape\fP
+.ds Xt \fIXtickertape\fP
+.UC 4
+.SH NAME
+xtickertape \- scrolling text chat tool
+.SH SYNOPSIS
+.nf
+xtickertape [-h host] [--host=host] [-p port] [--port=port]
+            [-u user] [--user=user] [-g groupsfile] [--groups=groupsfile]
+            [-n newsfile] [--news=newsfile] [--version] [--help]
+.fi
+.SH OPTIONS
+\*(Xt may be invoked with the following command-line options:
+.TP
+.B -h \fIhost\fP
+.TP
+.BI --host= host
+Connect to the elvin server running on \fIhost\fP.
+.TP
+.B -p \fIport\fP
+.TP
+.BI --port= port
+Connect to the elvin server running listening on \fIport\fP.
+.TP
+.B -u \fIuser\fP
+.TP
+.BI --user= user
+Use \fIuser\fP as the default name when sending messages.
+.TP
+.B -g \fIfilename\fP
+.TP
+.BI --groups= filename
+Read the group subscriptions out of \fIfilename\fP.
+.TP
+.B -n \fIfilename\fP
+.TP
+.BI --news= filename
+Read the usenet news subscriptions out of \fIfilename\fP.
+.TP
+.B -v
+.TP
+.B --version
+Print out the version of xtickertape that is being run and exit.
+.TP
+.B --help
+Print a usage message briefly summarizing these command-line options
+and then exit.
+.SH DESCRIPTION
+The \*(xt application is a scrolling one-line window of event
+notifications, providing you with information from many sources in a
+minimum of screen space.  It provides specific support for monitoring
+usenet news (see \fBusenet\fP\fI(5)\fP and incoming e-mail, and also for
+sending and receiving notifications belonging to specific tickertape
+groups (see \fBgroups\fP\fI(5)\fP).
+.PP
+Notifications contain at least four pieces of information: a group, a
+user, a message and a timeout.  You can filter the information you
+receive by adding (or not) entries in your \fIgroups\fP file which
+match the group attribute.  The user attribute is meant to give you
+some idea of who is sending the message contained in the message
+attribute.  The timeout indicates how many minutes a notification
+should be displayed by \*(xt.  As notifications age towards their
+timeout, they fade to the background color thus providing you with
+some idea of how old they are.  You may specify minimum and maximum
+timeouts for a given group in your \fIgroups\fP file.  You may also
+delete notifications before they timeout by clicking on them with the
+right mouse button (or by placing the pointer on them and pressing the 
+"d" key).
+.PP
+In addition to these four attributes, notifications may also include
+MIME attachment (typically a URL).  If they do, they will be
+underlined so that you can identify them, and you may click on them
+with the middle mouse button to view the attachment.  If you are so
+inclined, you may specify in your \fIgroups\fP file that any
+notification with a MIME attachment sent to a given group should
+automatically be displayed, thus saving you the trouble of clicking on 
+it.
+.PP
+To send a notification you should bring up the \fIcontrol panel\fP
+window.  This is done by clicking in the \*(xt window with the left
+mouse button.  The control panel allows you to compose the four
+attributes and optional MIME attachment of your notification and send
+it.  If you clicked on a notification scrolling across your \*(xt
+window, then the control panel will be configured to reply to that
+message.
+.PP
+The control panel also allows you to tell \*(xt to re-read your
+\fIgroups\fP or \fIusenet\fP files if you have changed them since you
+started \*(xt from the File menu.  You may also exit the program from
+this menu (or by pressing the "q" key in the scroller window).
+.SH RESOURCES
+\*(Xt understands all of the core X Toolkit and Motif resource names
+and classes.  Additionally, the Scroller widget understands the
+following resources:
+.TP
+.B "groupPixel (\fPclass\fB Pixel)"
+Specifies the color to use when displaying the group attribute of a
+notification. 
+.TP
+.B "userPixel (\fPclass\fB Pixel)"
+Specifies the color to use when displaying the user attribute of a
+notification.
+.TP
+.B "stringPixel (\fPclass\fB Pixel)"
+Specifies the color to use when displaying the message attribute of a
+notification.
+.TP
+.B "separatorPixel (\fPclass\fB Pixel)"
+Specifies the color to use when displaying colon characters between
+the group, user and message attributes.
+.TP
+.B "fadeLevels (\fPclass\fB Dimension)"
+Specifies the number of gradations of color to go through as a
+notification fades.  Unless you have a 24-bit color display you'll
+want to keep this small as \*(xt will allocate 4 times this many
+colors.
+.TP
+.B "frequency (\fPclass\fB Dimension)"
+The number of times per second to scroll the notifications in the
+scroller.  Use this in conjunction with \fIstepSize\fP (below) to
+adjust the speed at which notifications are scrolled.
+.TP
+.B "stepSize (\fPclass\fB Dimension)"
+The number of pixels to move the notifications in the scroller.  Use
+this in conjunction with \fIfrequency\fP (above) to adjust the speed
+at which notifications are scrolled.
+.SH ACTIONS
+You can also customize the keystrokes and mouse clicks which control
+\*(xt.  The Scroller widget recognizes the following actions:
+.TP
+.B menu()
+Pops up the \fIcontrol panel\fP window and uses the notification under 
+the pointer (if there is one) to configure the group menu.
+.TP
+.B decodeMime()
+Displays the MIME attachment of the notification under the pointer.
+.TP
+.B delete()
+Deletes the notification under the pointer.
+.SH ENVIRONMENT VARIABLES
+If
+.B TICKERDIR
+exists in the environment, then \*(xt will look in the directory it
+names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
+then \*(xt will look in the directory specified by the \fBHOME\fP
+environment variable for a directory named \fB.ticker\fP under which
+it will look for \fBgroups\fP and \fBusenet\fP.
+.SH FILES
+.SH SEE ALSO
+.BR groups (5),
+.BR usenet (5),
+.BR elvin (1)
+.na
+http://www.dstc.edu.au/elvin
+.SH BUGS
+E-mail bug reports to
+.BR phelps@pobox.com .
+Be sure to include the word "xtickertape" somewhere int the
+"Subject:" field.
+.SH AUTHORS
+\*(Xt was written by Ted Phelps <phelps@pobox.com>.  It was based on a 
+Java program,
+.BR jtickertape (1)
+by Julian Boot, which is to be used on lesser platforms.  Both \*(xt
+and \fIjtickertape\fP were derived from the original Python version
+written by Bill Segall <bill@segall.net> with contributions from the
+Reject Room.
+
+
