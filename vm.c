@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.12 2000/11/22 22:57:42 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.13 2000/11/23 22:17:52 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -216,7 +216,12 @@ int vm_pop(vm_t self, object_t *result, elvin_error_t error)
 /* Pushes an object onto the vm's stack */
 int vm_push(vm_t self, object_t object, elvin_error_t error)
 {
-    /* FIX THIS: check bounds on stack */
+    if (! (self -> sp < STACK_SIZE))
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack overflow");
+	return 0;
+    }
+
     self -> stack[self -> sp++] = object;
     return 1;
 }
