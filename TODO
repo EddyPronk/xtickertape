@@ -4,7 +4,14 @@ Misc
 
 - Avoid adding the same status message to the scroller over and over
   again.  Perhaps use the tag to just replace the existing status
-  message?  What about the history?
+  message?  What about the history?  Perhaps these messages only go
+  into the status box?
+
+
+Documentation
+
+- Update the man page to include information on the new History
+  widget's resources.
 
 
 Configuration
@@ -49,9 +56,9 @@ History Widget
   should make it less annoying to deselect an item as dragging
   automatically selects.
 
-- It should be possible to display a timestamp in front of each
-  message.  The timestamp should optionally include the date as well
-  as hour/minute/am|pm.
+- The timestamp should optionally include the date as well
+  as HH:MM(am|pm), and should be internationalized.  Perhaps this
+  should be done via the Scheme interpreter?
 
 - Messages should be indented to indicate threading.  This will expose
   a bit of unimplemented functionality in regards to inserting a
