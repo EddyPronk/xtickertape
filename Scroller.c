@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.65 1999/09/08 04:18:41 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.66 1999/09/09 13:27:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -41,10 +41,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.65 1999/09/08 04:18:41 phelps E
 #include "ScrollerP.h"
 #include "glyph.h"
 
-
-/* FIX THIS: should compute based on the width of some number of 'n's */
-#define END_SPACING 30
-#define MAX_VISIBLE 8
 
 /* Minimum drag amount (in pixels) before we decide not `click' */
 #define DRAG_DELTA 5
@@ -429,8 +425,8 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
  */
 static int gap_width(ScrollerWidget self, int last_width)
 {
-    return (self -> core.width < last_width + END_SPACING) ?
-	END_SPACING : self -> core.width - last_width;
+    return (self -> core.width < last_width + self -> scroller.min_gap_width) ?
+	self -> scroller.min_gap_width : self -> core.width - last_width;
 }
 
 
@@ -595,6 +591,32 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 /*
  * Method Definitions
  */
+static int compute_min_gap_width(XFontStruct *font)
+{
+    unsigned int first = font -> min_char_or_byte2;
+    unsigned int last = font -> max_char_or_byte2;
+
+    /* Try to use the width of 8 'n' characters */
+    if ((first <= 'n') && ('n' <= last))
+    {
+	return 3 * (font -> per_char + 'n' - first) -> width;
+    }
+
+    /* Try 8 default character widths */
+    if ((first <= font -> default_char) && (font -> default_char <= last))
+    {
+	return 3 * (font -> per_char + font -> default_char - first) -> width;
+    }
+
+    /* Ok, how about spaces? */
+    if ((first <= ' ') && (' ' <= last))
+    {
+	return 3 * (font -> per_char + ' ' - first) -> width;
+    }
+
+    /* All right, resort to 8 of some arbitrary character */
+    return 3 * font -> per_char -> width;
+}
 
 /* ARGSUSED */
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
@@ -611,6 +633,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 
     /* Record the height and width for future reference */
     self -> scroller.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
+
+    /* Record the width of 8 'n' characters as the minimum gap width */
+    self -> scroller.min_gap_width = compute_min_gap_width(self -> scroller.font);
 
     /* Make sure we have a height */
     if (self -> core.height == 0)
