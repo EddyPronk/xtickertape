@@ -6,7 +6,7 @@ Standards-Version: 3.0.1
 
 Package: @PACKAGE@
 Architecture: any
-Depends: libelvin, lesstif, metamail
+Depends: libelvin, lesstif1 (>= 0.92), metamail
 Description: Elvin tickertape client
  XTickertape is a demonstration of how much information can be
  condensed into a single line of scrolling text.  It can receive Elvin
