@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.130 2002/04/12 14:38:48 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.131 2002/04/16 08:28:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1311,13 +1311,14 @@ static void scroll(ScrollerWidget self, int offset)
 	    0, 0, self -> core.width, self -> core.height,
 	    delta, 0);
 
+	/* We're always in sync with the X server */
+	self -> scroller.local_delta = 0;
+
 	/* Repaint the missing bits */
 	paint(
 	    self,
-	    delta < 0 ? self -> core.width - self -> scroller.target_delta : 0, 0,
-	    self -> scroller.target_delta, self -> scroller.height);
-
-	self -> scroller.local_delta = 0;
+	    delta < 0 ? self -> core.width + delta : 0, 0,
+	    delta < 0 ? - delta : delta, self -> scroller.height);
 
 	/* Copy the pixmap to the screen */
 	redisplay(self, NULL);
