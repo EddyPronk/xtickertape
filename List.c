@@ -175,6 +175,20 @@ void *List_first(List self)
     }
 }
 
+/* Answers the last element of the receiver */
+void *List_last(List self)
+{
+    if (self -> tail)
+    {
+	return self -> tail -> value;
+    }
+    else
+    {
+	return NULL;
+    }
+}
+
+
 /* Answers the number of elements in the receiver */
 unsigned long List_size(List self)
 {

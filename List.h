@@ -1,5 +1,5 @@
 /*
- * $Id: List.h,v 1.1 1997/02/05 06:24:13 phelps Exp $
+ * $Id: List.h,v 1.2 1997/02/05 09:25:56 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
@@ -32,6 +32,9 @@ void *List_get(List self, unsigned long index);
 
 /* Answers the first element of the receiver */
 void *List_first(List self);
+
+/* Answers the last element of the receiver */
+void *List_last(List self);
 
 /* Answers the number of elements in the receiver */
 unsigned long List_size(List self);
