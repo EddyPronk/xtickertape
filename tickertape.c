@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.89 2002/04/12 13:22:58 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.90 2002/04/12 14:39:34 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -138,7 +138,7 @@ struct tickertape
     control_panel_t control_panel;
 
     /* The ScrollerWidget */
-    ScrollerWidget scroller;
+    Widget scroller;
 };
 
 
@@ -248,6 +248,9 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 
     /* Delegate to the control panel */
     control_panel_kill_thread(self -> control_panel, message);
+
+    /* Clean the killed messages out of the scroller */
+    ScPurgeKilled(self -> scroller);
 }
 
 /* Receive a message_t matched by a subscription */
@@ -255,13 +258,20 @@ static void receive_callback(void *rock, message_t message, int show_attachment)
 {
     tickertape_t self = (tickertape_t)rock;
 
+    /* Add the message to the control panel.  This will mark it as
+     * killed if it is added to a thread which has been killed */
     control_panel_add_message(self -> control_panel, message);
-    ScAddMessage(self -> scroller, message);
 
-    /* Show the attachment if requested */
-    if (show_attachment != False)
+    /* Add the message to the scroller if it hasn't been killed */
+    if (! message_is_killed(message))
     {
-	tickertape_show_attachment(self, message);
+	ScAddMessage(self -> scroller, message);
+
+	/* Show the attachment if requested */
+	if (show_attachment)
+	{
+	    tickertape_show_attachment(self, message);
+	}
     }
 }
 
@@ -725,17 +735,17 @@ static void init_ui(tickertape_t self)
     }
 
     /* Create the scroller widget */
-    self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
+    self -> scroller = XtVaCreateManagedWidget(
 	"scroller", scrollerWidgetClass, self -> top,
 	NULL);
     XtAddCallback(
-	(Widget)self -> scroller, XtNcallback,
+	self -> scroller, XtNcallback,
 	(XtCallbackProc)menu_callback, self);
     XtAddCallback(
-	(Widget)self -> scroller, XtNattachmentCallback,
+	self -> scroller, XtNattachmentCallback,
 	(XtCallbackProc)mime_callback, self);
     XtAddCallback(
-	(Widget)self -> scroller, XtNkillCallback,
+	self -> scroller, XtNkillCallback,
 	(XtCallbackProc)kill_callback, self);
     XtRealizeWidget(self -> top);
 }
