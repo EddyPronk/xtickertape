@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.15 1998/10/28 07:50:14 phelps Exp $
+ * $Id: Ticker.c,v 1.16 1998/10/29 03:40:14 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -15,13 +15,7 @@
 #include "Subscription.h"
 #include "UsenetSubscription.h"
 #include "ElvinConnection.h"
-
-#ifdef ORBIT
-#define VERSION "1.4.3 (orbit)"
-#include "OrbitSubscription.h"
-#else /* ORBIT */
-#define VERSION "1.4.3"
-#endif /* ORBIT */
+#include "version.h"
 
 
 #ifdef SANITY
@@ -79,8 +73,8 @@ static void ReceiveMessage(Tickertape self, Message message);
 static void InitializeUserInterface(Tickertape self);
 static List ReadGroupsFile(Tickertape self);
 static void PublishStartupNotification(Tickertape self);
-static void Disconnect(Tickertape self, char *string);
-static void Reconnect(Tickertape self, char *string);
+static void Disconnect(Tickertape self, ElvinConnection connection);
+static void Reconnect(Tickertape self, ElvinConnection connection);
 #ifdef ORBIT
 static void OrbitCallback(Tickertape self, en_notify_t notification);
 static void SubscribeToOrbit(Tickertape self);
@@ -194,30 +188,80 @@ static void PublishStartupNotification(Tickertape self)
     en_free(notification);
 }
 
-/* This is called when we lose our elvin connection */
-static void Disconnect(Tickertape self, char *string)
-{
-    Message message;
-    SANITY_CHECK(self);
-
-    /* Display the message on the scroller */
-    message = Message_alloc(NULL, "internal", "tickertape", string, 10, NULL, NULL, 0, 0);
-    ReceiveMessage(self, message);
-}
-
 /* This is called when we get our elvin connection back */
-static void Reconnect(Tickertape self, char *string)
+static void Reconnect(Tickertape self, ElvinConnection connection)
 {
+    StringBuffer buffer;
     Message message;
     SANITY_CHECK(self);
 
+    /* Construct a reconnect message */
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "Connected to elvin server at ");
+    StringBuffer_append(buffer, ElvinConnection_host(connection));
+    StringBuffer_appendChar(buffer, ':');
+    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
+    StringBuffer_appendChar(buffer, '.');
+
     /* Display the message on the scroller */
-    message = Message_alloc(NULL, "internal", "tickertape", string, 10, NULL, NULL, 0, 0);
+    message = Message_alloc(
+	NULL,
+	"internal", "tickertape",
+	StringBuffer_getBuffer(buffer), 10,
+	NULL, NULL,
+	0, 0);
     ReceiveMessage(self, message);
 
     /* Republish the startup notification */
     PublishStartupNotification(self);
 }
+
+/* This is called when we lose our elvin connection */
+static void Disconnect(Tickertape self, ElvinConnection connection)
+{
+    StringBuffer buffer;
+    Message message;
+    SANITY_CHECK(self);
+
+    /* Construct a disconnect message */
+    buffer = StringBuffer_alloc();
+
+    /* If this is called in the middle of ElvinConnection_alloc, then
+     * self -> connection will be NULL.  Let the user know that we've
+     * never managed to connect. */
+    if (self -> connection == NULL)
+    {
+	StringBuffer_append(buffer, "Unable to connect to elvin server at ");
+    }
+    else
+    {
+	StringBuffer_append(buffer, "Lost connection to elvin server at ");
+    }
+
+    StringBuffer_append(buffer, ElvinConnection_host(connection));
+    StringBuffer_appendChar(buffer, ':');
+    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
+
+    if (self -> connection == NULL)
+    {
+	StringBuffer_appendChar(buffer, '.');
+    }
+    else
+    {
+	StringBuffer_append(buffer, ".  Attempting to reconnect.");
+    }
+
+    /* Display the message on the scroller */
+    message = Message_alloc(
+	NULL,
+	"internal", "tickertape",
+	StringBuffer_getBuffer(buffer), 10,
+	NULL, NULL,
+	0, 0);
+    ReceiveMessage(self, message);
+    StringBuffer_free(buffer);
+}
+
 
 
 #ifdef ORBIT
