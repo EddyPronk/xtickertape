@@ -6,25 +6,20 @@
 xtickertape \- scrolling text chat tool
 .SH SYNOPSIS
 .nf
-xtickertape [-h host] [--host=host] [-p port] [--port=port]
+xtickertape [-e elvin-url] [--elvin=elvin-url]
             [-u user] [--user=user] [-D domain] [--domain=domain]
             [-G groups-file] [--groups=groups-file]
             [-U usenet-file] [--usenet=usenet-file]
-            [-v] [--version] [--help]
+            [-v] [--version] [-h] [--help]
 .fi
 .SH OPTIONS
 In addition to the standard X Toolkit command-line options, \*(xt may
 be invoked with the following:
 .TP
-.B -h \fIhost\fP
+.B -e \fIelvin-url\fP
 .TP
-.BI --host= host
-Connect to the elvin server running on \fIhost\fP.
-.TP
-.B -p \fIport\fP
-.TP
-.BI --port= port
-Connect to the elvin server listening on \fIport\fP.
+.BI --elvin= elvin-url
+Connect to the elvin server specified by \fIelvin-url\fP.
 .TP
 .B -u \fIuser\fP
 .TP
@@ -52,6 +47,8 @@ Read the usenet news subscriptions out of \fIfilename\fP.
 .TP
 .B --version
 Print out the version of xtickertape that is being run and exit.
+.TP
+.B -h
 .TP
 .B --help
 Print a usage message briefly summarizing these command-line options
@@ -212,12 +209,7 @@ If
 exists in the environment, then \*(xt will look in the directory it
 names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
 it defaults to \fB$HOME/.ticker\fP.  If no user name is specified on
-the command-line then the environment variables.
-.B ELVIN_HOST
-and
-.B ELVIN_PORT
-are used to locate the elvin server if the host and port are not
-specified on the command-line.
+the command-line then the environment variables
 .B USER
 and
 .B LOGNAME
@@ -226,7 +218,10 @@ system directly.  Similarly, if no domain is specified on the
 command-line, the
 .B DOMAIN
 environment variable is checked before \*(xt goes mucking about with
-fully-qualified domain names.
+fully-qualified domain names.  The
+.B ELVIN_URL
+can be used to specify an elvin server to connect to if not specified
+on the command-line.
 
 .SH FILES
 .PP

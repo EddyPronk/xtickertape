@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.36 1999/11/18 07:14:53 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.37 1999/11/18 07:27:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -865,8 +865,6 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
     char *id;
     char *tickertape;
 
-	printf("HELLO SAILOR\n");
-
     /* Get the id of the zone (if provided) */
     if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
     {
@@ -1009,11 +1007,10 @@ tickertape_t tickertape_alloc(
     char *user, char *domain, 
     char *ticker_dir,
     char *groups_file, char *usenet_file,
-    char *host, int port,
+    char *elvin_url,
     Widget top)
 {
     XtAppContext app_context = XtWidgetToApplicationContext(top);
-    char *elvin_url = "elvin://localhost";
     tickertape_t self;
 
     /* Allocate some space for the new tickertape */

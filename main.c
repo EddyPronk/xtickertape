@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.61 1999/11/04 03:36:21 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.62 1999/11/18 07:27:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -52,21 +52,19 @@ static const char cvsid[] = "$Id: main.c,v 1.61 1999/11/04 03:36:21 phelps Exp $
 #include "white.xbm"
 #include "mask.xbm"
 
-#define HOST "elvin"
-#define PORT 5678
 #define DEFAULT_DOMAIN "no.domain"
 
 /* The list of long options */
 static struct option long_options[] =
 {
-    { "host", required_argument, NULL, 'h' },
+    { "elvin", required_argument, NULL, 'e' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "version", no_argument, NULL, 'v' },
-    { "help", no_argument, NULL, 'z' },
+    { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, '\0' }
 };
 
@@ -80,7 +78,7 @@ static void parse_args(
     char **user_return, char **domain_return,
     char **ticker_dir_return,
     char **groups_file_return, char **usenet_file_return,
-    char **host_return, int *port_return);
+    char **elvin_url_return);
 static Window create_icon(Widget shell);
 static void reload_subs(int signum);
 
@@ -104,8 +102,7 @@ static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *cpar
 static void usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
-    fprintf(stderr, "  -h host,     --host=host\n");
-    fprintf(stderr, "  -p port,     --port=port\n");
+    fprintf(stderr, "  -e elvin-url --elvin=elvin-url\n");
     fprintf(stderr, "  -u username, --user=username\n");
     fprintf(stderr, "  -G filename, --groups=filename\n");
     fprintf(stderr, "  -U filename, --usenet=filename\n");
@@ -173,7 +170,7 @@ static void parse_args(
     char **user_return, char **domain_return,
     char **ticker_dir_return,
     char **groups_file_return, char **usenet_file_return,
-    char **host_return, int *port_return)
+    char **elvin_url_return)
 {
     int choice;
 
@@ -183,25 +180,20 @@ static void parse_args(
     *ticker_dir_return = NULL;
     *groups_file_return = NULL;
     *usenet_file_return = NULL;
-    *host_return = NULL;
-    *port_return = 0;
+    *elvin_url_return = NULL;
 
     /* Read each argument using getopt */
-    while ((choice = getopt_long(argc, argv, "h:p:u:D:U:G:v", long_options, NULL)) > 0)
+    while ((choice = getopt_long(
+	argc, argv,
+	"e:u:D:U:G:v", long_options,
+	NULL)) > 0)
     {
 	switch (choice)
 	{
-	    /* --host= or -h */
-	    case 'h':
+	    /* --elvin= or -e */
+	    case 'e':
 	    {
-		*host_return = optarg;
-		break;
-	    }
-
-	    /* --port= or -p */
-	    case 'p':
-	    {
-		*port_return = atoi(optarg);
+		*elvin_url_return = optarg;
 		break;
 	    }
 
@@ -240,8 +232,8 @@ static void parse_args(
 		exit(0);
 	    }
 
-	    /* --help */
-	    case 'z':
+	    /* --help or -h */
+	    case 'h':
 	    {
 		usage(argc, argv);
 		exit(0);
@@ -269,31 +261,10 @@ static void parse_args(
     }
 
     /* Generate a host name if none provided */
-    if (*host_return == NULL)
+    if (*elvin_url_return == NULL)
     {
 	/* Try the environment variable */
-	if ((*host_return = getenv("ELVIN_HOST")) == NULL)
-	{
-	    *host_return = HOST;
-	}
-    }
-
-    /* Generate a port number if none provided */
-    if (*port_return == 0)
-    {
-	char *port;
-
-	/* Try the environment variable */
-	if ((port = getenv("ELVIN_PORT")) != NULL)
-	{
-	    *port_return = atoi(port);
-	}
-
-	/* Otherwise use the default */
-	if (*port_return == 0)
-	{
-	    *port_return = PORT;
-	}
+	*elvin_url_return = getenv("ELVIN_URL");
     }
 }
 
@@ -392,8 +363,7 @@ int main(int argc, char *argv[])
     char *ticker_dir;
     char *groups_file;
     char *usenet_file;
-    char *host;
-    int port;
+    char *elvin_url;
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
@@ -406,13 +376,13 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Scan what's left of the arguments */
-    parse_args(argc, argv, &user, &domain, &ticker_dir, &groups_file, &usenet_file, &host, &port);
+    parse_args(argc, argv, &user, &domain, &ticker_dir, &groups_file, &usenet_file, &elvin_url);
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
 
     /* Create a Tickertape */
-    tickertape = tickertape_alloc(user, domain, ticker_dir, groups_file, usenet_file, host, port, top);
+    tickertape = tickertape_alloc(user, domain, ticker_dir, groups_file, usenet_file, elvin_url, top);
 
     /* Set up SIGHUP to reload the subscriptions */
     signal(SIGHUP, reload_subs);
