@@ -1,4 +1,4 @@
-/* $Id: Tickertape.h,v 1.1 1997/02/09 06:55:44 phelps Exp $ */
+/* $Id: Tickertape.h,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
@@ -40,14 +40,15 @@
 
  */
 
-/*
+
 #define XtNgroupPixel "groupPixel"
 #define XtCGroupPixel "GroupPixel"
 #define XtNuserPixel "userPixel"
 #define XtCUserPixel "UserPixel"
 #define XtNstringPixel "stringPixel"
 #define XtCStringPixel "StringPixel"
-*/
+#define XtNfadeLevels "fadeLevels"
+#define XtCFadeLevels "FadeLevels"
 
 typedef struct _TickertapeClassRec *TickertapeWidgetClass;
 typedef struct _TickertapeRec *TickertapeWidget;

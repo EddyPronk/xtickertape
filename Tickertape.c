@@ -1,7 +1,8 @@
-/* $Id: Tickertape.c,v 1.1 1997/02/09 06:55:16 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
 #include <X11/StringDefs.h>
@@ -25,36 +26,26 @@ static XtResource resources[] =
 	XtRString, /* String default_type */
 	XtDefaultFont /* XtPointer default_address */
     },
-#if 0
     /* Pixel groupPixel */
     {
-	XtNgroupPixel,
-	XtCGroupPixel
-	XtRPixel,
-	sizeof(Pixel),
-	offset(tickertape.groupPixel),
-	XtRString,
-	XtDefaultForeground /* FIX THIS: should be blue, somehow */
+	XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
+	offset(tickertape.groupPixel), XtRString, "Blue"
     },
-
     /* Pixel userPixel */
     {
 	XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.userPixel), XtRString, XtDefaultForeground 
+	offset(tickertape.userPixel), XtRString, "Green"
     },
-
     /* Pixel stringPixel */
     {
 	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
-	offset(tickertape.stringPixel), XtRString, XtDefaultForeground
+	offset(tickertape.stringPixel), XtRString, "Red"
     },
-
     /* Dimension fadeLevels */
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
 	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
     }
-#endif /* 0 */
 };
 #undef offset
 
@@ -149,6 +140,46 @@ TickertapeClassRec tickertapeClassRec =
 WidgetClass tickertapeWidgetClass = (WidgetClass)&tickertapeClassRec;
 
 
+/*
+ * Private Methods
+ */
+static void CreateGC(TickertapeWidget self)
+{
+    XGCValues values;
+
+    values.background = self -> core.background_pixel;
+    self -> tickertape.gc = XCreateGC(
+	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
+	GCBackground, &values);
+}
+
+static Pixel *CreateFadedColors(
+    Display *display, Colormap colormap,
+    XColor *first, XColor *last, unsigned int levels)
+{
+    Pixel *result = calloc(levels, sizeof(Pixel));
+    float redNumerator = last -> red - first -> red;
+    float greenNumerator = last -> green - first -> green;
+    float blueNumerator = last -> blue - first -> blue;
+    unsigned long denominator = levels + 1;
+    unsigned int index;
+
+    for (index = 0; index < levels; index++)
+    {
+	XColor color;
+
+	color.red = first -> red + index * (redNumerator / denominator);
+	color.green = first -> green + ((greenNumerator * index) / denominator);
+	color.blue = first -> blue + index * blueNumerator / denominator;
+	color.flags = DoRed | DoGreen | DoBlue;
+	XAllocColor(display, colormap, &color);
+	result[index] = color.pixel;
+    }
+
+    return result;
+}
+
+
 
 /*
  * Method Definitions
@@ -158,16 +189,52 @@ WidgetClass tickertapeWidgetClass = (WidgetClass)&tickertapeClassRec;
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
+    Display *display = XtDisplay(self);
+    Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
+    XColor colors[4];
 
+    CreateGC(self);
     fprintf(stderr, "initializing tickertape 0x%p\n", self);
     self -> core.height = 40;
     self -> core.width = 200;
+
+    fprintf(stderr, "background_pixel = %ld\n", self -> core.background_pixel);
+    colors[0].pixel = self -> core.background_pixel;
+    colors[1].pixel = self -> tickertape.groupPixel;
+    colors[2].pixel = self -> tickertape.userPixel;
+    colors[3].pixel = self -> tickertape.stringPixel;
+    XQueryColors(display, colormap, colors, 4);
+
+    self -> tickertape.groupPixels = CreateFadedColors(
+	display, colormap, &colors[1], &colors[0], self -> tickertape.fadeLevels);
+    self -> tickertape.userPixels = CreateFadedColors(
+	display, colormap, &colors[2], &colors[0], self -> tickertape.fadeLevels);
+    self -> tickertape.stringPixels = CreateFadedColors(
+	display, colormap, &colors[3], &colors[0], self -> tickertape.fadeLevels);
 }
 
 /* ARGSUSED */
 static void Redisplay(Widget widget, XEvent *event, Region region)
 {
+    TickertapeWidget self = (TickertapeWidget)widget;
+    Display *display = event -> xany.display;
+    Window window = event -> xany.window;
+    GC gc = self -> tickertape.gc;
+    unsigned int index;
+    unsigned width = self -> core.width / self -> tickertape.fadeLevels;
+
     fprintf(stderr, "Redisplay 0x%p\n", widget);
+    for (index = 0; index < self -> tickertape.fadeLevels; index++)
+    {
+	XGCValues values;
+
+	values.foreground = self -> tickertape.userPixels[index];
+	XChangeGC(display, gc, GCForeground, &values);
+	XFillRectangle(display, window, gc,
+		       width * index, 0,
+		       self -> core.width, self -> core.height);
+    }
+    
 }
 
 static void Destroy(Widget widget)

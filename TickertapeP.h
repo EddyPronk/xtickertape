@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.1 1997/02/09 06:55:34 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -29,14 +29,16 @@ typedef struct
 {
     /* Resources */
     XFontStruct *font;
-/*    Pixel groupPixel;
+    Pixel groupPixel;
     Pixel userPixel;
     Pixel stringPixel;
-    Dimension fadeLevels;*/
+    Dimension fadeLevels;
 
     /* Private state */
-/*    Scroller scroller;*/
-    GC userGC;
+    GC gc;
+    Pixel *groupPixels;
+    Pixel *userPixels;
+    Pixel *stringPixels;
 } TickertapePart;
 
 

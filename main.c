@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.3 1997/02/07 06:06:51 phelps Exp $ */
+/* $Id: main.c,v 1.4 1997/02/09 13:55:44 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +15,12 @@
 #include "Hash.h"
 #include "Scroller.h"
 #include "Message.h"
+
+#include <X11/Intrinsic.h>
+#include <X11/Shell.h>
+#include "Tickertape.h"
+
+
 
 #define CONNECTING 1
 #define HOSTNAME "fatcat.dstc.edu.au"
@@ -144,7 +150,7 @@ Message getMessage(FILE *in)
 }
 
 
-
+#if 0
 int main(int argc, char *argv[])
 {
 #ifdef CONNECTING
@@ -200,6 +206,7 @@ int main(int argc, char *argv[])
 
     printf("waiting for server to say something\n");
     /* Wait for reply */
+
     while (1)
     {
 	fd_set readSet;
@@ -247,3 +254,25 @@ int main(int argc, char *argv[])
 }
 
 
+#endif /* 0 */
+
+int main(int argc, char *argv[])
+{
+    Widget top;
+    XtAppContext context;
+
+    top = XtVaOpenApplication(
+	&context, "Tickertape",
+	NULL, 0, &argc, argv,
+	NULL, applicationShellWidgetClass,
+	NULL);
+
+    XtVaCreateManagedWidget(
+	"ticker", tickertapeWidgetClass, top,
+	NULL, 0);
+
+    XtRealizeWidget(top);
+    XtAppMainLoop(context);
+
+    return 0;
+}
