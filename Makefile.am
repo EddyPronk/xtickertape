@@ -18,7 +18,6 @@ xtickertape_SOURCES = \
 	usenet_sub.h usenet_sub.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	orbit_sub.h orbit_sub.c \
-	StringBuffer.h StringBuffer.c \
 	Hash.h Hash.c \
 	List.h List.c \
 	mask.xbm red.xbm white.xbm \
