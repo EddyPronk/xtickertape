@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
     int i;
 
     /* Grab an error context */
-    if (! (error = elvin_error_alloc()))
+    if (! (error = elvin_error_alloc(NULL)))
     {
 	fprintf(stderr, "elvin_error_alloc(): failed\n");
 	exit(1);
@@ -514,12 +514,17 @@ int main(int argc, char *argv[])
     /* Free the virtual machine */
     if (! vm_free(vm, error))
     {
+	fprintf(stderr, "vm_free(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
     /* We don't need our error anymore */
-    elvin_error_free(error);
+    if (! elvin_error_free(error, NULL))
+    {
+	fprintf(stderr, "elvin_error_free(): failed\n");
+	exit(1);
+    }
 
     /* Report on memory usage */
     elvin_memory_report();
