@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.3 1999/06/21 12:02:43 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.4 1999/06/23 08:29:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -102,7 +102,11 @@ static void tick(message_glyph_t self, XtIntervalId *ignored)
     }
     else
     {
-	self -> has_expired = 1;
+	if (! self -> has_expired)
+	{
+	    self -> has_expired = 1;
+	    ScGlyphExpired(self -> widget, (glyph_t) self);
+	}
     }
 
     /* Tell the scroller to repaint this glyph */
@@ -249,6 +253,7 @@ static void do_expire(message_glyph_t self)
     {
 	self -> has_expired = True;
 	ScRepaintGlyph(self -> widget, (glyph_t) self);
+	ScGlyphExpired(self -> widget, (glyph_t) self);
 
 	/* Restart the timer so that we quickly fade */
 	clear_clock(self);
