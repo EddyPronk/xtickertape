@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 2.0a5)
+AM_INIT_AUTOMAKE(xtickertape, 2.0a6)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -11,9 +11,6 @@ AC_PATH_PROG(TPC, tpc, false)
 AC_PATH_PROG(MCGEN, mcgen, false)
 
 dnl Checks for libraries.
-
-# See if we need -lcrypt for the crypt library
-AC_SEARCH_LIBS(crypt, crypt)
 
 # See if we need -lm for fmod()
 # FIX THIS: this should go in elvin-config somehow
@@ -96,7 +93,7 @@ fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/time.h unistd.h crypt.h)
+AC_CHECK_HEADERS(sys/time.h unistd.h)
 
 
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
