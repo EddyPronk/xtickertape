@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.53 1999/08/19 01:55:24 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.54 1999/08/19 04:38:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -66,9 +66,6 @@ static struct option long_options[] =
 };
 
 /* Static function headers */
-static void NotifyAction(
-    Widget widget, XEvent *event,
-    String *params, Cardinal *cparams);
 static void QuitAction(
     Widget widget, XEvent *event,
     String *params, Cardinal *cparams);
@@ -87,21 +84,13 @@ static tickertape_t tickertape;
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
-    {"notify", NotifyAction},
     {"quit", QuitAction}
 };
-
-/* Notification of something */
-static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
-{
-    /* pass this on to the control panel */
-    tickertape_handleNotify(tickertape, widget);
-}
 
 /* Callback for when the Window Manager wants to close a window */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
-    tickertape_handleQuit(tickertape, widget);
+    tickertape_quit(tickertape);
 }
 
 /* Print out usage message */
