@@ -65,6 +65,9 @@ History Widget
   should make it less annoying to deselect an item as dragging
   automatically selects.
 
+- The widget should scroll horizontally in response to mouse
+  movement.  [Thanks to Clinton Roy]
+
 - The timestamp should optionally include the date as well as simply
   HH:MM(am|pm), and should be internationalized.  It should be
   possible to switch between date formats at runtime.
