@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.48 2002/04/04 15:26:05 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.49 2002/04/04 15:27:35 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -52,7 +52,7 @@ static const char cvsid[] = "$Id: History.c,v 1.48 2002/04/04 15:26:05 phelps Ex
 #include "HistoryP.h"
 
 
-#if 1
+#ifdef DEBUG
 #define dprintf(x) printf x
 #else
 #define dprintf(x) ;
