@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.33 1999/10/06 05:33:05 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.34 1999/11/04 03:36:45 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -809,6 +809,8 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
     char *id;
     char *tickertape;
 
+	printf("HELLO SAILOR\n");
+
     /* Get the id of the zone (if provided) */
     if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
     {
@@ -893,6 +895,8 @@ static void subscribe_to_orbit(tickertape_t self)
     }
 
     sprintf(buffer, ORBIT_SUB, self -> user);
+    printf("self -> user = \"%s\"\n", self -> user);
+    printf("orbit subscription is \"%s\"\n", buffer);
 
     /* Subscribe to the meta-subscription */
     connection_subscribe(
@@ -986,7 +990,6 @@ tickertape_t tickertape_alloc(
     subscribe_to_orbit(self);
 #endif /* ORBIT */
 
-    publish_startup_notification(self);
     return self;
 }
 
