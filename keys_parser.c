@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.3 2002/04/23 16:22:24 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.4 2002/04/23 16:51:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -485,7 +485,7 @@ static int lex_type(keys_parser_t self, int ch)
 	    char *buffer;
 
 	    length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
-	    if ((buffer = (char *)malloc(TYPE_ERROR_MSG)) != NULL)
+	    if ((buffer = (char *)malloc(length)) != NULL)
 	    {
 		snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
 		parse_error(self, buffer);
