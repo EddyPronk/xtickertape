@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.41 2002/04/03 23:17:58 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.42 2002/04/04 12:15:45 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -292,32 +292,15 @@ static char *node_get_id(node_t self)
  * depth_out
  *    Will be set to the depth of the newly added node.
  */
-static void node_add(node_t *self,
-		     char *parent_id, node_t *child,
-		     int *index, int *index_out,
-		     int depth, int *depth_out)
+static void node_add1(node_t *self,
+		      char *parent_id, node_t *child,
+		      int *index, int *index_out,
+		      int depth, int *depth_out)
 {
-    node_t *root = self;
-
-    /* Record the last index, just in case */
-    if (depth == 0)
-    {
-	*index_out = *index;
-    }
-
     /* Traverse all of our siblings */
     while (*self != NULL)
     {
 	char *id;
-
-	/* Check with the descendents */
-	if ((*self) -> child)
-	{
-	    node_add(&(*self) -> child,
-		     parent_id, child,
-		     index, index_out,
-		     depth + 1, depth_out);
-	}
 
 	/* If no match yet, then check for one here */
 	if (parent_id && *child != NULL &&
@@ -332,6 +315,15 @@ static void node_add(node_t *self,
 	    /* Record output information */
 	    *index_out = *index;
 	    *depth_out = depth + 1;
+	}
+
+	/* Check with the descendents */
+	if ((*self) -> child)
+	{
+	    node_add1(&(*self) -> child,
+		     parent_id, child,
+		     index, index_out,
+		     depth + 1, depth_out);
 	}
 
 	/* We've actually checked a node */
@@ -361,12 +353,54 @@ static void node_add(node_t *self,
 	    self = &(*self) -> sibling;
 	}
     }
+}
 
-    /* If no suitable parent node was found then we have to add it here */
-    if (depth == 0 && *child != NULL)
+/* Add a node to the tree.  This is just a friendly wrapper around
+ * node_add1() above.
+ *
+ * self
+ *    The pointer to the variable holding the root of the tree.  This
+ *    will commonly be modified, so use the actual pointer.
+ *
+ * parent_id
+ *    The Message-Id of the parent node; the In-Reply-To field.
+ *
+ * child
+ *    The node to be added to the tree.
+ *
+ * count
+ *    The number of nodes which should be visible in the tree view
+ *    once the child is added to the tree.
+ *
+ * index_out
+ *    Will be set to the index of the newly added node.
+ *
+ * depth_out
+ *    Will be set to the depth of the newly added node.
+ */
+static void node_add(node_t *self,
+		     char *parent_id,
+		     node_t child,
+		     int count,
+		     int *index_out,
+		     int *depth_out)
+{
+    int index;
+
+    /* The last index will be count - 1 */
+    index = count - 1;
+
+    /* Trim the older nodes in the tree, and add the node if its
+     * parent is in the tree. */
+    node_add1(self, parent_id, &child, &index, index_out, 0, depth_out);
+
+    /* Add the child now if it didn't get added already */
+    if (child != NULL)
     {
-	(*child) -> sibling = *root;
-	*root = *child;
+	/* Add the node to the tree */
+	child -> sibling = *self;
+	(*self) = child;
+	*index_out = count - 1;
 	*depth_out = 0;
     }
 }
@@ -1010,7 +1044,8 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     Window window = XtWindow((Widget)self);
     message_view_t view;
     struct string_sizes sizes;
-    long y, delta_y;
+    long y = 0;
+    long delta_y;
     long width = 0;
     long height = 0;
     XRectangle bbox;
@@ -1030,85 +1065,125 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	XChangeGC(display, gc, GCClipMask | GCForeground, &values);
     }
 
-    /* Are we out of room? */
-    if (! (self -> history.message_count < self -> history.message_capacity))
+    /* If there's still room then we'll have to move stuff down */
+    if (self -> history.message_count < self -> history.message_capacity)
     {
-	/* Get rid of the first message and scroll the others upwards */
-	view = self -> history.message_views[0];
-	message_view_get_sizes(view, show_timestamps, 0, &sizes);
-	message_view_free(view);
-
-	/* Figure out where to start copying */
-	y = self -> history.line_height;
-
-	/* Move the other views towards the beginning of the array */
-	for (i = 1; i < index; i++)
+	/* Measure the nodes before the index */
+	for (i = 0; i < index; i++)
 	{
 	    view = self -> history.message_views[i];
 
-	    /* Measure the view for the new width/height of the widget */
+	    /* Measure the view */
+	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    width = MAX(width, sizes.width);
+	    y += self -> history.line_height;
+	    height += self -> history.line_height;
+	}
+
+	/* Measure the nodes after the index, moving them down to make
+	 * room for the new message. */
+	for (i = self -> history.message_count; i > index; i--)
+	{
+	    view = self -> history.message_views[i - 1];
+
+	    /* Measure the view */
 	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
-	    self -> history.message_views[i - 1] = view;
+
+	    /* Move it */
+	    self -> history.message_views[i] = view;
+	    if (self -> history.selection_index == i)
+	    {
+		self -> history.selection_index++;
+	    }
 	}
 
-	/* Update the selection index if we've just moved it */
-	if (self -> history.selection_index <= index)
-	{
-	    self -> history.selection_index--;
-	}
-
-	/* Move the messages upwards as a block */
+	/* Move stuff down to make room */
 	if (gc != None)
 	{
 	    XCopyArea(
 		display, window, window, gc,
 		0, self -> history.margin_height - self -> history.y + y,
-		self -> core.width, height,
-		0, self -> history.margin_height - self -> history.y);
+		self -> core.width, height - y,
+		0, self -> history.margin_height - self -> history.y + y + self -> history.line_height);
 	}
 
-	/* The index gets decremented */
-	index--;
+	/* We've got another node */
+	self -> history.message_count++;
     }
     else
     {
-	/* Otherwise simply measure the messages */
-	for (i = 0; i < index; i++)
+	/* Measure the nodes before the index, moving them up to make
+	 * room for the new message. */
+	for (i = 1; i < index; i++)
 	{
-	    message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
+	    view = self -> history.message_views[i];
+
+	    /* Measure the view */
+	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    width = MAX(width, sizes.width);
+	    y += self -> history.line_height;
+	    height += self -> history.line_height;
+
+	    self -> history.message_views[i - 1] = view;
+	    if (self -> history.selection_index == i)
+	    {
+		self -> history.selection_index--;
+	    }
+	}
+
+	/* Measure the nodes after the index */
+	for (i = self -> history.message_count; i > index; i--)
+	{
+	    view = self -> history.message_views[i - 1];
+
+	    /* Measure the view */
+	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	}
 
-	/* Update the counter */
-	/* FIX THIS: perhaps do this at the end? */
-	self -> history.message_count++;
+	/* Move stuff up to make room */
+	if (gc != None)
+	{
+	    XCopyArea(
+		display, window, window, gc,
+		0, self -> history.margin_height - self -> history.y + self -> history.line_height,
+		self -> core.width, y - self -> history.line_height,
+		0, self -> history.margin_height - self -> history.y);
+	}
+
+	/* Everything's been moved up */
+	index--;
+	y -= self -> history.line_height;
     }
 
-    /* Create a new message_view */
+    /* Create a new message view */
     view = message_view_alloc(message, self -> history.font);
     self -> history.message_views[index] = view;
 
     /* Measure it */
     message_view_get_sizes(view, show_timestamps, 0, &sizes);
+    width = MAX(width, sizes.width);
+    height += self -> history.line_height;
 
-    /* Draw it if we have a graphics context */
+    /* Paint it */
     if (gc != None)
     {
-	/* Erase the space needed by the message */
+	/* Remove any remains of the previous message */
 	XFillRectangle(
 	    display, window, gc,
-	    0, self -> history.margin_height + height - self -> history.y,
+	    0, self -> history.margin_height - self -> history.y + y,
 	    self -> core.width, self -> history.line_height);
 
-	/* Paint it */
+	/* Make a bounding box */
 	bbox.x = 0;
-	bbox.y = self -> history.margin_height + height - self -> history.y;
+	bbox.y = self -> history.margin_height - self -> history.y + y;
 	bbox.width = self -> core.width;
 	bbox.height = self -> history.line_height;
 
+	/* Use it to draw the new message */
 	message_view_paint(
 	    view, display, window, gc,
 	    self -> history.show_timestamps, 0,
@@ -1116,26 +1191,11 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    self -> history.margin_width - self -> history.x,
-	    self -> history.margin_height - self -> history.y + height +
-	    self -> history.font -> ascent,
+	    self -> history.margin_height - self -> history.y + y + self -> history.font -> ascent,
 	    &bbox);
     }
 
-    /* Update the width and height */
-    width = MAX(width, sizes.width);
-    height += self -> history.line_height;
-
-    /* FIX THIS: copy the rest down! */
-
-    /* Measure the remaining items */
-    for (i = index + 1; i < self -> history.message_count; i++)
-    {
-	message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
-	width = MAX(width, sizes.width);
-	height += self -> history.line_height;
-    }
-
-    /* Add on the margins */
+    /* Add the margins to our height and width */
     width += (long)self -> history.margin_width * 2;
     height += (long)self -> history.margin_height * 2;
 
@@ -1162,9 +1222,8 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 
     /* Update the scrollbars */
     update_scrollbars((Widget)self);
-    set_origin(self, self -> history.x, self -> history.y + delta_y, True);
+    set_origin(self, self -> history.x, self -> history.y + delta_y , True);
 }
-
 
 /* Make sure the given index is visible */
 static void make_index_visible(HistoryWidget self, unsigned int index)
@@ -1849,13 +1908,10 @@ Boolean HistoryIsShowingTimestamps(Widget widget)
 void HistoryAddMessage(Widget widget, message_t message)
 {
     HistoryWidget self = (HistoryWidget)widget;
+#ifdef DEBUG
     node_t node;
-    int count;
     int index;
     int depth;
-
-    /* For now just insert at the end */
-    insert_message(self, self -> history.message_count, message);
 
     /* Wrap the message in a node */
     if ((node = node_alloc(message)) == NULL)
@@ -1863,14 +1919,19 @@ void HistoryAddMessage(Widget widget, message_t message)
 	return;
     }
 
-#ifdef DEBUG
-    count = 3; 
     node_add(&self -> history.nodes,
-	     message_get_reply_id(message), &node,
-	     &count, &index, 0, &depth);
+	     message_get_reply_id(message),
+	     node,
+	     MIN(self -> history.message_count + 1, self -> history.message_capacity),
+	     &index,
+	     &depth);
 
     printf("added node; index=%d, depth=%d\n", index, depth);
     node_dump(self -> history.nodes, 0);
+    insert_message(self, index, message);
+#else
+    /* For now just insert at the end */
+    insert_message(self, self -> history.message_count, message);
 #endif
 }
 
