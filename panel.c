@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.77 2003/01/27 15:54:52 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.78 2003/01/27 16:17:46 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1255,7 +1255,12 @@ static void set_group_selection(control_panel_t self, menu_item_tuple_t tuple)
 /* Sets the receiver's user */
 static void set_user(control_panel_t self, char *user)
 {
-    XmTextSetString(self -> user, user);
+    char *raw;
+
+    /* Convert the string into the font's code set */
+    raw = utf8_encoder_decode(self -> user_encoder, user);
+    XmTextSetString(self -> user, raw);
+    free(raw);
 }
 
 
@@ -1280,7 +1285,12 @@ static char *get_user(control_panel_t self)
 /* Sets the receiver's text */
 static void set_text(control_panel_t self, char *text)
 {
-    XmTextSetString(self -> text, text);
+    char *raw;
+
+    /* Convert the string to the font's code set */
+    raw = utf8_encoder_decode(self -> text_encoder, text);
+    XmTextSetString(self -> text, raw);
+    free(raw);
 }
 
 /* Answers the receiver's text.  Note: this string will need to be
@@ -1398,7 +1408,12 @@ static char *get_mime_type(control_panel_t self)
 /* Sets the receiver's MIME args */
 static void set_mime_args(control_panel_t self, char *args)
 {
-    XmTextSetString(self -> mime_args, args);
+    char *raw;
+
+    /* Convert the string to the font's code set */
+    raw = utf8_encoder_decode(self -> mime_encoder, args);
+    XmTextSetString(self -> mime_args, raw);
+    free(raw);
 }
 
 /* Answers the receiver's MIME args.  Note: if non-null, this string
