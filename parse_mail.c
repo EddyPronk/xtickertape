@@ -23,16 +23,23 @@ static int lex_dash(int ch);
 static int lex_ws(int ch);
 static int lex_body(int ch);
 static int lex_fold(int ch);
+static int lex_skip_body(int ch);
+static int lex_skip_fold(int ch);
 static int lex_end(int ch);
 
 
 static char buffer[MAX_PACKET_SIZE];
 static char *point = buffer;
 static char *end = buffer + MAX_PACKET_SIZE;
+static char *first_name_point = NULL;
 static char *count_point = NULL;
 static char *length_point = NULL;
 static int count = 0;
 static lexer_state_t state = lex_start;
+
+/* The length-prefixed string `From' */
+static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
+
 
 
 /* Writes an int32 into a buffer */
@@ -42,6 +49,12 @@ static void write_int32(char *buffer, int value)
     buffer[1] = (value >> 16) & 0xff;
     buffer[2] = (value >> 8) && 0xff;
     buffer[3] = (value >> 0) & 0xff;
+}
+
+/* Reads an int32 from a buffer */
+static int read_int32(char *buffer)
+{
+    return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | (buffer[3] << 0);
 }
 
 /* Append an int32 to the outgoing buffer */
@@ -58,6 +71,36 @@ static int append_int32(int value)
     return -1;
 }
 
+/* Begin writing a string */
+static int begin_string()
+{
+    if (point + 4 < end)
+    {
+	length_point = point;
+	point += 4;
+	return 0;
+    }
+
+    return -1;
+}
+
+/* Finish writing a string */
+static int end_string()
+{
+    char *string = length_point + 4;
+
+    /* Write the length */
+    write_int32(length_point, point - string);
+
+    /* Pad the string out to a 4-byte boundary */
+    while ((int)point & 3)
+    {
+	*(point++) = '\0';
+    }
+
+    return 0;
+}
+
 
 /* Append a character to the current string */
 static int append_char(int ch)
@@ -71,32 +114,67 @@ static int append_char(int ch)
     return -1;
 }
 
-/* Begin an attribute name */
-static int begin_name()
+
+/* Compares two length-prefixed strings for equality */
+static int lstring_eq(char *string1, char *string2)
 {
-    if (point + 4 < end)
+    int len, i;
+
+    /* First compare the lengths */
+    len = read_int32(string1);
+    if (read_int32(string2) != len)
     {
-	/* Remember where the length goes */
-	length_point = point;
-	point += 4;
 	return 0;
     }
 
-    return -1;
+    string1 += 4;
+    string2 += 4;
+
+    /* Then compare all chars */
+    for (i = 0; i < len; i++)
+    {
+	if (string1[i] != string2[i])
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
+
+
+/* Begin an attribute name */
+static int begin_name()
+{
+    return begin_string();
 }
 
 /* End an attribute name */
 static int end_name()
 {
-    char *name = length_point + 4;
+    char *name;
 
-    /* Write the length */
-    write_int32(length_point, point - name);
-
-    /* Get to a 4-byte boundary */
-    while ((int)point & 3)
+    /* Tidy up the string */
+    if (end_string() < 0)
     {
-	*(point++) = '\0';
+	return -1;
+    }
+
+    /* Check if we've already seen this name */
+    name = first_name_point;
+    while (name < length_point)
+    {
+	/* Look for a match */
+	if (lstring_eq(length_point, name))
+	{
+	    /* Uh oh!  Discard the new name */
+	    point = length_point;
+	    state = lex_skip_body;
+	    return 1;
+	}
+
+	name += read_int32(name) + 4;
     }
 
     return 0;
@@ -106,15 +184,12 @@ static int end_name()
 /* Begin an attribute string value */
 static int begin_string_value()
 {
-    if (point + 8 < end)
+    if (point + 4 < end)
     {
 	/* Write the string typecode */
 	append_int32(STRING_TYPECODE);
 
-	/* Remember where the length goes */
-	length_point = point;
-	point += 4;
-	return 0;
+	return begin_string();
     }
 
     return -1;
@@ -123,17 +198,7 @@ static int begin_string_value()
 /* End an attribute string value */
 static int end_string_value()
 {
-    char *value = length_point + 4;
-
-    /* Write the length */
-    write_int32(length_point, point - value);
-
-    /* Get to a 4-byte boundary */
-    while ((int)point & 3)
-    {
-	*(point++) = '\0';
-    }
-
+    end_string();
     count++;
     return 0;
 }
@@ -168,6 +233,13 @@ static int lex_start(int ch)
 	return -1;
     }
 
+    /* Watch for an initial dash */
+    if (ch == '-')
+    {
+	state = lex_dash;
+	return 0;
+    }
+
     state = lex_first_name;
     return 0;
 }
@@ -179,12 +251,22 @@ static int lex_first_name(int ch)
      * in which the `From' doesn't end in a colon. */
     if (ch == ' ')
     {
-	/* FIX THIS: Make sure we've read `From' */
+	/* Complete the name string */
 	if (end_name() < 0)
 	{
 	    state = lex_error;
 	    return -1;
 	}
+
+	/* Make sure it matches `From' */
+	if (! lstring_eq(length_point, from_string))
+	{
+	    state = lex_error;
+	    return -1;
+	}
+
+	/* Convert the first character to lowercase */
+	length_point[4] = 'f';
 
 	state = lex_ws;
 	return 0;
@@ -240,10 +322,19 @@ static int lex_name(int ch)
     /* A colon is the end of the field name */
     if (ch == ':')
     {
-	if (end_name() < 0)
+	int result;
+
+	if ((result = end_name()) < 0)
 	{
 	    state = lex_error;
 	    return -1;
+	}
+
+	/* Watch for repeated names */
+	if (result)
+	{
+	    state = lex_skip_body;
+	    return 0;
 	}
 
 	state = lex_ws;
@@ -281,10 +372,19 @@ static int lex_dash(int ch)
     /* A colon indicates the end of the field name */
     if (ch == ':')
     {
-	if (end_name() < 0)
+	int result;
+
+	if ((result = end_name()) < 0)
 	{
 	    state = lex_error;
 	    return -1;
+	}
+
+	/* Watch for repeated names */
+	if (result)
+	{
+	    state = lex_skip_body;
+	    return 0;
 	}
 
 	state = lex_ws;
@@ -419,10 +519,75 @@ static int lex_fold(int ch)
 	return -1;
     }
 
+    /* Watch for an initial dash */
+    if (ch == '-')
+    {
+	state = lex_dash;
+	return 0;
+    }
+
     state = lex_name;
     return 0;
 }
 
+/* Discard the body */
+static int lex_skip_body(int ch)
+{
+    /* Try to fold on LF */
+    if (ch == '\n')
+    {
+	state = lex_skip_fold;
+	return 0;
+    }
+
+    /* Anything else is part of the body */
+    state = lex_skip_body;
+    return 0;
+}
+
+/* Try to fold */
+static int lex_skip_fold(int ch)
+{
+    /* A linefeed means the end of the headers */
+    if (ch == '\n')
+    {
+	state = lex_end;
+	return 0;
+    }
+
+    /* Other whitespace means a folded body */
+    if (isspace(ch))
+    {
+	state = lex_skip_body;
+	return 0;
+    }
+
+    /* Anything else is the beginning of the next name */
+    if (begin_name() < 0)
+    {
+	state = lex_error;
+	return -1;
+    }
+
+    /* Make sure the first letter is always uppercase */
+    if (append_char(toupper(ch)) < 0)
+    {
+	state = lex_error;
+	return -1;
+    }
+
+    /* Watch for an initial dash */
+    if (ch == '-')
+    {
+	state = lex_dash;
+	return 0;
+    }
+
+    state = lex_name;
+    return 0;
+}
+
+/* Skip everything after the headers */
 static int lex_end(int ch)
 {
     state = lex_end;
@@ -454,7 +619,6 @@ static int lex(char *in, ssize_t length)
     return 0;
 }
 
-
 static void dump_buffer()
 {
     fwrite(buffer, 1, point - buffer, stdout);
@@ -474,6 +638,7 @@ int main(int argc, char *argv[])
     /* The next 4 bytes is where the number of attributes goes */
     count_point = point;
     point += 4;
+    first_name_point = point;
 
     /* Read the attributes and add them to the notification */
     while (1)
