@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.17 1999/05/17 12:58:04 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.18 1999/05/22 08:35:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.17 1999/05/17 12:58:0
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
 #include "sanity.h"
+#include "usenet.h"
 
 #ifdef SANITY
 static char *sanity_value = "UsenetSubscription";
@@ -654,6 +655,13 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
  * Exported functions
  *
  */
+
+/* Write a default `usenet' file onto the output stream */
+int UsenetSubscription_writeDefaultUsenetFile(FILE *out)
+{
+    /* Write a string into the file */
+    return fwrite(defaultUsenetFile, 1, strlen(defaultUsenetFile), out);
+}
 
 /* Read the UsenetSubscription from the given file */
 UsenetSubscription UsenetSubscription_readFromUsenetFile(
