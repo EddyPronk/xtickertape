@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.44 2002/07/02 15:48:50 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.45 2002/07/08 05:27:15 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -73,6 +73,16 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.44 2002/07/02 15:48:50 phelps 
 
 /* The size of the MIME args buffer */
 #define BUFFER_SIZE (32)
+
+/* compatability code for return code of callbacks */
+#if !defined(ELVIN_VERSION_AT_LEAST)
+#  define ELVIN_RETURN_FAILURE
+#  define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#  define ELVIN_RETURN_FAILURE 0
+#  define ELVIN_RETURN_SUCCESS 1
+#endif
+
 
 /* The group subscription data type */
 struct group_sub
@@ -399,7 +409,7 @@ static void notify_cb(
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's subscription expression */
-static void notify_cb(
+static int notify_cb(
     elvin_handle_t handle,
     elvin_subscription_t subscription,
     elvin_notification_t notification,
@@ -428,7 +438,7 @@ static void notify_cb(
     /* If we don't have a callback then just quit now */
     if (self -> callback == NULL)
     {
-	return;
+	return 1;
     }
 
     /* Get the `From' field from the notification */
@@ -681,6 +691,8 @@ static void notify_cb(
     {
 	free(buffer);
     }
+
+    return 1;
 }
 #else
 #error "Unsupported Elvin library version"
@@ -1167,7 +1179,13 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 
 
 /* Callback for a subscribe request */
-static void subscribe_cb(
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+subscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -1181,10 +1199,18 @@ static void subscribe_cb(
     {
 	group_sub_set_connection(self, NULL, error);
     }
+
+    return ELVIN_RETURN_SUCCESS;
 }
 
 /* Callback for an unsubscribe request */
-static void unsubscribe_cb(
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+unsubscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -1197,6 +1223,8 @@ static void unsubscribe_cb(
     {
 	group_sub_free(self);
     }
+
+    return ELVIN_RETURN_SUCCESS;
 }
 
 /* Sets the receiver's connection */

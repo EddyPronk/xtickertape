@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.98 2002/07/03 05:09:22 arnold Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.99 2002/07/08 05:27:15 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -109,12 +109,22 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.98 2002/07/03 05:09:22 arnold
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 #define DROP_WARN_MSG "One or more packets were dropped"
 
+/* compatability code for status callback */
 #if ! defined(ELVIN_VERSION_AT_LEAST)
 # define CONN_CLOSED_MSG "Connection closed by server: %s"
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 # define CONN_CLOSED_MSG "Connection closed by server"
 #else
 # error unknown elvin library version
+#endif
+
+/* compatability code for return code of callbacks */
+#if !defined(ELVIN_VERSION_AT_LEAST)
+#  define ELVIN_RETURN_FAILURE
+#  define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#  define ELVIN_RETURN_FAILURE 0
+#  define ELVIN_RETURN_SUCCESS 1
 #endif
 
 #define GROUP_SUB "TICKERTAPE == \"%s\" || Group == \"%s\""
@@ -909,9 +919,14 @@ static void init_ui(tickertape_t self)
 }
 
 /* This is called when our connection request is handled */
-static void connect_cb(
-    elvin_handle_t handle, int result,
-    void *rock, elvin_error_t error)
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+connect_cb(elvin_handle_t handle, int result,
+           void *rock, elvin_error_t error)
 {
     tickertape_t self = (tickertape_t)rock;
     int index;
@@ -947,6 +962,8 @@ static void connect_cb(
     {
 	mail_sub_set_connection(self -> mail_sub, handle, error);
     }
+
+    return ELVIN_RETURN_SUCCESS; 
 }
 
 
@@ -1024,7 +1041,7 @@ static void status_cb(
 		exit(1);
 	    }
 
-	    snprintf(buffer, length, CONN_CLOSED_MSG);
+	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
 	    string = buffer;
 	    break;
 	}

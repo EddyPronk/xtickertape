@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.34 2002/07/02 15:48:50 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.35 2002/07/08 05:27:15 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -57,6 +57,14 @@ static const char cvsid[] = "$Id: mail_sub.c,v 1.34 2002/07/02 15:48:50 phelps E
 #define F_FOLDER "folder"
 #define F_SUBJECT "Subject"
 
+/* compatability code for return code of callbacks */
+#if !defined(ELVIN_VERSION_AT_LEAST)
+#  define ELVIN_RETURN_FAILURE
+#  define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#  define ELVIN_RETURN_FAILURE 0
+#  define ELVIN_RETURN_SUCCESS 1
+#endif
 
 /* The MailSubscription data type */
 struct mail_sub
@@ -172,7 +180,7 @@ static void notify_cb(
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's e-mail subscription */
-static void notify_cb(
+static int notify_cb(
     elvin_handle_t handle,
     elvin_subscription_t subscription,
     elvin_notification_t notification,
@@ -261,6 +269,8 @@ static void notify_cb(
     {
 	free(buffer);
     }
+
+    return 1;
 }
 #else
 #error "Unsupported Elvin library version"
@@ -316,13 +326,21 @@ void mail_sub_free(mail_sub_t self)
 }
 
 /* Callback for a subscribe request */
-static void subscribe_cb(
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+subscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
     self -> subscription = subscription;
+
+    return ELVIN_RETURN_SUCCESS;
 }
 
 /* Sets the receiver's connection */

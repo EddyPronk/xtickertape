@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.34 2002/07/02 15:48:51 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.35 2002/07/08 05:27:18 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -88,6 +88,15 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.34 2002/07/02 15:48:51 phelps
     "Content-Type: %s; charset=us-ascii\n" \
     "\n" \
     "%s\n"
+
+/* compatability code for return code of callbacks */
+#if !defined(ELVIN_VERSION_AT_LEAST)
+#  define ELVIN_RETURN_FAILURE
+#  define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#  define ELVIN_RETURN_FAILURE 0
+#  define ELVIN_RETURN_SUCCESS 1
+#endif
 
 /* The structure of a usenet subscription */
 struct usenet_sub
@@ -304,7 +313,7 @@ static void notify_cb(
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's subscription expression */
-static void notify_cb(
+static int notify_cb(
     elvin_handle_t handle,
     elvin_subscription_t subscription,
     elvin_notification_t notification,
@@ -328,7 +337,7 @@ static void notify_cb(
     /* If we don't have a callback than bail out now */
     if (self -> callback == NULL)
     {
-	return;
+	return 1;
     }
 
     /* Get the newsgroups to which the message was posted */
@@ -346,7 +355,7 @@ static void notify_cb(
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
     if ((newsgroups = (char *)malloc(length)) == NULL)
     {
-	return;
+	return 0;
     }
 
     snprintf(newsgroups, length, USENET_PREFIX, string);
@@ -506,6 +515,8 @@ static void notify_cb(
     {
 	free(buffer);
     }
+
+    return 1;
 }
 #else
 #error "Unsupported Elvin library version"
@@ -838,7 +849,13 @@ int usenet_sub_add(
 }
 
 /* Callback for a subscribe request */
-static void subscribe_cb(
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+subscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -852,10 +869,18 @@ static void subscribe_cb(
     {
 	usenet_sub_set_connection(self, NULL, error);
     }
+
+    return ELVIN_RETURN_SUCCESS;
 }
 
 /* Callback for an unsubscribe request */
-static void unsubscribe_cb(
+static 
+#if !defined(ELVIN_VERSION_AT_LEAST)
+void
+#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+int
+#endif
+unsubscribe_cb(
     elvin_handle_t handle, int result,
     elvin_subscription_t subscription, void *rock,
     elvin_error_t error)
@@ -868,6 +893,8 @@ static void unsubscribe_cb(
     {
 	usenet_sub_free(self);
     }
+
+    return ELVIN_RETURN_SUCCESS;
 }
 
 

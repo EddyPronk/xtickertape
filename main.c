@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.113 2002/07/03 12:17:54 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.114 2002/07/08 05:27:15 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -634,7 +634,7 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize the elvin client library */
-    if ((client = elvin_xt_init(context, error)) == NULL)
+    if ((client = elvin_xt_init_default(context, error)) == NULL)
     {
 	fprintf(stderr, PACKAGE ": elvin_xt_init() failed\n");
 	elvin_error_fprintf(stderr, error);
