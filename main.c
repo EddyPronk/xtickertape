@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.75 2000/01/15 08:29:10 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.76 2000/03/30 06:38:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -61,6 +61,7 @@ static const char cvsid[] = "$Id: main.c,v 1.75 2000/01/15 08:29:10 phelps Exp $
 static struct option long_options[] =
 {
     { "elvin", required_argument, NULL, 'e' },
+    { "scope", required_argument, NULL, 's' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
@@ -94,13 +95,16 @@ static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *cpar
 /* Print out usage message */
 static void usage(int argc, char *argv[])
 {
-    fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
-    fprintf(stderr, "  -e elvin-url --elvin=elvin-url\n");
-    fprintf(stderr, "  -u username, --user=username\n");
-    fprintf(stderr, "  -G filename, --groups=filename\n");
-    fprintf(stderr, "  -U filename, --usenet=filename\n");
-    fprintf(stderr, "  -v,          --version\n");
-    fprintf(stderr, "  -h,          --help\n");
+    fprintf(stderr,
+	"usage: %s [OPTION]...\n"
+	"  -e elvin-url, --elvin=elvin-url\n"
+	"  -s scope,     --scope=scope\n"
+	"  -u username,  --user=username\n"
+	"  -G filename,  --groups=filename\n"
+	"  -U filename,  --usenet=filename\n"
+	"  -v,           --version\n"
+	"  -h,           --help\n" ,
+	argv[0]);
 }
 
 /* Returns the name of the user who started this program */
@@ -179,7 +183,7 @@ static void parse_args(
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:u:D:U:G:vh", long_options,
+	"e:s:u:D:U:G:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -193,6 +197,13 @@ static void parse_args(
 		    exit(1);
 		}
 
+		break;
+	    }
+
+	    /* --scope= or -s */
+	    case 's':
+	    {
+		handle -> scope = optarg;
 		break;
 	    }
 
