@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.8 2000/11/20 12:47:21 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.9 2000/11/20 14:45:54 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -83,6 +83,9 @@ int vm_roll(vm_t self, uint32_t count, elvin_error_t error);
 /* Rotates the stack so that the item `count' places back is on top */
 int vm_unroll(vm_t self, uint32_t count, elvin_error_t error);
 
+/* Duplicates the top of the stack and puts it onto the stack */
+int vm_dup(vm_t self, elvin_error_t error);
+
 /* Push nil onto the vm's stack */
 int vm_push_nil(vm_t self, elvin_error_t error);
 
@@ -115,6 +118,9 @@ int vm_make_cons(vm_t self, elvin_error_t error);
 
 /* Reverses the pointers in a list that was constructed upside-down */
 int vm_unwind_list(vm_t self, elvin_error_t error);
+
+/* Makes a lambda out of the current environment and stack */
+int vm_make_lambda(vm_t self, elvin_error_t error);
 
 
 /* Assigns the value on the top of the stack to the variable up one
