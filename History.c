@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.45 2002/04/04 14:21:07 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.46 2002/04/04 14:36:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1137,7 +1137,7 @@ static void insert_message(HistoryWidget self,
 
 	    /* Move it */
 	    self -> history.message_views[i] = view;
-	    if (self -> history.selection_index == i)
+	    if (self -> history.selection_index == i - 1)
 	    {
 		self -> history.selection_index++;
 	    }
