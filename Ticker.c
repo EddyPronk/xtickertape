@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.9 1998/10/22 07:08:09 phelps Exp $
+ * $Id: Ticker.c,v 1.10 1998/10/23 03:32:09 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -312,15 +312,19 @@ static void SubscribeToOrbit(Tickertape self)
 /* Answers a new Tickertape for the given user using the given file as
  * her groups file and connecting to the notification service
  * specified by host and port */
-Tickertape Tickertape_alloc(char *user, char *file, char *host, int port, Widget top)
+Tickertape Tickertape_alloc(
+    char *user,
+    char *groupsFile, char *usenetFile,
+    char *host, int port,
+    Widget top)
 {
     Tickertape self = (Tickertape) malloc(sizeof(struct Tickertape_t));
 #ifdef SANITY
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
     self -> user = strdup(user);
-    self -> groupsFile = strdup(file);
-    self -> usenetFile = "/home/phelps/.ticker/usenet";
+    self -> groupsFile = strdup(groupsFile);
+    self -> usenetFile = strdup(usenetFile);
     self -> top = top;
     self -> subscriptions = ReadGroupsFile(self);
     self -> usenetSubscription = ReadUsenetFile(self);
@@ -428,6 +432,7 @@ void Tickertape_debug(Tickertape self)
     printf("Tickertape\n");
     printf("  user = \"%s\"\n", self -> user);
     printf("  groupsFile = \"%s\"\n", self -> groupsFile);
+    printf("  usenetFile = \"%s\"\n", self -> usenetFile);
     printf("  top = 0x%p\n", self -> top);
     printf("  subscriptions = 0x%p\n", self -> subscriptions);
 #ifdef ORBIT

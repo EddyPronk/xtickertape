@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.h,v 1.2 1998/10/21 01:58:09 phelps Exp $
+ * $Id: Ticker.h,v 1.3 1998/10/23 03:32:13 phelps Exp $
  * COPYRIGHT!
  *
  * Tickertape represents a scroller and control panel and manages the
@@ -16,7 +16,11 @@ typedef struct Tickertape_t *Tickertape;
 /* Answers a new Tickertape for the given user using the given file as
  * her groups file and connecting to the notification service
  * specified by host and port */
-Tickertape Tickertape_alloc(char *user, char *file, char *host, int port, Widget top);
+Tickertape Tickertape_alloc(
+    char *user,
+    char *groupsFile, char *usenetFile,
+    char *host, int port,
+    Widget top);
 
 /* Frees the resources used by the Tickertape */
 void Tickertape_free(Tickertape self);
