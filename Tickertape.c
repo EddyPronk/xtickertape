@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.26 1998/08/26 04:57:09 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.27 1998/08/26 05:08:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -546,6 +546,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     {
 	self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
     }
+
+    /* Ensure that we always have at least a blank view holder around */
+    EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
 }
 
 /* Realize the widget by creating a window in which to display it */
