@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.3 1999/09/15 03:33:48 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.4 1999/09/26 07:02:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -201,7 +201,7 @@ void mail_sub_set_connection(mail_sub_t self, ElvinConnection connection)
     if (self -> connection != NULL)
     {
 	char *buffer = (char *)malloc(sizeof("exists(elvinmail) && user == \"\"") + strlen(self->user));
-	sprintf(buffer, "exists(elvinmail) && user == \"%s\"\n", self -> user);
+	sprintf(buffer, "exists(elvinmail) && user == \"%s\"", self -> user);
 
 	/* Subscribe to elvinmail notifications */
 	self -> connectionInfo = ElvinConnection_subscribe(
