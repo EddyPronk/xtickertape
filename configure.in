@@ -40,7 +40,7 @@ AC_CHECK_LIB(Xext, XShapeCombineMask)
 AC_CHECK_LIB(Xm, XmCreatePulldownMenu)
 
 # See if the elvin libraries look healthy
-AC_ARG_WITH(elvin, [  -with-elvin=DIR        specify the elvin4 installation directory])
+AC_ARG_WITH(elvin, [  --with-elvin=DIR       specify the elvin4 installation directory])
 
 # Check for silliness
 if test "$with_elvin" = no ; then
