@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-2.0a8
 
+* The usenet file now supports backslashes as escape characters.  You
+  can now subscribe to URLs.
+
 * It is now possible to reply to a message in a different group by
   first selecting the message to which you are replying and then
   selecting the group to send it to.  To clear the current selection,

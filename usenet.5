@@ -59,7 +59,9 @@ on the operator.
 .PP
 The spaces between the \fBfield\fP, the \fBop\fP and the \fBpattern\fP
 are not important.  Regular expression matches are case sensitive.
-All of the expressions on a single line are AND'ed together.
+All of the expressions on a single line are AND'ed together.  Any
+character may be escaped by preceding it with a backslash character.
+Escaped whitespace is treated as a printing character.
 .SH SEE ALSO
 .BR xtickertape (1),
 .BR elvin (1)

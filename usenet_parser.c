@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.12 2002/04/23 17:21:23 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.13 2002/10/24 00:54:35 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -128,15 +128,20 @@ struct usenet_parser
 
 /* Lexer state declarations */
 static int lex_start(usenet_parser_t self, int ch);
+static int lex_start_esc(usenet_parser_t self, int ch);
 static int lex_comment(usenet_parser_t self, int ch);
 static int lex_group(usenet_parser_t self, int ch);
+static int lex_group_esc(usenet_parser_t self, int ch);
 static int lex_group_ws(usenet_parser_t self, int ch);
 static int lex_field_start(usenet_parser_t self, int ch);
 static int lex_field(usenet_parser_t self, int ch);
+static int lex_field_esc(usenet_parser_t self, int ch);
 static int lex_op_start(usenet_parser_t self, int ch);
 static int lex_op(usenet_parser_t self, int ch);
+static int lex_op_esc(usenet_parser_t self, int ch);
 static int lex_pattern_start(usenet_parser_t self, int ch);
 static int lex_pattern(usenet_parser_t self, int ch);
+static int lex_pattern_esc(usenet_parser_t self, int ch);
 static int lex_pattern_ws(usenet_parser_t self, int ch);
 
 /* Prints a consistent error message */
@@ -405,6 +410,13 @@ static int lex_start(usenet_parser_t self, int ch)
 	return 0;
     }
 
+    /* Backslashes escape stuff */
+    if (ch == '\\')
+    {
+	self -> state = lex_start_esc;
+	return 0;
+    }
+
     /* Watch for blank lines */
     if (ch == '\n')
     {
@@ -418,6 +430,23 @@ static int lex_start(usenet_parser_t self, int ch)
     {
 	self -> state = lex_start;
 	return 0;
+    }
+
+    /* Anything else is part of the group pattern */
+    self -> has_not = 0;
+    self -> token_pointer = self -> token;
+    self -> state = lex_group;
+    return append_char(self, ch);
+}
+
+/* Reading the character after a '\' at the start of a usenet subscription */
+static int lex_start_esc(usenet_parser_t self, int ch)
+{
+    /* Watch for EOF */
+    if (ch == EOF || ch == '\n')
+    {
+	parse_error(self, "unexpected end of line");
+	return -1;
     }
 
     /* Anything else is part of the group pattern */
@@ -478,6 +507,13 @@ static int lex_group(usenet_parser_t self, int ch)
 	return append_char(self, '\0');
     }
 
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_group_esc;
+	return 0;
+    }
+
     /* Watch for the separator character */
     if (ch == '/')
     {
@@ -495,6 +531,21 @@ static int lex_group(usenet_parser_t self, int ch)
     }
 
     /* Anything else is part of the group pattern */
+    return append_char(self, ch);
+}
+
+/* Reading the character after a '//' in the group */
+static int lex_group_esc(usenet_parser_t self, int ch)
+{
+    /* Watch for EOF or newline */
+    if (ch == EOF || ch == '\n')
+    {
+	parse_error(self, "unexpected end of line");
+	return -1;
+    }
+
+    /* Anything else is part of the group pattern */
+    self -> state = lex_group;
     return append_char(self, ch);
 }
 
@@ -518,6 +569,13 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     /* Skip additional whitespace */
     if (isspace(ch))
     {
+	return 0;
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_group_esc;
 	return 0;
     }
 
@@ -565,6 +623,13 @@ static int lex_field_start(usenet_parser_t self, int ch)
 	return 0;
     }
 
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_field_esc;
+	return 0;
+    }
+
     /* Anything else is the start of the field name */
     self -> state = lex_field;
     return lex_field(self, ch);
@@ -578,6 +643,13 @@ static int lex_field(usenet_parser_t self, int ch)
     {
 	parse_error(self, "unexpected end of line");
 	return -1;
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_field_esc;
+	return 0;
     }
 
     /* Watch for a stray separator */
@@ -620,12 +692,34 @@ static int lex_field(usenet_parser_t self, int ch)
     return append_char(self, ch);
 }
 
+/* Reading an escaped character in a field */
+static int lex_field_esc(usenet_parser_t self, int ch)
+{
+    /* Watch for EOF or newline in the middle of the field */
+    if (ch == EOF || ch == '\n')
+    {
+	parse_error(self, "unexpected end of line");
+	return -1;
+    }
+
+    /* Anything else is part of the field name */
+    self -> state = lex_field;
+    return append_char(self, ch);
+}
+
 /* Reading the whitespace before an operator */
 static int lex_op_start(usenet_parser_t self, int ch)
 {
     /* Skip additional whitespace */
     if (isspace(ch))
     {
+	return 0;
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_op_esc;
 	return 0;
     }
 
@@ -642,6 +736,13 @@ static int lex_op(usenet_parser_t self, int ch)
     {
 	parse_error(self, "unexpected end of line");
 	return -1;
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_op_esc;
+	return 0;
     }
 
     /* Watch for a stray separator */
@@ -704,12 +805,34 @@ static int lex_op(usenet_parser_t self, int ch)
     return append_char(self, ch);
 }
 
+/* Reading an escaped character in the operator name */
+static int lex_op_esc(usenet_parser_t self, int ch)
+{
+    /* Watch for EOF or newline */
+    if (ch == EOF || ch == '\n')
+    {
+	parse_error(self, "unexpected end of line");
+	return -1;
+    }
+
+    /* Anything else is part of the operator name */
+    self -> state = lex_op;
+    return append_char(self, ch);
+}
+
 /* Reading whitespace before the pattern */
 static int lex_pattern_start(usenet_parser_t self, int ch)
 {
     /* Skip additional whitespace */
     if (isspace(ch))
     {
+	return 0;
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_pattern_esc;
 	return 0;
     }
 
@@ -748,6 +871,13 @@ static int lex_pattern(usenet_parser_t self, int ch)
 	return lex_start(self, ch);
     }
 
+    /* Watch for the escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_pattern_esc;
+	return 0;
+    }
+
     /* Watch for other whitespace */
     if (isspace(ch))
     {
@@ -773,6 +903,21 @@ static int lex_pattern(usenet_parser_t self, int ch)
     }
 
     /* Anything else is part of the pattern */
+    return append_char(self, ch);
+}
+
+/* Reading an escaped character in a pattern */
+static int lex_pattern_esc(usenet_parser_t self, int ch)
+{
+    /* Watch for EOF or newline */
+    if (ch == EOF || ch == '\n')
+    {
+	parse_error(self, "unexpected end of line");
+	return -1;
+    }
+
+    /* Anything else is part of the pattern */
+    self -> state = lex_pattern;
     return append_char(self, ch);
 }
 
@@ -807,6 +952,13 @@ static int lex_pattern_ws(usenet_parser_t self, int ch)
     if (isspace(ch))
     {
 	return append_char(self, ch);
+    }
+
+    /* Watch for an escape character */
+    if (ch == '\\')
+    {
+	self -> state = lex_pattern_esc;
+	return 0;
     }
 
     /* Watch for a separator */
