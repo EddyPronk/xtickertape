@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.13 2000/07/10 13:44:51 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.14 2000/07/11 01:57:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -38,12 +38,14 @@ static const char cvsid[] = "$Id: parser.c,v 2.13 2000/07/10 13:44:51 phelps Exp
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include <elvin/convert.h>
+#include <elvin/errors/unix.h>
+#include "errors.h"
 #include "ast.h"
 #include "parser.h"
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
-#define INITIAL_STACK_DEPTH 4
-
+#define INITIAL_STACK_DEPTH 8
+#define BUFFER_SIZE 4096
 
 /* Test ch to see if it's valid as a non-initial ID character */
 static int is_id_char(int ch)
@@ -64,6 +66,15 @@ static int is_id_char(int ch)
     return (ch < 0 || ch > 127) ? 0 : table[ch];
 }
 
+
+/* The list of token names */
+static char *token_names[] =
+{
+    "[eof]", "{", "}", ";", "[id]", ":", "=",
+    "||", "&&", "==", "!=", "<", "<=", ">", ">=",
+    "!", ",", "[string]", "[int32]", "[int64]", "[float]",
+    "(", ")", "[", "]"
+};
 
 /* The lexer_state_t type */
 typedef int (*lexer_state_t)(parser_t parser, int ch, elvin_error_t error);
@@ -765,15 +776,16 @@ static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_e
     /* Everything else is an error */
     if (value == NULL)
     {
-	fprintf(stderr, "parse error before token type: %d\n", terminal);
-    }
-    else
-    {
-	fprintf(stderr, "houston, we have a problem (2)\n");
+	ELVIN_ERROR_XTICKERTAPE_PARSE_ERROR(
+	    error, self -> tag, self -> line_num,
+	    token_names[terminal]);
+	return 0;
     }
 
-    fprintf(stderr, "line: %d\n", self -> line_num);
-    abort();
+    ELVIN_ERROR_XTICKERTAPE_PARSE_ERROR(
+	error, self -> tag, self -> line_num,
+	self -> token);
+    return 0;
 }
 
 /* Accepts token which has no useful value */
@@ -1187,8 +1199,21 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	return 1;
     }
 
-    /* Anything else is bogus */
-    printf("bad token character: `%c'\n", ch);
+    /* Anything else is a bogus token */
+    if (! append_char(self, ch, error))
+    {
+	return 0;
+    }
+
+    /* Null-terminate the string */
+    if (! append_char(self, 0, error))
+    {
+	return 0;
+    }
+
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)self -> token);
     return 0;
 }
 
@@ -1257,8 +1282,10 @@ static int lex_ampersand(parser_t self, int ch, elvin_error_t error)
     }
 
     /* Otherwise we've got a problem */
-    fprintf(stderr, "Bad token: `&'\n");
-    abort();
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)"&");
+    return 0;
 }
 
 /* Reading the character after an initial `=' */
@@ -1361,8 +1388,10 @@ static int lex_vbar(parser_t self, int ch, elvin_error_t error)
     }
 
     /* We're not doing simple math yet */
-    fprintf(stderr, "bogus token: `|'\n");
-    abort();
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)"|");
+    return 0;
 }
 
 /* Reading the character after an initial `0' */
@@ -1588,7 +1617,9 @@ static int lex_float_first(parser_t self, int ch, elvin_error_t error)
     }
 
     /* And complain */
-    fprintf(stderr, "bogus token: %s\n", self -> token);
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)self -> token);
     return 0;
 }
 
@@ -1662,8 +1693,10 @@ static int lex_exp_first(parser_t self, int ch, elvin_error_t error)
 	return 0;
     }
 
-    fprintf(stderr, "bogus token %s\n", self -> token);
-    abort();
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)self -> token);
+    return 0;
 }
 
 /* Reading the first character after a `+' or `-' in an exponent of a float */
@@ -1687,8 +1720,10 @@ static int lex_exp_sign(parser_t self, int ch, elvin_error_t error)
 	return 0;
     }
 
-    fprintf(stderr, "lex_exp_sign(): bogus token: %s\n", self -> token);
-    abort();
+    ELVIN_ERROR_XTICKERTAPE_INVALID_TOKEN(
+	error, (uchar *)self -> tag,
+	self -> line_num, (uchar *)self -> token);
+    return 0;
 }
 
 /* Reading the digits of an exponent */
@@ -1732,8 +1767,9 @@ static int lex_dq_string(parser_t self, int ch, elvin_error_t error)
 	/* Unterminated string constant */
 	case EOF:
 	{
-	    fprintf(stderr, "Unterminated string constant\n");
-	    abort();
+	    ELVIN_ERROR_XTICKERTAPE_UNTERM_STRING(
+		error, (uchar *)self -> tag, self -> line_num);
+	    return 0;
 	}
 
 	/* An escaped character */
@@ -1783,7 +1819,8 @@ static int lex_dq_string_esc(parser_t self, int ch, elvin_error_t error)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	fprintf(stderr, "unterminated string constant\n");
+	ELVIN_ERROR_XTICKERTAPE_UNTERM_STRING(
+	    error, (uchar *)self -> tag, self -> line_num);
 	return 0;
     }
 
@@ -1806,8 +1843,9 @@ static int lex_sq_string(parser_t self, int ch, elvin_error_t error)
 	/* Unterminated string constant */
 	case EOF:
 	{
-	    fprintf(stderr, "Unterminated string constant\n");
-	    abort();
+	    ELVIN_ERROR_XTICKERTAPE_UNTERM_STRING(
+		error, (uchar *)self -> tag, self -> line_num);
+	    return 0;
 	}
 
 	/* An escaped character */
@@ -1855,10 +1893,11 @@ static int lex_sq_string(parser_t self, int ch, elvin_error_t error)
 static int lex_sq_string_esc(parser_t self, int ch, elvin_error_t error)
 {
     /* Watch for EOF */
-    if (ch == 0)
+    if (ch == EOF)
     {
-	fprintf(stderr, "unterminated string constant\n");
-	abort();
+	ELVIN_ERROR_XTICKERTAPE_UNTERM_STRING(
+	    error, (uchar *)self -> tag, self -> line_num);
+	return 0;
     }
 
     /* Append the character to the end of the string */
@@ -1926,7 +1965,8 @@ static int lex_id_esc(parser_t self, int ch, elvin_error_t error)
 	    return 0;
 	}
 
-	fprintf(stderr, "unterminated id: %s\n", self -> token);
+	ELVIN_ERROR_XTICKERTAPE_UNTERM_ID(
+	    error, (uchar *)self -> tag, self -> line_num);
 	return 0;
     }
 
@@ -2071,3 +2111,36 @@ int parser_parse(parser_t self, char *buffer, size_t length, elvin_error_t error
     return 1;
 }
 
+/* Parses the input from fd */
+int parser_parse_file(parser_t self, int fd, char *tag, elvin_error_t error)
+{
+    self -> tag = tag;
+
+    while (1)
+    {
+	char buffer[BUFFER_SIZE];
+	ssize_t length;
+
+	/* Read from the file descriptor */
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+	{
+	    ELVIN_ERROR_UNIX_READ_FAILED(error, errno);
+	    self -> tag = NULL;
+	    return 0;
+	}
+
+	/* Parse what we've read so far */
+	if (! parser_parse(self, buffer, length, error))
+	{
+	    self -> tag = NULL;
+	    return 0;
+	}
+
+	/* Watch for EOF */
+	if (length == 0)
+	{
+	    self -> tag = NULL;
+	    return 1;
+	}
+    }
+}

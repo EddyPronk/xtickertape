@@ -8,6 +8,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PATH_PROG(TPC, tpc, false)
+AC_PATH_PROG(MCGEN, mcgen, false)
 
 dnl Checks for libraries.
 
