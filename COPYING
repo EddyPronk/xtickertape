@@ -1,32 +1,39 @@
 
-    Elvin Notification Service
+    Elvin License
 
-    Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995-2000.
+    Copyright (C) DSTC Pty Ltd (ABN 48 052 372 577) 1995-2001.
     All Rights Reserved.
 
-    The software contained on this media is the property of the
+    The software contained on this media (Software) is the property of the
     DSTC Pty Ltd.  The following conditions apply:
 
     - The DSTC grants you (hereafter, Licensee) a license to use the
       Software for academic, research and non-commercial purposes only,
-      without a fee. Licensees may distribute the binary and source code to
-      third parties under the terms of this license but must ensure that
-      such distribution is under the terms of this license and this license
-      is ditributed along with the binaries and source.
+      without a fee. Licensees may distribute unmodified versions of the
+      binary and source code of the Software to third parties under the
+      terms of this license but must ensure that such distribution is under
+      the terms of this license and this license is distributed along with
+      the binaries and source.
       
-    - The DSTC imposes no restrictions on any code developed using the
-      software. However, DSTC retains a non-exclusive royalty-free license
-      to any modifications to the distribution made by the licensee.
+    - The DSTC imposes the following restrictions on any code developed
+      using the Software:
+      - DSTC retains a non-exclusive royalty-free license, including the
+        right of redistribution, to any modifications to the Software made
+        by the licensee.
+      - You may not distribute modified versions of the Software.
 
-    - Any Licensee wishing to make commercial use of the Software
-      should contact the DSTC to negotiate an appropriate license for such
-      commercial use.  Commercial use includes (1) integration of all or
-      part of the source code into a product for sale or commercial license
-      by or on behalf of Licensee to third parties, or (2) distribution of
-      the binary code or source code to third parties that need it to
-      utilize a commercial product sold or licensed by or on behalf of
-      Licensee.  DSTC Participants have special arrangements for commercial
-      use licenses.  Please contact DSTC for details.
+    - Any Licensee wishing to make commercial use of the Software should
+      contact the DSTC to negotiate an appropriate license for such
+      commercial use. Commercial use includes but is not limited to:
+      - integration of all or part of the source code into a product for
+        sale or commercial license by or on behalf of Licensee to third
+        parties, or,
+      - distribution of the binary code or source code to third parties
+        that need it to utilize a commercial product sold or licensed by or
+        on behalf of Licensee, or
+      - use in an internal operational environment.
+
+      Please contact elvin-licensing@dstc.com for details.
 
     - This software is being provided "AS IS" without warranty of
       any kind, express, implied or otherwise, including without
@@ -38,22 +45,19 @@
       damages whatsoever resulting from loss of use, data or profits,
       whether or not advised of the possibility of damage, and on any
       theory of liability, arising out of or in connection with the use or
-      performance of this software.
+      performance of the Software.
 
-    DSTC Pty Ltd welcomes comments and bug fixes related to this software.
+    DSTC Pty Ltd welcomes comments and bug fixes related to the Software.
     Please address any queries, comments or bug fixes (please include the
-    name and version of the software you are using and details of your
+    name and version of the Software you are using and details of your
     operating system version) to the address below:
 
-          DSTC Pty Ltd
+          DSTC
           Level 7, General Purpose South
-          University of Queensland
-          St Lucia, 4072
-          Tel: +61 7 365 4310
-          Fax: +61 7 365 4311
-          Email: elvin@dstc.edu.au
+          University of Queensland, 4072
+	  Australia
+          Tel: +61 7 3365 4310
+          Fax: +61 7 3365 4311
+          Email: elvin@dstc.com
 
-   Please note that DSTC does provide commercial licensing terms
-   available from the Elvin web:
-
-	http://www.dstc.edu.au/Elvin/download
+          Web: http://elvin.dstc.com
