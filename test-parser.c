@@ -14,6 +14,7 @@
 
 env_t root_env = NULL;
 
+static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error);
 
 /* Parser callback */
 int parsed(void *rock, parser_t parser, sexp_t sexp, elvin_error_t error)
@@ -257,6 +258,41 @@ static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 
     /* Retain our reference to the car and cdr */
     return 1;
+}
+
+/* The `defun' primitive function */
+static int prim_defun(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t symbol;
+
+    /* Make sure we've got a cons */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract the function name */
+    if ((symbol = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure it's a symbol */
+    if (sexp_get_type(symbol) != SEXP_SYMBOL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad symbol");
+	return 0;
+    }
+
+    /* Treat the rest of the expression as a lambda */
+    if (prim_lambda(env, cons_cdr(args, error), result, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Assign the lambda to the function name */
+    return env_assign(env, symbol, *result, error);
 }
 
 /* The `eq' primitive function */
@@ -1389,6 +1425,7 @@ static env_t root_env_alloc(elvin_error_t error)
 	env_set_builtin(env, "car", prim_car, error) == 0 ||
 	env_set_builtin(env, "cdr", prim_cdr, error) == 0 ||
 	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
+	env_set_builtin(env, "defun", prim_defun, error) == 0 ||
 	env_set_builtin(env, "/", prim_div, error) == 0 ||
 	env_set_builtin(env, "eq", prim_eq, error) == 0 ||
 	env_set_builtin(env, "if", prim_if, error) == 0 ||
