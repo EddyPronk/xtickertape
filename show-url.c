@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.11 2002/10/17 22:58:29 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.12 2002/11/11 12:57:41 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -54,7 +54,7 @@ static const char cvsid[] = "$Id: show-url.c,v 1.11 2002/10/17 22:58:29 phelps E
 
 /* Environment variables */
 #define ENV_BROWSER "BROWSER"
-#define DEF_BROWSER "netscape -raise -remote \"openURL(%%s,new-window)\":lynx"
+#define DEF_BROWSER "netscape -raise -remote \"openURL(%s,new-window)\":lynx"
 #define MAX_URL_SIZE 4095
 #define INIT_CMD_SIZE 128
 
