@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.6 2002/10/16 03:58:38 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.7 2002/10/16 04:16:12 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -342,18 +342,32 @@ char *invoke(char *browser, char *url)
 		break;
 	    }
 
-	    /* Watch for %s */
+	    /* Watch for %-escapes */
 	    case '%':
 	    {
-		if (point[1] == 's')
+		ch = point[1];
+
+		/* Watch for the URL substitution */
+		if (ch == 's')
 		{
 		    append_url(url, quote_count);
 
 		    /* Skip ahead */
 		    did_subst = 1;
 		    point++;
+		    break;
 		}
 
+		/* Watch for odd EOF */
+		if (ch == '\0')
+		{
+		    append_char('%');
+		    break;
+		}
+
+		/* Otherwise drop the initial % */
+		append_char(ch);
+		point++;
 		break;
 	    }
 
