@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.30 2000/11/18 00:46:56 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.31 2000/12/08 04:09:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -306,7 +306,7 @@ static int shift_reduce(
     /* Watch for errors */
     if (IS_ERROR(action))
     {
-	ELVIN_ERROR_LISP_PARSE_ERROR(error, "");
+	ELVIN_ERROR_INTERP_PARSE_ERROR(error, "");
 	return 0;
     }
 
@@ -481,7 +481,7 @@ static int accept_real64_string(parser_t self, char *string, elvin_error_t error
     {
 	if (errno == ERANGE)
 	{
-	    ELVIN_ERROR_LISP_OVERFLOW(error, string);
+	    ELVIN_ERROR_INTERP_OVERFLOW(error, string);
 	    return 0;
 	}
 
@@ -707,7 +707,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	return 0;
     }
 
-    ELVIN_ERROR_LISP_INVALID_TOKEN(error, self -> token);
+    ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
     return 0;
 }
 
@@ -738,7 +738,7 @@ static int lex_string(parser_t self, int ch, elvin_error_t error)
 	/* Watch for the end of input */
 	case EOF:
 	{
-	    ELVIN_ERROR_LISP_UNTERM_STRING(error);
+	    ELVIN_ERROR_INTERP_UNTERM_STRING(error);
 	    return 0;
 	}
 
@@ -785,7 +785,7 @@ static int lex_string_esc(parser_t self, int ch, elvin_error_t error)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	ELVIN_ERROR_LISP_UNTERM_STRING(error);
+	ELVIN_ERROR_INTERP_UNTERM_STRING(error);
 	return 0;
     }
 
@@ -812,7 +812,7 @@ static int lex_char(parser_t self, int ch, elvin_error_t error)
     /* Don't permit `?' at the end of the file */
     if (ch == EOF)
     {
-	ELVIN_ERROR_LISP_UNTERM_SYMBOL(error);
+	ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
 	return 0;
     }
 
@@ -877,7 +877,7 @@ static int lex_float_pre(parser_t self, int ch, elvin_error_t error)
 	return 0;
     }
 
-    ELVIN_ERROR_LISP_INVALID_TOKEN(error, self -> token);
+    ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
     return 0;
 }
 
@@ -1061,7 +1061,7 @@ static int lex_exp_pre(parser_t self, int ch, elvin_error_t error)
 	return 0;
     }
 
-    ELVIN_ERROR_LISP_INVALID_TOKEN(error, self -> token);
+    ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
     return 0;
 }
 
@@ -1171,7 +1171,7 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	ELVIN_ERROR_LISP_UNTERM_SYMBOL(error);
+	ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
 	return 0;
     }
 
