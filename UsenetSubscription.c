@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.18 1999/05/22 08:35:07 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.19 1999/05/28 03:09:56 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -42,6 +42,24 @@ static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.18 1999/05/22 08:35:0
 static char *sanity_value = "UsenetSubscription";
 static char *sanity_freed = "Freed UsenetSubscription";
 #endif /* SANITY */
+
+
+/* Some notification field names */
+#define FROM_NAME "FROM_NAME"
+#define NEWSGROUPS "NEWSGROUPS"
+#define FROM_EMAIL "FROM_EMAIL"
+#define FROM "From"
+#define KEYWORDS "KEYWORDS"
+#define SUBJECT "SUBJECT"
+#define CROSSPOSTS "CROSS_POSTS"
+#define MIME_ARGS "MIME_ARGS"
+#define MIME_TYPE "MIME_TYPE"
+#define MESSAGE_ID "Message-ID"
+#define X_NNTP_HOST "X-NNTP-Host"
+#define URL_MIME_TYPE "x-elvin/url"
+#define NEWS_MIME_TYPE "x-elvin/news"
+#define BODY "BODY"
+
 
 typedef enum
 {
@@ -148,12 +166,23 @@ static char *TranslateField(char *field)
     /* Use first character of field for quick lookup */
     switch (*field)
     {
+	/* BODY */
+	case 'B':
+	{
+	    if (strcmp(field, "BODY") == 0)
+	    {
+		return BODY;
+	    }
+
+	    break;
+	}
+
 	/* email */
 	case 'e':
 	{
 	    if (strcmp(field, "email") == 0)
 	    {
-		return "FROM_EMAIL";
+		return FROM_EMAIL;
 	    }
 
 	    break;
@@ -164,7 +193,7 @@ static char *TranslateField(char *field)
 	{
 	    if (strcmp(field, "from") == 0)
 	    {
-		return "FROM_NAME";
+		return FROM_NAME;
 	    }
 
 	    break;
@@ -175,7 +204,7 @@ static char *TranslateField(char *field)
 	{
 	    if (strcmp(field, "keywords") == 0)
 	    {
-		return "KEYWORDS";
+		return KEYWORDS;
 	    }
 
 	    break;
@@ -186,7 +215,7 @@ static char *TranslateField(char *field)
 	{
 	    if (strcmp(field, "newsgroups") == 0)
 	    {
-		return "NEWSGROUPS";
+		return NEWSGROUPS;
 	    }
 
 	    break;
@@ -197,7 +226,7 @@ static char *TranslateField(char *field)
 	{
 	    if (strcmp(field, "subject") == 0)
 	    {
-		return "SUBJECT";
+		return SUBJECT;
 	    }
 
 	    break;
@@ -208,7 +237,7 @@ static char *TranslateField(char *field)
 	{
 	    if (strcmp(field, "x-posts") == 0)
 	    {
-		return "CROSSPOSTS";
+		return CROSSPOSTS;
 	    }
 
 	    break;
@@ -443,13 +472,17 @@ static void ReadNextLine(FileStreamTokenizer tokenizer, char *token, StringBuffe
 	    exit(1);
 	}
 
-	StringBuffer_append(buffer, "( !NEWSGROUPS matches(\"");
+	StringBuffer_append(buffer, "( !");
+	StringBuffer_append(buffer, NEWSGROUPS);
+	StringBuffer_append(buffer, " matches(\"");
 	StringBuffer_append(buffer, token);
 	StringBuffer_append(buffer, "\")");
     }
     else
     {
-	StringBuffer_append(buffer, "( NEWSGROUPS matches(\"");
+	StringBuffer_append(buffer, "( ");
+	StringBuffer_append(buffer, NEWSGROUPS);
+	StringBuffer_append(buffer, " matches(\"");
 	StringBuffer_append(buffer, token);
 	StringBuffer_append(buffer, "\")");
     }
@@ -534,96 +567,81 @@ static void ReadUsenetFile(FILE *file, StringBuffer buffer)
 static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 {
     Message message;
-    StringBuffer buffer;
     en_type_t type;
     char *string;
+    char *newsgroups;
+    char *name;
+    char *subject;
     char *mimeType;
     char *mimeArgs;
-    char *name;
-    char *email;
-    char *newsgroups;
-    char *pointer;
-
-    /* Get the name from the FROM field (if provided) */
-    if ((en_search(notification, "FROM_NAME", &type, (void **)&name) != 0) ||
-	(type != EN_STRING))
-    {
-	name = "anonymous";
-    }
-
-    /* Get the e-mail address (if provided) */
-    if ((en_search(notification, "FROM_EMAIL", &type, (void **)&email) != 0) ||
-	(type != EN_STRING))
-    {
-	email = "anonymous";
-    }
 
     /* Get the newsgroups to which the message was posted */
-    if ((en_search(notification, "NEWSGROUPS", &type, (void **)&newsgroups) != 0) ||
+    if ((en_search(notification, NEWSGROUPS, &type, (void **)&string) != 0) ||
 	(type != EN_STRING))
     {
-	newsgroups = "news";
+	string = "news";
     }
 
-    /* Locate the first newsgroup to which the message was posted */
-    for (pointer = newsgroups; *pointer != '\0'; pointer++)
+    /* Prepend `usenet:' to the beginning of the group field */
+    newsgroups = (char *) alloca(sizeof("usenet: ") + strlen(string));
+    strcpy(newsgroups, "usenet: ");
+    strcat(newsgroups, string);
+
+    /* Get the name from the `FROM_NAME' field (if provided) */
+    if ((en_search(notification, FROM_NAME, &type, (void **)&name) != 0) ||
+	(type != EN_STRING))
     {
-	if (*pointer == ',')
+	/* Otherwise try to use `FROM_EMAIL' field */
+	if ((en_search(notification, FROM_EMAIL, &type, (void **)&name) != 0) ||
+	    (type != EN_STRING))
 	{
-	    *pointer = '\0';
+	    /* Otherwise try to use the `From' field */
+	    if ((en_search(notification, FROM, &type, (void **)&name) != 0) ||
+		(type != EN_STRING))
+	    {
+		name = "anonymous";
+	    }
 	}
-
-	break;
     }
-
-    /* Construct the USER field */
-    buffer = StringBuffer_alloc();
-
-    /* If the name and e-mail addresses are identical, just use one as the user name */
-    if (strcmp(name, email) == 0)
-    {
-	StringBuffer_append(buffer, name);
-	StringBuffer_append(buffer, ": ");
-	StringBuffer_append(buffer, newsgroups);
-    }
-    /* Otherwise construct the user name from the name and e-mail field */
-    else
-    {
-	StringBuffer_append(buffer, name);
-	StringBuffer_append(buffer, " <");
-	StringBuffer_append(buffer, email);
-	StringBuffer_append(buffer, ">: ");
-	StringBuffer_append(buffer, newsgroups);
-    }
-
-    /* Construct the text of the Message */
 
     /* Get the SUBJECT field (if provided) */
-    if ((en_search(notification, "SUBJECT", &type, (void **)&string) != 0) ||
+    if ((en_search(notification, SUBJECT, &type, (void **)&subject) != 0) ||
 	(type != EN_STRING))
     {
-	string = "[no subject]";
+	subject = "[no subject]";
     }
 
-
+    
     /* Construct the mime attachment information (if provided) */
 
     /* Get the MIME_ARGS field to use as the mime args (if provided) */
-    if ((en_search(notification, "MIME_ARGS", &type, (void **)&mimeArgs) == 0) &&
+    if ((en_search(notification, MIME_ARGS, &type, (void **)&mimeArgs) == 0) &&
 	(type == EN_STRING))
     {
 	/* Get the MIME_TYPE field (if provided) */
-	if ((en_search(notification, "MIME_TYPE", &type, (void **)&mimeType) != 0) ||
+	if ((en_search(notification, MIME_TYPE, &type, (void **)&mimeType) != 0) ||
 	    (type != EN_STRING))
 	{
-	    mimeType = "x-elvin/url";
+	    mimeType = URL_MIME_TYPE;
 	}
     }
-    /* No MIME_ARGS provided.  Use the Message-Id field */
-    else if ((en_search(notification, "Message-Id", &type, (void **)&mimeArgs) == 0) &&
+    /* No MIME_ARGS provided.  Construct one using the Message-Id field */
+    else if ((en_search(notification, MESSAGE_ID, &type, (void **)&mimeArgs) == 0) &&
 	    (type == EN_STRING))
     {
-	mimeType = "x-elvin/news";
+	char *newshost;
+	char *buffer;
+
+	if ((en_search(notification, X_NNTP_HOST, &type, (void **)&newshost) != 0) ||
+	    (type != EN_STRING))
+	{
+	    newshost = "news";
+	}
+
+	buffer = (char *) alloca(sizeof("news://") + strlen(newshost) + strlen(mimeArgs) + 1);
+	sprintf(buffer, "news://%s/%s", newshost, mimeArgs);
+	mimeArgs = buffer;
+	mimeType = NEWS_MIME_TYPE;
     }
     /* No Message-Id field provied either */
     else
@@ -635,14 +653,13 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
     /* Construct a Message out of all of that */
     message = Message_alloc(
 	NULL,
-	"usenet", StringBuffer_getBuffer(buffer),
-	string, 60,
+	newsgroups, name,
+	subject, 60,
 	mimeType, mimeArgs,
 	0, 0);
 
     /* Deliver the Message */
     (*self -> callback)(self -> context, message);
-    StringBuffer_free(buffer);
 }
 
 
