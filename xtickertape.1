@@ -64,11 +64,11 @@ should be displayed by \*(xt.  As notifications age towards their
 timeout, they fade to the background color thus providing you with
 some idea of how old they are.  You may specify minimum and maximum
 timeouts for a given group in your \fIgroups\fP file.  You may also
-delete notifications before they timeout by clicking on them with the
+expire notifications before they timeout by clicking on them with the
 right mouse button (or by placing the pointer on them and pressing
-the `d' key), causing them to quickly fade out.
-.\"FIX THIS: put this back in once we get kill working
-.\"If you wish for a message to go away instantly, you can kill it by pressing the `x' key.
+the `d' key), causing them to quickly fade out.  If you wish for a
+message to go away instantly, you can delete it by pressing the `x'
+key.
 .PP
 In addition to these four attributes, notifications may also include
 MIME attachment (typically a URL).  If they do, they will be
@@ -147,10 +147,10 @@ the pointer (if there is one) to configure the group menu.
 .B decodeMime()
 Displays the MIME attachment of the notification under the pointer.
 .TP
-.B delete()
+.B expire()
 Deletes the notification under the pointer by quickly fading it away.
 .TP
-.B kill()
+.B delete()
 Deletes a message from the scroller instantly.
 .TP
 .B faster()
