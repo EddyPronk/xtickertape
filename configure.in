@@ -53,7 +53,7 @@ LIBS="-lXm $LIBS"
 AC_ARG_WITH(elvin, [  --with-elvin=DIR        specify the elvin4 installation directory])
 
 # Check for silliness
-if test "$with_elvin" = no ; then
+if test "x$with_elvin" = xno ; then
     AC_MSG_ERROR([xtickertape cannot be compiled without elvin4])
     exit 1
 fi
