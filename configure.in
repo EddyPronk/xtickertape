@@ -8,15 +8,6 @@ dnl ====================
 AC_PROG_CC
 AC_PROG_INSTALL
 
-dnl See if we can find the systype program
-AC_PATH_PROG(SYSTYPE, systype, not found, $DSTCDIR/script:$PATH)
-if test "$SYSTYPE" = "not found" ; then
-	echo "ERROR: \`systype' is missing on your system.  Check that you have"
-	echo "       a complete elvin distribution.  Elvin may be downloaded for free"
-	echo "       from http://www.dstc.edu.au/elvin/"
-	exit 1
-fi
-
 dnl Checks for headers and libraries.
 dnl =================================
 
