@@ -31,7 +31,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.1 2001/07/04 08:38:07 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.2 2001/07/10 02:18:26 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */
@@ -84,6 +84,6 @@ void message_view_paint(
     unsigned long user_pixel,
     unsigned long message_pixel,
     unsigned long separator_pixel,
-    int x, int y,
+    long x, long y,
     XRectangle *bbox);
 #endif /* MESSAGE_VIEW_H */

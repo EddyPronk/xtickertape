@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.7 2001/07/08 23:51:47 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.8 2001/07/10 02:18:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -231,7 +231,8 @@ static void paint_string(
     string_sizes_t sizes,
     XFontStruct *font,
     char *string,
-    int underline_height)
+    int ul_thickness,
+    int ul_position)
 {
     XGCValues values;
 
@@ -251,13 +252,18 @@ static void paint_string(
     }
 
     /* Bail out if we're not underlining */
-    if (! underline_height)
+    if (! ul_thickness)
     {
 	return;
     }
 
     /* Is the underline visible? */
-    if (rect_overlaps(bbox, x, y + 2, x + sizes -> width, y + 1 + underline_height))
+    if (rect_overlaps(
+	    bbox,
+	    x,
+	    y + ul_position,
+	    x + sizes -> width,
+	    y + ul_position + ul_thickness - 1))
     {
 	/* Set the foreground color */
 	values.foreground = pixel;
@@ -266,10 +272,10 @@ static void paint_string(
 	/* Draw the underline */
 	XFillRectangle(
 	    display, drawable, gc,
-	    MAX(x, bbox -> x), y + 2,
-	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width) - 
 	    MAX(x, bbox -> x),
-	    underline_height);
+	    y + ul_position,
+	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width) -  MAX(x, bbox -> x),
+	    ul_thickness);
     }
 }
 
@@ -374,10 +380,11 @@ void message_view_paint(
     unsigned long user_pixel,
     unsigned long message_pixel,
     unsigned long separator_pixel,
-    int x, int y,
+    long x, long y,
     XRectangle *bbox)
 {
-    int underline_height = 0;
+    int ul_thickness = 0;
+    int ul_position = 0;
 #if (DEBUG_PER_CHAR - 1) == 0
     XGCValues values;
     char *string;
@@ -387,7 +394,9 @@ void message_view_paint(
     /* Compute how big the underline should be */
     if (message_has_attachment(self -> message))
     {
-	underline_height = self -> font -> descent / 4;
+	/* Just some rules of thumb */
+	ul_thickness = MAX((self -> font -> ascent + self -> font -> descent + 10) / 20, 1);
+	ul_position = MAX((self -> font -> descent + 4) / 8, 1);
     }
 
 #if (DEBUG_PER_CHAR - 1) == 0
@@ -433,35 +442,40 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, group_pixel,
 	x, y, bbox, &self -> group_sizes,
-	self -> font, message_get_group(self -> message), underline_height);
+	self -> font, message_get_group(self -> message),
+	ul_thickness, ul_position);
     x += self -> group_sizes.width;
 
     /* Paint the first separator */
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> font, SEPARATOR, underline_height);
+	self -> font, SEPARATOR,
+	ul_thickness, ul_position);
     x += self -> separator_sizes.width;
 
     /* Paint the user string */
     paint_string(
 	display, drawable, gc, user_pixel,
 	x, y, bbox, &self -> user_sizes,
-	self -> font, message_get_user(self -> message), underline_height);
+	self -> font, message_get_user(self -> message),
+	ul_thickness, ul_position);
     x += self -> user_sizes.width;
 
     /* Paint the second separator */
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> font, SEPARATOR, underline_height);
+	self -> font, SEPARATOR,
+	ul_thickness, ul_position);
     x += self -> separator_sizes.width;
 
     /* Paint the message string */
     paint_string(
 	display, drawable, gc, message_pixel,
 	x, y, bbox, &self -> message_sizes,
-	self -> font, message_get_string(self -> message), underline_height);
+	self -> font, message_get_string(self -> message),
+	ul_thickness, ul_position);
     x += self -> message_sizes.width;
 }
 
