@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.105 2002/04/23 17:21:22 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.106 2002/04/23 22:08:25 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -186,13 +186,15 @@ static char *get_user()
 /* Looks up the domain name of the host */
 static char *get_domain()
 {
+    char *domain;
+#ifdef HAVE_UNAME
     struct utsname name;
 #ifdef HAVE_GETHOSTBYNAME
     struct hostent *host;
-#endif
-    char *domain;
+#endif /* GETHOSTBYNAME */
     char *point;
     int ch;
+#endif /* UNAME */
 
     /* If the `DOMAIN' environment variable is set then use it */
     if ((domain = getenv("DOMAIN")) != NULL)
@@ -200,6 +202,7 @@ static char *get_domain()
 	return strdup(domain);
     }
 
+#ifdef HAVE_UNAME
     /* Look up the node name */
     if (uname(&name) < 0)
     {
@@ -216,9 +219,9 @@ static char *get_domain()
     {
 	domain = host -> h_name;
     }
-#else
+#else /* GETHOSTBYNAME */
     domain = name.nodename;
-#endif
+#endif /* GETHOSTBYNAME */
 
     /* Strip everything up to and including the first `.' */
     point = domain;
@@ -232,6 +235,9 @@ static char *get_domain()
 
     /* No dots; just use what we have */
     return strdup(domain);
+#else /* UNAME */
+    return strdup(DEFAULT_DOMAIN);
+#endif /* UNAME */
 }
 
 #if defined(ENABLE_LISP_INTERPRETER)
