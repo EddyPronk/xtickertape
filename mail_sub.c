@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.8 1999/11/18 07:14:53 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.9 1999/11/19 04:05:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -275,5 +275,8 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, dstc_error_
 	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
 	    abort();
 	}
+
+	/* Clean up */
+	free(buffer);
     }
 }
