@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.11 1999/08/19 07:30:29 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.12 1999/08/29 14:24:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -63,6 +63,8 @@ static char *sanity_freed = "Freed Ticker";
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
+
+#define METAMAIL_OPTIONS "-B -q -b -c"
 
 
 /* The tickertape data type */
@@ -118,7 +120,7 @@ struct tickertape
  */
 static int mkdirhier(char *dirname);
 static void publish_startup_notification(tickertape_t self);
-static void click_callback(Widget widget, tickertape_t self, Message message);
+static void menu_callback(Widget widget, tickertape_t self, Message message);
 static void receive_callback(tickertape_t self, Message message);
 static List read_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
@@ -211,12 +213,27 @@ static void publish_startup_notification(tickertape_t self)
     en_free(notification);
 }
 
-/* Callback for a mouse click in the scroller */
-static void click_callback(Widget widget, tickertape_t self, Message message)
+/* Callback for a menu() action in the Scroller */
+static void menu_callback(Widget widget, tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
     ControlPanel_select(self -> control_panel, message);
     ControlPanel_show(self -> control_panel);
+}
+
+/* Callback for an action() action in the Scroller */
+static void mime_callback(Widget widget, tickertape_t self, Message message)
+{
+    SANITY_CHECK(self);
+
+    /* Bail if no message provided */
+    if (message == NULL)
+    {
+	return;
+    }
+
+    /* Show the message's MIME attachment */
+    tickertape_show_attachment(self, message);
 }
 
 /* Receive a Message matched by Subscription */
@@ -386,7 +403,12 @@ static void init_ui(tickertape_t self)
     self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
 	"scroller", scrollerWidgetClass, self -> top,
 	NULL);
-    XtAddCallback((Widget)self -> scroller, XtNcallback, (XtCallbackProc)click_callback, self);
+    XtAddCallback(
+	(Widget)self -> scroller, XtNcallback,
+	(XtCallbackProc)menu_callback, self);
+    XtAddCallback(
+	(Widget)self -> scroller, XtNactionCallback,
+	(XtCallbackProc)mime_callback, self);
     XtRealizeWidget(self -> top);
 }
 
@@ -860,4 +882,57 @@ static FILE *tickertape_usenet_file(tickertape_t self)
 
     /* Try to open the newly created file */
     return fopen(filename, "r");
+}
+
+/* Displays a Message's MIME attachment */
+int tickertape_show_attachment(tickertape_t self, Message message)
+{
+#ifdef METAMAIL
+    char *mime_type;
+    char *mime_args;
+    char *filename;
+    char *buffer;
+    FILE *file;
+
+    /* If the message has no attachment then we're done */
+    if (((mime_type = Message_getMimeType(message)) == NULL) ||
+	((mime_args = Message_getMimeArgs(message)) == NULL))
+    {
+#ifdef DEBUG
+	printf("no attachment\n");
+#endif /* DEBUG */
+	return -1;
+    }
+
+#ifdef DEBUG
+    printf("attachment: \"%s\" \"%s\"\n", mime_type, mime_args);
+#endif /* DEBUG */
+
+    /* Open up a temp file in which to write the args */
+    filename = tmpnam(NULL);
+    if ((file = fopen(filename, "wb")) == NULL)
+    {
+	perror("unable to open a temporary file");
+	return -1;
+    }
+
+    fputs(mime_args, file);
+    fclose(file);
+
+    /* Invoke metamail to display the attachment */
+    buffer = (char *) malloc(
+	sizeof(METAMAIL) + sizeof(METAMAIL_OPTIONS) + 
+	strlen(mime_type) + strlen(filename) +
+	sizeof("....>./dev/null.2>&1"));
+    sprintf(buffer, "%s %s %s %s > /dev/null 2>&1",
+	    METAMAIL, METAMAIL_OPTIONS,
+	    mime_type, filename);
+    system(buffer);
+    free(buffer);
+
+    /* Clean up */
+    unlink(filename);
+#endif /* METAMAIL */
+
+    return 0;
 }
