@@ -1,8 +1,5 @@
 Things that would be nice to have in future versions of xtickertape:
 
-- A way of sending a message without closing the control panel.  This
-  appears to be a good trap for jtickertape users.  Perhaps not.
-
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program.  It's
   probably not that useful to keep history information around,
@@ -19,16 +16,12 @@ Things that would be nice to have in future versions of xtickertape:
   leaving a gaping white space at the bottom of the list.  Bizarre.
 
 - Perhaps the control panel should resize in increments corresponding
-  to a complete line in the history?  Not until the major window
-  managers handle the resources properly.
+  to a complete line in the history?  [too hard.  just build a new
+  history widget instead]
 
 - The length of the history should be configurable (how?
-  configuration file?  I'd like to do this via a resource but it
-  doesn't look like it'll be easy without building a widget...)
+  configuration file?  [build a history widget?]
 
 - It should be possible to specify the location of `metamail' at
-  both configure-time and run-time.
-
-- The Scroller's DRAG_DELTA should be a resource
-
-- There should be an option to have send close the window or not.
+  both configure-time and run-time. [command-line and environment
+  variable?]
