@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.52 1999/08/09 08:59:31 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.53 1999/08/11 06:12:39 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -117,6 +117,7 @@ static XtResource resources[] =
  */
 static void menu(Widget widget, XEvent *event);
 static void decode_mime(Widget widget, XEvent *event);
+static void drag(Widget widget, XEvent *event);
 static void expire(Widget widget, XEvent *event);
 static void delete(Widget widget, XEvent *event);
 static void faster(Widget widget, XEvent *event);
@@ -129,6 +130,7 @@ static XtActionsRec actions[] =
 {
     { "menu", (XtActionProc)menu },
     { "decodeMime", (XtActionProc)decode_mime },
+    { "drag", (XtActionProc)drag },
     { "expire", (XtActionProc)expire },
     { "delete", (XtActionProc)delete },
     { "faster", (XtActionProc)faster },
@@ -141,7 +143,15 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: expire()\n<Key>d: expire()\n<Key>x: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
+    "<Btn1Up>: menu()\n"
+    "<Btn2Down>: decodeMime()\n"
+    "<Btn3Down>: expire()\n"
+    "<Btn1Motion>: drag()\n"
+    "<Key>d: expire()\n"
+    "<Key>x: delete()\n"
+    "<Key>q: quit()\n"
+    "<Key>-: slower()\n"
+    "<Key>+: faster()\n"
 };
 
 
@@ -381,8 +391,13 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
-    scroll(self, self -> scroller.step);
-    Redisplay((Widget)self, NULL, 0);
+    /* Don't scroll if we're in the midst of a drag */
+    if (! self -> scroller.is_dragging)
+    {
+	scroll(self, self -> scroller.step);
+	Redisplay((Widget)self, NULL, 0);
+    }
+
     SetClock(self);
 }
 
@@ -587,6 +602,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 
     /* Initialize the queue to only contain the gap with 0 offsets */
     self -> scroller.is_stopped = True;
+    self -> scroller.is_dragging = False;
     self -> scroller.left_holder = holder;
     self -> scroller.right_holder = holder;
     self -> scroller.left_offset = 0;
@@ -1176,6 +1192,7 @@ static glyph_holder_t holder_at_event(ScrollerWidget self, XEvent *event)
 
 	case ButtonPress:
 	case ButtonRelease:
+
 	{
 	    XButtonEvent *button_event = (XButtonEvent *) event;
 	    return holder_at_point(self, button_event -> x, button_event -> y);
@@ -1214,12 +1231,41 @@ static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
  * Action definitions
  */
 
+/* This should be called by each action function -- it makes sure that
+ * dragging operates correctly.  It returns 0 if the action should
+ * proceed normally, -1 if the action should be aborted (i.e.  it's
+ * really the end of a drag operation */
+static int pre_action(ScrollerWidget self, XEvent *event)
+{
+    /* Watch for a button release after a drag */
+    if (event -> type == ButtonRelease)
+    {
+	if (self -> scroller.is_dragging)
+	{
+	    self -> scroller.is_dragging = False;
+	    return -1;
+	}
+    }
+
+    /* Ignore everything else */
+    return 0;
+}
+
+
 /* Called when the button is pressed */
 void menu(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph = glyph_at_event(self, event);
+    glyph_t glyph;
 
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* Pop up the menu and select the message that was clicked on */
+    glyph = glyph_at_event(self, event);
     XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph -> get_message(glyph));
 }
 
@@ -1228,13 +1274,23 @@ static void decode_mime(Widget widget, XEvent *event)
 {
 #ifdef METAMAIL
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph = glyph_at_event(self, event);
-    Message message = glyph -> get_message(glyph);
+    glyph_t glyph;
+    Message message;
     char filename[sizeof(TMP_PREFIX) + 16];
     char *mime_type;
     char *mime_args;
     char *buffer;
     FILE *file;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* Figure out which message was clicked on */
+    glyph = glyph_at_event(self, event);
+    message = glyph -> get_message(glyph);
 
     /* If there's no message, then we can't decode any mime */
     if (message == NULL)
@@ -1260,7 +1316,7 @@ static void decode_mime(Widget widget, XEvent *event)
 #endif /* DEBUG */
 
     /* Write the mime_args to a file (assumes 16-digit pids) */
-    sprintf(filename, "%s%d", TMP_PREFIX, getpid());
+    sprintf(filename, "%s%ld", TMP_PREFIX, (long) getpid());
 
     /* If we can't open the file then print an error and give up */
     if ((file = fopen(filename,"wb")) == NULL)
@@ -1292,8 +1348,16 @@ static void decode_mime(Widget widget, XEvent *event)
 static void expire(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph = glyph_at_event(self, event);
+    glyph_t glyph;
 
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* Expire the glyph under the pointer */
+    glyph = glyph_at_event(self, event);
     glyph -> expire(glyph);
 }
 
@@ -1484,7 +1548,16 @@ static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 static void delete(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph = glyph_at_event(self, event);
+    glyph_t glyph;
+
+    /* Abort if the pre_action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+    
+    /* Figure out which glyph to delete */
+    glyph = glyph_at_event(self, event);
 
     /* Ignore attempts to delete the gap */
     if (glyph == self -> scroller.gap)
@@ -1514,16 +1587,62 @@ static void delete(Widget widget, XEvent *event)
 static void faster(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    int step = self -> scroller.step + 1;
-    self -> scroller.step = step;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    self -> scroller.step++;
 }
 
 /* Scroll more slowly */
 static void slower(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    int step = self -> scroller.step -1;
-    self -> scroller.step = step;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    self -> scroller.step--;
+}
+
+/* Someone is dragging the mouse */
+static void drag(Widget widget, XEvent *ev)
+{
+    ScrollerWidget self = (ScrollerWidget) widget;
+    XMotionEvent *event = (XMotionEvent *) ev;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, ev) < 0)
+    {
+	return;
+    }
+
+    /* First event of a drag? */
+    if (! self -> scroller.is_dragging)
+    {
+	self -> scroller.is_dragging = True;
+	self -> scroller.last_x = event -> x;
+	return;
+    }
+
+    /* If the scroller is stopped then do nothing */
+    if (self -> scroller.is_stopped)
+    {
+	return;
+    }
+
+    /* Otherwise scroll by the difference */
+    scroll(self, self -> scroller.last_x - event -> x);
+    self -> scroller.last_x = event -> x;
+
+    /* Repaint the widget */
+    Redisplay(widget, NULL, 0);
 }
 
 
