@@ -77,7 +77,11 @@ with the middle mouse button to view the attachment.  If you are so
 inclined, you may specify in your \fIgroups\fP file that any
 notification with a MIME attachment sent to a given group should
 automatically be displayed, thus saving you the trouble of clicking on 
-it.
+it.  \*(Xt invokes \fImetamail\fP in order to view MIME attachments.
+The \fIshow-url\fP script is included in the \*(xt distribution as a
+viewer for URL attachements.  We reommend that you specify it as your 
+\fBtext/uri-list\fP viewer and, for backwards compatibility, as your
+\fBx-elvin/url\fP viewer in your .mailcap file.
 .PP
 The scrolling speed of the tickertape can be adjusted with the `-' and 
 `=' keys.  These increment and decrement the number of pixels a
@@ -185,10 +189,11 @@ Specifes which tickertape groups to subscribe to.
 .B $TICKERDIR/usenet
 Specifies which usenet news articles to subscribe to.
 .SH SEE ALSO
-.BR show-url (1),
 .BR groups (5),
 .BR usenet (5),
 .BR elvin (1)
+.BR show-url (1),
+.BR metamail (1)
 .na
 http://www.dstc.edu.au/Elvin
 .SH BUGS
