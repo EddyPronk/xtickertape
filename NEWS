@@ -1,15 +1,19 @@
 Overview of changes in xtickertape-1.6.6
 
+* Minimum size of the control panel now takes into account the height
+  of the horizontal scrollbar on the history list.
+
 * Minor configure fix for machines which don't have a separate include
-  file for crypt().
+  file for crypt() (thanks David Leonard for pointing out that BSD
+  machines don't have <crypt.h>).
 
 * Check environment variables ELVIN_HOST and ELVIN_PORT if no
   command-line option given before using defaults (thanks David
   Leonard).
 
-* Keyboard activity now makes tool-tips go away.
+* Keyboard activity now hides tool-tips.
 
-* Chased down some more memory leaks.
+* Chased down some more memory leaks (bloody Motif!).
 
 * The SIGHUP handler failed to re-register itself.  This is now fixed.
 
