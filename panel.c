@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.84 2003/04/20 22:57:08 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.85 2004/01/20 12:46:15 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2153,12 +2153,18 @@ static void prepare_reply(control_panel_t self, message_t message)
     menu_item_tuple_t tuple;
 
     /* Free the old message id */
-    free(self -> message_id);
-    self -> message_id = NULL;
+    if (self -> message_id)
+    {
+        free(self -> message_id);
+        self -> message_id = NULL;
+    }
 
     /* Free the old thread id */
-    free(self -> thread_id);
-    self -> thread_id = NULL;
+    if (self -> thread_id)
+    {
+        free(self -> thread_id);
+        self -> thread_id = NULL;
+    }
 
     /* If a message_t was provided that is in the menu, then select it
      * and set the message_id so that we can do threading */
@@ -2170,19 +2176,19 @@ static void prepare_reply(control_panel_t self, message_t message)
 	{
 	    self -> selection = tuple;
 	    set_group_selection(self, tuple);
+        }
 
-	    /* Copy the message id */
-	    if ((id = message_get_id(message)) != NULL)
-	    {
-		self -> message_id = strdup(id);
-	    }
+        /* Copy the message id */
+        if ((id = message_get_id(message)) != NULL)
+        {
+            self -> message_id = strdup(id);
+        }
 
-	    /* Copy the thread id */
-	    if ((id = message_get_thread_id(message)) != NULL)
-	    {
-		self -> thread_id = strdup(id);
-	    }
-	}
+        /* Copy the thread id */
+        if ((id = message_get_thread_id(message)) != NULL)
+        {
+            self -> thread_id = strdup(id);
+        }
     }
 }
 
