@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.40 1999/07/28 00:17:59 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.41 1999/07/28 00:54:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -789,7 +789,6 @@ static void adjust_right_left(ScrollerWidget self)
 	/* Find the next glyph to show */
 	self -> scroller.left_glyph = self -> scroller.left_glyph -> previous;
 	glyph = self -> scroller.left_glyph;
-	printf("left glyph = %p (new left glyph scrolled in)\n", self -> scroller.left_glyph);
 
 	/* We need to do magic for the gap */
 	if (glyph == self -> scroller.gap)
@@ -1419,6 +1418,7 @@ static void slower(Widget widget, XEvent *event)
 void ScAddMessage(ScrollerWidget self, Message message)
 {
     glyph_t glyph;
+    glyph_holder_t holder;
 
     /* Create a glyph for the message */
     if ((glyph = message_glyph_alloc(self, message)) == NULL)
@@ -1428,6 +1428,26 @@ void ScAddMessage(ScrollerWidget self, Message message)
 
     /* Add it to the list of viable glyphs */
     queue_add(self -> scroller.gap, glyph);
+
+    /* Adjust the gap width if possible and appropriate */
+    holder = self -> scroller.left_holder;
+    if ((self -> scroller.step < 0) && (holder -> glyph == self -> scroller.gap))
+    {
+	int width = gap_width(self, glyph -> get_width(glyph));
+
+	/* If the effect is invisible, then just do it */
+	if (holder -> width - self -> scroller.left_offset < width)
+	{
+	    self -> scroller.left_offset -= holder -> width - width;
+	    holder -> width = width;
+	}
+	/* Otherwise we have to compromise */
+	else
+	{
+	    holder -> width -= self -> scroller.left_offset;
+	    self -> scroller.left_offset = 0;
+	}
+    }
 
     /* Make sure the clock is running */
     StartClock(self);
