@@ -31,7 +31,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.5 2002/04/04 12:32:16 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.6 2003/01/09 22:48:32 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */
@@ -59,6 +59,17 @@ struct string_sizes
     /* The distance from the baseline to the bottom of the string */
     short descent;
 };
+
+/* Returns an iconv conversion descriptor for converting characters to
+ * be displayed in a given font from a given code set.  If tocode is
+ * non-NULL then it will be tried first. */
+int encoder_alloc(
+    Display *display,
+    XFontStruct *font, const char *tocode,
+    const char *fromcode,
+    char *one_ch, size_t one_len,
+    iconv_t *cd_out,
+    int *dimension_out);
 
 /* Allocates and initializes a new message_view_t */
 message_view_t message_view_alloc(

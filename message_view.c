@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.16 2002/04/23 22:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.17 2003/01/09 22:48:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,7 @@ static const char cvsid[] = "$Id: message_view.c,v 2.16 2002/04/23 22:29:52 phel
 #endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <iconv.h>
 #include "replace.h"
 #include "message.h"
 #include "message_view.h"
@@ -144,6 +145,145 @@ static void measure_string(
     sizes -> ascent = font -> ascent;
     sizes -> descent = font -> descent;
 }
+
+
+#define MAX_CHAR_SIZE 2
+
+/* Returns the number of bytes required to encode a single character
+ * in the output encoding */
+static int cd_out_dimension(iconv_t cd, char *string, size_t length)
+{
+    char buffer[MAX_CHAR_SIZE];
+    char *point = buffer;
+    int count = MAX_CHAR_SIZE;
+
+    /* Try to encode one character */
+    if (iconv(cd, &string, &length, &point, &count) == (size_t)-1)
+    {
+	return -1;
+    }
+
+    /* Fail if the encoding was not complete */
+    if (length != 0)
+    {
+	return -1;
+    }
+
+    /* Otherwise return the number of characters required */
+    return point - buffer;
+}
+
+#define CHARSET_REGISTRY "CHARSET_REGISTRY"
+#define CHARSET_ENCODING "CHARSET_ENCODING"
+
+/* Returns an iconv conversion descriptor for converting characters to
+ * be displayed in a given font from a given code set.  If tocode is
+ * non-NULL then it will be used, otherwise an attempt will be made to
+ * guess the font's encoding */
+int encoder_alloc(
+    Display *display,
+    XFontStruct *font, const char *tocode,
+    const char *fromcode,
+    char *one_ch, size_t one_len,
+    iconv_t *cd_out,
+    int *dimension_out)
+{
+    static Atom registry = None;
+    static Atom encoding = None;
+    Atom atoms[2];
+
+    /* Was an encoding provided? */
+    if (tocode != NULL)
+    {
+	/* Yes.  Use it to create a conversion descriptor */
+	if ((*cd_out = iconv_open(tocode, fromcode)) != (iconv_t)-1)
+	{
+	    /* Encode a single character to get the dimension */
+	    if (! ((*dimension_out = cd_out_dimension(*cd_out, one_ch, one_len)) < 0))
+	    {
+		return 0;
+	    }
+
+	    /* Uh oh: can't encode a single character */
+	    iconv_close(*cd_out);
+	    *cd_out = (iconv_t)-1;
+	}
+
+	*dimension_out = 1;
+	return 0;
+    }
+
+    /* Look up the CHARSET_REGISTRY atom */
+    if (registry == None)
+    {
+	registry = XInternAtom(display, CHARSET_REGISTRY, False);
+    }
+
+    /* Look up the font's CHARSET_REGISTRY property */
+    if (XGetFontProperty(font, registry, &atoms[0]))
+    {
+	/* Look up the CHARSET_ENCODING atom */
+	if (encoding == None)
+	{
+	    encoding = XInternAtom(display, CHARSET_ENCODING, False);
+	}
+
+	/* Look up the font's CHARSET_ENCODING property */
+	if (XGetFontProperty(font, encoding, &atoms[1]))
+	{
+	    char *names[2];
+
+	    /* Stringify the names */
+	    if (XGetAtomNames(display, atoms, 2, names))
+	    {
+		char *string;
+		size_t length;
+
+		/* Allocate some memory to hold the code set name */
+		length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
+		if ((string = malloc(length)) == NULL)
+		{
+		    XFree(names[0]);
+		    XFree(names[1]);
+		    return -1;
+		}
+		else
+		{
+		    /* Construct the code set name */
+		    sprintf(string, "%s-%s", names[0], names[1]);
+
+		    /* Clean up a bit */
+		    XFree(names[0]);
+		    XFree(names[1]);
+
+		    /* Open a conversion descriptor */
+		    *cd_out = iconv_open(string, fromcode);
+
+		    /* Clean up some more */
+		    free(string);
+
+		    if (*cd_out != (iconv_t)-1)
+		    {
+			/* Try to encode the single character */
+			if ((*dimension_out = cd_out_dimension(*cd_out, one_ch, one_len)) != 0)
+			{
+			    return 0;
+			}
+
+			/* Uh oh: can't encode a single character */
+			iconv_close(*cd_out);
+		    }
+		}
+	    }
+	}
+    }
+
+    /* Unable to guess the encoding from the font */
+    *cd_out = (iconv_t)-1;
+    *dimension_out = 1;
+    return 0;
+}
+
 
 /* Draw a string within the bounding box, measuring the characters so
  * as to minimize bandwidth requirements */

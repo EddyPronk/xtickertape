@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.136 2003/01/09 20:40:28 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.137 2003/01/09 22:48:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -64,17 +64,8 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.136 2003/01/09 20:40:28 phelps 
 # define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
-/* Font properties */
-#define CHARSET_REGISTRY "CHARSET_REGISTRY"
-#define CHARSET_ENCODING "CHARSET_ENCODING"
-#define MAX_CHAR_SIZE 2
-
-
 /* Default source code set */
 #define SRC_CODE_SET "UTF-8"
-
-/* Default display code set */
-#define DST_CODE_SET "ISO8859-1"
 
 /*
  * Resources
@@ -997,72 +988,16 @@ static void realize(
     Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
     XColor colors[5];
 
-    /* Make sure we have a code set to use with iconv */
-    if (self -> scroller.code_set == NULL)
+    /* Try to allocate a conversion descriptor */
+    if (encoder_alloc(
+	    display,
+	    self -> scroller.font, self -> scroller.code_set,
+	    SRC_CODE_SET, "a", 1,
+	    &self -> scroller.cd,
+	    &self -> scroller.enc_width) < 0)
     {
-	Atom atom;
-	Atom atoms[2];
-	char *names[2];
-	size_t length;
-
-	/* Look up the font's registry */
-	atom = XInternAtom(display, CHARSET_REGISTRY, False);
-	if (XGetFontProperty(self -> scroller.font, atom, &atoms[0]))
-	{
-	    /* Look up the encoding */
-	    atom = XInternAtom(display, CHARSET_ENCODING, False);
-	    if (XGetFontProperty(self -> scroller.font, atom, &atoms[1]))
-	    {
-		/* Convert the registry and encoding into strings */
-		if (XGetAtomNames(display, atoms, 2, names))
-		{
-		    /* Construct a code set name */
-		    length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
-		    self -> scroller.code_set = malloc(length);
-		    snprintf(self -> scroller.code_set, length, "%s-%s", names[0], names[1]);
-
-		    /* Clean up */
-		    XFree(names[0]);
-		    XFree(names[1]);
-		}
-	    }
-	}
-
-	/* If we still haven't come up with a code set then use the default */
-	if (self -> scroller.code_set == NULL)
-	{
-	    self -> scroller.code_set = DST_CODE_SET;
-	}
-    }
-
-    /* Default to characters that are one byte wide */
-    self -> scroller.enc_width = 1;
-
-    /* Open a conversion descriptor */
-    self -> scroller.cd = iconv_open(self -> scroller.code_set, SRC_CODE_SET);
-    if (self -> scroller.cd == (iconv_t)-1)
-    {
-	fprintf(stderr, "Warning: unable to open conversion decriptor for font.\n");
-    }
-    else
-    {
-	/* Figure out how many bytes the encoding uses */
-	char buffer[MAX_CHAR_SIZE];
-	char *string = "a";
-	char *bp = buffer;
-	size_t ic = 1;
-	size_t oc = MAX_CHAR_SIZE;
-
-	/* Encode a known string with the encoding */
-	if (iconv(self -> scroller.cd, &string, &ic, &bp, &oc) == (size_t)-1 || ic != 0)
-	{
-	    fprintf(stderr, "Warning: conversion descriptor is not happy.\n");
-	    iconv_close(self -> scroller.cd);
-	    self -> scroller.cd = (iconv_t)-1;
-	}
-
-	/* Figure out how many bytes we need to represent a character */
-	self -> scroller.enc_width = MAX_CHAR_SIZE - oc;
+	self -> scroller.cd = (iconv_t)-1;
+	self -> scroller.enc_width = 1;
     }
 
     /* Initialize colors */
