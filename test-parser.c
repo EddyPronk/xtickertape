@@ -266,6 +266,85 @@ static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
     return sexp_alloc_ref(*result, error);
 }
 
+/* The `cons' primitive function */
+static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t car, cdr;
+    sexp_t car_value, cdr_value;
+
+    /* Make sure we have at least one arg */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract the car */
+    if ((car = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure there are no more args */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    /* Extract the cdr */
+    if ((cdr = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure it's nil */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    /* Evaluate the car */
+    if (sexp_eval(car, env, &car_value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Evaluate the cdr */
+    if (sexp_eval(cdr, env, &cdr_value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Construct a cons cell */
+    if ((*result = cons_alloc(car_value, cdr_value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our references to the car and cdr */
+    if (sexp_free(car, error) == 0 || sexp_free(cdr, error) == 0)
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+
 /* The `setq' primitive function */
 static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
@@ -365,6 +444,13 @@ static env_t root_env_alloc(elvin_error_t error)
 
     /* Register the built-in function `cdr' */
     if (env_set_builtin(env, "cdr", prim_cdr, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `cons' */
+    if (env_set_builtin(env, "cons", prim_cons, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
