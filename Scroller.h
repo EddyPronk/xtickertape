@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.11 2000/04/12 21:44:45 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.12 2000/04/19 07:17:57 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -55,6 +55,7 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.11 2000/04/12 21:44:45
  separatorPixel	     SeparatorPixel	Pixel		Black
  fadeLevels	     FadeLevels		Dimension	5
 
+ usePixmap           UsePixmap		Boolean		False
  dragDelta	     DragDelta		Dimension	3
  frequency	     Frequency		Dimension	24
  stepSize	     StepSize		Position	1
@@ -89,6 +90,8 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.11 2000/04/12 21:44:45
 #define XtCSeparatorPixel "SeparatorPixel"
 #define XtNfadeLevels "fadeLevels"
 #define XtCFadeLevels "FadeLevels"
+#define XtNusePixmap "usePixmap"
+#define XtCUsePixmap "UsePixmap"
 #define XtNdragDelta "dragDelta"
 #define XtCDragDelta "DragDelta"
 #define XtNfrequency "frequency"

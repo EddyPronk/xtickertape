@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.29 2000/04/12 21:44:45 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.30 2000/04/19 07:17:57 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -73,6 +73,7 @@ typedef struct
     Pixel stringPixel;
     Pixel separatorPixel;
     Dimension fadeLevels;
+    Boolean use_pixmap;
     Position drag_delta;
     Dimension frequency;
     Position step;
