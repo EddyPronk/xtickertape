@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.13 2000/04/11 09:36:25 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.14 2000/04/11 14:04:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -93,6 +93,9 @@ struct group_sub
 
     /* The argument for the receiver's callback */
     void *rock;
+
+    /* Non-zero if the receiver is waiting on a change to the subscription */
+    int is_pending;
 };
 
 
@@ -463,6 +466,7 @@ group_sub_t group_sub_alloc(
     self -> subscription = NULL;
     self -> callback = callback;
     self -> rock = rock;
+    self -> is_pending = 0;
 
     return self;
 }
@@ -473,11 +477,19 @@ void group_sub_free(group_sub_t self)
     if (self -> name)
     {
 	free(self -> name);
+	self -> name = NULL;
     }
 
     if (self -> expression)
     {
 	free(self -> expression);
+	self -> expression = NULL;
+    }
+
+    /* Dont' free a pending subscription */
+    if (self -> is_pending)
+    {
+	return;
     }
 
     free(self);
@@ -517,8 +529,30 @@ static void subscribe_cb(
 {
     group_sub_t self = (group_sub_t)rock;
     self -> subscription = subscription;
+    self -> is_pending = 0;
+
+    /* Unsubscribe if we were pending when we were freed */
+    if (self -> expression == NULL)
+    {
+	group_sub_set_connection(self, NULL, error);
+    }
 }
 
+/* Callback for an unsubscribe request */
+static void unsubscribe_cb(
+    elvin_handle_t handle, int result,
+    elvin_sub_t subscription, void *rock,
+    elvin_error_t error)
+{
+    group_sub_t self = (group_sub_t)rock;
+    self -> is_pending = 0;
+
+    /* Free the receiver if it was pending when it was freed */
+    if (self -> expression == NULL) 
+    {
+	group_sub_free(self);
+    }
+}
 
 /* Sets the receiver's connection */
 void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_error_t error)
@@ -533,6 +567,8 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
 	    abort();
 	}
+
+	self -> is_pending = 1;
     }
 
     self -> handle = handle;
@@ -549,6 +585,8 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
 	    abort();
 	}
+
+	self -> is_pending = 1;
     }
 }
 
