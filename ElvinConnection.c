@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ElvinConnection.c,v 1.33 1999/05/06 00:34:30 phelps Exp $";
+static const char cvsid[] = "$Id: ElvinConnection.c,v 1.34 1999/08/25 09:46:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -57,7 +57,7 @@ typedef enum
     Disconnected
 } ConnectionState;
 
-/* A tuple of subscription expression, callback, context for the Hashtable */
+/* A tuple of subscription expression, callback, context for the List */
 typedef struct SubscriptionTuple_t
 {
     uint32 id;
@@ -105,7 +105,7 @@ struct ElvinConnection_t
     /* The reconnect callback context */
     void *reconnectContext;
 
-    /* A Hashtable mapping expressions to callbacks */
+    /* The List of subscriptions */
     List subscriptions;
 };
 

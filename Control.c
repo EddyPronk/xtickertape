@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.46 1999/08/22 11:01:30 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.47 1999/08/25 09:46:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1377,10 +1377,11 @@ static void make_index_visible(Widget list, int index)
     int count;
 
     /* Figure out what we're looking at */
-    XtVaGetValues(list,
-		  XmNtopItemPosition, &top,
-		  XmNvisibleItemCount, &count,
-		  NULL);
+    XtVaGetValues(
+	list,
+	XmNtopItemPosition, &top,
+	XmNvisibleItemCount, &count,
+	NULL);
 
     /* Make the index the top if it's above the top */
     if (index < top)
