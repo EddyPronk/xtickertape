@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.119 2003/05/15 20:23:01 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.120 2004/07/30 14:29:02 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -293,11 +293,11 @@ static char *get_domain()
     /* Use that to get the canonical name */
     if ((host = gethostbyname(name.nodename)) == NULL)
     {
-	domain = name.nodename;
+	domain = strdup(name.nodename);
     }
     else
     {
-	domain = host -> h_name;
+	domain = strdup(host -> h_name);
     }
 #else /* GETHOSTBYNAME */
     domain = name.nodename;
