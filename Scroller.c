@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.54 1999/08/13 13:26:35 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.55 1999/08/15 03:00:27 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -965,7 +965,6 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     Display *display = XtDisplay(widget);
     glyph_holder_t holder = self -> scroller.left_holder;
     int offset = 0 - self -> scroller.left_offset;
-    /* int end = x + width; */
     int end = self -> core.width;
 
     /* Reset this portion of the pixmap to the background color */
@@ -994,7 +993,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 	printf("self -> scroller.right_offset=%d\n", self -> scroller.right_offset);
 
 	/* Force a core dump */
-	printf("%s\n", (char *)NULL);
+	abort();
     }
 }
 
