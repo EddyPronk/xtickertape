@@ -1,0 +1,206 @@
+"-*-elvin-*-"
+
+---
+USER: "blaize"
+In-Reply-To: ""
+TICKERTAPE: "btest"
+TIMEOUT: 10
+TICKERTEXT: "dghdfgh"
+Message-Id: 10431
+---
+USER: "blaize"
+In-Reply-To: ""
+TICKERTAPE: "btest"
+TIMEOUT: 10
+TICKERTEXT: "dghdfgh"
+Message-Id: 10431
+---
+USER: "ggm"
+TICKERTEXT: "unlocked his screen."
+TIMEOUT: 1
+TICKERTAPE: "ggm"
+---
+TICKERTAPE: "gibson"
+USER: "gibson"
+TIMEOUT: 5
+TICKERTEXT: "test"
+Message-Id: (bignum 123 233 193 189)
+---
+REPLACEMENT: "01B214FD-DD5D-5C4D-75D6-29FE6D17"
+TIMEOUT: 10
+USER: "elvinfd"
+TICKERTEXT: "elvin.dstc.qut.edu.au, elvin.dstc.monash.edu.au, elvin.infenv.csee.uq.edu.au links *** DOWN *** "
+TICKERTAPE: "ERROR"
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "so ... The Cure or Cure, The ????"
+Message-Id: (bignum 109 168 52 22)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "I'm thinking `The Cure' even though it screws up alphabetization"
+Message-Id: 59253759
+In-Reply-To: (bignum 109 168 52 22)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "done ... ;-)"
+Message-Id: 69050267
+In-Reply-To: 59253759
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "Suggestions for a permanent mount point?"
+Message-Id: (bignum 97 178 160 12)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "/dev/mp3 ? ;-)"
+Message-Id: (bignum 91 61 206 52)
+In-Reply-To: (bignum 97 178 160 12)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "Yuck!  You evil man."
+Message-Id: (bignum 20 15 140 255)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "more seriously, /music?  /jukebox?  ummmm"
+Message-Id: (bignum 107 106 46 118)
+In-Reply-To: (bignum 20 15 140 255)
+---
+USER: "loch"
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "/highlyIllegal?"
+Message-Id: 49818
+---
+USER: "ggm"
+TICKERTEXT: "is autolocked."
+TIMEOUT: 1
+TICKERTAPE: "ggm"
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "/home/mp3?"
+Message-Id: (bignum 97 235 182 181)
+In-Reply-To: (bignum 107 106 46 118)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "i'm allowed to make a copy for my personal use.  it's only if *you* use it that it becomes problematic ..."
+Message-Id: (bignum 18 215 33 53)
+In-Reply-To: 49818
+---
+USER: "loch"
+In-Reply-To: ""
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "/nothingToSeeHere/WhatMP3'sNeverHeardOfEmMate"
+Message-Id: 42676
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "sure -- don't care much really ..."
+Message-Id: (bignum 109 25 247 49)
+In-Reply-To: (bignum 97 235 182 181)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "I'll leave it at /mnt/disk until I think of something more clever."
+Message-Id: (bignum 72 107 163 84)
+---
+USER: "loch"
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "/home/MP3  is prob best as jukebox may not be the only app?  though do you have mp3's other then music?"
+Message-Id: 26490
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "hints on the ripper command name?"
+Message-Id: (bignum 29 36 180 251)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "Try cdparanoia.  I think you want the -B option and a ton of disk space."
+Message-Id: (bignum 9 53 214 0)
+In-Reply-To: (bignum 29 36 180 251)
+---
+USER: "loch"
+In-Reply-To: ""
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "mElvin  (musical Elvin)?"
+Message-Id: 44185
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "Why not just call it `barbagallo'"
+Message-Id: (bignum 35 96 170 184)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "Hey, I kind of like that"
+Message-Id: (bignum 41 246 187 248)
+In-Reply-To: (bignum 35 96 170 184)
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "d@pobox.com"
+TIMEOUT: 5
+TICKERTEXT: "we once had foxtail, coconut and something else of the Palm family ..."
+Message-Id: (bignum 100 45 12 162)
+In-Reply-To: (bignum 35 96 170 184)
+---
+USER: "loch"
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "date?"
+Message-Id: 52206
+---
+xtickertape.version: "1.6b3"
+TICKERTAPE: "phelps"
+USER: "phelps"
+TIMEOUT: 5
+TICKERTEXT: "No thanks, I'm busy."
+Message-Id: (bignum 67 160 138 191)
+In-Reply-To: (bignum 100 45 12 162)
+---
+USER: "loch"
+TICKERTAPE: "phelps"
+TIMEOUT: 10
+TICKERTEXT: "you tease"
+Message-Id: 1994
