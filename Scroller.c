@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.43 1999/07/29 06:29:53 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.44 1999/07/29 06:44:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1059,8 +1059,47 @@ static void Resize(Widget widget)
     /* Adjust the glyph_holders and offsets to compensate */
     if (self -> scroller.step < 0)
     {
-	printf("resize on L->R scrolling is not yet implemented!\n");
-	exit(1);
+	glyph_holder_t holder = self -> scroller.right_holder;
+	int offset = glyph_holder_width(holder) - self -> scroller.right_offset;
+
+	/* Look for a gap (but not the leading glyph) that we can adjust */
+	holder = holder -> previous;
+	while (holder != NULL)
+	{
+	    /* Did we find one? */
+	    if (holder -> glyph == self -> scroller.gap)
+	    {
+		int new_width;
+
+		/* Determine how wide the gap *should* be */
+		if (holder -> previous != NULL)
+		{
+		    new_width = gap_width(self, glyph_holder_width(holder -> previous));
+		}
+		else
+		{
+		    glyph_t glyph = self -> scroller.left_glyph -> previous;
+
+		    if (glyph != self -> scroller.gap)
+		    {
+			new_width = gap_width(self, glyph -> get_width(glyph));
+		    }
+		    else
+		    {
+			new_width = self -> core.width;
+		    }
+		}
+
+		holder -> width = new_width;
+	    }
+
+	    offset += holder -> width;
+	    holder = holder -> previous;
+	}
+
+	self -> scroller.left_offset = offset - self -> core.width;
+	adjust_left_left(self);
+	adjust_right_left(self);
     }
     else
     {
@@ -1086,51 +1125,6 @@ static void Resize(Widget widget)
 	adjust_right_right(self);
 	adjust_left_right(self);
     }
-#if 0
-    /* Adjust the trailing offset and glyph */
-    if (self -> scroller.step < 0)
-    {
-	/* Scrolling left to right */
-	glyph_t glyph = self -> scroller.right_glyph;
-	int offset = self -> core.width + self -> scroller.right_offset;
-
-	/* Measure each visible glyph */
-	while (offset >= 0)
-	{
-	    offset -= glyph -> get_width(glyph);
-	    glyph = glyph -> previous;
-	}
-
-	/* Adjust the left glyph and offset */
-	self -> scroller.left_glyph = glyph -> next;
-	self -> scroller.left_offset = 0 - offset;
-
-	adjust_right_right(self);
-	adjust_right_left(self);
-    }
-    else
-    {
-	/* Scrolling right to left */
-	glyph_t glyph = self -> scroller.left_glyph;
- 	int end = self -> core.width;
-	int offset = 0 - self -> scroller.left_offset;
-
-	/* Measure each visible glyph */
-	while (offset < end)
-	{
-	    offset += glyph -> get_width(glyph);
-	    glyph = glyph -> next;
-	}
-
-	/* Adjust the right glyph and offset */
-	self -> scroller.right_glyph = glyph -> previous;
-	self -> scroller.right_offset = offset - end;
-
-	adjust_left_left(self);
-	adjust_left_right(self);
-    }
-
-#endif /* 0 */
 
     /* Update the display on that pixmap */
     Paint(self, 0, 0, self -> core.width, self -> scroller.height);
