@@ -78,6 +78,7 @@ test $RPM_BUILD_ROOT = "/" || rm -rf $RPM_BUILD_ROOT
 %{prefix}/man/man1/show-url.1.gz
 %{prefix}/man/man1/xtickertape.1.gz
 %{prefix}/man/man5/groups.5.gz
+%{prefix}/man/man5/keys.5.gz
 %{prefix}/man/man5/usenet.5.gz
 
 # Our changelog
