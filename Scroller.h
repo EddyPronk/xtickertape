@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.10 2000/03/01 06:53:32 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.11 2000/04/12 21:44:45 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -49,11 +49,13 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.10 2000/03/01 06:53:32
  Name		     Class		RepType		Default Value
  ----		     -----		-------		-----------
  font		     Font		XFontStruct *	XtDefaultFont
- groupPixel	     GroupPixel	Pixel	Blue
- userPixel	     UerPixel	Pixel	Green
+ groupPixel	     GroupPixel		Pixel		Blue
+ userPixel	     UserPixel		Pixel		Green
  stringPixel	     StringPixel	Pixel		Red
  separatorPixel	     SeparatorPixel	Pixel		Black
  fadeLevels	     FadeLevels		Dimension	5
+
+ dragDelta	     DragDelta		Dimension	3
  frequency	     Frequency		Dimension	24
  stepSize	     StepSize		Position	1
 
@@ -87,6 +89,8 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.10 2000/03/01 06:53:32
 #define XtCSeparatorPixel "SeparatorPixel"
 #define XtNfadeLevels "fadeLevels"
 #define XtCFadeLevels "FadeLevels"
+#define XtNdragDelta "dragDelta"
+#define XtCDragDelta "DragDelta"
 #define XtNfrequency "frequency"
 #define XtCFrequency "Frequency"
 #define XtNstepSize "stepSize"

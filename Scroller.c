@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.87 2000/04/11 05:09:10 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.88 2000/04/12 21:44:44 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,9 +42,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.87 2000/04/11 05:09:10 phelps E
 #include "ScrollerP.h"
 #include "glyph.h"
 
-
-/* Minimum drag amount (in pixels) before we decide not `click' */
-#define DRAG_DELTA 5
 
 /*
  * Resources
@@ -107,13 +104,19 @@ static XtResource resources[] =
 	offset(scroller.fadeLevels), XtRImmediate, (XtPointer)5
     },
 
+    /* Position drag_delta (in pixels) */
+    {
+	XtNdragDelta, XtCDragDelta, XtRPosition, sizeof(Position),
+	offset(scroller.drag_delta), XtRImmediate, (XtPointer)3
+    },
+
     /* Dimension frequency (in Hz) */
     {
 	XtNfrequency, XtCFrequency, XtRDimension, sizeof(Dimension),
 	offset(scroller.frequency), XtRImmediate, (XtPointer)24
     },
 
-    /* Dimension step (in pixels) */
+    /* Position step (in pixels) */
     {
 	XtNstepSize, XtCStepSize, XtRPosition, sizeof(Position),
 	offset(scroller.step), XtRImmediate, (XtPointer)1
@@ -1912,11 +1915,11 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	return;
     }
 
-    /* If we're more than DELTA pixels from the position of the mouse
-     * down event, then we must be dragging */
+    /* If we're more than drag_delta pixels from the position of the
+     * mouse down event, then we must be dragging */
     if ((! self -> scroller.is_dragging) &&
-	(self -> scroller.start_drag_x - DRAG_DELTA < motion_event -> x) &&
-	(motion_event -> x < self -> scroller.start_drag_x + DRAG_DELTA))
+	(self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x) &&
+	(motion_event -> x < self -> scroller.start_drag_x + self -> scroller.drag_delta))
     {
 	return;
     }

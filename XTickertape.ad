@@ -103,6 +103,7 @@
 *scroller.fadeLevels: 5
 *scroller.frequency: 60
 *scroller.stepSize: 3
+*scroller.dragDelta: 3
 
 !
 ! Keyboard translations
