@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.35 1999/09/26 14:05:13 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.36 1999/10/02 16:09:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,7 +40,6 @@ static const char cvsid[] = "$Id: Subscription.c,v 1.35 1999/09/26 14:05:13 phel
 #include <sys/utsname.h>
 #include <netdb.h>
 #include "sanity.h"
-#include "groups.h"
 #include "Subscription.h"
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
@@ -102,12 +101,6 @@ struct Subscription_t
  */
 
 static char *GetDomainName();
-static int TranslateMenu(char *token);
-static int TranslateMime(char *token);
-static int TranslateTime(char *token);
-static Subscription ReadNextSubscription(
-    FileStreamTokenizer tokenizer, char *firstToken,
-    SubscriptionCallback callback, void *context);
 static void HandleNotify(Subscription self, en_notify_t notification);
 static void SendMessage(Subscription self, message_t message);
 
@@ -153,173 +146,6 @@ static char *GetDomainName()
 
     return domainname;
 }
-
-/* Translate the 'menu' or 'no menu' token into non-zero or zero*/
-static int TranslateMenu(char *token)
-{
-    if (token == NULL)
-    {
-	fprintf(stderr, "*** Unexpected end of groups file\n");
-	exit(1);
-    }
-
-    switch (*token)
-    {
-	/* menu */
-	case 'm':
-	{
-	    if (strcmp(token, "menu") == 0)
-	    {
-		return 1;
-	    }
-	    
-	    break;
-	}
-
-	/* no menu */
-	case 'n':
-	{
-	    if (strcmp(token, "no menu") == 0)
-	    {
-		return 0;
-	    }
-
-	    break;
-	}
-    }
-
-    /* Invalid token */
-    fprintf(stderr, "*** Expected \"menu\" or \"no menu\", got \"%s\"\n", token);
-    exit(1);
-}
-
-/* Translate the 'manual' or 'auto' token into zero or non-zero */
-static int TranslateMime(char *token)
-{
-    if (token == NULL)
-    {
-	fprintf(stderr, "*** Unexpected end of groups file\n");
-	exit(1);
-    }
-
-    switch (*token)
-    {
-	/* auto */
-	case 'a':
-	{
-	    if (strcmp(token, "auto") == 0)
-	    {
-		return 1;
-	    }
-
-	    break;
-	}
-
-	/* manual */
-	case 'm':
-	{
-	    if (strcmp(token, "manual") == 0)
-	    {
-		return 0;
-	    }
-
-	    break;
-	}
-    }
-
-    fprintf(stderr, "*** Expected \"manual\" or \"auto\", got \"%s\"\n", token);
-    exit(1);
-}
-
-
-/* Translate a positive, integral token into an integer */
-static int TranslateTime(char *token)
-{
-    char *pointer;
-    int value = 0;
-
-    for (pointer = token; *pointer != '\0'; pointer++)
-    {
-	int digit = *pointer - '0';
-
-	if ((digit < 0) || (digit > 9))
-	{
-	    fprintf(stderr, "*** Expected numerical argument, got \"%s\"\n", token);
-	    exit(1);
-	}
-
-	value = (value * 10) + digit;
-    }
-
-    return value;
-}
-
-/* Create a subscription from a line of the group file */
-static Subscription ReadNextSubscription(
-    FileStreamTokenizer tokenizer, char *firstToken,
-    SubscriptionCallback callback, void *context)
-{
-    char *token;
-    char *group;
-    int inMenu, hasNazi, minTime, maxTime;
-    Subscription subscription;
-
-    /* Copy the group token */
-#ifdef HAVE_ALLOCA
-    group = (char *)alloca(strlen(firstToken) + 1);
-    strcpy(group, firstToken);
-#else /* HAVE_ALLOCA */
-    group = strdup(firstToken);
-#endif /* HAVE_ALLOCA */
-
-    /* 'menu' or 'no menu' */
-    token = FileStreamTokenizer_next(tokenizer);
-    inMenu = TranslateMenu(token);
-
-    /* 'manual' or 'auto' mime */
-    token = FileStreamTokenizer_next(tokenizer);
-    hasNazi = TranslateMime(token);
-
-    /* minimum time */
-    token = FileStreamTokenizer_next(tokenizer);
-    minTime = TranslateTime(token);
-
-    /* maximum time */
-    token = FileStreamTokenizer_next(tokenizer);
-    maxTime = TranslateTime(token);
-
-    /* optional subscription expression */
-    token = FileStreamTokenizer_nextWithSpec(tokenizer, "\r", "\n");
-    if ((token == NULL) || (*token == '\n'))
-    {
-	StringBuffer buffer = StringBuffer_alloc();
-	StringBuffer_append(buffer, "TICKERTAPE == \"");
-	StringBuffer_append(buffer, group);
-	StringBuffer_append(buffer, "\"");
-
-	subscription = Subscription_alloc(
-	    group, StringBuffer_getBuffer(buffer),
-	    inMenu, hasNazi,
-	    minTime, maxTime,
-	    callback, context);
-	StringBuffer_free(buffer);
-    }
-    else /* token must be a ':' followed by the subscription expression */
-    {
-	subscription = Subscription_alloc(
-	    group, (token + 1),
-	    inMenu, hasNazi,
-	    minTime, maxTime,
-	    callback, context);
-	FileStreamTokenizer_skipToEndOfLine(tokenizer);
-    }
-
-#ifndef HAVE_ALLOCA
-    free(group);
-#endif /* HAVE_ALLOCA */
-    return subscription;
-}
-
 
 /* Delivers a notification which matches the receiver's subscription expression */
 static void HandleNotify(Subscription self, en_notify_t notification)
@@ -502,81 +328,6 @@ static void SendMessage(Subscription self, message_t message)
  *
  */
 
-/* Write a default `groups' file onto the output stream */
-int Subscription_writeDefaultGroupsFile(
-    FILE *out, char *username)
-{
-    char *pointer;
-
-    /* Copy the string into the file, substituting the user name for
-     * %u, domainname for %d and x for %x for any other character */
-    for (pointer = defaultGroupsFile; *pointer != '\0'; pointer++)
-    {
-	/* Watch for escape characters */
-	if (*pointer == '%')
-	{
-	    switch (*(++pointer))
-	    {
-		/* user name */
-		case 'u':
-		{
-		    fputs(username, out);
-		    break;
-		}
-
-		/* domain name */
-		case 'd':
-		{
-		    fputs(GetDomainName(), out);
-		    break;
-		}
-
-		/* Just a normal character */
-		default:
-		{
-		    fputc(*pointer, out);
-		    break;
-		}
-	    }
-	}
-	else
-	{
-	    fputc(*pointer, out);
-	}
-    }
-
-    return 0;
-}
-
-/* Read Subscriptions from the group file 'groups' and add them to 'list' */
-List Subscription_readFromGroupFile(
-    FILE *in,
-    SubscriptionCallback callback, void *context)
-{
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(in, ":\r", "\n");
-    List list = List_alloc();
-    char *token;
-
-    /* Locate a non-empty line that doesn't begin with a '#' */
-    while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
-    {
-	/* Comment line? */
-	if (*token == '#')
-	{
-	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
-	}
-	/* Useful line? */
-	else if (*token != '\n')
-	{
-	    /* Read the line's Subscription and add it to the List */
-	    List_addLast(list, ReadNextSubscription(tokenizer, token, callback, context));
-	}
-    }
-
-    FileStreamTokenizer_free(tokenizer);
-    return list;
-}
-
 
 /* Answers a new Subscription */
 Subscription Subscription_alloc(
@@ -734,10 +485,7 @@ void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel)
 
 /* Makes the receiver visible in the ControlPanel's group menu iff
  * inMenu is set, and makes sure it appears at the proper index */
-void Subscription_updateControlPanelIndex(
-    Subscription self,
-    ControlPanel controlPanel,
-    int *index)
+void Subscription_setControlPanelIndex(Subscription self, ControlPanel controlPanel, int *index)
 {
     SANITY_CHECK(self);
 

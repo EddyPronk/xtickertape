@@ -35,37 +35,18 @@
 #define SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.12 1999/09/26 14:05:14 phelps Exp $";
+static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.13 1999/10/02 16:09:31 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
 typedef struct Subscription_t *Subscription;
 
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#include <elvin3/elvin.h>
-#include <elvin3/element.h>
-#include "List.h"
 #include "message.h"
 #include "connect.h"
 #include "Control.h"
 
 /* The format for the callback function */
 typedef void (*SubscriptionCallback)(void *context, message_t message);
-
-
-
-/* Answer a List containing the subscriptions in the given file or NULL if unable */
-List Subscription_readFromGroupFile(
-    FILE *in,
-    SubscriptionCallback callback, void *context);
-
-/* Creates a default groups file for the named user */
-int Subscription_writeDefaultGroupsFile(
-    FILE *out, char *username);
 
 /* Answers a new Subscription */
 Subscription Subscription_alloc(
@@ -100,7 +81,7 @@ void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel);
 
 /* Makes the receiver visible in the ControlPanel's group menu iff
  * inMenu is set, and makes sure it appears at the proper index */
-void Subscription_updateControlPanelIndex(
+void Subscription_setControlPanelIndex(
     Subscription self,
     ControlPanel controlPanel,
     int *index);
