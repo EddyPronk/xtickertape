@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.15 2002/04/12 13:39:25 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.16 2003/01/09 20:40:29 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -49,6 +49,7 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.15 2002/04/12 13:39:25
  Name		     Class		RepType		Default Value
  ----		     -----		-------		-----------
  font		     Font		XFontStruct *	XtDefaultFont
+ fontCodeSet         String             String          NULL
  groupPixel	     GroupPixel		Pixel		Blue
  userPixel	     UserPixel		Pixel		Green
  stringPixel	     StringPixel	Pixel		Red
@@ -78,6 +79,9 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.15 2002/04/12 13:39:25
 
  */
 
+#ifndef XtNfontCodeSet
+# define XtNfontCodeSet "fontCodeSet"
+#endif
 #ifndef XtNattachmentCallback
 # define XtNattachmentCallback "attachmentCallback"
 #endif
