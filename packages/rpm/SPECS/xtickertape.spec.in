@@ -41,7 +41,7 @@ Source: http://elvin.dstc.com/download/@PACKAGE@-@VERSION@.tar.gz
 Group: Applications/Internet
 Icon: xtickertape.gif
 URL: http://elvin.dstc.com/
-Distribution: Red Hat Linux @RPM_RH_VERSION@
+Distribution: Elvin
 Vendor: The Elvin Krewe <elvin@dstc.com>
 BuildRoot: /var/tmp/%{name}-buildroot
 
