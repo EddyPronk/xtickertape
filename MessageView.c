@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.6 1997/02/11 06:46:39 phelps Exp $ */
+/* $Id: MessageView.c,v 1.7 1997/02/12 05:49:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,12 +111,11 @@ static void tick(MessageView self, XtIntervalId *ignored)
     maxLevels = TtGetFadeLevels(self -> widget);
 
     /* Don't get older than we have to */
-    if (self -> fadeLevel + 1 >= maxLevels)
+    if (++self -> fadeLevel >= maxLevels)
     {
 	return;
     }
 
-    self -> fadeLevel++;
     paint(self, self -> pixmap, 0, self -> ascent);
     printf(":");
     fflush(stdout);
@@ -273,6 +272,7 @@ void MessageView_free(MessageView self)
 #ifdef SANITY_CHECK
     self -> isDeleted = True;
 #else /* SANITY_CHECK */
+    Message_free(self -> message);
     XFreePixmap(XtDisplay(self -> widget), self -> pixmap);
     free(self);
 #endif /* SANITY_CHECK */
@@ -336,5 +336,5 @@ void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 int MessageView_isTimedOut(MessageView self)
 {
     SanityCheck(self);
-    return ((self -> fadeLevel + 1) >= TtGetFadeLevels(self -> widget));
+    return ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
 }
