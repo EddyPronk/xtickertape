@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.13 1999/09/09 07:41:34 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.14 1999/09/09 08:13:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -248,29 +248,9 @@ static void paint_string(
     }
 
     /* If the glyph is off to the right of the rectangle then quit */
-    first = (unsigned char *)string;
-    char_info = per_char(font, *first);
-    if (x + width < left + char_info -> lbearing)
+    if (x + width < left)
     {
 	return;
-    }
-
-    /* Find the first visible character in the string */
-    while (left + char_info -> rbearing < x)
-    {
-	left += char_info -> width;
-	first++;
-	char_info = per_char(font, *first);
-    }
-
-    /* Find the character *after* the last visible character */
-    last = first;
-    right = left;
-    while ((right + char_info -> lbearing < x + width) && (*last != '\0'))
-    {
-	right += char_info -> width;
-	last++;
-	char_info = per_char(font, *last);
     }
 
 #ifdef DEBUG_GLYPH
@@ -281,14 +261,41 @@ static void paint_string(
     }
 #endif /* DEBUG */
 
-    /* Draw all of the characters of the string */
-    XDrawString(display, drawable, gc, left, baseline, first, last - first);
-
-    /* Draw the underline if appropriate */
+    /* Draw the underline now because we're going to squeeze left and
+     * right to match the bounds of the characters we draw and we'll
+     * end up with gaps */
     if (do_underline)
     {
-	XDrawLine(display, drawable, gc, left, baseline + 1, right, baseline + 1);
+	XDrawLine(
+	    display, drawable, gc,
+	    x < left ? left : x, baseline + 1,
+	    right < x + width ? right : x + width, baseline + 1);
     }
+
+    /* Find the first visible character in the string */
+    first = (unsigned char *)string;
+    char_info = per_char(font, *first);
+
+    while (left + char_info -> rbearing < x)
+    {
+	left += char_info -> width;
+	first++;
+	char_info = per_char(font, *first);
+    }
+
+    /* Find the character *after* the last visible character */
+    last = first;
+    right = left;
+
+    while ((right + char_info -> lbearing < x + width) && (*last != '\0'))
+    {
+	right += char_info -> width;
+	last++;
+	char_info = per_char(font, *last);
+    }
+
+    /* Draw all of the characters of the string */
+    XDrawString(display, drawable, gc, left, baseline, first, last - first);
 }
 
 /* Draw the receiver */
