@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.41 2001/02/22 01:31:30 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.42 2001/02/22 03:43:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1356,7 +1356,7 @@ message_t contruct_message(control_panel_t self)
 	self -> selection -> tag,
 	self -> selection -> title, user, text, get_timeout(self),
 	(mime_args == NULL) ? NULL : mime_type,
-	mime_args, strlen(mime_args),
+	mime_args, (mime_args == NULL) ? 0 : strlen(mime_args),
 	NULL, uuid, self -> message_id);
 
     /* Clean up */
