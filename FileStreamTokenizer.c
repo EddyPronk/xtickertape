@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.c,v 1.6 1998/12/18 07:56:44 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.7 1998/12/23 06:20:47 phelps Exp $ */
 
 #include <config.h>
 #include <stdlib.h>
@@ -32,29 +32,6 @@ struct FileStreamTokenizer_t
     /* The receiver's "special" characters (tokens all by themselves) */
     char *special;
 };
-
-
-/*
- *
- * Static functions
- *
- */
-
-/* Skips all whitespace characters */
-static void SkipWhitespace(FileStreamTokenizer self, char *whitespace)
-{
-    char ch;
-
-    while ((ch = fgetc(self -> file)) != EOF)
-    {
-	/* If we encounter a non-whitespace character, then put it back and return */
-	if (strchr(whitespace, ch) == NULL)
-	{
-	    ungetc(ch, self -> file);
-	    return;
-	}
-    }
-}
 
 
 /*
@@ -122,6 +99,32 @@ void FileStreamTokenizer_debug(FileStreamTokenizer self)
 }
 
 
+/* Skip over the given whitespace characters */
+void FileStreamTokenizer_skip(FileStreamTokenizer self, char *whitespace)
+{
+    char ch;
+    
+    while ((ch = fgetc(self -> file)) != EOF)
+    {
+	/* If we encounter a non-whitespace character, then put it back and return */
+	if (strchr(whitespace, ch) == NULL)
+	{
+	    ungetc(ch, self -> file);
+	    return;
+	}
+    }
+}
+
+
+/* Skips over whitespace */
+void FileStreamTokenizer_skipWhitespace(FileStreamTokenizer self)
+{
+    FileStreamTokenizer_skip(self, self -> whitespace);
+}
+
+
+
+
 /* Answers the receiver's next token or NULL if at the end of the file.
  * NB: this token exists in the receiver's internal buffer and will be
  * overwritten when the next token is read */
@@ -141,7 +144,7 @@ char *FileStreamTokenizer_nextWithSpec(
     ungetc(ch, self -> file);
 
     /* Skip over whitespace */
-    SkipWhitespace(self, whitespace);
+    FileStreamTokenizer_skip(self, whitespace);
 
     /* Clear out the StringBuffer */
     StringBuffer_clear(self -> buffer);
