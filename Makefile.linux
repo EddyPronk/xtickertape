@@ -6,9 +6,9 @@ TICKERTAPE = xtickertape
 
 ALL = $(TICKERTAPE) 
 
-OBJS = \
-	Ticker.o Control.o Tickertape.o ElvinConnection.o OrbitSubscription.o \
-	MessageView.o Message.o Subscription.o Hash.o List.o main.o
+OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o \
+	Subscription.o UsenetSubscription.o OrbitSubscription.o Hash.o List.o \
+	StringBuffer.o FileStreamTokenizer.o main.o
 
 CDEBUGFLAGS = -g 
 #CDEBUGFLAGS = -g
