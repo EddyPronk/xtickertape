@@ -1,9 +1,9 @@
-/* $Id: ElvinConnection.c,v 1.26 1998/10/24 04:52:22 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.27 1998/10/28 07:49:45 phelps Exp $ */
 
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <elvin3/subscription.h>
 #include "sanity.h"
 #include "ElvinConnection.h"
 #include "List.h"
@@ -64,11 +64,17 @@ struct ElvinConnection_t
     /* The data returned from the register function we need to pass to unregister */
     XtInputId inputId;
 
-    /* The subscription callback function */
-    ErrorCallback callback;
+    /* The disconnect callback function */
+    DisconnectCallback disconnectCallback;
 
-    /* The subscription callback context */
-    void *context;
+    /* The disconnect callback context */
+    void *disconnectContext;
+
+    /* The reconnect callback function */
+    ReconnectCallback reconnectCallback;
+
+    /* The reconnect callback context */
+    void *reconnectContext;
 
     /* A Hashtable mapping expressions to callbacks */
     List subscriptions;
@@ -152,7 +158,7 @@ static void Connect(ElvinConnection self)
 	    StringBuffer_appendChar(buffer, ':');
 	    StringBuffer_appendInt(buffer, self -> port);
 
-	    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+	    (*self -> disconnectCallback)(self -> disconnectContext, StringBuffer_getBuffer(buffer));
 	    StringBuffer_free(buffer);
 	}
 
@@ -176,7 +182,7 @@ static void Connect(ElvinConnection self)
 	    StringBuffer_appendChar(buffer, ':');
 	    StringBuffer_appendInt(buffer, self -> port);
 
-	    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+	    (*self -> reconnectCallback)(self -> reconnectContext, StringBuffer_getBuffer(buffer));
 	    StringBuffer_free(buffer);
 	}
 	self -> state = Connected;
@@ -213,7 +219,7 @@ static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
     StringBuffer_appendInt(buffer, self -> port);
     StringBuffer_append(buffer, ".  Attempting to reconnect.");
 
-    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+    (*self -> disconnectCallback)(self -> disconnectContext, StringBuffer_getBuffer(buffer));
     StringBuffer_free(buffer);
 
     /* Try to reconnect */
@@ -224,7 +230,8 @@ static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
     char *hostname, int port, XtAppContext app_context,
-    ErrorCallback callback, void *context)
+    DisconnectCallback disconnectCallback, void *disconnectContext,
+    ReconnectCallback reconnectCallback, void *reconnectContext)
 {
     ElvinConnection self;
 
@@ -241,8 +248,10 @@ ElvinConnection ElvinConnection_alloc(
     self -> retryPause = INITIAL_PAUSE;
     self -> app_context = app_context;
     self -> inputId = 0;
-    self -> callback = callback;
-    self -> context = context;
+    self -> disconnectCallback = disconnectCallback;
+    self -> disconnectContext = disconnectContext;
+    self -> reconnectCallback = reconnectCallback;
+    self -> reconnectContext = reconnectContext;
     self -> subscriptions = List_alloc();
     Connect(self);
 
@@ -276,7 +285,17 @@ void *ElvinConnection_subscribe(
     NotifyCallback callback, void *context)
 {
     SubscriptionTuple tuple;
+    es_ptree_t parseTree;
+    char *error;
     SANITY_CHECK(self);
+
+    /* Check the expression to see if it's valid before we make a tuple for it */
+    if ((parseTree = sub_parse(expression, &error)) == NULL)
+    {
+	fprintf(stderr, "*** Error %s\n", error);
+	return NULL;
+    }
+    es_free_ptree(parseTree);
 
     tuple = malloc(sizeof(struct SubscriptionTuple_t));
     tuple -> expression = strdup(expression);
@@ -317,6 +336,7 @@ void ElvinConnection_send(ElvinConnection self, en_notify_t notification)
 {
     SANITY_CHECK(self);
 
+    /* FIX THIS: should we enqueue the notification if we're not connected? */
     /* Don't even try if we're not connected */
     if (self -> state == Connected)
     {
