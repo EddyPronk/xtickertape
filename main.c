@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.52 1999/08/19 01:46:10 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.53 1999/08/19 01:55:24 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -82,7 +82,7 @@ static Window CreateIcon(Widget shell);
 
 
 /* The Tickertape */
-static Tickertape tickertape;
+static tickertape_t tickertape;
 
 /* The default application actions table */
 static XtActionsRec actions[] =
@@ -95,13 +95,13 @@ static XtActionsRec actions[] =
 static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
     /* pass this on to the control panel */
-    Tickertape_handleNotify(tickertape, widget);
+    tickertape_handleNotify(tickertape, widget);
 }
 
 /* Callback for when the Window Manager wants to close a window */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
-    Tickertape_handleQuit(tickertape, widget);
+    tickertape_handleQuit(tickertape, widget);
 }
 
 /* Print out usage message */
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
     XtVaSetValues(top, XtNiconWindow, CreateIcon(top), NULL);
 
     /* Create a Tickertape */
-    tickertape = Tickertape_alloc(user, tickerDir, groupsFile, usenetFile, host, port, top);
+    tickertape = tickertape_alloc(user, tickerDir, groupsFile, usenetFile, host, port, top);
 
 #ifdef HAVE_LIBXMU
     /* Enable editres support */

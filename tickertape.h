@@ -36,48 +36,48 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.1 1999/08/19 01:46:12 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.2 1999/08/19 01:52:59 phelps Exp $";
 #endif /* lint */
 
-typedef struct Tickertape_t *Tickertape;
+typedef struct tickertape *tickertape_t;
 
 #include <X11/Intrinsic.h>
 
 /* Answers a new Tickertape for the given user using the given file as
  * her groups file and connecting to the notification service
  * specified by host and port */
-Tickertape Tickertape_alloc(
+tickertape_t tickertape_alloc(
     char *user, char *tickerDir,
     char *groupsFile, char *usenetFile,
     char *host, int port,
     Widget top);
 
 /* Frees the resources used by the Tickertape */
-void Tickertape_free(Tickertape self);
+void tickertape_free(tickertape_t self);
 
 /* Prints out debugging information about the Tickertape */
-void Tickertape_debug(Tickertape self);
+void tickertape_debug(tickertape_t self);
 
 /* Handles the notify action */
-void Tickertape_handleNotify(Tickertape self, Widget widget);
+void tickertape_handleNotify(tickertape_t self, Widget widget);
 
 /* Handles the quit action */
-void Tickertape_handleQuit(Tickertape self, Widget widget);
+void tickertape_handleQuit(tickertape_t self, Widget widget);
 
 
 /* Answers the receiver's tickerDir filename */
-char *Tickertape_tickerDir(Tickertape self);
+char *tickertape_tickerDir(tickertape_t self);
 
 /* Answers the receiver's groups file filename */
-char *Tickertape_groupsFilename(Tickertape self);
+char *tickertape_groupsFilename(tickertape_t self);
 
 /* Answers the receiver's usenet filename */
-char *Tickertape_usenetFilename(Tickertape self);
+char *tickertape_usenetFilename(tickertape_t self);
 
 /* Answers the receiver's groups file */
-FILE *Tickertape_groupsFile(Tickertape self);
+FILE *tickertape_groupsFile(tickertape_t self);
 
 /* Answers the receiver's usenet file */
-FILE *Tickertape_usenetFile(Tickertape self);
+FILE *tickertape_usenetFile(tickertape_t self);
 
 #endif /* TICKERTAPE_H */

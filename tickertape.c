@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.5 1999/08/19 01:46:10 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.6 1999/08/19 01:52:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -64,13 +64,9 @@ static char *sanity_freed = "Freed Ticker";
 #define DEFAULT_USENET_FILE "usenet"
 
 
-/* The Tickertape data type */
-struct Tickertape_t
+/* The tickertape data type */
+struct tickertape
 {
-#ifdef SANITY
-    char *sanity_check;
-#endif /* SANITY */
-
     /* The user's name */
     char *user;
 
@@ -119,18 +115,18 @@ struct Tickertape_t
  *
  */
 static int mkdirhier(char *dirname);
-static void PublishStartupNotification(Tickertape self);
-static void Click(Widget widget, Tickertape self, Message message);
-static void ReceiveMessage(Tickertape self, Message message);
-static List ReadGroupsFile(Tickertape self);
-static void ReloadGroups(Tickertape self);
-static void ReloadUsenet(Tickertape self);
-static void InitializeUserInterface(Tickertape self);
-static void Disconnect(Tickertape self, ElvinConnection connection);
-static void Reconnect(Tickertape self, ElvinConnection connection);
+static void PublishStartupNotification(tickertape_t self);
+static void Click(Widget widget, tickertape_t self, Message message);
+static void ReceiveMessage(tickertape_t self, Message message);
+static List ReadGroupsFile(tickertape_t self);
+static void ReloadGroups(tickertape_t self);
+static void ReloadUsenet(tickertape_t self);
+static void InitializeUserInterface(tickertape_t self);
+static void Disconnect(tickertape_t self, ElvinConnection connection);
+static void Reconnect(tickertape_t self, ElvinConnection connection);
 #ifdef ORBIT
-static void OrbitCallback(Tickertape self, en_notify_t notification);
-static void SubscribeToOrbit(Tickertape self);
+static void OrbitCallback(tickertape_t self, en_notify_t notification);
+static void SubscribeToOrbit(tickertape_t self);
 #endif /* ORBIT */
 
 
@@ -192,7 +188,7 @@ static int mkdirhier(char *dirname)
 }
 
 /* Publishes a notification indicating that the receiver has started */
-static void PublishStartupNotification(Tickertape self)
+static void PublishStartupNotification(tickertape_t self)
 {
     en_notify_t notification;
     SANITY_CHECK(self);
@@ -211,14 +207,14 @@ static void PublishStartupNotification(Tickertape self)
 }
 
 /* Callback for a mouse click in the scroller */
-static void Click(Widget widget, Tickertape self, Message message)
+static void Click(Widget widget, tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
     ControlPanel_show(self -> controlPanel, message);
 }
 
 /* Receive a Message matched by Subscription */
-static void ReceiveMessage(Tickertape self, Message message)
+static void ReceiveMessage(tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
     ScAddMessage(self -> scroller, message);
@@ -229,13 +225,13 @@ static void ReceiveMessage(Tickertape self, Message message)
 
 /* Read from the Groups file.  Returns a List of subscriptions if
  * successful, NULL otherwise */
-static List ReadGroupsFile(Tickertape self)
+static List ReadGroupsFile(tickertape_t self)
 {
     FILE *file;
     List subscriptions;
 
     /* Open the groups file and read */
-    if ((file = Tickertape_groupsFile(self)) == NULL)
+    if ((file = tickertape_groupsFile(self)) == NULL)
     {
 	return List_alloc();
     }
@@ -250,13 +246,13 @@ static List ReadGroupsFile(Tickertape self)
 
 
 /* Read from the usenet file.  Returns a Usenet subscription. */
-static UsenetSubscription ReadUsenetFile(Tickertape self)
+static UsenetSubscription ReadUsenetFile(tickertape_t self)
 {
     FILE *file;
     UsenetSubscription subscription;
 
     /* Open the usenet file and read */
-    if ((file = Tickertape_usenetFile(self)) == NULL)
+    if ((file = tickertape_usenetFile(self)) == NULL)
     {
 	return NULL;
     }
@@ -282,7 +278,7 @@ static void MapByExpression(Subscription subscription, Hashtable hashtable)
  * subscriptions whenever possible */
 static void UpdateElvin(
     Subscription subscription,
-    Tickertape self,
+    tickertape_t self,
     Hashtable hashtable,
     List list)
 {
@@ -305,7 +301,7 @@ static void UpdateElvin(
 }
 
 /* Request from the ControlPanel to reload groups file */
-static void ReloadGroups(Tickertape self)
+static void ReloadGroups(tickertape_t self)
 {
     Hashtable hashtable;
     List newSubscriptions;
@@ -344,7 +340,7 @@ static void ReloadGroups(Tickertape self)
 
 
 /* Request from the ControlPanel to reload usenet file */
-static void ReloadUsenet(Tickertape self)
+static void ReloadUsenet(tickertape_t self)
 {
     UsenetSubscription subscription;
     SANITY_CHECK(self);
@@ -370,7 +366,7 @@ static void ReloadUsenet(Tickertape self)
 
 
 /* Initializes the User Interface */
-static void InitializeUserInterface(Tickertape self)
+static void InitializeUserInterface(tickertape_t self)
 {
     self -> controlPanel = ControlPanel_alloc(
 	self -> top, self -> user, self -> history,
@@ -392,7 +388,7 @@ static void InitializeUserInterface(Tickertape self)
 
 
 /* This is called when we get our elvin connection back */
-static void Reconnect(Tickertape self, ElvinConnection connection)
+static void Reconnect(tickertape_t self, ElvinConnection connection)
 {
     StringBuffer buffer;
     Message message;
@@ -420,7 +416,7 @@ static void Reconnect(Tickertape self, ElvinConnection connection)
 }
 
 /* This is called when we lose our elvin connection */
-static void Disconnect(Tickertape self, ElvinConnection connection)
+static void Disconnect(tickertape_t self, ElvinConnection connection)
 {
     StringBuffer buffer;
     Message message;
@@ -475,7 +471,7 @@ static void Disconnect(Tickertape self, ElvinConnection connection)
  */
 
 /* Callback for when we match the Orbit notification */
-static void OrbitCallback(Tickertape self, en_notify_t notification)
+static void OrbitCallback(tickertape_t self, en_notify_t notification)
 {
     en_type_t type;
     char *id;
@@ -542,7 +538,7 @@ static void OrbitCallback(Tickertape self, en_notify_t notification)
 
 
 /* Subscribes to the Orbit meta-subscription */
-static void SubscribeToOrbit(Tickertape self)
+static void SubscribeToOrbit(tickertape_t self)
 {
     StringBuffer buffer;
     SANITY_CHECK(self);
@@ -570,16 +566,16 @@ static void SubscribeToOrbit(Tickertape self)
  *
  */
 
-/* Answers a new Tickertape for the given user using the given file as
+/* Answers a new tickertape_t for the given user using the given file as
  * her groups file and connecting to the notification service
  * specified by host and port */
-Tickertape Tickertape_alloc(
+tickertape_t tickertape_alloc(
     char *user, char *tickerDir,
     char *groupsFile, char *usenetFile,
     char *host, int port,
     Widget top)
 {
-    Tickertape self = (Tickertape) malloc(sizeof(struct Tickertape_t));
+    tickertape_t self = (tickertape_t) malloc(sizeof(struct tickertape));
 #ifdef SANITY
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
@@ -626,8 +622,8 @@ Tickertape Tickertape_alloc(
     return self;
 }
 
-/* Free the resources consumed by a Tickertape */
-void Tickertape_free(Tickertape self)
+/* Free the resources consumed by a tickertape */
+void tickertape_free(tickertape_t self)
 {
     SANITY_CHECK(self);
 
@@ -674,11 +670,11 @@ void Tickertape_free(Tickertape self)
 }
 
 /* Debugging */
-void Tickertape_debug(Tickertape self)
+void tickertape_debug(tickertape_t self)
 {
     SANITY_CHECK(self);
 
-    printf("Tickertape\n");
+    printf("tickertape_t\n");
     printf("  user = \"%s\"\n", self -> user);
     printf("  tickerDir = \"%s\"\n", (self -> tickerDir == NULL) ? "null" : self -> tickerDir);
     printf("  groupsFile = \"%s\"\n", (self -> groupsFile == NULL) ? "null" : self -> groupsFile);
@@ -695,7 +691,7 @@ void Tickertape_debug(Tickertape self)
 
 
 /* Handle the notify action */
-void Tickertape_handleNotify(Tickertape self, Widget widget)
+void tickertape_handleNotify(tickertape_t self, Widget widget)
 {
     /* Pass this on to the control panel */
     ControlPanel_handleNotify(self -> controlPanel, widget);
@@ -703,7 +699,7 @@ void Tickertape_handleNotify(Tickertape self, Widget widget)
 
 
 /* Handle the quit action */
-void Tickertape_handleQuit(Tickertape self, Widget widget)
+void tickertape_handleQuit(tickertape_t self, Widget widget)
 {
     /* If we get the quit action from the top-level widget or the tickertape then quit */
     if ((widget == self -> top) || (widget == (Widget) self -> scroller))
@@ -717,7 +713,7 @@ void Tickertape_handleQuit(Tickertape self, Widget widget)
 }
 
 /* Answers the receiver's tickerDir filename */
-char *Tickertape_tickerDir(Tickertape self)
+char *tickertape_tickerDir(tickertape_t self)
 {
     /* See if we've already looked it up */
     if (self -> tickerDir != NULL)
@@ -745,7 +741,7 @@ char *Tickertape_tickerDir(Tickertape self)
 
     /* Make sure the TICKERDIR exists 
      * Note: we're being clever here and assuming that nothing will
-     * call Tickertape_tickerDir() if both groupsFile and usenetFile
+     * call tickertape_tickerDir() if both groupsFile and usenetFile
      * are set */
     if (mkdirhier(self -> tickerDir) < 0)
     {
@@ -756,11 +752,11 @@ char *Tickertape_tickerDir(Tickertape self)
 }
 
 /* Answers the receiver's groups file filename */
-char *Tickertape_groupsFilename(Tickertape self)
+char *tickertape_groupsFilename(tickertape_t self)
 {
     if (self -> groupsFile == NULL)
     {
-	char *dir = Tickertape_tickerDir(self);
+	char *dir = tickertape_tickerDir(self);
 	self -> groupsFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
 	strcpy(self -> groupsFile, dir);
 	strcat(self -> groupsFile, "/");
@@ -771,11 +767,11 @@ char *Tickertape_groupsFilename(Tickertape self)
 }
 
 /* Answers the receiver's usenet filename */
-char *Tickertape_usenetFilename(Tickertape self)
+char *tickertape_usenetFilename(tickertape_t self)
 {
     if (self -> usenetFile == NULL)
     {
-	char *dir = Tickertape_tickerDir(self);
+	char *dir = tickertape_tickerDir(self);
 	self -> usenetFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
 	strcpy(self -> usenetFile, dir);
 	strcat(self -> usenetFile, "/");
@@ -787,9 +783,9 @@ char *Tickertape_usenetFilename(Tickertape self)
 
 
 /* Answers the receiver's groups file */
-FILE *Tickertape_groupsFile(Tickertape self)
+FILE *tickertape_groupsFile(tickertape_t self)
 {
-    char *filename = Tickertape_groupsFilename(self);
+    char *filename = tickertape_groupsFilename(self);
     FILE *file;
     int result;
 
@@ -826,9 +822,9 @@ FILE *Tickertape_groupsFile(Tickertape self)
 }
 
 /* Answers the receiver's usenet file */
-FILE *Tickertape_usenetFile(Tickertape self)
+FILE *tickertape_usenetFile(tickertape_t self)
 {
-    char *filename = Tickertape_usenetFilename(self);
+    char *filename = tickertape_usenetFilename(self);
     FILE *file;
     int result;
 
