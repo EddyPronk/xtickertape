@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.4 2000/05/31 05:46:25 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.5 2001/07/13 08:49:52 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -65,6 +65,10 @@ void *control_panel_add_subscription(
 
 /* Removes a subscription from the receiver */
 void control_panel_remove_subscription(control_panel_t self, void *rock);
+
+/* Adds a message to the control panel's history */
+void control_panel_add_message(control_panel_t self, message_t message);
+
 
 /* Changes the location of the subscription in the control panel's menu */
 void control_panel_set_index(control_panel_t self, void *rock, int index);

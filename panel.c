@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.48 2001/07/06 04:11:47 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.49 2001/07/13 08:49:52 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1640,6 +1640,12 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
     /* Clean up */
     free(tuple -> title);
     free(tuple);
+}
+
+/* Adds a message to the control panel's history */
+void control_panel_add_message(control_panel_t self, message_t message)
+{
+    HistoryAddMessage(self -> history, message);
 }
 
 /* Changes the location of the subscription within the control panel */
