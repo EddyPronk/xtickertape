@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.6 2003/01/17 16:07:50 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.7 2003/01/22 13:29:48 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -40,12 +40,12 @@ static const char cvsid[] = "$Id: utf8.c,v 1.6 2003/01/17 16:07:50 phelps Exp $"
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-/* #ifdef HAVE_ICONV_H */
+#ifdef HAVE_ICONV_H
 #include <iconv.h>
-/* #endif */
-/* #ifdef HAVE_ERRNO_H */
+#endif
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
-/* #endif */
+#endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "globals.h"
@@ -70,19 +70,123 @@ static Atom encoding = None;
 #define MAX_CHAR_SIZE 2
 
 
-/* The code set name we'd expect for ISO10646-1 fonts */
-#define ISO10646 "ISO10646-1"
+/* The format of a guesses table entry */
+struct guess
+{
+    /* The name of the font's registry-encoding */
+    char *code;
 
-/* The code set name that works for ISO10646-1 fonts */
-#define UCS2BE "UCS-2BE"
+    /* The guess strings/formats */
+    char *guesses[8];
+};
 
+
+/* The guesses table */
+struct guess guesses[] =
+{
+    { "UTF-8", { "utf8", NULL } },
+    { "ISO10646-1", { "UCS-2BE", "ucs2", NULL } },
+    { "ISO8859-1", { "ISO-8859-1", "iso8859_1", NULL } },
+    { "ISO8859-2", { "ISO-8859-2", "iso8859_2", NULL } },
+    { "ISO8859-3", { "ISO-8859-3", "iso8859_3", NULL } },
+    { "ISO8859-4", { "ISO-8859-4", "iso8859_4", NULL } },
+    { "ISO8859-5", { "ISO-8859-5", "iso8859_5", NULL } },
+    { "ISO8859-6", { "ISO-8859-6", "iso8859_6", NULL } },
+    { "ISO8859-7", { "ISO-8859-7", "iso8859_7", NULL } },
+    { "ISO8859-8", { "ISO-8859-8", "iso8859_8", NULL } },
+    { "ISO8859-9", { "ISO-8859-9", "iso8859_9", NULL } },
+    { "ISO8859-10", { "ISO-8859-10", "iso8859_10", NULL } },
+    { "ISO8859-11", { "ISO-8859-11", "iso8859_11", NULL } },
+    { "ISO8859-12", { "ISO-8859-12", "iso8859_12", NULL } },
+    { "ISO8859-13", { "ISO-8859-13", "iso8859_13", NULL } },
+    { "ISO8859-14", { "ISO-8859-14", "iso8859_14", NULL } },
+    { "ISO8859-15", { "ISO-8859-15", "iso8859_15", NULL } },
+    { "ISO8859-16", { "ISO-8859-16", "iso8859_16", NULL } },
+    { NULL, { NULL } },
+};
+
+
+/* Make sure an iconv_t type is defined */
+/* FIX THIS: this should be based on iconv_t */
+#ifndef HAVE_ICONV_H
+typedef void * iconv_t;
+#endif
 
 /* The empty character */
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
+#ifdef HAVE_ICONV_OPEN
+/* Locates the guess with the given name in the guesses table */
+static struct guess *find_guess(const char *code)
+{
+    struct guess *guess = guesses;
 
-/* Guess the name of a font's code set */
-static char *guess_font_code_set(Display *display, XFontStruct *font)
+    /* Go through the guesses */
+    for (guess = guesses; guess -> code != NULL; guess++)
+    {
+	if (strcmp(guess -> code, code) == 0)
+	{
+	    return guess;
+	}
+    }
+
+    return NULL;
+}
+
+/* Uses the from and to code set names to open a conversion
+ * descriptor.  Since different implementations of iconv() may use
+ * different strings to represent a given code set, we try a bunch of
+ * them until one works. */
+static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
+{
+    struct guess *to_guess;
+    struct guess *from_guess;
+    const char *to_string;
+    const char *from_string;
+    iconv_t cd;
+    int i, j;
+
+    /* Look up the guesses */
+    to_guess = find_guess(tocode);
+    from_guess = find_guess(fromcode);
+
+    i = 0;
+    to_string = tocode;
+    while (to_string != NULL)
+    {
+	j = 0;
+	from_string = fromcode;
+	while (from_string != NULL)
+	{
+	    /* Try this combination */
+	    fflush(stderr);
+	    if ((cd = iconv_open(to_string, from_string)) != (iconv_t)-1)
+	    {
+		return cd;
+	    }
+
+	    /* Get the next fromstring */
+	    from_string = from_guess ? from_guess -> guesses[j++] : NULL;
+	}
+
+	/* Get the next tostring */
+	to_string = to_guess ? to_guess -> guesses[i++] : NULL;
+    }
+
+    /* Give up */
+    return (iconv_t)-1;
+}
+#else
+static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
+{
+    return (iconv_t)-1;
+}
+#endif
+
+/* Allocates memory for and returns a string containing the font's
+ * registry and encoding separated by a dash, or NULL if it can't be
+ * determined */
+static char *alloc_font_code_set(Display *display, XFontStruct *font)
 {
     Atom atoms[2];
     char *names[2];
@@ -134,12 +238,6 @@ static char *guess_font_code_set(Display *display, XFontStruct *font)
     /* Clean up a bit */
     XFree(names[0]);
     XFree(names[1]);
-
-    /* HACK: Replace ISO10646-1 with UCS-2BE */
-    if (strcmp(string, ISO10646) == 0)
-    {
-	strcpy(string, UCS2BE);
-    }
 
     return string;
 }
@@ -274,6 +372,7 @@ utf8_renderer_t utf8_renderer_alloc(
     self -> is_skipping = 0;
     self -> dimension = 1;
 
+#ifdef HAVE_ICONV_OPEN
     /* Is there a font property for underline thickness? */
     if (! XGetFontProperty(font, XA_UNDERLINE_THICKNESS, &value))
     {
@@ -302,7 +401,7 @@ utf8_renderer_t utf8_renderer_alloc(
     if (tocode != NULL)
     {
 	/* Yes.  Use it to create a conversion descriptor */
-	if ((cd = iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
+	if ((cd = do_iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
 	{
 	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
 		    tocode, UTF8_CODE, strerror(errno));
@@ -322,14 +421,14 @@ utf8_renderer_t utf8_renderer_alloc(
     }
 
 
-    /* Guess the font's code set */
-    if ((string = guess_font_code_set(display, font)) == NULL)
+    /* Look up the font's code set */
+    if ((string = alloc_font_code_set(display, font)) == NULL)
     {
 	return self;
     }
 
     /* Open a conversion descriptor */
-    if ((cd = iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
+    if ((cd = do_iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
     {
 	self -> dimension = 1;
 	free(string);
@@ -349,6 +448,8 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Successful guess! */
     self -> cd = cd;
     self -> dimension = dimension;
+#endif /* HAVE_ICONV_OPEN */
+
     return self;
 }
 
@@ -470,7 +571,6 @@ static size_t utf8_renderer_iconv(
 
 		default:
 		{			    
-		    perror("iconv() failed");
 		    return (size_t)-1;
 		}
 	    }
@@ -786,7 +886,7 @@ utf8_encoder_t utf8_encoder_alloc(
     /* If a code set was provided then use it */
     if (code_set != NULL)
     {
-	if ((self -> cd = iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
+	if ((self -> cd = do_iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
 	{
 	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
 		    UTF8_CODE, code_set, strerror(errno));
@@ -813,14 +913,14 @@ utf8_encoder_t utf8_encoder_alloc(
 	    return self;
 	}
 
-	/* Guess it's code set name */
-	if ((string = guess_font_code_set(display, font)) == NULL)
+	/* Look up the font's code set */
+	if ((string = alloc_font_code_set(display, font)) == NULL)
 	{
 	    continue;
 	}
 
 	/* Open a conversion descriptor */
-	if ((self -> cd = iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
+	if ((self -> cd = do_iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
 	{
 	    perror("iconv_open() failed");
 	}
@@ -845,7 +945,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
     in_length = strlen(input) + 1;
 
     /* Special case for empty strings */
-    if (in_length == 0)
+    if (in_length == 1)
     {
 	return strdup("");
     }
@@ -919,7 +1019,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 	    }
 	    else
 	    {
-		perror("iconv() failed");
+		perror("iconv1() failed");
 		return strdup("");
 	    }
 	}
