@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.79 2000/04/22 03:24:52 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.80 2000/04/28 03:38:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -97,13 +97,14 @@ static void usage(int argc, char *argv[])
 {
     fprintf(stderr,
 	"usage: %s [OPTION]...\n"
-	"  -e elvin-url, --elvin=elvin-url\n"
-	"  -S scope,     --scope=scope\n"
-	"  -u username,  --user=username\n"
-	"  -G filename,  --groups=filename\n"
-	"  -U filename,  --usenet=filename\n"
-	"  -v,           --version\n"
-	"  -h,           --help\n" ,
+	"  -e elvin-url,   --elvin=elvin-url\n"
+	"  -S scope,       --scope=scope\n"
+	"  -u user,        --user=user\n"
+	"  -D domain,      --domain=domain\n"
+	"  -G groups-file, --groups=groups-file\n"
+	"  -U usenet-file, --usenet=usenet-file\n"
+	"  -v,             --version\n"
+	"  -h,             --help\n" ,
 	argv[0]);
 }
 
