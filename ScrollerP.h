@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.41 2001/07/04 08:41:57 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.42 2001/07/04 08:50:14 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -182,44 +182,6 @@ typedef struct _ScrollerRec
 
 
 /* Semi-private methods */
-
-/* Answers the GC for the background */
-GC ScGCForBackground(ScrollerWidget self);
-
-/* Answers a GC to be used for displaying the group */
-GC ScGCForGroup(ScrollerWidget self, int level, XRectangle *bbox);
-
-/* Answers a GC to be used for displaying the user */
-GC ScGCForUser(ScrollerWidget self, int level, XRectangle *bbox);
-
-/* Answers a GC to be used for displaying the string */
-GC ScGCForString(ScrollerWidget self, int level, XRectangle *bbox);
-
-/* Answers a GC to be used for displaying the separators */
-GC ScGCForSeparator(ScrollerWidget self, int level, XRectangle *bbox);
-
-/* Answers the font to use for displaying the group */
-XFontStruct *ScFontForGroup(ScrollerWidget self);
-
-/* Answers the font to use for displaying the user */
-XFontStruct *ScFontForUser(ScrollerWidget self);
-
-/* Answers the font to use for displaying the string */
-XFontStruct *ScFontForString(ScrollerWidget self);
-
-/* Answers the font to use for displaying the separators */
-XFontStruct *ScFontForSeparator(ScrollerWidget self);
-
-
-/* Answers the number of fade levels messages should go through */
-Dimension ScGetFadeLevels(ScrollerWidget self);
-
-/* Sets a timer to go off in interval milliseconds */
-XtIntervalId ScStartTimer(ScrollerWidget self, unsigned long interval,
-			  XtTimerCallbackProc proc, XtPointer client_data);
-
-/* Stops a timer from going off */
-void ScStopTimer(ScrollerWidget self, XtIntervalId timer);
 
 /* Repaints the given glyph (if visible) */
 void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);

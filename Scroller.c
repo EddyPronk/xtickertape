@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.120 2001/07/04 08:41:57 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.121 2001/07/04 08:50:13 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -776,11 +776,11 @@ static void enable_clock(ScrollerWidget self)
 /* Temporarily disables the timer */
 static void disable_clock(ScrollerWidget self)
 {
-    if (self -> scroller.timer != 0)
+    if (self -> scroller.timer != None)
     {
 	DPRINTF((stderr, "clock disabled\n"));
-	ScStopTimer(self, self -> scroller.timer);
-	self -> scroller.timer = 0;
+	XtRemoveTimeOut(self -> scroller.timer);
+	self -> scroller.timer = None;
     }
 }
 
@@ -788,10 +788,12 @@ static void disable_clock(ScrollerWidget self)
 /* Sets the timer if the clock isn't stopped */
 static void set_clock(ScrollerWidget self)
 {
-    if (self -> scroller.timer == 0)
+    if (self -> scroller.timer == None)
     {
-	self -> scroller.timer = ScStartTimer(
-	    self, 1000L / self -> scroller.frequency, tick, (XtPointer) self);
+	self -> scroller.timer = XtAppAddTimeOut(
+	    XtWidgetToApplicationContext((Widget)self),
+	    1000L / self -> scroller.frequency,
+	    tick, (XtPointer)self);
     }
 }
 
@@ -838,122 +840,6 @@ static int gap_width(ScrollerWidget self, int last_width)
 /*
  * Semi-private methods
  */
-
-/* Answers the GC for the background */
-GC ScGCForBackground(ScrollerWidget self)
-{
-    return self -> scroller.backgroundGC;
-}
-
-/* Sets up a GC with the given foreground color and clip region */
-static GC SetUpGC(ScrollerWidget self, Pixel foreground, XRectangle *bbox)
-{
-    XGCValues values;
-    XRectangle clip;
-
-    /* Try to reuse the clip mask if at all possible */
-    if (self -> scroller.clip_width == bbox -> width)
-    {
-	values.foreground = foreground;
-	values.clip_x_origin = bbox -> x;
-	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground | GCClipXOrigin, &values);
-    }
-    else
-    {
-	clip.x = 0;
-	clip.y = 0;
-	clip.width = bbox -> width;
-	clip.height = bbox -> height;
-
-	/* Set up the clip mask */
-	XSetClipRectangles(XtDisplay(self),
-			   self -> scroller.gc,
-			   bbox -> x, bbox -> y,
-			   &clip, 1, Unsorted);
-	self -> scroller.clip_width = bbox -> width;
-
-	/* Set up the foreground color */
-	values.foreground = foreground;
-	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
-    }
-
-    return self -> scroller.gc;
-}
-
-/* Answers a GC for displaying the Group field of a message at the given fade level */
-GC ScGCForGroup(ScrollerWidget self, int level, XRectangle *bbox)
-{
-    return SetUpGC(self, self -> scroller.group_pixels[level], bbox);
-}
-
-/* Answers a GC for displaying the User field of a message at the given fade level */
-GC ScGCForUser(ScrollerWidget self, int level, XRectangle *bbox)
-{
-    return SetUpGC(self, self -> scroller.user_pixels[level], bbox);
-}
-
-/* Answers a GC for displaying the String field of a message at the given fade level */
-GC ScGCForString(ScrollerWidget self, int level, XRectangle *bbox)
-{
-    return SetUpGC(self, self -> scroller.string_pixels[level], bbox);
-}
-
-/* Answers a GC for displaying the field separators at the given fade level */
-GC ScGCForSeparator(ScrollerWidget self, int level, XRectangle *bbox)
-{
-    return SetUpGC(self, self -> scroller.separator_pixels[level], bbox);
-}
-
-/* Answers the XFontStruct to be use for displaying the group */
-XFontStruct *ScFontForGroup(ScrollerWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> scroller.font;
-}
-
-/* Answers the XFontStruct to be use for displaying the user */
-XFontStruct *ScFontForUser(ScrollerWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> scroller.font;
-}
-
-
-/* Answers the XFontStruct to be use for displaying the string */
-XFontStruct *ScFontForString(ScrollerWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> scroller.font;
-}
-
-/* Answers the XFontStruct to be use for displaying the user */
-XFontStruct *ScFontForSeparator(ScrollerWidget self)
-{
-    /* FIX THIS: should allow user to specify different fonts for each part*/
-    return self -> scroller.font;
-}
-
-
-/* Answers the number of fade levels */
-Dimension ScGetFadeLevels(ScrollerWidget self)
-{
-    return self -> scroller.fade_levels;
-}
-
-/* Sets a timer to go off in interval milliseconds */
-XtIntervalId ScStartTimer(ScrollerWidget self, unsigned long interval,
-			  XtTimerCallbackProc proc, XtPointer client_data)
-{
-    return XtAppAddTimeOut(
-	XtWidgetToApplicationContext((Widget)self),
-	interval, proc, client_data);
-}
-
-/* Stops a timer from going off */
-void ScStopTimer(ScrollerWidget self, XtIntervalId timer)
-{
-     XtRemoveTimeOut(timer);
-}
 
 /* Repaints the given glyph (if visible) */
 void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
