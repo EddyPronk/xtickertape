@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.5 2000/11/05 08:40:56 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.6 2000/11/06 07:56:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -600,20 +600,27 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 {
     char *name;
 
-    /* Look up the symbol's name */
+    /* Bail if the atom isn't a symbol */
     if ((name = symbol_name(symbol, error)) == NULL)
     {
 	return 0;
     }
 
-    /* Use that to extract its value from the map */
-    if ((*result = (atom_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) == NULL)
+    /* Keep checking until we run out of parent environments */
+    while (env != NULL)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"env_get");
-	return 0;
+	/* Look up the value in the environment */
+	if ((*result = (atom_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
+	{
+	    /* Found it! */
+	    return 1;
+	}
+
+	env = env -> parent;
     }
 
-    return 1;
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"env_get");
+    return 0;
 }
 
 /* Sets a symbol's value in the environment */
