@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.4 1998/08/26 06:00:40 phelps Exp $ */
+/* $Id: Control.h,v 1.5 1998/10/16 01:57:25 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -15,7 +15,7 @@ typedef struct ControlPanel_t *ControlPanel;
 
 /* Constructs the Tickertape Control Panel */
 ControlPanel ControlPanel_alloc(
-    Widget parent, List subscriptions,
+    Widget parent, char *user, List subscriptions,
     ControlPanelCallback callback, void *context);
 
 /* Releases the resources used by the receiver */

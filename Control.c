@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.13 1998/10/15 09:24:53 phelps Exp $ */
+/* $Id: Control.c,v 1.14 1998/10/16 01:57:23 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +38,6 @@ char *timeouts[] =
 
 
 /* Prototypes for static functions */
-static char *GetUsername();
 static void SetLabel(Widget widget, char *label);
 static char *GetLabel(Widget widget);
 static void SetString(Widget widget, char *string);
@@ -86,14 +85,6 @@ struct ControlPanel_t
     char **timeouts;
     char *username;
 };
-
-
-/* Determines the user's login name */
-static char *GetUsername()
-{
-    struct passwd *password = getpwuid(getuid());
-    return password -> pw_name;
-}
 
 
 /* Sets the value of a Widget's "label" resource */
@@ -553,7 +544,7 @@ static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
 
 /* Constructs the Tickertape Control Panel */
 ControlPanel ControlPanel_alloc(
-    Widget parent, List subscriptions,
+    Widget parent, char *user, List subscriptions,
     ControlPanelCallback callback, void *context)
 {
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
@@ -565,7 +556,7 @@ ControlPanel ControlPanel_alloc(
     self -> subscriptions = subscriptions;
     self -> callback = callback;
     self -> context = context;
-    self -> username = GetUsername();
+    self -> username = strdup(user);
     self -> top = XtVaCreatePopupShell(
 	"controlPanel", transientShellWidgetClass, parent,
 	XtNtitle, "Tickertape Control Panel",
