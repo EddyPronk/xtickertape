@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.8 2000/01/10 01:26:25 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.9 2000/06/13 04:23:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,10 +40,11 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.8 2000/01/10 01:26:25 phel
 
 #define INITIAL_TOKEN_SIZE 64
 
-#define MENU_ERROR_MSG "expecting \"menu\" or \"no menu\", got \"%s\""
-#define NAZI_ERROR_MSG "expecting \"auto\" or \"manual\", got \"%s\""
-#define TIMEOUT_ERROR_MSG "illegal timeout value \"%s\""
-#define EXTRA_ERROR_MSG "superfluous characters: \"%s\""
+#define MENU_ERROR_MSG "expecting `menu' or `no menu', got `%s'"
+#define NAZI_ERROR_MSG "expecting `auto' or `manual', got `%s'"
+#define TIMEOUT_ERROR_MSG "illegal timeout value `%s'"
+#define PRODUCER_KEYS_MSG "illegal producer key: `%s'"
+#define EXTRA_ERROR_MSG "superfluous characters: `%s'"
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -102,6 +103,12 @@ static int lex_nazi(groups_parser_t self, int ch);
 static int lex_min_time(groups_parser_t self, int ch);
 static int lex_max_time(groups_parser_t self, int ch);
 static int lex_bad_time(groups_parser_t self, int ch);
+static int lex_producer_keys_ws(groups_parser_t self, int ch);
+static int lex_producer_keys(groups_parser_t self, int ch);
+static int lex_producer_keys_esc(groups_parser_t self, int ch);
+static int lex_consumer_keys_ws(groups_parser_t self, int ch);
+static int lex_consumer_keys(groups_parser_t self, int ch);
+static int lex_consumer_keys_esc(groups_parser_t self, int ch);
 static int lex_superfluous(groups_parser_t self, int ch);
 
 
@@ -496,12 +503,12 @@ static int lex_max_time(groups_parser_t self, int ch)
 	return append_char(self, ch);
     }
 
-    /* If we get a ':' then indicate that there's extra stuff on the line */
+    /* If we get a `:' then look for producer (raw) keys */
     if (ch == ':')
     {
 	self -> token_pointer = self -> token;
-	self -> state = lex_superfluous;
-	return append_char(self, ch);
+	self -> state = lex_producer_keys_ws;
+	return 0;
     }
 
     /* Otherwise we go to the error state for a bit */
@@ -540,6 +547,242 @@ static int lex_bad_time(groups_parser_t self, int ch)
     return append_char(self, ch);
 }
 
+
+/* Skipping whitespace in a producer key */
+static int lex_producer_keys_ws(groups_parser_t self, int ch)
+{
+    /* Watch for the end of the line */
+    if (ch == EOF || ch == '\n')
+    {
+	return lex_start(self, ch);
+    }
+
+    /* Throw away whitespace */
+    if (isspace(ch))
+    {
+	self -> state = lex_producer_keys_ws;
+	return 0;
+    }
+
+    /* Watch for a `:' */
+    if (ch == ':')
+    {
+	self -> token_pointer = self -> token;
+	self -> state = lex_consumer_keys_ws;
+	return 0;
+    }
+
+    /* Send anything else through the producer keys state */
+    return lex_producer_keys(self, ch);
+}
+
+
+/* Reading the producer (raw) keys */
+static int lex_producer_keys(groups_parser_t self, int ch)
+{
+    /* Watch for EOF or linefeed */
+    if (ch == EOF || ch == '\n')
+    {
+	/* Null-terminate the key string */
+	if (append_char(self, 0) < 0)
+	{
+	    return -1;
+	}
+
+	printf("raw key: `%s'\n", self -> token);
+
+	/* Send the character back through the start state */
+	return lex_start(self, ch);
+    }
+
+    /* Watch for `:' */
+    if (ch == ':')
+    {
+	/* Null-terminate the key string */
+	if (append_char(self, 0) < 0)
+	{
+	    return -1;
+	}
+
+	printf("raw key: `%s'\n", self -> token);
+
+	/* Prepare to read consumer keys */
+	self -> token_pointer = self -> token;
+	self -> state = lex_consumer_keys;
+	return 0;
+    }
+
+    /* Watch for `,' */
+    if (ch == ',')
+    {
+	/* Null-terminate the key string */
+	if (append_char(self, 0) < 0)
+	{
+	    return -1;
+	}
+
+	printf("raw key: `%s'\n", self -> token);
+	self -> token_pointer = self -> token;
+	self -> state = lex_producer_keys_ws;
+	return 0;
+    }
+
+    /* Watch for an esc-char */
+    if (ch == '\\')
+    {
+	self -> state = lex_producer_keys_esc;
+	return 0;
+    }
+
+    /* Anything else is part of the key */
+    if (append_char(self, ch) < 0)
+    {
+	return -1;
+    }
+
+    self -> state = lex_producer_keys;
+    return 0;
+}
+
+/* Reading the character after a `\' in a key */
+static int lex_producer_keys_esc(groups_parser_t self, int ch)
+{
+    /* We can't escape an EOF */
+    if (ch == EOF)
+    {
+	/* Pretend we never saw the backslash */
+	return lex_producer_keys(self, ch);
+    }
+
+    /* Watch for an end-of-line */
+    if (ch == '\n')
+    {
+	self -> state = lex_producer_keys_ws;
+	return 0;
+    }
+
+    /* Anything else is the character itself? */
+    if (append_char(self, ch) < 0)
+    {
+	return -1;
+    }
+
+    self -> state = lex_producer_keys;
+    return 0;
+}
+
+
+/* Skipping whitespace in a consumer key */
+static int lex_consumer_keys_ws(groups_parser_t self, int ch)
+{
+    /* Watch for the end of the line */
+    if (ch == EOF || ch == '\n')
+    {
+	return lex_start(self, ch);
+    }
+
+    /* Throw away whitespace */
+    if (isspace(ch))
+    {
+	self -> state = lex_consumer_keys_ws;
+	return 0;
+    }
+
+    /* Watch for yet another `:' */
+    if (ch == ':')
+    {
+	self -> token_pointer = self -> token;
+	return lex_superfluous(self, ch);
+    }
+
+    /* Send anything else through the consumer keys state */
+    return lex_consumer_keys(self, ch);
+}
+
+/* Reading the consumer (prime) keys */
+static int lex_consumer_keys(groups_parser_t self, int ch)
+{
+    /* Watch for EOF or linefeed */
+    if (ch == EOF || ch == '\n')
+    {
+	/* Null-terminate the key string */
+	if (append_char(self, 0) < 0)
+	{
+	    return -1;
+	}
+
+	/* Go on to the next subscription */
+	printf("prime key: `%s'\n", self -> token);
+	return lex_start(self, ch);
+    }
+
+    /* Watch for a bogus `:' */
+    if (ch == ':')
+    {
+	self -> token_pointer = self -> token;
+	return lex_superfluous(self, ch);
+    }
+
+    /* Watch for `,' */
+    if (ch == ',')
+    {
+	/* Null-terminate the key string */
+	if (append_char(self, 0) < 0)
+	{
+	    return -1;
+	}
+
+	printf("prime key: `%s'\n", self -> token);
+	self -> token_pointer = self -> token;
+	self -> state = lex_consumer_keys_ws;
+	return 0;
+    }
+
+    /* Watch for escapes */
+    if (ch == '\\')
+    {
+	self -> state = lex_consumer_keys_esc;
+	return 0;
+    }
+
+    /* Anything else is part of the key */
+    if (append_char(self, ch) < 0)
+    {
+	return -1;
+    }
+
+    self -> state = lex_consumer_keys;
+    return 0;
+}
+
+/* Reading an escaped character in a consumer key */
+static int lex_consumer_keys_esc(groups_parser_t self, int ch)
+{
+    /* We can't escape an EOF */
+    if (ch == EOF)
+    {
+	/* Pretend we never saw the backslash */
+	return lex_consumer_keys(self, ch);
+    }
+
+    /* Watch for an end-of-line */
+    if (ch == '\n')
+    {
+	self -> state = lex_consumer_keys_ws;
+	return 0;
+    }
+
+    /* Anything else is the character itself? */
+    if (append_char(self, ch) < 0)
+    {
+	return -1;
+    }
+
+    self -> state = lex_consumer_keys;
+    return 0;
+}
+
+
 /* Reading extraneous stuff at the end of the line */
 static int lex_superfluous(groups_parser_t self, int ch)
 {
@@ -567,6 +810,7 @@ static int lex_superfluous(groups_parser_t self, int ch)
     }
 
     /* Append additional characters to the token for context */
+    self -> state = lex_superfluous;
     return append_char(self, ch);
 }
 
