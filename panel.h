@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.11 2003/01/27 15:20:01 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.12 2003/01/27 15:54:52 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -47,7 +47,10 @@ typedef struct control_panel *control_panel_t;
 typedef void (*control_panel_callback_t)(void *context, message_t message);
 
 /* Allocates and initializes a new control_panel_t */
-control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent);
+control_panel_t control_panel_alloc(
+    tickertape_t tickertape,
+    Widget parent,
+    unsigned int send_history_count);
 
 /* Releases the resources used by the receiver */
 void control_panel_free(control_panel_t self);

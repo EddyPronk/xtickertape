@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.17 2003/01/27 15:21:42 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.18 2003/01/27 15:54:52 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -51,6 +51,9 @@ typedef struct
 
     /* The path to the metamail executable */
     char *metamail_path;
+
+    /* The number of messages to record in the send history */
+    int send_history_count;
 } XTickertapeRec;
 
 /* Answers a new Tickertape for the given user using the given file as

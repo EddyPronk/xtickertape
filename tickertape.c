@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.104 2003/01/27 15:21:42 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.105 2003/01/27 15:54:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -894,7 +894,9 @@ static void init_ui(tickertape_t self)
     int index;
 
     /* Allocate the control panel */
-    if ((self -> control_panel = control_panel_alloc(self, self -> top)) == NULL)
+    if ((self -> control_panel = control_panel_alloc(
+	     self, self -> top,
+	     self -> resources -> send_history_count)) == NULL)
     {
 	return;
     }

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.76 2003/01/27 15:20:01 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.77 2003/01/27 15:54:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -78,8 +78,6 @@ static const char cvsid[] = "$Id: panel.c,v 1.76 2003/01/27 15:20:01 phelps Exp 
     "%s\n"
 
 #define TO_CODE "UTF-8"
-
-#define SEND_HISTORY_COUNT 10
 
 /*
  *
@@ -281,7 +279,10 @@ struct control_panel
     int is_connected;
 
     /* The last few messages sent by the user */
-    message_t send_history[SEND_HISTORY_COUNT];
+    message_t *send_history;
+
+    /* The capacity of the send history */
+    int send_history_count;
 
     /* The index of the current item in the send history */
     int send_history_point;
@@ -1669,7 +1670,8 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 
 	/* Record it in the send history */
 	self -> send_history[self -> send_history_next] = message;
-	self -> send_history_next = (self -> send_history_next + 1) % SEND_HISTORY_COUNT;
+	self -> send_history_next = (self -> send_history_next + 1) %
+	    self -> send_history_count;
 	self -> send_history_point = self -> send_history_next;
 
 	/* And send it too */
@@ -1762,14 +1764,25 @@ static void action_dismiss(Widget button, control_panel_t self, XtPointer ignore
  *
  */
 
-/* Constructs the Tickertape Control Panel */
-control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
+/* Allocates and initializes a new control_panel_t */
+control_panel_t control_panel_alloc(
+    tickertape_t tickertape,
+    Widget parent,
+    unsigned int send_history_count)
 {
     control_panel_t self = (control_panel_t)malloc(sizeof(struct control_panel));
 
     /* Set the receiver's contents to something sane */
     memset(self, 0, sizeof(struct control_panel));
     self -> tickertape = tickertape;
+
+    /* Allocate the send history buffer */
+    self -> send_history_count = MAX(1, send_history_count + 1);
+    if ((self -> send_history = (message_t *)calloc(send_history_count, sizeof(message_t))) == NULL)
+    {
+	perror("calloc() failed");
+	exit(1);
+    }
 
     /* Initialize the UI */
     init_ui(self, parent);
@@ -2284,7 +2297,8 @@ void control_panel_history_prev(control_panel_t self)
     int new_point;
 
     /* See if there is a previous message to visit */
-    new_point = (SEND_HISTORY_COUNT + self -> send_history_point - 1) % SEND_HISTORY_COUNT;
+    new_point = (self -> send_history_count + self -> send_history_point - 1) %
+	self -> send_history_count;
     if (new_point == self -> send_history_next || self -> send_history[new_point] == NULL)
     {
 	return;
@@ -2317,6 +2331,7 @@ void control_panel_history_next(control_panel_t self)
 	return;
     }
 
-    self -> send_history_point = (self -> send_history_point + 1) % SEND_HISTORY_COUNT;
+    self -> send_history_point = (self -> send_history_point + 1) %
+	self -> send_history_count;
     deconstruct_message(self, self -> send_history[self -> send_history_point]);
 }

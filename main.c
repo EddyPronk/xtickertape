@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.115 2003/01/27 15:21:42 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.116 2003/01/27 15:54:51 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -102,7 +102,11 @@ static struct option long_options[] =
 
 
 #define XtNversionTag "versionTag"
+#define XtCVersionTag "VersionTag"
 #define XtNmetamailPath "metamailPath"
+#define XtCMetamailPath "MetamailPath"
+#define XtNsendHistoryCapacity "sendHistoryCapacity"
+#define XtCSendHistoryCapacity "SendHistoryCapacity"
 
 /* The application shell window also has resources */
 #define offset(field) XtOffsetOf(XTickertapeRec, field)
@@ -110,14 +114,20 @@ static XtResource resources[] =
 {
     /* char *version_tag */
     {
-	XtNversionTag, XtCString, XtRString, sizeof(char *),
+	XtNversionTag, XtCVersionTag, XtRString, sizeof(char *),
 	offset(version_tag), XtRString, (XtPointer)NULL
     },
 
     /* Char *metamail_path */
     {
-	XtNmetamailPath, XtCString, XtRString, sizeof(char *),
+	XtNmetamailPath, XtCMetamailPath, XtRString, sizeof(char *),
 	offset(metamail_path), XtRString, (XtPointer)NULL
+    },
+
+    /* Cardinal sendHistoryCapacity */
+    {
+	XtNsendHistoryCapacity, XtCSendHistoryCapacity, XtRInt, sizeof(int),
+	offset(send_history_count), XtRImmediate, (XtPointer)8
     }
 };
 #undef offset
