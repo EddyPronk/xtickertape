@@ -77,6 +77,17 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    /* Populate the root environment */
+    if (! vm_push_string(vm, "pi", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_push_float(vm, M_PI, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
     /* Allocate a new parser */
     if ((parser = parser_alloc(vm, parsed, NULL, error)) == NULL)
     {
