@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.13 2000/06/14 01:55:35 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.14 2000/06/14 03:09:27 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -158,7 +158,6 @@ static int accept_subscription(groups_parser_t self)
 /* Adds a producer key to the current list */
 static int accept_producer_key(groups_parser_t self, char *string)
 {
-    uchar *copy;
     elvin_key_t key;
 
     /* Make sure we have a key set */
@@ -170,25 +169,11 @@ static int accept_producer_key(groups_parser_t self, char *string)
 	}
     }
 
-#if 1
-    /* Copy the key string */
-    if ((copy = (uchar *)strdup(string)) == NULL)
-    {
-	abort();
-    }
-
-    /* Create our producer key */
-    if ((key = elvin_keyraw_alloc(copy, strlen(copy), NULL)) == NULL)
-    {
-	abort();
-    }
-#else
     /* Create our producer key */
     if ((key = elvin_keyraw_alloc((uchar *)string, strlen(string), NULL)) == NULL)
     {
 	abort();
     }
-#endif
 
     /* Add it to the keys */
     if (elvin_keys_add(self -> producer_keys, key, NULL) == 0)
