@@ -1,5 +1,8 @@
 1999-09-26  Ted Phelps  <phelps@pobox.com>
 
+	* ElvinConnection.h, ElvinConnection.c, others: naming reform hits 
+		  here.  Files are now called connect.[hc].
+
 	* INSTALL: put in the default text from automake
 
 	* README: wrote some text
