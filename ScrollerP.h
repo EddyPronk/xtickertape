@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.17 1999/07/29 05:50:54 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.18 1999/07/29 06:30:14 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -105,9 +105,6 @@ typedef struct
 
     /* The height of the scrolling text */
     int height;
-
-    /* The width of the widget before the last resize */
-    int width;
 
 
     /* The off-screen pixmap */
