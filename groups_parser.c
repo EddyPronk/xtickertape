@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.5 1999/10/05 05:29:51 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.6 1999/10/05 06:01:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -107,6 +107,8 @@ static int lex_superfluous(groups_parser_t self, int ch);
 /* Calls the callback with the given information */
 static int accept_subscription(groups_parser_t self)
 {
+    int result;
+
     /* Make sure there is a callback */
     if (self -> callback == NULL)
     {
@@ -114,10 +116,13 @@ static int accept_subscription(groups_parser_t self)
     }
 
     /* Call it with the information */
-    return (self -> callback)(
+    result = (self -> callback)(
 	self -> rock, self -> name,
 	self -> in_menu, self -> has_nazi,
 	self -> min_time, self -> max_time);
+
+    free(self -> name);
+    return result;
 }
 
 /* Prints a consistent error message */
