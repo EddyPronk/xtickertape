@@ -31,7 +31,7 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.7 2000/07/10 13:43:45 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.8 2000/07/11 07:11:52 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
@@ -76,6 +76,8 @@ char *value_to_string(value_t *self, elvin_error_t error);
 /* Frees a value's contents */
 int value_free(value_t *value, elvin_error_t error);
 
+/* Copes a value */
+int value_copy(value_t *self, value_t *copy, elvin_error_t error);
 
 /* An environment is really just a hashtable */
 typedef elvin_hashtable_t env_t;
@@ -83,8 +85,15 @@ typedef elvin_hashtable_t env_t;
 /* Allocates and initializes a new environment */
 env_t env_alloc(elvin_error_t error);
 
+/* Frees an env */
+int env_free(env_t env, elvin_error_t error);
+
 /* Looks up a value in the environment */
 value_t *env_get(env_t self, char *name, elvin_error_t error);
+
+/* Adds a value to the environment */
+int env_put(env_t self, char *name, value_t *value, elvin_error_t error);
+
 
 /* The value union contains all possible types values */
 typedef union value_union
@@ -100,7 +109,13 @@ typedef union value_union
 
 struct value
 {
+    /* Hack to make values look like av_tuples */
+    void *ignored;
+
+    /* The value's type */
     value_type_t type;
+
+    /* And it's value */
     value_union_t value;
 };
 
