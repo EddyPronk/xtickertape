@@ -130,6 +130,46 @@ static int eval_args(
 }
 
 
+/* The `and' primitive function */
+static int prim_and(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    /* Assume true */
+    *result = symbol_alloc("t", error);
+
+    /* Evaluate each arg until we get a nil or run out of args */
+    while (sexp_get_type(args) == SEXP_CONS)
+    {
+	/* Free the old value */
+	sexp_free(*result, error);
+
+	/* Evaluate the arg */
+	if (sexp_eval(cons_car(args, error), env, result, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* If it's nil then return nil */
+	if (sexp_get_type(*result) == SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure the arg list ends nicely */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	sexp_free(*result, NULL);
+	return 0;
+    }
+
+    /* We're done */
+    return 1;
+}
+
 /* The `car' primitive function */
 static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
@@ -498,6 +538,45 @@ static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t err
     /* Create a lambda node from the args and body */
     if ((*result = lambda_alloc(env, arg_list, body, error)) == NULL)
     {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* The `and' primitive function */
+static int prim_or(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    /* Assume false */
+    *result = nil_alloc(error);
+
+    /* Evaluate each arg until we get a non-nil one or run out of args */
+    while (sexp_get_type(args) == SEXP_CONS)
+    {
+	/* Free the old result */
+	sexp_free(*result, error);
+
+	/* Evaluate the arg */
+	if (sexp_eval(cons_car(args, error), env, result, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* If it's non-nil then we're done */
+	if (sexp_get_type(*result) != SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure the list ends nicely */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	sexp_free(*result, NULL);
 	return 0;
     }
 
@@ -1306,18 +1385,20 @@ static env_t root_env_alloc(elvin_error_t error)
     }
 
     /* Register the built-in functions */
-    if (env_set_builtin(env, "car", prim_car, error) == 0 ||
+    if (env_set_builtin(env, "and", prim_and, error) == 0 ||
+	env_set_builtin(env, "car", prim_car, error) == 0 ||
 	env_set_builtin(env, "cdr", prim_cdr, error) == 0 ||
 	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
+	env_set_builtin(env, "/", prim_div, error) == 0 ||
 	env_set_builtin(env, "eq", prim_eq, error) == 0 ||
 	env_set_builtin(env, "if", prim_if, error) == 0 ||
 	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
-	env_set_builtin(env, "+", prim_plus, error) == 0 ||
 	env_set_builtin(env, "-", prim_minus, error) == 0 ||
-	env_set_builtin(env, "*", prim_times, error) == 0 ||
-	env_set_builtin(env, "/", prim_div, error) == 0 ||
+	env_set_builtin(env, "or", prim_or, error) == 0 ||
+	env_set_builtin(env, "+", prim_plus, error) == 0 ||
 	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
-	env_set_builtin(env, "setq", prim_setq, error) == 0)
+	env_set_builtin(env, "setq", prim_setq, error) == 0 ||
+	env_set_builtin(env, "*", prim_times, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
