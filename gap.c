@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.9 2001/05/05 07:42:37 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.10 2001/06/15 13:06:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -69,7 +69,7 @@ static message_t get_message(gap_t self)
 /* Simply erase the relevant bit of the widget */
 static void do_paint(
     gap_t self, Display *display, Drawable drawable, 
-    int offset, int w, int x, int y, unsigned int width, unsigned int height)
+    int offset, int x, int y, unsigned int width, unsigned int height)
 {
     /* Nothing to do here people.  Move along */
 }

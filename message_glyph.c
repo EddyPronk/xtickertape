@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.36 2001/06/07 22:42:30 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.37 2001/06/15 13:06:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,6 +42,10 @@ static const char cvsid[] = "$Id: message_glyph.c,v 1.36 2001/06/07 22:42:30 phe
 #define SEPARATOR ":"
 #define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x > y) ? x : y)
+
+#if 0
+#define DEBUG_GLYPH 1
+#endif
 
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
@@ -68,7 +72,7 @@ struct message_glyph
     /* The level of fading exhibited by the receiver */
     int fade_level;
 
-    /* The ascent of the tallest font used by the receiver */
+    /* The largest descent of any character in the font */
     int ascent;
 
     /* The width of the receiver's separator string */
@@ -374,11 +378,11 @@ static void paint_string(
 /* Draw the receiver */
 static void do_paint(
     message_glyph_t self, Display *display, Drawable drawable,
-    int offset, int w, int x, int y, int width, int height)
+    int offset, int x, int y, int width, int height)
 {
     int do_underline = message_has_attachment(self -> message);
     int level = self -> fade_level;
-    int baseline = y + self -> ascent;
+    int baseline = self -> ascent;
     int left = offset - self -> group_lbearing;
 
 #ifdef DEBUG_GLYPH
