@@ -3,6 +3,8 @@ Overview of changes in xtickertape-1.5.6
 * show-url now converts troublesome characters (comma, right paren) to 
   their HTML escape codes before sending a URL to netscape
 
+* Added a man page for show-url
+
 Overview of changes in xtickertape-1.5.5
 
 * Fixed a bug in main.c which made xtickertape crash unless TICKERDIR
