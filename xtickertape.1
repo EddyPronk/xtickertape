@@ -167,6 +167,19 @@ some new resources.
 .PP
 The Scroller widget understands the following:
 .TP
+.B "font (\fPclass\fB Font)"
+Specifices which font to use when displaying text.
+.TP
+.B "fontCodeSet (\fPclass\fB String)"
+Specifies the encoding (code set) used by the font.  Messages are
+encoded in the UTF-8 character set and must be converted to the font's
+code set to be displayed properly.  Most English-speaking people will
+be using a font encoded in either the ISO8859-1 (sometimes spelled
+ISO-8859-1) or ISO10646-1 (use UCS-2BE) code set.  Check your iconv
+implementation for valid values of this.  If unspecified, the widget
+will attempt to guess a value based on the font's registry and
+encoding properties.
+.TP
 .B "groupPixel (\fPclass\fB GroupPixel)"
 Specifies the color to use when displaying the group attribute of a
 notification. 
