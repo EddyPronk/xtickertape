@@ -15,18 +15,24 @@
 #define MAX_PACKET_SIZE 16384
 #define BUFFER_SIZE 4096
 
-#define UNOTIFY_TYPECODE 1
+#define UNOTIFY_PACKET 1
+#define INT32_TYPECODE 1
 #define STRING_TYPECODE 4
 #define PROTO_VERSION_MAJOR 4
 #define PROTO_VERSION_MINOR 0
+#define VERSION_MAJOR 2
+#define VERSION_MINOR 0
 
 #define DEFAULT_HOST "127.0.0.1"
 #define DEFAULT_PORT 13131
+#define N_VERSION_MAJOR "elvinmail"
+#define N_VERSION_MINOR "elvinmail.minor"
+#define N_FOLDER "folder"
+#define N_USER "user"
+#define N_INDEX "index"
 
 typedef struct lexer *lexer_t;
 typedef int (*lexer_state_t)(lexer_t self, int ch);
-
-
 
 /* Forward declarations for the state machine states */
 static int lex_error(lexer_t self, int ch);
@@ -41,6 +47,7 @@ static int lex_skip_body(lexer_t self, int ch);
 static int lex_skip_fold(lexer_t self, int ch);
 static int lex_end(lexer_t self, int ch);
 
+/* A bunch of state information for the lexer */
 struct lexer
 {
     /* The current lexical state */
@@ -160,6 +167,25 @@ static int append_char(lexer_t self, int ch)
     return -1;
 }
 
+/* Appends a C string to the buffer */
+static int append_string(lexer_t self, char *string)
+{
+    char *point;
+
+    begin_string(self);
+    for (point = string; *point != '\0'; point++)
+    {
+	if (! (self -> point < self -> end))
+	{
+	    return -1;
+	}
+
+	*self -> point++ = *point;
+    }
+
+    end_string(self);
+    return 0;
+}
 
 /* Compares two length-prefixed strings for equality */
 static int lstring_eq(char *string1, char *string2)
@@ -188,12 +214,63 @@ static int lstring_eq(char *string1, char *string2)
     return 1;
 }
 
+/* Appends an int32 attribute to the buffer */
+static int append_int32_tuple(lexer_t self, char *name, int value)
+{
+    /* Write the name */
+    if (append_string(self, name) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the value's type */
+    if (append_int32(self, INT32_TYPECODE) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the value */
+    if (append_int32(self, value) < 0)
+    {
+	return -1;
+    }
+
+    self -> count++;
+    return 0;
+}
+
+/* Appends a string attribute to the buffer */
+static int append_string_tuple(lexer_t self, char *name, char *value)
+{
+    /* Write the name */
+    if (append_string(self, name) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the value's type */
+    if (append_int32(self, STRING_TYPECODE) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the value */
+    if (append_string(self, value) < 0)
+    {
+	return -1;
+    }
+
+    self -> count++;
+    return 0;
+}
+
+
 
 /* Writes a UNotify packet header */
-static int lexer_append_unotify_header(lexer_t self)
+static int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 {
     /* Write the packet type */
-    if (append_int32(self, UNOTIFY_TYPECODE) < 0)
+    if (append_int32(self, UNOTIFY_PACKET) < 0)
     {
 	return -1;
     }
@@ -213,6 +290,29 @@ static int lexer_append_unotify_header(lexer_t self)
     /* The number of attributes will go here */
     self -> count_point = self -> point;
     self -> point += 4;
+
+    /* Write the notification format version numbers */
+    if (append_int32_tuple(self, N_VERSION_MAJOR, VERSION_MAJOR) < 0)
+    {
+	return -1;
+    }
+
+    if (append_int32_tuple(self, N_VERSION_MINOR, VERSION_MINOR) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the username */
+    if (append_string_tuple(self, N_USER, user) < 0)
+    {
+	return -1;
+    }
+
+    /* Write the folder's name */
+    if (append_string_tuple(self, N_FOLDER, folder) < 0)
+    {
+	return -1;
+    }
 
     /* The first name will go next */
     self -> first_name_point = self -> point;
@@ -791,7 +891,7 @@ int main(int argc, char *argv[])
     lexer_init(&lexer, packet, MAX_PACKET_SIZE);
 
     /* Write the header */
-    if (lexer_append_unotify_header(&lexer) < 0)
+    if (lexer_append_unotify_header(&lexer, "phelps", "Inbox") < 0)
     {
 	abort();
     }
