@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.74 2000/01/13 00:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.75 2000/01/15 08:29:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -48,6 +48,7 @@ static const char cvsid[] = "$Id: main.c,v 1.74 2000/01/13 00:29:48 phelps Exp $
 #include <X11/extensions/shape.h>
 #include <X11/Xmu/Editres.h>
 #include <elvin/elvin.h>
+#include <elvin/xt_mainloop.h>
 #include "tickertape.h"
 
 #include "red.xbm"
@@ -374,19 +375,9 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Initialize the elvin client library */
-    if ((error = elvin_async_init(
-	"en",
-	context,
-	(elvin_add_io_handler_func_t)XtAppAddInput,
-	(void *)XtInputReadMask,
-	(void *)XtInputWriteMask,
-	(void *)XtInputExceptMask,
-	(elvin_del_io_handler_func_t)XtRemoveInput,
-	context,
-	(elvin_add_timeout_func_t)XtAppAddTimeOut,
-	(elvin_del_timeout_func_t)XtRemoveTimeOut)) == NULL)
+    if ((error = elvin_xt_async_init("en", context)) == NULL)
     {
-	fprintf(stderr, "*** elvin_async_init(): failed\n");
+	fprintf(stderr, "*** elvin_xt_async_init(): failed\n");
 	abort();
     }
 

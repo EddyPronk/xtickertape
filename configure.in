@@ -60,6 +60,11 @@ AC_CHECK_LIB(vin4c, elvin_async_init,
     AC_MSG_ERROR("unable to locate the elvin4 libraries"); exit 1,
     -vin4c -lvin4)
 
+AC_CHECK_LIB(vin4Xt, elvin_xt_async_init,
+    LIBS="-lvin4Xt $LIBS",
+    AC_MSG_ERROR("unable to locate the elvin4 Xt main loop library"); exit 1
+    -lvin4Xt)
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/time.h unistd.h crypt.h)
