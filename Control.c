@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.21 1998/10/24 15:33:42 phelps Exp $ */
+/* $Id: Control.c,v 1.22 1998/10/25 02:55:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -464,6 +464,7 @@ static Widget CreateMimeBox(ControlPanel self, Widget parent)
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
 	NULL);
+    XtOverrideTranslations(self -> mimeArgs, XtParseTranslationTable("<Key>Return: notify()"));
 
     return form;
 }
@@ -844,8 +845,6 @@ void ControlPanel_handleNotify(ControlPanel self, Widget widget)
 {
     SANITY_CHECK(self);
 
-    if (widget == self -> text)
-    {
-	ActionOK(widget, self, NULL);
-    }
+    /* Press the magic OK button */
+    ActionOK(widget, self, NULL);
 }
