@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.4 2002/10/06 13:58:12 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.5 2002/10/16 01:05:29 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -44,6 +44,9 @@ static const char cvsid[] = "$Id: show-url.c,v 1.4 2002/10/06 13:58:12 phelps Ex
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
+#ifdef HAVE_GETOPT_LONG
+#include <getopt.h>
+#endif
 
 #ifndef WEXITSTATUS
 #define WEXITSTATUS(stat_val) ((unsigned int)(stat_val) >> 8)
@@ -54,6 +57,21 @@ static const char cvsid[] = "$Id: show-url.c,v 1.4 2002/10/06 13:58:12 phelps Ex
 #define DEF_BROWSER "netscape -raise -remote \"openURL(%%s,new-window)\":lynx"
 #define MAX_URL_SIZE 4095
 #define INIT_CMD_SIZE 128
+
+/* Options */
+#define OPTIONS "b:dhv"
+
+#if defined(HAVE_GETOPT_LONG)
+/* The list of long options */
+static struct option long_options[] =
+{
+    { "browser", required_argument, NULL, 'b' },
+    { "debug", optional_argument, NULL, 'd' },
+    { "version", no_argument, NULL, 'v' },
+    { "help", no_argument, NULL, 'h' },
+    { NULL, no_argument, NULL, '\0' }
+};
+#endif
 
 /* A table converting a number into a hex nibble */
 static char hex[16] =
@@ -82,11 +100,19 @@ static size_t cmd_index = 0;
 /* The end of the command buffer */
 static size_t cmd_length = 0;
 
+/* The verbosity level */
+static int verbosity = 0;
+
 
 /* Print out a usage message */
 static void usage(int argc, char *argv[])
 {
-    fprintf(stderr, "usage: %s filename | url\n", argv[0]);
+    fprintf(stderr,
+	    "usage: %s [OPTION]... filename\n"
+	    "  -b browser,     --browser=browser\n"
+	    "  -d,             --debug[=level]\n"
+	    "  -v,             --version\n"
+	    "  -h,             --help\n", argv[0]);
 }
 
 /* Appends a character to the command buffer */
@@ -95,6 +121,11 @@ static void append_char(int ch)
     /* Make sure there's enough room */
     if (! (cmd_index < cmd_length))
     {
+	if (2 < verbosity)
+	{
+	    printf("growing buffer\n");
+	}
+
 	/* Double the buffer size */
 	cmd_length *= 2;
 	if ((cmd_buffer = (char *)realloc(cmd_buffer, cmd_length)) == NULL)
@@ -118,7 +149,7 @@ static void append_url(char *url)
 	int ch = *point;
 
 	/* Watch for the end of line/input */
-	if (ch == '0' || ch == '\n')
+	if (ch == '\0' || ch == '\n')
 	{
 	    return;
 	}
@@ -170,7 +201,12 @@ char *invoke(char *browser, char *url)
 		append_char('\0');
 
 		/* Invoke the command */
-		printf("%s\n", cmd_buffer);
+		if (0 < verbosity)
+		{
+		    printf("exec: %s\n", cmd_buffer);
+		    fflush(stdout);
+		}
+
 		if ((status = system(cmd_buffer)) < 0)
 		{
 		    perror("fork() failed");
@@ -180,7 +216,17 @@ char *invoke(char *browser, char *url)
 		/* If successful return NULL */
 		if (WEXITSTATUS(status) == 0)
 		{
+		    if (1 < verbosity)
+		    {
+			printf("ok\n");
+		    }
+
 		    return NULL;
+		}
+
+		if (1 < verbosity)
+		{
+		    printf("failed: %d\n", WEXITSTATUS(status));
 		}
 
 		return ch == '\0' ? point : point + 1;
@@ -218,6 +264,7 @@ int main(int argc, char *argv[])
 {
     char *browser;
     char buffer[MAX_URL_SIZE + 1];
+    char *filename;
     FILE *file;
     size_t length;
     char *point;
@@ -228,15 +275,100 @@ int main(int argc, char *argv[])
 	browser = DEF_BROWSER;
     }
 
-    /* Check that we have exactly one argument */
-    if (argc != 2)
+    while (1)
+    {
+	int choice;
+
+#if defined(HAVE_GETOPT_LONG)
+	choice = getopt_long(argc, argv, OPTIONS, long_options, NULL);
+#else
+	choice = getopt(argc, argv, OPTIONS);
+#endif
+
+	/* End of options? */
+	if (choice < 0)
+	{
+	    break;
+	}
+
+	/* Which option is it? */
+	switch (choice)
+	{
+	    /* --browser= or -b */
+	    case 'b':
+	    {
+		browser = optarg;
+		break;
+	    }
+
+	    /* --debug= or -d */
+	    case 'd':
+	    {
+		if (optarg == NULL)
+		{
+		    verbosity++;
+		}
+		else
+		{
+		    verbosity = atoi(optarg);
+		}
+
+		break;
+	    }
+
+	    /* --help or -h */
+	    case 'h':
+	    {
+		usage(argc, argv);
+		exit(0);
+	    }
+
+	    /* --version or -v */
+	    case 'v':
+	    {
+		printf(PACKAGE " show-url version " VERSION "\n");
+		exit(0);
+	    }
+
+	    /* Unsupported option */
+	    case '?':
+	    {
+		usage(argc, argv);
+		exit(1);
+	    }
+
+	    /* Trouble */
+	    default:
+	    {
+		abort();
+	    }
+	}
+    }
+
+    /* Make sure there's a filename */
+    if (! (optind < argc))
     {
 	usage(argc, argv);
 	exit(1);
     }
 
+    /* Record the filename */
+    filename = argv[optind++];
+
+    /* Make sure there are no more arguments */
+    if (optind < argc)
+    {
+	usage(argc, argv);
+	exit(1);
+    }
+
+    if (1 < verbosity)
+    {
+	printf("reading url from %s\n", filename);
+    }
+
     /* Read the URL from the file */
-    if ((file = fopen(argv[1], "r")) == NULL)
+    if ((file = fopen(filename, "r")) == NULL)
     {
 	perror("Unable to open URL file");
 	exit(1);
@@ -245,7 +377,11 @@ int main(int argc, char *argv[])
     /* Read up to MAX_URL_SIZE bytes of it */
     length = fread(buffer, 1, MAX_URL_SIZE, file);
     buffer[length] = 0;
-    printf("url=%s\n", buffer);
+
+    if (1 < verbosity)
+    {
+	printf("raw url: %s\n", buffer);
+    }
 
     /* Clean up */
     fclose(file);
