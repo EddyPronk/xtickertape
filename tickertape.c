@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.109 2003/05/15 20:23:02 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.110 2003/10/01 12:39:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2301,7 +2301,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     char *pointer;
     char *end;
     pid_t pid;
-    int fds[2];
+    int fds_stdin[2];
     int status;
 
     /* If metamail is not defined then we're done */
@@ -2324,7 +2324,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Create a pipe to send the file to metamail */
-    if (pipe(fds) < 0)
+    if (pipe(fds_stdin) < 0)
     {
 	perror("pipe(): failed");
 	return -1;
@@ -2334,8 +2334,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     if ((pid = fork()) == (pid_t)-1)
     {
 	perror("fork(): failed");
-	close(fds[0]);
-	close(fds[1]);
+	close(fds_stdin[0]);
+	close(fds_stdin[1]);
 	return -1;
     }
 
@@ -2343,23 +2343,26 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     if (pid == 0)
     {
 	/* Use the pipe as stdin */
-	dup2(fds[0], STDIN_FILENO);
-	close(fds[1]);
-	close(fds[0]);
+	dup2(fds_stdin[0], STDIN_FILENO);
+
+        /* Close off the ends of the pipe */
+        close(fds_stdin[0]);
+	close(fds_stdin[1]);
 
 	/* Invoke metamail */
 	execlp(
+	    self -> resources -> metamail,
 	    self -> resources -> metamail,
 	    METAMAIL_OPTIONS,
 	    NULL);
 
 	/* We'll only get here if exec fails */
-	perror("execl(): failed");
+	perror("execlp(): failed");
 	exit(1);
     }
 
     /* We're the parent process. */
-    if (close(fds[0]) < 0)
+    if (close(fds_stdin[0]) < 0)
     {
 	perror("close(): failed");
 	return -1;
@@ -2373,9 +2376,9 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 	ssize_t length;
 
 	/* Write as much as we can */
-	if ((length = write(fds[1], pointer, end - pointer)) < 0)
+	if ((length = write(fds_stdin[1], pointer, end - pointer)) < 0)
 	{
-	    perror("unable to write to temporary file");
+	    perror("unable to write to metamail pipe");
 	    return -1;
 	}
 
@@ -2383,7 +2386,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Make sure it gets written */
-    if (close(fds[1]) < 0)
+    if (close(fds_stdin[1]) < 0)
     {
 	perror("close(): failed");
 	return -1;
