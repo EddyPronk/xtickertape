@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.14 2001/07/21 01:12:35 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.15 2001/07/22 02:31:28 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -58,8 +58,10 @@ typedef struct _HistoryClassRec
 /* The type of outstanding movement events */
 typedef struct delta_queue *delta_queue_t;
 
+/* Which way are we dragging? */
 typedef enum
 {
+    DRAG_NONE,
     DRAG_UP,
     DRAG_DOWN
 } drag_direction_t;
