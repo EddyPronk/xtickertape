@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.46 2002/10/04 14:07:27 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.47 2003/01/22 14:29:51 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -63,6 +63,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.46 2002/10/04 14:07:27 phelps 
 #define F2_REPLACEMENT "REPLACEMENT"
 #define F3_MESSAGE_ID "Message-Id"
 #define F3_IN_REPLY_TO "In-Reply-To"
+#define F3_THREAD_ID "Thread-Id"
 #define F3_MIME_ATTACHMENT "MIME-Attachment"
 #define F2_MIME_ARGS "MIME_ARGS"
 #define F2_MIME_TYPE "MIME_TYPE"
@@ -169,6 +170,7 @@ static void notify_cb(
     char *tag;
     char *message_id;
     char *reply_id;
+    char *thread_id;
     int found;
 
     /* If we don't have a callback then just quit now */
@@ -389,12 +391,24 @@ static void notify_cb(
 	reply_id = NULL;
     }
 
+    /* Get the thread-id (if provided) */
+    if (elvin_notification_get(notification, F3_THREAD_ID, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	thread_id = (char *)value.s;
+    }
+    else
+    {
+	thread_id = NULL;
+    }
+
     /* Construct a message */
     message = message_alloc(
 	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
 	attachment, length,
-	tag, message_id, reply_id);
+	tag, message_id, reply_id,
+	thread_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> rock, message, self -> has_nazi);
@@ -433,6 +447,7 @@ static int notify_cb(
     char *tag;
     char *message_id;
     char *reply_id;
+    char *thread_id;
     int found;
 
     /* If we don't have a callback then just quit now */
@@ -674,12 +689,21 @@ static int notify_cb(
 	exit(1);
     }
 
+    /* Get the `Thread-Id' field from the notification */
+    if (! elvin_notification_get_string(notification, F3_THREAD_ID, NULL, &thread_id, error))
+    {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
     /* Construct a message */
     message = message_alloc(
 	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
 	attachment, length,
-	tag, message_id, reply_id);
+	tag, message_id,
+	reply_id, thread_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> rock, message, self -> has_nazi);
@@ -742,6 +766,7 @@ static void send_message(group_sub_t self, message_t message)
     unsigned int timeout;
     char *message_id;
     char *reply_id;
+    char *thread_id;
     char *attachment;
     uint32_t length;
     char *buffer = NULL;
@@ -752,6 +777,7 @@ static void send_message(group_sub_t self, message_t message)
     timeout = message_get_timeout(message);
     message_id = message_get_id(message);
     reply_id = message_get_reply_id(message);
+    thread_id = message_get_thread_id(message);
     length = message_get_attachment(message, &attachment);
 
     /* If there's an attachment then try to extract the type and body */
@@ -926,6 +952,21 @@ static void send_message(group_sub_t self, message_t message)
 	    F3_IN_REPLY_TO,
 	    reply_id,
 	    self -> error) == 0)
+	{
+	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
+	    elvin_error_fprintf(stderr, self -> error);
+	    exit(1);
+	}
+    }
+
+    /* Add the Thread-Id field if relevant */
+    if (thread_id != NULL)
+    {
+	if (elvin_notification_add_string(
+		notification,
+		F3_THREAD_ID,
+		thread_id,
+		self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    elvin_error_fprintf(stderr, self -> error);

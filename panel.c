@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.73 2003/01/14 16:58:26 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.74 2003/01/22 14:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -261,8 +261,11 @@ struct control_panel
     /* The list of timeouts to appear in the timeout menu */
     char **timeouts;
 
-    /* The message to which we are replying (0 if none) */
+    /* The message to which we are replying (NULL if none) */
     char *message_id;
+
+    /* The thread to which we are replying (NULL if none) */
+    char *thread_id;
 
     /* Non-zero indicates that the the control panel should be closed
      * after a notification is sent */
@@ -1469,7 +1472,8 @@ static message_t construct_message(control_panel_t self)
 	self -> selection -> tag,
 	self -> selection -> title, user, text, get_timeout(self),
 	attachment, length,
-	NULL, uuid, self -> message_id);
+	NULL, uuid,
+	self -> message_id, self -> thread_id);
 
     /* Free the user */
     if (user != NULL)
@@ -2058,6 +2062,10 @@ static void prepare_reply(control_panel_t self, message_t message)
     free(self -> message_id);
     self -> message_id = NULL;
 
+    /* Free the old thread id */
+    free(self -> thread_id);
+    self -> thread_id = NULL;
+
     /* If a message_t was provided that is in the menu, then select it
      * and set the message_id so that we can do threading */
     if (message != NULL)
@@ -2069,10 +2077,16 @@ static void prepare_reply(control_panel_t self, message_t message)
 	    self -> selection = tuple;
 	    set_group_selection(self, tuple);
 
-	    id = message_get_id(message);
-	    if (id != NULL)
+	    /* Copy the message id */
+	    if ((id = message_get_id(message)) != NULL)
 	    {
 		self -> message_id = strdup(id);
+	    }
+
+	    /* Copy the thread id */
+	    if ((id = message_get_thread_id(message)) != NULL)
+	    {
+		self -> thread_id = strdup(id);
 	    }
 	}
     }

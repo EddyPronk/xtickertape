@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.8 2002/04/12 13:20:25 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.9 2003/01/22 14:29:52 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -52,7 +52,8 @@ message_t message_alloc(
     size_t length,
     char *tag,
     char *id,
-    char *reply_id);
+    char *reply_id,
+    char *thread_id);
 
 /* Allocates another reference to the message_t */
 message_t message_alloc_reference(message_t self);
@@ -99,6 +100,9 @@ char *message_get_id(message_t self);
 
 /* Answers the id of the message for which this is a reply */
 char *message_get_reply_id(message_t self);
+
+/* Answers the thread id of the message for which this is a reply */
+char *message_get_thread_id(message_t self);
 
 /* Answers non-zero if the mesage has been killed */
 int message_is_killed(message_t self);

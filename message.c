@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.20 2002/04/23 16:56:20 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.21 2003/01/22 14:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -93,6 +93,9 @@ struct message
     /* The identifier for the message for which this is a reply */
     char *reply_id;
 
+    /* The identifier for the thread for which this is a reply */
+    char *thread_id;
+
     /* Non-zero if the message has been killed */
     int is_killed;
 };
@@ -109,7 +112,8 @@ message_t message_alloc(
     size_t length,
     char *tag,
     char *id,
-    char *reply_id)
+    char *reply_id,
+    char *thread_id)
 {
     message_t self;
 
@@ -164,6 +168,7 @@ message_t message_alloc(
     self -> tag = (tag == NULL) ? NULL : strdup(tag);
     self -> id = (id == NULL) ? NULL : strdup(id);
     self -> reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
+    self -> thread_id = (thread_id == NULL) ? NULL : strdup(thread_id);
 
     /* Record the time of creation */
     if (time(&self -> creation_time) == (time_t)-1)
@@ -249,6 +254,12 @@ void message_free(message_t self)
 	self -> reply_id = NULL;
     }
 
+    if (self -> thread_id != NULL)
+    {
+	free(self -> thread_id);
+	self -> thread_id = NULL;
+    }
+
     free(self);
 }
 
@@ -268,6 +279,7 @@ void message_debug(message_t self)
     printf("  tag = \"%s\"\n", (self -> tag == NULL) ? "<null>" : self -> tag);
     printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
     printf("  reply_id = \"%s\"\n", (self -> reply_id == NULL) ? "<null>" : self -> reply_id);
+    printf("  thread_id = \"%s\"\n", (self -> thread_id == NULL) ? "<null>" : self -> thread_id);
 }
 #endif /* DEBUG */
 
@@ -343,6 +355,12 @@ char *message_get_id(message_t self)
 char *message_get_reply_id(message_t self)
 {
     return self -> reply_id;
+}
+
+/* Answers the thread id of the message for which this is a reply */
+char *message_get_thread_id(message_t self)
+{
+    return self -> thread_id;
 }
 
 /* Answers non-zero if the mesage has been killed */

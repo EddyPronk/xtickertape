@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.101 2003/01/11 13:25:37 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.102 2003/01/22 14:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1297,7 +1297,7 @@ static int status_cb(
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
 	NULL, "internal", "tickertape", string, 30,
-	NULL, 0, NULL, NULL, NULL)) != NULL)
+	NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
     {
 	receive_callback(self, message, False);
 	message_free(message);
