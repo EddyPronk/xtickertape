@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.34 1999/11/04 03:36:45 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.35 1999/11/08 08:18:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -965,6 +965,7 @@ tickertape_t tickertape_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
 	(disconnect_callback_t)disconnect_callback, self,
 	(reconnect_callback_t)reconnect_callback, self);
+    publish_startup_notification(self);
 
     for (index = 0; index < self -> groups_count; index++)
     {
