@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.8 2000/07/07 10:43:15 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.9 2000/07/09 00:49:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -353,8 +353,7 @@ static ast_t make_ge(parser_t self, elvin_error_t error)
 /* <value> ::= BANG <value> */
 static ast_t make_not(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_not(): not yet implemented\n");
-    return NULL;
+    return ast_unary_alloc(AST_NOT, self -> value_top[1], error);
 }
 
 
@@ -870,10 +869,31 @@ static int lex_comment(parser_t self, int ch, elvin_error_t error)
     return 1;
 }
 
+/* Reading the character after a `!' */
 static int lex_bang(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_bang: not yet implemented\n");
-    abort();
+    /* Watch for an `=' */
+    if (ch == '=')
+    {
+	/* Accept an NEQ token */
+	if (! accept_token(self, TT_NEQ, error))
+	{
+	    return 0;
+	}
+
+	/* Go back to the start state */
+	self -> state = lex_start;
+	return 1;
+    }
+
+    /* Otherwise accept a BANG token */
+    if (! accept_token(self, TT_BANG, error))
+    {
+	return 0;
+    }
+
+    /* And scan ch again */
+    return lex_start(self, ch, error);
 }
 
 /* Reading the character after a `&' */
@@ -1461,6 +1481,15 @@ int main(int argc, char *argv[])
 	if (length < 1)
 	{
 	    printf("-- end of input --\n");
+
+	    /* Clean up */
+	    if (! parser_free(parser, error))
+	    {
+		fprintf(stderr, "parser_free(): failed\n");
+		exit(1);
+	    }
+	    
+	    elvin_memory_report();
 	    exit(0);
 	}
     }
