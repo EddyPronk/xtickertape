@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.6 2000/07/10 00:12:10 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.7 2000/07/10 07:44:14 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -38,6 +38,287 @@ static const char cvsid[] = "$Id: ast.c,v 1.6 2000/07/10 00:12:10 phelps Exp $";
 #include <elvin/memory.h>
 #include "ast.h"
 #include "subscription.h"
+
+/* Allocates and returns a string representation of the value */
+char *value_to_string(value_t *self, elvin_error_t error)
+{
+    char buffer[80];
+
+    switch (self -> type)
+    {
+	case VALUE_NONE:
+	{
+	    return ELVIN_STRDUP("nil", error);
+	}
+
+	case VALUE_INT32:
+	{
+	    sprintf(buffer, "%d", self -> value.int32);
+	    return ELVIN_STRDUP(buffer, error);
+	}
+
+	case VALUE_INT64:
+	{
+	    sprintf(buffer, "%" INT64_PRINT "L", self -> value.int64);
+	    return ELVIN_STRDUP(buffer, error);
+	}
+
+	case VALUE_FLOAT:
+	{
+	    sprintf(buffer, "%#.8g", self -> value.real64);
+	    return ELVIN_STRDUP(buffer, error);
+	}
+
+	case VALUE_STRING:
+	{
+	    return ELVIN_STRDUP(self -> value.string, error);
+	}
+
+	case VALUE_OPAQUE:
+	{
+	    return ELVIN_STRDUP("[opaque]", error);
+	}
+
+	case VALUE_BLOCK:
+	{
+	    return ELVIN_STRDUP("[block]", error);
+	}
+
+	case VALUE_LIST:
+	{
+	    return ELVIN_STRDUP("[list]", error);
+	}
+
+	default:
+	{
+	    fprintf(stderr, "value_to_string(): invalid type: %d\n", self -> type);
+	    abort();
+	}
+    }
+}
+
+/* Copes a value */
+int value_copy(value_t *self, value_t *copy, elvin_error_t error)
+{
+    copy -> type = self -> type;
+    switch (self -> type)
+    {
+	case VALUE_NONE:
+	{
+	    return 1;
+	}
+
+	case VALUE_INT32:
+	{
+	    copy -> value.int32 = self -> value.int32;
+	    return 1;
+	}
+
+	case VALUE_INT64:
+	{
+	    copy -> value.int64 = self -> value.int64;
+	    return 1;
+	}
+
+	case VALUE_FLOAT:
+	{
+	    copy -> value.real64 = self -> value.real64;
+	    return 1;
+	}
+
+	case VALUE_STRING:
+	{
+	    if (! (copy -> value.string = ELVIN_USTRDUP(self -> value.string, error)))
+	    {
+		return 0;
+	    }
+
+	    return 1;
+	}
+
+	case VALUE_OPAQUE:
+	{
+	    uint32_t length = self -> value.opaque.length;
+
+	    copy -> value.opaque.length = length;
+	    if (! (copy -> value.opaque.data = ELVIN_MALLOC(length, error)))
+	    {
+		return 0;
+	    }
+
+	    memcpy(copy -> value.opaque.data, self -> value.opaque.data, length);
+	    return 1;
+	}
+
+	case VALUE_BLOCK:
+	{
+	    if (! (copy -> value.block = ast_clone(self -> value.block, error)))
+	    {
+		return 0;
+	    }
+
+	    return 1;
+	}
+
+	case VALUE_LIST:
+	{
+	    uint32_t count = self -> value.list.count;
+	    uint32_t i;
+
+	    copy -> value.list.count = count;
+
+	    /* Shortcut for zero-length lists */
+	    if (count < 1)
+	    {
+		return 1;
+	    }
+
+	    if (! (copy -> value.list.items = (value_t *)ELVIN_MALLOC(count * sizeof(value_t), error)))
+	    {
+		return 0;
+	    }
+
+	    /* Copy the items */
+	    for (i = 0; i < count; i++)
+	    {
+		if (! value_copy(&self -> value.list.items[i], &copy -> value.list.items[i], error))
+		{
+		    /* FIX THIS: free the items we've copied so far */
+		    return 0;
+		}
+	    }
+
+	    return 1;
+	}
+
+	default:
+	{
+	    fprintf(stderr, "value_copy(): bad type: %d\n", self -> type);
+	    abort();
+	}
+    }
+}
+
+/* Frees a value's contents */
+int value_free(value_t *self, elvin_error_t error)
+{
+    switch (self -> type)
+    {
+	/* Nothing to do for these cases */
+	case VALUE_NONE:
+	case VALUE_INT32:
+	case VALUE_INT64:
+	case VALUE_FLOAT:
+	{
+	    return 1;
+	}
+
+	/* Free the string */
+	case VALUE_STRING:
+	{
+	    return ELVIN_FREE(self -> value.string, error);
+	}
+
+	/* Free the opaque */
+	case VALUE_OPAQUE:
+	{
+	    return ELVIN_FREE(self -> value.opaque.data, error);
+	}
+
+	/* Free a block */
+	case VALUE_BLOCK:
+	{
+	    return ast_free(self -> value.block, error);
+	}
+
+	/* Frees a list */
+	case VALUE_LIST:
+	{
+	    uint32_t count = self -> value.list.count;
+	    uint32_t i;
+
+	    /* Shortcut for empty lists */
+	    if (count < 1)
+	    {
+		return 1;
+	    }
+
+	    /* Free each of the items */
+	    for (i = 0; i < count; i++)
+	    {
+		if (! value_free(&self -> value.list.items[i], error))
+		{
+		    return 0;
+		}
+	    }
+
+	    /* Free the list */
+	    return ELVIN_FREE(self -> value.list.items, error);
+	}
+
+	/* We should never get here */
+	default:
+	{
+	    fprintf(stderr, "value_free(): bad type %d\n", self -> type);
+	    abort();
+	}
+    }
+}
+
+
+
+/* Copies a value for the hashtable */
+static int value_hash_copy(
+    elvin_hashtable_t table,
+    elvin_hashdata_t *copy_out,
+    elvin_hashdata_t data,
+    elvin_error_t error)
+{
+    value_t *copy;
+    value_t *self = (value_t *)data;
+
+    /* Allocate some room for the value */
+    if (! (copy = (value_t *)ELVIN_MALLOC(sizeof(value_t), error)))
+    {
+	return 0;
+    }
+
+    /* Copy the data */
+    if (! value_copy(self, copy, error))
+    {
+	ELVIN_FREE(copy, NULL);
+	return 0;
+    }
+
+    *copy_out = (elvin_hashdata_t)copy;
+    return 1;
+}
+
+/* Frees a value from the hashtable */
+static int value_hash_free(elvin_hashdata_t data, elvin_error_t error)
+{
+    value_t *self = (value_t *)data;
+    if (! value_free(self, error))
+    {
+	return 0;
+    }
+
+    return ELVIN_FREE(self, error);
+}
+
+
+/* Allocates and initializes a new environment */
+env_t env_alloc(elvin_error_t error)
+{
+    return elvin_string_hash_create(17, value_hash_copy, value_hash_free, error);
+}
+
+/* Looks up a value in the environment */
+value_t *env_get(env_t self, char *name, elvin_error_t error)
+{
+    return (value_t *)elvin_hash_get(self, (elvin_hashkey_t)name, error);
+}
+
 
 /* The types of AST nodes */
 typedef enum ast_type
@@ -49,10 +330,10 @@ typedef enum ast_type
     AST_LIST,
     AST_ID,
     AST_UNARY,
-    AST_BINOP,
+    AST_BINARY,
     AST_FUNCTION,
     AST_BLOCK,
-     AST_SUB
+    AST_SUB
 } ast_type_t;
 
 /* The supported functions */
@@ -72,10 +353,10 @@ struct unary
 };
 
 /* The structure of a binary operator node */
-struct binop
+struct binary
 {
     /* The operation type */
-    ast_binop_t op;
+    ast_binary_t op;
 
     /* The operation's left-hand value */
     ast_t lvalue;
@@ -105,7 +386,7 @@ union ast_union
     ast_t block;
     char *id;
     struct unary unary;
-    struct binop binop;
+    struct binary binary;
     struct func func;
     subscription_t sub;
 };
@@ -116,6 +397,9 @@ struct ast
 {
     /* The discriminator of the union */
     ast_type_t type;
+
+    /* The number of references to this ast node */
+    int ref_count;
 
     /* The next ast in the list */
     ast_t next;
@@ -136,6 +420,7 @@ ast_t ast_int32_alloc(int32_t value, elvin_error_t error)
     }
 
     self -> type = AST_INT32;
+    self -> ref_count = 1;
     self -> next = NULL;
     self -> value.int32 = value;
     return self;
@@ -153,6 +438,7 @@ ast_t ast_int64_alloc(int64_t value, elvin_error_t error)
     }
 
     self -> type = AST_INT64;
+    self -> ref_count = 1;
     self -> next = NULL;
     self -> value.int64 = value;
     return self;
@@ -170,6 +456,7 @@ ast_t ast_float_alloc(double value, elvin_error_t error)
     }
 
     self -> type = AST_FLOAT;
+    self -> ref_count = 1;
     self -> next = NULL;
     self -> value.real64 = value;
     return self;
@@ -187,6 +474,7 @@ ast_t ast_string_alloc(char *value, elvin_error_t error)
     }
 
     self -> type = AST_STRING;
+    self -> ref_count = 1;
     self -> next = NULL;
     if (! (self -> value.string = ELVIN_STRDUP(value, error)))
     {
@@ -209,8 +497,23 @@ ast_t ast_list_alloc(ast_t list, elvin_error_t error)
     }
 
     self -> type = AST_LIST;
+    self -> ref_count = 1;
     self -> next = NULL;
-    self -> value.list = list;
+
+    /* Shortcut for the empty list */
+    if (! list)
+    {
+	self -> value.list = NULL;
+	return self;
+    }
+
+    /* Copy the list */
+    if (! (self -> value.list = ast_clone(list, error)))
+    {
+	ELVIN_FREE(self, NULL);
+	return NULL;
+    }
+
     return self;
 }
 
@@ -227,6 +530,7 @@ ast_t ast_id_alloc(char *name, elvin_error_t error)
     }
 
     self -> type = AST_ID;
+    self -> ref_count = 1;
     self -> next = NULL;
     if (! (self -> value.id = ELVIN_STRDUP(name, error)))
     {
@@ -249,15 +553,22 @@ ast_t ast_unary_alloc(ast_unary_t op, ast_t value, elvin_error_t error)
     }
 
     self -> type = AST_UNARY;
+    self -> ref_count = 1;
     self -> next = NULL;
     self -> value.unary.op = op;
-    self -> value.unary.value = value;
+
+    if (! (self -> value.unary.value = ast_clone(value, error)))
+    {
+	ELVIN_FREE(self, NULL);
+	return NULL;
+    }
+
     return self;
 }
 
 /* Allocates and initializes a new binary operation AST node */
-ast_t ast_binop_alloc(
-    ast_binop_t op,
+ast_t ast_binary_alloc(
+    ast_binary_t op,
     ast_t lvalue,
     ast_t rvalue,
     elvin_error_t error)
@@ -270,11 +581,23 @@ ast_t ast_binop_alloc(
 	return NULL;
     }
 
-    self -> type = AST_BINOP;
+    self -> type = AST_BINARY;
+    self -> ref_count = 1;
     self -> next = NULL;
-    self -> value.binop.op = op;
-    self -> value.binop.lvalue = lvalue;
-    self -> value.binop.rvalue = rvalue;
+    self -> value.binary.op = op;
+    if (! (self -> value.binary.lvalue = ast_clone(lvalue, error)))
+    {
+	ELVIN_FREE(self, NULL);
+	return NULL;
+    }
+
+    if (! (self -> value.binary.rvalue = ast_clone(rvalue, error)))
+    {
+	ast_free(self -> value.binary.lvalue, NULL);
+	ELVIN_FREE(self, NULL);
+	return NULL;
+    }
+
     return self;
 }
 
@@ -291,6 +614,7 @@ ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error)
     }
 
     self -> type = AST_FUNCTION;
+    self -> ref_count = 1;
     self -> next = NULL;
 
     /* Get the function's name */
@@ -305,7 +629,13 @@ ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error)
 	    if (strcmp(name, "format") == 0)
 	    {
 		self -> value.func.op = FUNC_FORMAT;
-		self -> value.func.args = args;
+
+		if (! (self -> value.func.args = ast_clone(args, error)))
+		{
+		    ELVIN_FREE(self, NULL);
+		    return NULL;
+		}
+
 		return self;
 	    }
 
@@ -313,7 +643,7 @@ ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error)
 	}
     }
 
-    fprintf(stderr, "bogus function name: `%s'\n", name);
+    fprintf(stderr, "Invalid function name: `%s'\n", name);
     ELVIN_FREE(self, NULL);
     return NULL;
 }
@@ -330,8 +660,15 @@ ast_t ast_block_alloc(ast_t body, elvin_error_t error)
     }
 
     self -> type = AST_BLOCK;
+    self -> ref_count = 1;
     self -> next = NULL;
-    self -> value.block = body;
+
+    if (! (self -> value.block = ast_clone(body, error)))
+    {
+	ELVIN_FREE(self, NULL);
+	return NULL;
+    }
+
     return self;
 }
 
@@ -476,314 +813,159 @@ static int eval_consumer_keys(
 /* Allocates and initializes a new subscription AST node */
 ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 {
-    subscription_t sub;
-    ast_t self, ast, next;
-    char *name = NULL;
-    char *subscription = NULL;
-    int in_menu = 1;
-    int auto_mime = 0;
-    elvin_keys_t producer_keys = NULL;
-    elvin_keys_t consumer_keys = NULL;
-    value_t group;
-    value_t user;
-    value_t message;
-    value_t timeout;
-    value_t mime_type;
-    value_t mime_args;
-    value_t message_id;
-    value_t reply_id;
+    ast_t self, ast;
+    elvin_hashtable_t env;
+    subscription_t subscription;
 
-    /* Go through the statements, perform sanity checks on them and
-     * then use them to construct a usable subscription_t */
-    for (ast = statements; ast != NULL; ast = next)
-    {
-	char *field;
-	ast_t rvalue;
-	value_t value;
-
-	next = ast -> next;
-
-	/* Pull apart the assignment node */
-	field = ast -> value.binop.lvalue -> value.id;
-	rvalue = ast -> value.binop.rvalue;
-
-	/* Figure out which field we're assigning */
-	switch (*field)
-	{
-	    /* auto-mime */
-	    case 'a':
-	    {
-		if (strcmp(field, "auto-mime") == 0)
-		{
-		    /* Evaluate the rvalue */
-		    if (! ast_eval(rvalue, NULL, &value, error))
-		    {
-			fprintf(stderr, "trouble evaluating `auto-mime'\n");
-			abort();
-		    }
-
-		    /* Check the resulting type */
-		    if (value.type != VALUE_INT32)
-		    {
-			fprintf(stderr, "bogus value for `auto-mime'\n");
-			abort();
-		    }
-
-		    auto_mime = value.value.int32;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* consumer-keys */
-	    case 'c':
-	    {
-		if (strcmp(field, "consumer-keys") == 0)
-		{
-		    /* Evaluate the rvalue */
-		    if (! ast_eval(rvalue, NULL, &value, error))
-		    {
-			fprintf(stderr, "trouble evaluating `consumer-keys'\n");
-			abort();
-		    }
-
-		    /* Check the resulting type */
-		    if (value.type != VALUE_LIST)
-		    {
-			fprintf(stderr, "bogus value for `consumer-keys'\n");
-			abort();
-		    }
-
-		    /* Convert the list into a set of keys */
-		    if (! eval_consumer_keys(&value, &consumer_keys, error))
-		    {
-			fprintf(stderr, "bad keys\n");
-			abort();
-		    }
-		
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* group */
-	    case 'g':
-	    {
-		if (strcmp(field, "group") == 0)
-		{
-		    /* Just steal the AST */
-		    group = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* in-menu */
-	    case 'i':
-	    {
-		if (strcmp(field, "in-menu") == 0)
-		{
-		    /* Evaluate the rvalue */
-		    if (! ast_eval(rvalue, NULL, &value, error))
-		    {
-			fprintf(stderr, "trouble evaluating `in-menu'\n");
-			abort();
-		    }
-
-		    /* Check the resulting type */
-		    if (value.type != VALUE_INT32)
-		    {
-			fprintf(stderr, "bogus value for `in-menu'\n");
-			abort();
-		    }
-
-		    in_menu = value.value.int32;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* message, message-id, mime-args, mime-type */
-	    case 'm':
-	    {
-		if (strcmp(field, "message") == 0)
-		{
-		    message = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		if (strcmp(field, "message-id") == 0)
-		{
-		    message_id = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		if (strcmp(field, "mime-args") == 0)
-		{
-		    mime_args = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		if (strcmp(field, "mime-type") == 0)
-		{
-		    mime_type = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* name */
-	    case 'n':
-	    {
-		if (strcmp(field, "name") == 0)
-		{
-		    /* Evaluate the rvalue to get the name */
-		    if (! ast_eval(rvalue, NULL, &value, error))
-		    {
-			fprintf(stderr, "trouble evaluating `name'\n");
-			abort();
-		    }
-
-		    /* Check the type of the result */
-		    if (value.type != VALUE_STRING)
-		    {
-			fprintf(stderr, "`name' must be a string\n");
-			abort();
-		    }
-
-		    /* Hang on to that string */
-		    name = value.value.string;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* producer-keys */
-	    case 'p':
-	    {
-		if (strcmp(field, "producer-keys") == 0)
-		{
-		    if (! eval_producer_keys(rvalue, &producer_keys, error))
-		    {
-			abort();
-		    }
-
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* reply-id */
-	    case 'r':
-	    {
-		if (strcmp(field, "reply-id") == 0)
-		{
-		    /* Steal the string from the AST */
-		    reply_id = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* subscription */
-	    case 's':
-	    {
-		if (strcmp(field, "subscription") == 0)
-		{
-		    /* Make sure the subscription is a simple string */
-		    if (rvalue -> type != AST_STRING)
-		    {
-			fprintf(stderr, "`subscription' must be a string\n");
-			abort();
-		    }
-
-		    /* Steal the string from the AST */
-		    subscription = rvalue -> value.string;
-		    rvalue -> value.string = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* timeout */
-	    case 't':
-	    {
-		if (strcmp(field, "timeout") == 0)
-		{
-		    timeout = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-
-	    /* user */
-	    case 'u':
-	    {
-		if (strcmp(field, "user") == 0)
-		{
-		    /* Just steal the AST */
-		    user = value;
-		    rvalue -> next = NULL;
-		    continue;
-		}
-
-		break;
-	    }
-	}
-
-	fprintf(stderr, "bogus field name: `%s'\n", field);
-	abort();
-    }
-
-    /* Allocate a subscription */
-    if (! (sub = subscription_alloc(
-	tag -> value.id, name, subscription, 
-	in_menu, auto_mime,
-	producer_keys, consumer_keys,
-	group, user, message, timeout,
-	mime_type, mime_args,
-	message_id, reply_id,
-	error)))
+    /* Make sure the tag is an ID */
+    if (tag -> type != AST_ID)
     {
 	return NULL;
     }
 
-    /* Allocate memory for the node */
+    /* Use a hashtable as our environment */
+    if (! (env = env_alloc(error)))
+    {
+	return NULL;
+    }
+
+    /* Evaluate the statements to construct the subscription's environment */
+    for (ast = statements; ast != NULL; ast = ast -> next)
+    {
+	value_t value;
+
+	if (! ast_eval(ast, env, &value, error))
+	{
+	    /* FIX THIS: clean up */
+	    return 0;
+	}
+    }
+
+    /* Use the environment to initialize the subscription */
+    if (! (subscription = subscription_alloc(tag -> value.string, env, error)))
+    {
+	return NULL;
+    }
+
+    /* Allocate some memory for a subscription ast */
     if (! (self = (ast_t)ELVIN_MALLOC(sizeof(struct ast), error)))
     {
-	subscription_free(sub, NULL);
+	subscription_free(subscription, error);
 	return NULL;
     }
 
     self -> type = AST_SUB;
+    self -> ref_count = 1;
     self -> next = NULL;
-    self -> value.sub = sub;
+    self -> value.sub = subscription;
+
+    /* Clean up */
+    if (! ast_free(tag, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(statements, error))
+    {
+	return NULL;
+    }
+
     return self;
 }
 
 
+/* Allocates another copy of the ast */
+ast_t ast_clone(ast_t self, elvin_error_t error)
+{
+    self -> ref_count++;
+    return self;
+}
+
 /* Frees the resources consumed by the ast */
 int ast_free(ast_t self, elvin_error_t error)
 {
-    fprintf(stderr, "ast_free(): not yet implemented\n");
-    abort();
+    if (self == NULL)
+    {
+	return 1;
+    }
+
+    /* Check the reference count */
+    if (--self -> ref_count > 0)
+    {
+	return 1;
+    }
+
+    /* Clean up based on type */
+    switch (self -> type)
+    {
+	case AST_INT32:
+	case AST_INT64:
+	case AST_FLOAT:
+	{
+	    return ELVIN_FREE(self, error);
+	}
+
+	case AST_STRING:
+	{
+	    if (! ELVIN_FREE(self -> value.string, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
+	}
+
+	case AST_LIST:
+	{
+	    fprintf(stderr, "list\n");
+	    abort();
+	}
+
+	case AST_ID:
+	{
+	    if (! ELVIN_FREE(self -> value.id, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
+	}
+
+	case AST_UNARY:
+	{
+	    fprintf(stderr, "unary\n");
+	    abort();
+	}
+
+	case AST_BINARY:
+	{
+	    if (! ast_free(self -> value.binary.lvalue, error))
+	    {
+		return 0;
+	    }
+
+	    if (! ast_free(self -> value.binary.rvalue, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
+	}
+
+	case AST_FUNCTION:
+	case AST_BLOCK:
+	case AST_SUB:
+	{
+	    fprintf(stderr, "ast_free(): type %d is not yet supported\n", self -> type);
+	    abort();
+	}
+
+	default:
+	{
+	    fprintf(stderr, "ast_free(): invalid ast type: %d\n", self -> type);
+	    abort();
+	}
+    }
 }
 
 /* Appends another element to the end of an AST list */
@@ -800,10 +982,298 @@ ast_t ast_append(ast_t list, ast_t item, elvin_error_t error)
 }
 
 
+/* Evaluates an int32 ast in the given environment */
+static int eval_int32(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_out -> type = VALUE_INT32;
+    value_out -> value.int32 = self -> value.int32;
+    return 1;
+}
+
+/* Evaluates an int64 ast in the given environment */
+static int eval_int64(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_out -> type = VALUE_INT64;
+    value_out -> value.int64 = self -> value.int64;
+    return 1;
+}
+
+/* Evaluates a float ast in the given environment */
+static int eval_float(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_out -> type = VALUE_FLOAT;
+    value_out -> value.real64 = self -> value.real64;
+    return 1;
+}
+
+/* Evaluates a string ast in the given environment */
+static int eval_string(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    uchar *result;
+
+    /* Make a copy of the string */
+    if (! (result = ELVIN_STRDUP(self -> value.string, error)))
+    {
+	return 0;
+    }
+
+    value_out -> type = VALUE_STRING;
+    value_out -> value.string = result;
+    return 1;
+}
+
+/* Evaluates a list ast in the given environment */
+static int eval_list(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    uint32_t count, i;
+    value_t *items;
+    ast_t ast;
+
+    /* Figure out how long the list is */
+    count = 0;
+    for (ast = self -> value.list; ast != NULL; ast = ast -> next)
+    {
+	count++;
+    }
+
+    /* Shortcut for zero-length lists */
+    if (count < 1)
+    {
+	value_out -> type = VALUE_LIST;
+	value_out -> value.list.count = 0;
+	value_out -> value.list.items = NULL;
+	return 1;
+    }
+
+    /* Allocate an array to hold the items in the list */
+    if (! (items = (value_t *)ELVIN_MALLOC(count * sizeof(value_t), error)))
+    {
+	return 0;
+    }
+
+    /* Evaluate each ast item and put it into the list */
+    ast = self -> value.list;
+    for (i = 0; i < count; i++)
+    {
+	if (! ast_eval(ast, env, &items[i], error))
+	{
+	    /* FIX THIS: clean up properly */
+	    abort();
+	}
+
+	ast = ast -> next;
+    }
+
+    /* Fill in the results */
+    value_out -> type = VALUE_LIST;
+    value_out -> value.list.count = count;
+    value_out -> value.list.items = items;
+    return 1;
+}
+
+/* Evaluates an id ast in the given environment */
+static int eval_id(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    fprintf(stderr, "eval_id(): not yet implemented\n");
+    abort();
+}
+
+/* Evaluates a unary operation ast in the given environment */
+static int eval_unary(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_t value;
+
+    /* Evaluate the child node */
+    if (! ast_eval(self -> value.unary.value, env, &value, error))
+    {
+	return 0;
+    }
+
+    /* Which operation is this? */
+    switch (self -> value.unary.op)
+    {
+	case AST_NOT:
+	{
+	    /* NONE is the same as `false' */
+	    if (value.type == VALUE_NONE)
+	    {
+		value_out -> type = VALUE_INT32;
+		value_out -> value.int32 = 1;
+		return 1;
+	    }
+
+	    /* Otherwise the value becomes NONE */
+	    if (! value_free(&value, error))
+	    {
+		return 0;
+	    }
+
+	    value_out -> type = VALUE_NONE;
+	    return 1;
+	}
+
+	default:
+	{
+	    fprintf(stderr, "internal error!\n");
+	    abort();
+	}
+    }
+}
+
+
+/* Evaluates an assignment operator */
+static int eval_assign(
+    ast_t lvalue,
+    ast_t rvalue,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    uchar *name;
+
+    /* The lvalue must be an id */
+    if (lvalue -> type != AST_ID)
+    {
+	fprintf(stderr, "eval_assign(): bad lvalue\n");
+	abort();
+    }
+
+    /* Get its name */
+    name = lvalue -> value.id;
+
+    /* Evaluate the right-hand side */
+    if (! ast_eval(rvalue, env, value_out, error))
+    {
+	return 0;
+    }
+
+    /* If the environment already has an entry for that name then delete it */
+    if (elvin_hash_get(env, (elvin_hashkey_t)name, error))
+    {
+	if (! elvin_hash_delete(env, (elvin_hashkey_t)name, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Register the value with the name in the environment */
+    if (! elvin_hash_add(env, (elvin_hashkey_t)name, (elvin_hashdata_t)value_out, error))
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Evaluates a binary operation ast in the given environment */
+static int eval_binary(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    ast_t lvalue, rvalue;
+
+    /* Extract the lvalue and rvalue */
+    lvalue = self -> value.binary.lvalue;
+    rvalue = self -> value.binary.rvalue;
+
+    /* What kind of operator is this again? */
+    switch (self -> value.binary.op)
+    {
+	/* Assignment */
+	case AST_ASSIGN:
+	{
+	    return eval_assign(lvalue, rvalue, env, value_out, error);
+	}
+
+	case AST_OR:
+	case AST_AND:
+	case AST_EQ:
+	case AST_LT:
+	case AST_GT:
+	{
+	    fprintf(stderr, "eval_binary(): type %d not yet supported\n", self -> value.binary.op);
+	    return 0;
+	}
+
+	default:
+	{
+	    fprintf(stderr, "eval_binary(): invalid type: %d\n", self -> value.binary.op);
+	    abort();
+	}
+    }
+}
+
+/* Evaluates a function operation ast in the given environment */
+static int eval_function(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    fprintf(stderr, "eval_function(): not yet implemented\n");
+    abort();
+}
+
+/* Evaluates a block ast in the given environment */
+static int eval_block(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    value_out -> type = VALUE_BLOCK;
+    if (! (value_out -> value.block = ast_clone(self, error))) {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Evaluates a subscription ast in the given environment */
+static int eval_sub(
+    ast_t self,
+    elvin_hashtable_t env,
+    value_t *value_out,
+    elvin_error_t error)
+{
+    fprintf(stderr, "eval_sub(): not yet implemented\n");
+    abort();
+}
+
 /* Evaluates an AST with the given notification */
 int ast_eval(
     ast_t self,
-    elvin_notification_t env,
+    elvin_hashtable_t env,
     value_t *value_out,
     elvin_error_t error)
 {
@@ -811,250 +1281,64 @@ int ast_eval(
     {
 	case AST_INT32:
 	{
-	    value_out -> type = VALUE_INT32;
-	    value_out -> value.int32 = self -> value.int32;
-	    return 1;
+	    return eval_int32(self, env, value_out, error);
 	}
 
 	case AST_INT64:
 	{
-	    value_out -> type = VALUE_INT64;
-	    value_out -> value.int64 = self -> value.int64;
-	    return 1;
+	    return eval_int64(self, env, value_out, error);
 	}
 
 	case AST_FLOAT:
 	{
-	    value_out -> type = VALUE_FLOAT;
-	    value_out -> value.real64 = self -> value.real64;
-	    return 1;
+	    return eval_float(self, env, value_out, error);
 	}
 
 	case AST_STRING:
 	{
-	    if (! (value_out -> value.string = ELVIN_STRDUP(self -> value.string, error)))
-	    {
-		return 0;
-	    }
-
-	    value_out -> type = VALUE_STRING;
-	    return 1;
+	    return eval_string(self, env, value_out, error);
 	}
 
 	case AST_LIST:
 	{
-	    uint32_t count, i;
-	    value_t *items;
-	    ast_t ast;
-
-	    /* Figure out how long the list needs to be */
-	    count = 0;
-	    for (ast = self -> value.list; ast != NULL; ast = ast -> next)
-	    {
-		count++;
-	    }
-
-	    /* Short-cut -- nothing to alloc if no items */
-	    if (count == 0)
-	    {
-		value_out -> type = VALUE_LIST;
-		value_out -> value.list.count = 0;
-		value_out -> value.list.items = NULL;
-		return 1;
-	    }
-
-	    /* Allocate an array to hold the items in the list */
-	    if (! (items = (value_t *)ELVIN_MALLOC(count * sizeof(value_t), error)))
-	    {
-		return 0;
-	    }
-
-	    /* Evaluate each ast item and put it into the resulting list */
-	    ast = self -> value.list;
-	    for (i = 0; i < count; i++)
-	    {
-		if (! ast_eval(ast, env, &items[i], error))
-		{
-		    return 0;
-		}
-
-		ast = ast -> next;
-	    }
-
-	    /* And we're done */
-	    value_out -> type = VALUE_LIST;
-	    value_out -> value.list.count = count;
-	    value_out -> value.list.items = items;
-	    return 1;
+	    return eval_list(self, env, value_out, error);
 	}
 
 	case AST_ID:
 	{
-	    /* If we have no environment then everything evalutes to nil */
-	    if (! env)
-	    {
-		value_out -> type = VALUE_NONE;
-		return 1;
-	    }
-
-	    /* Otherwise look up the value in the notification */
-	    printf("punt!\n");
-	    abort();
+	    return eval_id(self, env, value_out, error);
 	}
 
 	case AST_UNARY:
 	{
-	    switch (self -> value.unary.op)
-	    {
-		case AST_NOT:
-		{
-		    /* Evaluate the child */
-		    if (! ast_eval(self -> value.unary.value, env, value_out, error))
-		    {
-			return 0;
-		    }
-
-		    /* And negate its value */
-		    switch (value_out -> type)
-		    {
-			case VALUE_NONE:
-			{
-			    value_out -> type = VALUE_INT32;
-			    value_out -> value.int32 = 1;
-			}
-
-			case VALUE_INT32:
-			{
-			    value_out -> value.int32 = ! value_out -> value.int32;
-			    return 1;
-			}
-
-			case VALUE_INT64:
-			{
-			    value_out -> value.int64 = ! value_out -> value.int64;
-			    return 1;
-			}
-
-			case VALUE_FLOAT:
-			{
-			    value_out -> value.real64 = ! value_out -> value.real64;
-			    return 1;
-			}
-
-			case VALUE_STRING:
-			{
-			    value_out -> type = VALUE_NONE;
-			    return ELVIN_FREE(value_out -> value.string, error);
-			}
-
-			case VALUE_OPAQUE:
-			{
-			    value_out -> type = VALUE_NONE;
-			    return ELVIN_FREE(value_out -> value.opaque.data, error);
-			}
-
-			case VALUE_LIST:
-			{
-			    printf("how do I negate a list?!\n");
-			    abort();
-			}
-
-			case VALUE_BLOCK:
-			{
-			    printf("how do I negate a block!?\n");
-			    abort();
-			}
-		    }
-
-		    fprintf(stderr, "doh!\n");
-		    abort();
-		}
-	    }
-
-	    /* Otherwise we're in trouble */
-	    printf("foon!\n");
-	    abort();
+	    return eval_unary(self, env, value_out, error);
 	}
 
-	case AST_BINOP:
+	case AST_BINARY:
 	{
-	    printf("ast_eval: binop\n");
-	    abort();
+	    return eval_binary(self, env, value_out, error);
 	}
 
 	case AST_FUNCTION:
 	{
-	    printf("ast_eval: function\n");
-	    abort();
+	    return eval_function(self, env, value_out, error);
 	}
 
 	case AST_BLOCK:
 	{
-	    printf("ast_eval: block\n");
-	    abort();
+	    return eval_block(self, env, value_out, error);
 	}
 
 	case AST_SUB:
 	{
-	    printf("ast_eval: sub\n");
+	    return eval_sub(self, env, value_out, error);
+	}
+
+	default:
+	{
+	    fprintf(stderr, "ast_eval(): bad type: %d\n", self -> type);
 	    abort();
 	}
     }
-
-    return 0;
 }
 
-/* Allocates and returns a string representation of the AST */
-char *ast_to_string(ast_t self, elvin_error_t error)
-{
-    /* Which kind of ast node are we? */
-    switch (self -> type)
-    {
-	/* Simple integers */
-	case AST_INT32:
-	{
-	    char buffer[12];
-
-	    sprintf(buffer, "%d", self -> value.int32);
-	    return ELVIN_STRDUP(buffer, error);
-	}
-
-	/* Big integers */
-	case AST_INT64:
-	{
-	    char buffer[21];
-
-	    sprintf(buffer, "%" INT64_PRINT, self -> value.int64);
-	    return ELVIN_STRDUP(buffer, error);
-	}
-
-	/* Floating-point numbers (not really reals) */
-	case AST_FLOAT:
-	{
-	    /* FIX THIS: how big does this have to be? */
-	    char buffer[64];
-
-	    sprintf(buffer, "%#.8g", self -> value.real64);
-	    return ELVIN_STRDUP(buffer, error);
-	}
-
-	/* Strings print as themselves */
-	case AST_STRING:
-	{
-	    return ELVIN_STRDUP(self -> value.string, error);
-	}
-
-	/* Identifiers don't print, but we'll pretend they do */
-	case AST_ID:
-	{
-	    return ELVIN_STRDUP(self -> value.id, error);
-	}
-
-	case AST_BINOP:
-	default:
-	{
-	    fprintf(stderr, "ast_to_string(): unexpected type: %d\n", self -> type);
-	    return NULL;
-	}
-    }
-}

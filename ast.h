@@ -31,7 +31,7 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.5 2000/07/10 00:12:10 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.6 2000/07/10 07:44:14 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
@@ -67,6 +67,22 @@ struct list
 };
 
 
+/* Allocates and returns a string representation of the value */
+char *value_to_string(value_t *self, elvin_error_t error);
+
+/* Frees a value's contents */
+int value_free(value_t *value, elvin_error_t error);
+
+
+/* An environment is really just a hashtable */
+typedef elvin_hashtable_t env_t;
+
+/* Allocates and initializes a new environment */
+env_t env_alloc(elvin_error_t error);
+
+/* Looks up a value in the environment */
+value_t *env_get(env_t self, char *name, elvin_error_t error);
+
 /* The value union contains all possible types values */
 typedef union value_union
 {
@@ -94,7 +110,7 @@ enum ast_unary
 typedef enum ast_unary ast_unary_t;
 
 /* The binary operators */
-enum ast_binop
+enum ast_binary
 {
     AST_ASSIGN,
     AST_OR,
@@ -104,7 +120,7 @@ enum ast_binop
     AST_GT
 };
 
-typedef enum ast_binop ast_binop_t;
+typedef enum ast_binary ast_binary_t;
 
 
 /* Allocates and initializes a new int32 AST node */
@@ -135,14 +151,17 @@ ast_t ast_block_alloc(ast_t body, elvin_error_t error);
 ast_t ast_unary_alloc(ast_unary_t op, ast_t value, elvin_error_t error);
 
 /* Allocates and initializes a new binary operation AST node */
-ast_t ast_binop_alloc(
-    ast_binop_t op,
+ast_t ast_binary_alloc(
+    ast_binary_t op,
     ast_t lvalue,
     ast_t rvalue,
     elvin_error_t error);
 
 /* Allocates and initializes a new subscription AST node */
 ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error);
+
+/* Clones the ast (actually gets another reference to it) */
+ast_t ast_clone(ast_t self, elvin_error_t error);
 
 /* Frees the resources consumed by the ast */
 int ast_free(ast_t self, elvin_error_t error);
@@ -155,7 +174,7 @@ ast_t ast_append(ast_t list, ast_t item, elvin_error_t error);
 /* Evaluates an AST against the given notification */
 int ast_eval(
     ast_t self,
-    elvin_notification_t env,
+    elvin_hashtable_t env,
     value_t *value_out,
     elvin_error_t error);
 
