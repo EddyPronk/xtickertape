@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.5 2001/07/06 06:56:48 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.6 2001/07/06 07:03:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -231,7 +231,7 @@ static void paint_string(
     string_sizes_t sizes,
     XFontStruct *font,
     char *string,
-    int do_underline)
+    int underline_height)
 {
     XGCValues values;
 
@@ -251,7 +251,7 @@ static void paint_string(
     }
 
     /* Bail out if we're not underlining */
-    if (! do_underline)
+    if (! underline_height)
     {
 	return;
     }
@@ -264,10 +264,12 @@ static void paint_string(
 	XChangeGC(display, gc, GCForeground, &values);
 
 	/* Draw the underline */
-	XDrawLine(
+	XFillRectangle(
 	    display, drawable, gc,
 	    MAX(x, bbox -> x), y + 2,
-	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width), y + 2);
+	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width) - 
+	    MAX(x, bbox -> x),
+	    underline_height);
     }
 }
 
@@ -375,12 +377,20 @@ void message_view_paint(
     int x, int y,
     XRectangle *bbox)
 {
-    int do_underline = message_has_attachment(self -> message);
+    int underline_height = 0;
 #if (DEBUG_PER_CHAR - 1) == 0
     XGCValues values;
     char *string;
     long px;
+#endif /* DEBUG_PER_CHAR */
 
+    /* Compute how big the underline should be */
+    if (message_has_attachment(self -> message))
+    {
+	underline_height = self -> font -> descent / 4;
+    }
+
+#if (DEBUG_PER_CHAR - 1) == 0
     /* Draw the message the slow way so that we can tell where we're
      * diverging from the server's interpretation of the font */ 
     values.foreground = separator_pixel;
@@ -413,9 +423,9 @@ void message_view_paint(
     px += self -> message_sizes.width;
 
     /* And finally draw the underline */
-    if (do_underline)
+    if (underline_height)
     {
-	XDrawLine(display, drawable, gc, x, y + 2, px, y + 2);
+	XFillRectangle(display, drawable, gc, x, y + 2, px - x, underline_height);
     }
 #endif /* DEBUG_PER_CHAR */
 
@@ -423,35 +433,35 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, group_pixel,
 	x, y, bbox, &self -> group_sizes,
-	self -> font, message_get_group(self -> message), do_underline);
+	self -> font, message_get_group(self -> message), underline_height);
     x += self -> group_sizes.width;
 
     /* Paint the first separator */
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> font, SEPARATOR, do_underline);
+	self -> font, SEPARATOR, underline_height);
     x += self -> separator_sizes.width;
 
     /* Paint the user string */
     paint_string(
 	display, drawable, gc, user_pixel,
 	x, y, bbox, &self -> user_sizes,
-	self -> font, message_get_user(self -> message), do_underline);
+	self -> font, message_get_user(self -> message), underline_height);
     x += self -> user_sizes.width;
 
     /* Paint the second separator */
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> font, SEPARATOR, do_underline);
+	self -> font, SEPARATOR, underline_height);
     x += self -> separator_sizes.width;
 
     /* Paint the message string */
     paint_string(
 	display, drawable, gc, message_pixel,
 	x, y, bbox, &self -> message_sizes,
-	self -> font, message_get_string(self -> message), do_underline);
+	self -> font, message_get_string(self -> message), underline_height);
     x += self -> message_sizes.width;
 }
 
