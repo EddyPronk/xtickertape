@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.17 1998/04/21 05:06:48 phelps Exp $ */
+/* $Id: MessageView.c,v 1.18 1998/05/12 05:08:46 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +32,7 @@ struct MessageView_t
     TickertapeWidget widget;
     Message message;
     unsigned int fadeLevel;
+    char isExpired;
 
     /* Cache */
     XtIntervalId timer;
@@ -89,14 +90,38 @@ static void tick();
 /* Set a timer to call tick when the colors should fade */
 static void setClock(MessageView self)
 {
+    int duration;
     SANITY_CHECK(self);
+
+    if (self -> isExpired)
+    {
+	/* 1/20th of a second delay on fading messages */
+	duration = 50;
+    }
+    else
+    {
+	duration = 60 * 1000 *
+	    Message_getTimeout(self -> message) / TtGetFadeLevels(self -> widget);
+    }
 
     self -> timer = TtStartTimer(
 	self -> widget,
-	60 * 1000 * Message_getTimeout(self -> message) / TtGetFadeLevels(self -> widget),
+	duration,
 	tick,
 	(XtPointer) self);
 }
+
+/* Clear the timer */
+static void clearClock(MessageView self)
+{
+    if ((self -> timer) != 0)
+    {
+	TtStopTimer(self -> widget, self -> timer);
+	self -> timer = 0;
+    }
+}
+
+
 
 /* This gets called when the colors need to fade */
 static void tick(MessageView self, XtIntervalId *ignored)
@@ -248,6 +273,7 @@ void MessageView_debug(MessageView self)
     printf("  refcount = %u\n", self -> refcount);
     printf("  widget = 0x%p\n", self -> widget);
     printf("  fadeLevel = %d\n", self -> fadeLevel);
+    printf("  isExpired = %s\n", (self -> isExpired) ? "true" : "false");
     printf("  message = Message[%s:%s:%s (%ld)]\n",
 	   Message_getGroup(self -> message),
 	   Message_getUser(self -> message),
@@ -276,6 +302,7 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
     self -> widget = widget;
     self -> message = message;
     self -> fadeLevel = 0;
+    self -> isExpired = FALSE;
     self -> ascent = getAscent(self);
     self -> height = self -> ascent + getDescent(self);
     computeWidths(self);
@@ -292,10 +319,7 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
 /* Free the memory allocated by the receiver */
 void MessageView_free(MessageView self)
 {
-    if (self -> timer)
-    {
-	TtStopTimer(self -> widget, self -> timer);
-    }
+    clearClock(self);
 
 #ifdef SANITY
     self -> sanity_check = sanity_freed;
@@ -362,7 +386,7 @@ void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 int MessageView_isTimedOut(MessageView self)
 {
     SANITY_CHECK(self);
-    return ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
+    return (self -> isExpired) || ((self -> fadeLevel) == TtGetFadeLevels(self -> widget));
 }
 
 /* MIME-decodes the receiver's message */
@@ -409,7 +433,8 @@ void MessageView_expire(MessageView self)
     SANITY_CHECK(self);
     if (Message_getTimeout(self -> message) > 0)
     {
-	self -> fadeLevel = TtGetFadeLevels(self -> widget) - 1;
-	paint(self, self -> pixmap, 0, self -> ascent);
+	self -> isExpired = TRUE;
+	clearClock(self);
+	setClock(self);
     }
 }
