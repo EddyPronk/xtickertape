@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.7 2000/11/20 05:22:43 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.8 2000/11/20 06:24:04 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -408,6 +408,22 @@ int vm_push_special_form(vm_t self, prim_t func, elvin_error_t error)
     return 1;
 }
 
+/* Pushes a primitive subroutine onto the vm's stack */
+int vm_push_subr(vm_t self, prim_t func, elvin_error_t error)
+{
+    object_t object;
+
+    /* Create a new special form object on the heap */
+    if (! vm_new(self, 1, SEXP_SUBR, 0, error) ||
+	! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Copy the function pointer into the object */
+    object[1] = (object_t)func;
+    return 1;
+}
 
 /* Makes a symbol out of the string on the top of the stack */
 int vm_make_symbol(vm_t self, elvin_error_t error)
@@ -710,9 +726,6 @@ static int do_return(vm_t self, elvin_error_t error)
 {
     object_t object;
 
-    printf("*** before...\n");
-    vm_print_state(self, error);
-
     /* Get the object off of the stack */
     if (! vm_pop(self, &object, error))
     {
@@ -732,19 +745,16 @@ static int do_return(vm_t self, elvin_error_t error)
 	return 0;
     }
 
-    printf("*** after\n");
-    vm_print_state(self, error);
     return 1;
 }
 
 
 /* Perform the next calculation based on the VM state */
-static int run(vm_t self, elvin_error_t error)
+static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 {
-    /* Keep evaluating while our expression isn't nil */
-    while (self -> expr)
+    /* Keep evaluating until... when? */
+    while (self -> sp > sp_exit)
     {
-	/* What we do depends on where we are */
 	switch (self -> pc)
 	{
 	    /* Always evaluate the first arg */
@@ -755,6 +765,7 @@ static int run(vm_t self, elvin_error_t error)
 		/* Push the car of the expression onto the stack */
 		if (! vm_push(self, self -> expr[1], error))
 		{
+		    self -> sp = sp_exit;
 		    return 0;
 		}
 
@@ -764,6 +775,7 @@ static int run(vm_t self, elvin_error_t error)
 		/* Set up to evaluate the expression */
 		if (! eval_setup(self, error))
 		{
+		    self -> sp = sp_exit;
 		    return 0;
 		}
 
@@ -778,6 +790,7 @@ static int run(vm_t self, elvin_error_t error)
 		/* The function should be on the top of the stack */
 		if (! vm_top(self, &object, error))
 		{
+		    self -> sp = sp_exit;
 		    return 0;
 		}
 
@@ -791,6 +804,7 @@ static int run(vm_t self, elvin_error_t error)
 			{
 			    if (! vm_push(self, self -> expr[1], error))
 			    {
+				self -> sp = sp_exit;
 				return 0;
 			    }
 
@@ -801,6 +815,7 @@ static int run(vm_t self, elvin_error_t error)
 			/* Make sure we have a null-terminated list */
 			if (object_type(self -> expr) != SEXP_NIL)
 			{
+			    self -> sp = sp_exit;
 			    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
 			    return 0;
 			}
@@ -808,24 +823,28 @@ static int run(vm_t self, elvin_error_t error)
 			/* Roll the function to the top of the stack */
 			if (! vm_unroll(self, self -> pc - 1, error))
 			{
+			    self -> sp = sp_exit;
 			    return 0;
 			}
 
 			/* Pop it and call it */
 			if (! vm_pop(self, &object, error))
 			{
+			    self -> sp = sp_exit;
 			    return 0;
 			}
 
 			/* Call the function */
 			if (! ((prim_t)object[1])(self, self -> pc - 1, error))
 			{
+			    self -> sp = sp_exit;
 			    return 0;
 			}
 
 			/* Return the top of the stack as the result */
 			if (! do_return(self, error))
 			{
+			    self -> sp = sp_exit;
 			    return 0;
 			}
 
@@ -836,13 +855,55 @@ static int run(vm_t self, elvin_error_t error)
 		    case SEXP_SUBR:
 		    case SEXP_LAMBDA:
 		    {
-			printf("it's a subr or lambda\n");
-			exit(1);
+			switch (object_type(self -> expr))
+			{
+			    case SEXP_NIL:
+			    {
+				printf("we're done evaluating args (there are none)\n");
+				vm_print_state(self, error);
+				exit(1);
+			    }
+
+			    case SEXP_CONS:
+			    {
+				self -> pc++;
+
+				/* Push the car of the expression onto the stack */
+				if (! vm_push(self, self -> expr[1], error))
+				{
+				    self -> sp = sp_exit;
+				    return 0;
+				}
+
+				/* The expression becomes its cdr */
+				self -> expr = self -> expr[2];
+
+				/* Set up to evaluate this arg */
+				if (! eval_setup(self, error))
+				{
+				    self -> sp = sp_exit;
+				    return 0;
+				}
+				
+				break;
+			    }
+
+			    /* Anything else is trouble */
+			    default:
+			    {
+				self -> sp = sp_exit;
+				ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
+				return 0;
+			    }
+			}
+
+			break;
 		    }
 
 		    /* Bogus function.  Bail! */
 		    default:
 		    {
+			self -> sp = sp_exit;
 			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus func");
 			return 0;
 		    }
@@ -851,11 +912,49 @@ static int run(vm_t self, elvin_error_t error)
 		break;
 	    }
 
-	    /* Evaluating args */
+	    /* We must be evaluating args */
 	    default:
 	    {
-		printf("we're evaluating later parts of the expression\n");
-		exit(1);
+		switch (object_type(self -> expr))
+		{
+		    case SEXP_NIL:
+		    {
+			printf("we're done evaluating args\n");
+			vm_print_state(self, error);
+			exit(1);
+		    }
+
+		    case SEXP_CONS:
+		    {
+			self -> pc++;
+
+			/* Push the car of the expression onto the stack */
+			if (! vm_push(self, self -> expr[1], error))
+			{
+			    self -> sp = sp_exit;
+			    return 0;
+			}
+
+			/* The expression becomes its cdr */
+			self -> expr = self -> expr[2];
+
+			/* Set up to evaluate this arg */
+			if (! eval_setup(self, error))
+			{
+			    self -> sp = sp_exit;
+			    return 0;
+			}
+
+			break;
+		    }
+
+		    default:
+		    {
+			self -> sp = sp_exit;
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
+			return 0;
+		    }
+		}
 	    }
 		
 	}
@@ -868,6 +967,8 @@ static int run(vm_t self, elvin_error_t error)
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error)
 {
+    uint32_t sp = self -> sp;
+
     /* Set up to evaluate the top of the stack */
     if (! eval_setup(self, error))
     {
@@ -875,7 +976,7 @@ int vm_eval(vm_t self, elvin_error_t error)
     }
 
     /* Run until we're done */
-    return run(self, error);
+    return run(self, sp, error);
 }
 
 
