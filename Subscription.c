@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.25 1999/05/06 00:34:33 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.26 1999/05/17 12:57:25 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -423,13 +423,16 @@ static void SendMessage(Subscription self, Message message)
     
     SANITY_CHECK(self);
 
+    /* Pull information out of the message */
     timeout = Message_getTimeout(message);
     messageId = Message_getId(message);
     replyId = Message_getReplyId(message);
     mimeArgs = Message_getMimeArgs(message);
     mimeType = Message_getMimeType(message);
 
+    /* Use it to construct a notification */
     notification = en_new();
+    en_add_string(notification, "xtickertape.version", VERSION);
     en_add_string(notification, "TICKERTAPE", self -> group);
     en_add_string(notification, "USER", Message_getUser(message));
     en_add_int32(notification, "TIMEOUT", timeout);
