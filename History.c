@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.51 2002/04/04 20:48:10 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.52 2002/04/08 13:35:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1378,9 +1378,15 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     XRectangle bbox;
     long y;
 
-    /* Bail if the selection is unchanged */
+    /* Is this the same selection as before? */
     if (self -> history.selection == message)
     {
+	/* Just make sure it's visible */
+	if (gc != None && self -> history.selection_index != (unsigned int)-1)
+	{
+	    make_index_visible(self, index);
+	}
+
 	return;
     }
 
