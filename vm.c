@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.16 2000/12/08 04:08:12 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.17 2000/12/08 06:54:43 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -513,6 +513,27 @@ int vm_make_cons(vm_t self, elvin_error_t error)
     
     /* Push the cons cell back onto the stack */
     return vm_push(self, cons, error);
+}
+
+/* Creates a list out of the top few elements of the stack */
+int vm_make_list(vm_t self, uint32_t count, elvin_error_t error)
+{
+    /* Make sure the list is null-terminated */
+    if (! vm_push_nil(self, error))
+    {
+	return 0;
+    }
+
+    /* Make `count' cons cells */
+    while (count-- > 0)
+    {
+	if (! vm_make_cons(self, error))
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
 }
 
 /* Pops a cons cell off the top of the stack and pushes its car on instead */

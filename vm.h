@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.13 2000/11/28 00:33:59 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.14 2000/12/08 06:54:43 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -121,6 +121,9 @@ int vm_make_symbol(vm_t self, elvin_error_t error);
 
 /* Creates a cons cell out of the top two elements on the stack */
 int vm_make_cons(vm_t self, elvin_error_t error);
+
+/* Creates a list out of the top few elements of the stack */
+int vm_make_list(vm_t self, uint32_t count, elvin_error_t error);
 
 /* Replaces the top of the stack with its car */
 int vm_car(vm_t self, elvin_error_t error);
