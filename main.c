@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.14 1997/02/17 02:28:06 phelps Exp $ */
+/* $Id: main.c,v 1.15 1997/02/17 06:55:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,16 +110,6 @@ int main(int argc, char *argv[])
     int port = PORT;
     int index = 1;
 
-    /* Read args for hostname and port */
-    if (index < argc)
-    {
-	hostname = argv[index++];
-    }
-    if (index < argc)
-    {
-	port = atoi(argv[index++]);
-    }
-
     /* Read subscriptions from the groups file */
     subscriptions = List_alloc();
     file = getGroupFile();
@@ -150,6 +140,16 @@ int main(int argc, char *argv[])
 	"scroller", tickertapeWidgetClass, top,
 	NULL);
     XtAddCallback((Widget)tickertape, XtNcallback, Click, NULL);
+
+    /* Read args for hostname and port */
+    if (index < argc)
+    {
+	hostname = argv[index++];
+    }
+    if (index < argc)
+    {
+	port = atoi(argv[index++]);
+    }
 
     /* listen for messages from the bridge */
     connection = BridgeConnection_alloc(tickertape, hostname, port, subscriptions);
