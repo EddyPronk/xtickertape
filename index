@@ -11,3 +11,5 @@ facility lisp 256
 00009 TOO_MANY_ARGS string(function)
 00010 ARGS_NOT_LIST
 00011 TYPE_MISMATCH string(value) string(type)
+
+00100 SYM_UNDEF string(symbol)

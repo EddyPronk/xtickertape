@@ -11,3 +11,4 @@ TOO_FEW_ARGS	too few arguments to function `%1'
 TOO_MANY_ARGS	too many arguments to function `%1'
 ARGS_NOT_LIST	argument list must be nil-terminated
 TYPE_MISMATCH	type mismatch: `%1' is not a %2
+SYM_UNDEF	symbol `%1' is undefined
