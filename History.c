@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.75 2003/01/27 15:16:37 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.76 2003/01/27 21:24:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2531,6 +2531,7 @@ void HistorySelectId(Widget widget, char *message_id)
     HistoryWidget self = (HistoryWidget)widget;
     message_t message;
     unsigned int i;
+    char *string;
 
     /* Save the effort if there's no id */
     if (message_id != NULL)
@@ -2538,13 +2539,13 @@ void HistorySelectId(Widget widget, char *message_id)
 	/* Find the index of the message */
 	for (i = self -> history.message_count - 1; i >= 0; --i)
 	{
-	    if ((message = message_view_get_message(self -> history.message_views[i])) != NULL)
+	    if ((message = message_view_get_message(
+		     self -> history.message_views[i])) != NULL &&
+		(string = message_get_id(message)) != NULL &&
+		strcmp(string, message_id) == 0)
 	    {
-		if (strcmp(message_get_id(message), message_id) == 0)
-		{
-		    set_selection(self, i, message);
-		    return;
-		}
+		set_selection(self, i, message);
+		return;
 	    }
 	}
     }
