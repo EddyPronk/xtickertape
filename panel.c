@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.65 2002/04/16 15:49:55 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.66 2002/04/21 13:42:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -213,6 +213,10 @@ struct control_panel
     /* Non-zero indicates that the the control panel should be closed
      * after a notification is sent */
     int close_on_send;
+
+    /* Non-zero indicates that the elvin connection is currently
+     * capable of sending a notification. */
+    int is_connected;
 };
 
 
@@ -551,8 +555,6 @@ static void create_help_menu(control_panel_t self, Widget parent)
     XtVaSetValues(parent, XmNmenuHelpWidget, cascade, NULL);
 }
 
-
-
 /* This function is used to order the elements of the group menu */
 static Cardinal order_group_menu(Widget item)
 {
@@ -665,7 +667,6 @@ static void history_motion_callback(
 
     control_panel_set_status_message(self, message);
 }
-
 
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
@@ -797,6 +798,36 @@ static void create_top_box(control_panel_t self, Widget parent)
 	NULL);
 }
 
+/* Set the send button's sensitivity */
+static void update_send_button_sensitive(control_panel_t self)
+{
+    char *string;
+
+    /* Are we connected? */
+    if (! self -> is_connected)
+    {
+	XtSetSensitive(self -> send, False);
+	return;
+    }
+
+    /* Is there any message text? */
+    string = get_text(self);
+    if (string == NULL || *string == '\0')
+    {
+	XtSetSensitive(self -> send, False);
+	return;
+    }
+
+    /* Everything is ready for sending */
+    XtSetSensitive(self -> send, True);
+}
+
+/* Callback for changes in the text box */
+static void text_changed(Widget widget, XtPointer rock, XtPointer unused)
+{
+    control_panel_t self = (control_panel_t)rock;
+    update_send_button_sensitive(self);
+}
 
 /* Constructs the Text box */
 static void create_text_box(control_panel_t self, Widget parent)
@@ -819,6 +850,11 @@ static void create_text_box(control_panel_t self, Widget parent)
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNleftWidget, label,
 	NULL);
+
+    /* Alert us when the message text changes */
+    XtAddCallback(
+	self -> text, XmNvalueChangedCallback,
+	text_changed, (XtPointer)self);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
@@ -902,7 +938,6 @@ static void create_bottom_box(control_panel_t self, Widget parent)
     XtAddCallback(
 	self -> send, XmNactivateCallback,
 	(XtCallbackProc)action_send, (XtPointer)self);
-
 
     /* Create the "Clear" button */
     button = XtVaCreateManagedWidget(
@@ -1045,6 +1080,7 @@ static void init_ui(control_panel_t self, Widget parent)
 	XmNtopAttachment, XmATTACH_WIDGET,
 	XmNtopWidget, top_form,
 	NULL);
+
     create_text_box(self, text_form);
     XtManageChild(text_form);
 
@@ -1638,8 +1674,11 @@ void control_panel_set_connected(
     control_panel_t self,
     int is_connected)
 {
-    /* Enable/disable the `Send' button as appropriate */
-    XtSetSensitive(self -> send, is_connected);
+    /* Record our connection status */
+    self -> is_connected = is_connected;
+
+    /* Update the send button's sensitivity */
+    update_send_button_sensitive(self);
 }
 
 /* Adds a subscription to the receiver at the end of the groups list */

@@ -1,7 +1,10 @@
 Overview of changes in xtickertape-2.0
 
-* Groups now conform to both the old message format and the v3.0 draft
-  specification.
+* The Send button is now disabled until there is at least one
+  character in the `Text' field.
+
+* Group notifications now conform to both the old message format and
+  the v3.0 draft specification.
 
 * Created a new widget (class History) to display the last few
   messages.  The length of the history can be specified by setting
