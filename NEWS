@@ -11,6 +11,12 @@ Overview of changes in xtickertape-2.0b1
   the current user so that they can go back and send them to other
   groups or fix the spelling.
 
+* New command-line options: -T ticker-dir and -k keys-dir.  The former
+  overrides the TICKERDIR environment variable, and the latter
+  specifies the root path of a key file with a relative pathname.  If
+  keys-dir is not set then it defaults to the directory containing the
+  keys file.
+
 Overview of changes in xtickertape-2.0a8
 
 * The usenet file now supports backslashes as escape characters.  You
