@@ -189,6 +189,7 @@ AC_OUTPUT([
     Makefile
     XTickertape.ad
     packages/Makefile
+    packages/deb/Makefile
     packages/rpm/Makefile
     packages/rpm/SOURCES/Makefile
     packages/rpm/SPECS/Makefile

@@ -1,0 +1,9 @@
+xtickertape (2.0b1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Clinton Roy <croy@dstc.com>  Thu, 15 May 2003 13:36:24 +1000
+
+Local variables:
+mode: debian-changelog
+End:

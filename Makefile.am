@@ -56,8 +56,12 @@ install-data-local:
 	$(INSTALL_DATA) XTickertape.ad $(DESTDIR)$(appdefaultsdir)/XTickertape
 
 # Use fake targets for the various packages
-.PSEUDO: rpm
+.PSEUDO: deb rpm
 
 # Build an RPM
 rpm: dist
 	(cd packages/rpm; make rpm)
+
+# Build a Debian package
+deb: dist
+	(cd packages/deb; make deb)

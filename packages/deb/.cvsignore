@@ -1,0 +1,9 @@
+files
+postinst.debhelper
+prerm.debhelper
+Makefile.in
+Makefile
+changelog
+control
+rules
+tmp

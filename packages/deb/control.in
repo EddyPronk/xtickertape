@@ -1,0 +1,15 @@
+Source: @PACKAGE@
+Section: net
+Priority: optional
+Maintainer: Clinton Roy <croy@dstc.com>
+Standards-Version: 3.0.1
+
+Package: @PACKAGE@
+Architecture: any
+Depends: libelvin, lesstif, metamail
+Description: Elvin tickertape client
+ XTickertape is a demonstration of how much information can be
+ condensed into a single line of scrolling text.  It can receive Elvin
+ notifications from a variety of sources (including usenet and CVS) and
+ also from other tickertapes.
+

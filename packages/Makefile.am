@@ -1,1 +1,1 @@
-SUBDIRS = rpm
+SUBDIRS = deb rpm
