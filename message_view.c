@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.12 2001/08/25 14:09:41 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.13 2002/04/04 12:32:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -201,6 +201,9 @@ struct message_view
     /* The width of the longest timestamp (12:00pm) */
     long noon_width;
 
+    /* The number of levels of indentation */
+    long indent;
+
     /* The width of a single logical indent */
     long indent_width;
 
@@ -307,7 +310,8 @@ static void paint_string(
 /* Allocates and initializes a message_view */
 message_view_t message_view_alloc(
     message_t message,
-    XFontStruct *font)
+    XFontStruct *font,
+    long indent)
 {
     message_view_t self;
     unsigned long value;
@@ -331,8 +335,9 @@ message_view_t message_view_alloc(
 	return NULL;
     }
 
-    /* Record the font */
+    /* Record the font and indentation */
     self -> font = font;
+    self -> indent = indent;
 
     /* If the message has an attachment then compute the underline info */
     if (message_has_attachment(message))
@@ -379,7 +384,7 @@ message_view_t message_view_alloc(
     measure_string(font, NOON_TIMESTAMP, &sizes);
     self -> noon_width = sizes.width;
 
-    /* Figure out how big a single indent should be */
+    /* Figure out how much to indent the message */
     info = per_char(font, ' ');
     self -> indent_width = info -> width * 2;
 
@@ -412,7 +417,6 @@ message_t message_view_get_message(message_view_t self)
 void message_view_get_sizes(
     message_view_t self,
     int show_timestamp,
-    unsigned long indent,
     string_sizes_t sizes_out)
 {
     long lbearing = 0;
@@ -432,7 +436,7 @@ void message_view_get_sizes(
     }
 
     /* Include the width of the indent */
-    width += indent * self -> indent_width;
+    width += self -> indent * self -> indent_width;
 
     /* Start with the sizes of the group string */
     lbearing = MIN(lbearing, width + self -> group_sizes.lbearing);
@@ -474,7 +478,6 @@ void message_view_paint(
     Drawable drawable,
     GC gc,
     int show_timestamp,
-    unsigned long indent,
     unsigned long timestamp_pixel,
     unsigned long group_pixel,
     unsigned long user_pixel,
@@ -547,7 +550,7 @@ void message_view_paint(
     }
 
     /* Indent */
-    x += indent * self -> indent_width;
+    x += self -> indent * self -> indent_width;
 
     /* Paint the group string */
     paint_string(

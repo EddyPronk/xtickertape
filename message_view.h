@@ -31,7 +31,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.4 2001/08/25 14:04:44 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.5 2002/04/04 12:32:16 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */
@@ -63,7 +63,8 @@ struct string_sizes
 /* Allocates and initializes a new message_view_t */
 message_view_t message_view_alloc(
     message_t message,
-    XFontStruct *font);
+    XFontStruct *font,
+    long indent);
 
 /* Frees a message_view_t */
 void message_view_free(message_view_t self);
@@ -75,7 +76,6 @@ message_t message_view_get_message(message_view_t self);
 void message_view_get_sizes(
     message_view_t self,
     int show_timestamp,
-    unsigned long indent,
     string_sizes_t sizes_out);
 
 /* Draws the message_view */
@@ -85,7 +85,6 @@ void message_view_paint(
     Drawable drawable,
     GC gc,
     int show_timestamp,
-    unsigned long indent,
     unsigned long timestamp_pixel,
     unsigned long group_pixel,
     unsigned long user_pixel,

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.42 2002/04/04 12:15:45 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.43 2002/04/04 12:32:15 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -902,7 +902,7 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 	/* Draw the view */
 	message_view_paint(
 	    view, display, window, gc,
-	    show_timestamps, 0, self -> history.timestamp_pixel,
+	    show_timestamps, self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    x, y + self -> history.font -> ascent, bbox);
@@ -1024,7 +1024,7 @@ static void recompute_dimensions(HistoryWidget self)
     {
 	struct string_sizes sizes;
 
-	message_view_get_sizes(self -> history.message_views[i], show_timestamps, 0, &sizes);
+	message_view_get_sizes(self -> history.message_views[i], show_timestamps, &sizes);
 	width = MAX(width, sizes.width);
 	height += self -> history.line_height;
     }
@@ -1038,7 +1038,10 @@ static void recompute_dimensions(HistoryWidget self)
 }
 
 /* Insert a message before the given index */
-static void insert_message(HistoryWidget self, unsigned int index, message_t message)
+static void insert_message(HistoryWidget self,
+			   unsigned int index,
+			   unsigned int indent,
+			   message_t message)
 {
     Display *display = XtDisplay((Widget)self);
     Window window = XtWindow((Widget)self);
@@ -1074,7 +1077,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i];
 
 	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    message_view_get_sizes(view, show_timestamps, &sizes);
 	    width = MAX(width, sizes.width);
 	    y += self -> history.line_height;
 	    height += self -> history.line_height;
@@ -1087,7 +1090,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i - 1];
 
 	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    message_view_get_sizes(view, show_timestamps, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 
@@ -1121,7 +1124,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i];
 
 	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    message_view_get_sizes(view, show_timestamps, &sizes);
 	    width = MAX(width, sizes.width);
 	    y += self -> history.line_height;
 	    height += self -> history.line_height;
@@ -1139,7 +1142,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i - 1];
 
 	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+	    message_view_get_sizes(view, show_timestamps, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	}
@@ -1160,11 +1163,11 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     }
 
     /* Create a new message view */
-    view = message_view_alloc(message, self -> history.font);
+    view = message_view_alloc(message, self -> history.font, indent);
     self -> history.message_views[index] = view;
 
     /* Measure it */
-    message_view_get_sizes(view, show_timestamps, 0, &sizes);
+    message_view_get_sizes(view, show_timestamps, &sizes);
     width = MAX(width, sizes.width);
     height += self -> history.line_height;
 
@@ -1186,7 +1189,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	/* Use it to draw the new message */
 	message_view_paint(
 	    view, display, window, gc,
-	    self -> history.show_timestamps, 0,
+	    self -> history.show_timestamps,
 	    self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
@@ -1307,7 +1310,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
-		self -> history.show_timestamps, 0,
+		self -> history.show_timestamps,
 		self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
@@ -1364,7 +1367,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
-		self -> history.show_timestamps, 0,
+		self -> history.show_timestamps,
 		self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
@@ -1928,10 +1931,10 @@ void HistoryAddMessage(Widget widget, message_t message)
 
     printf("added node; index=%d, depth=%d\n", index, depth);
     node_dump(self -> history.nodes, 0);
-    insert_message(self, index, message);
+    insert_message(self, index, depth, message);
 #else
     /* For now just insert at the end */
-    insert_message(self, self -> history.message_count, message);
+    insert_message(self, self -> history.message_count, 0, message);
 #endif
 }
 
