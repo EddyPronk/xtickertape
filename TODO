@@ -20,10 +20,6 @@ Control Panel:
 
 Scroller:
 
-- It should be possible to have the scrolling speed change when the
-  mouse enters/leaves the scroller.  I'm not sure yet how '=' and '-'
-  would affect this...
-
 - Deletion has less than satisfactory results on the scroller's state.
   It is not entirely clear what the `correct' behavior is in certain
   circumstances.
