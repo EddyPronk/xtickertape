@@ -1,9 +1,11 @@
-/* $Id: MessageView.c,v 1.32 1998/12/18 14:57:21 phelps Exp $ */
+/* $Id: MessageView.c,v 1.33 1998/12/18 15:31:42 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */

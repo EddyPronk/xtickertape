@@ -1,9 +1,11 @@
-/* $Id: Control.c,v 1.27 1998/12/18 07:56:44 phelps Exp $ */
+/* $Id: Control.c,v 1.28 1998/12/18 15:31:41 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #include <pwd.h>
 #include "sanity.h"
 #include "Control.h"

@@ -1,4 +1,4 @@
-/* $Id: Subscription.h,v 1.6 1998/11/05 01:52:17 phelps Exp $ */
+/* $Id: Subscription.h,v 1.7 1998/12/18 15:31:42 phelps Exp $ */
 
 #ifndef SUBSCRIPTION_H
 #define SUBSCRIPTION_H
@@ -8,7 +8,9 @@ typedef struct Subscription_t *Subscription;
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
 #include "List.h"
