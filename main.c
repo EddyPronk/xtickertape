@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.28 1998/10/16 01:59:24 phelps Exp $ */
+/* $Id: main.c,v 1.29 1998/10/16 02:05:38 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,17 +62,15 @@ static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal 
 /* Callback for when the Window Manager wants to close a window */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
-    /* if main window then quit */
-    if (widget == top)
+    /* if main window or the tickertape then quit */
+    if ((widget == top) || (widget == (Widget) tickertape))
     {
 	XtDestroyApplicationContext(XtWidgetToApplicationContext(widget));
 	exit(0);
     }
-    /* otherwise just hide the popup */
-    else
-    {
-	XtPopdown(widget);
-    }
+
+    /* If the control panel then hide the widget */
+    XtPopdown(widget);
 }
 
 /* Callback for buttonpress in tickertape window */
