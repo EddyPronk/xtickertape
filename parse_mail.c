@@ -321,8 +321,17 @@ static int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 }
 
 /* Writes the UNotify packet footer */
-static int lexer_append_unotify_footer(lexer_t self)
+static int lexer_append_unotify_footer(lexer_t self, int msg_num)
 {
+    /* Append the message number (if provided) */
+    if (! (msg_num < 0))
+    {
+	if (append_int32_tuple(self, N_INDEX, msg_num) < 0)
+	{
+	    return -1;
+	}
+    }
+
     /* Record the number of attributes */
     write_int32(self -> count_point, self -> count);
 
@@ -950,7 +959,7 @@ int main(int argc, char *argv[])
 	    }
 
 	    /* Write the footer */
-	    if (lexer_append_unotify_footer(&lexer) < 0)
+	    if (lexer_append_unotify_footer(&lexer, 42) < 0)
 	    {
 		abort();
 	    }
