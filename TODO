@@ -11,9 +11,6 @@ Configuration
 
 Control Panel:
 
-- You should be able to traverse the list of messages you have sent by 
-  using C-p and C-n like you can with every GNU program.
-
 - Add an Edit menu with Cut, Paste and Copy options which apply to the
   widget with focus.  This should allow us to cut and paste messages
   from the history into another application. [Thanks David Arnold]

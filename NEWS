@@ -7,6 +7,10 @@ Overview of changes in xtickertape-2.0b1
   you can perform actions on a message while dragging the scroller
   without cancelling the drag.
 
+* Added a `send history' which records the last few messages sent by
+  the current user so that they can go back and send them to other
+  groups or fix the spelling.
+
 Overview of changes in xtickertape-2.0a8
 
 * The usenet file now supports backslashes as escape characters.  You
