@@ -34,13 +34,12 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.10 1999/06/21 11:59:21 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.11 1999/06/21 14:27:11 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
 
 #include "Scroller.h"
-#include "MessageView.h"
 #include "glyph.h"
 #include "List.h"
 
