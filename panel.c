@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.68 2002/04/23 16:56:20 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.69 2002/04/23 22:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -40,6 +40,9 @@ static const char cvsid[] = "$Id: panel.c,v 1.68 2002/04/23 16:56:20 phelps Exp 
 #endif
 #ifdef HAVE_TIME_H
 #include <time.h> /* gmtime */
+#endif
+#if defined(HAVE_SYS_TIME_H) && defined(TM_IN_SYS_TIME)
+#include <sys/time.h> /* struct tm */
 #endif
 #ifdef HAVE_STRING_H
 #include <string.h> /* memset, strcmp */

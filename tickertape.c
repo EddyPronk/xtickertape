@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.94 2002/04/23 17:21:22 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.95 2002/04/23 22:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,12 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.94 2002/04/23 17:21:22 phelps
 #endif
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h> /* waitpid */
+#endif
+#ifndef WEXITSTATUS
+#define WEXITSTATUS(stat_val) ((unsigned int)(stat_val) >> 8)
+#endif
+#ifndef WIFEXITED
+#define WIFEXITED(stat_val) (((stat_val) & 0xFF) == 0)
 #endif
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h> /* open */

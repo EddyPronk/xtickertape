@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.106 2002/04/23 22:08:25 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.107 2002/04/23 22:29:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -460,7 +460,7 @@ static Window create_icon(Widget shell)
 }
 
 /* Signal handler which causes xtickertape to reload its subscriptions */
-static void reload_subs(int signum)
+static RETSIGTYPE reload_subs(int signum)
 {
     /* Put the signal handler back in place */
     signal(SIGHUP, reload_subs);
