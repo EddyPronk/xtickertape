@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.62 1999/08/29 14:35:26 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.63 1999/08/30 03:43:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -62,10 +62,16 @@ static XtResource resources[] =
 	offset(scroller.callbacks), XtRCallback, (XtPointer)NULL
     },
 
-    /* XtCallbackList action_callbacks */
+    /* XtCallbackList attachment_callbacks */
     {
-	XtNactionCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
-	offset(scroller.action_callbacks), XtRCallback, (XtPointer)NULL
+	XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
+	offset(scroller.attachment_callbacks), XtRCallback, (XtPointer)NULL
+    },
+
+    /* XtCallbackList kill_callbacks */
+    {
+	XtNkillCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
+	offset(scroller.kill_callbacks), XtRCallback, (XtPointer)NULL
     },
 
     /* XFontStruct *font */
@@ -128,6 +134,7 @@ static void show_menu(Widget widget, XEvent *event);
 static void show_attachment(Widget widget, XEvent *event);
 static void expire(Widget widget, XEvent *event);
 static void delete(Widget widget, XEvent *event);
+static void kill(Widget widget, XEvent *event);
 static void faster(Widget widget, XEvent *event);
 static void slower(Widget widget, XEvent *event);
 
@@ -142,6 +149,7 @@ static XtActionsRec actions[] =
     { "show-attachment", (XtActionProc)show_attachment },
     { "expire", (XtActionProc)expire },
     { "delete", (XtActionProc)delete },
+    { "kill", (XtActionProc)kill },
     { "faster", (XtActionProc)faster },
     { "slower", (XtActionProc)slower }
 };
@@ -159,6 +167,7 @@ static char defaultTranslations[] =
     "<Btn3Down>: expire()\n"
     "<Key>d: expire()\n"
     "<Key>x: delete()\n"
+    "<Key>k: kill()\n"
     "<Key>q: quit()\n"
     "<Key>-: slower()\n"
     "<Key>+: faster()\n"
@@ -1295,7 +1304,7 @@ static void show_attachment(Widget widget, XEvent *event)
     /* Deliver the chosen message to the callbacks */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(
-	widget, self -> scroller.action_callbacks,
+	widget, self -> scroller.attachment_callbacks,
 	(XtPointer)glyph -> get_message(glyph));
 }
 
@@ -1502,6 +1511,33 @@ static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
     adjust_left(self);
 }
 
+/* Delete the given glyph from the scroller */
+static void delete_glyph(ScrollerWidget self, glyph_t glyph)
+{
+    /* Refuse to delete the gap */
+    if (glyph == self -> scroller.gap)
+    {
+	return;
+    }
+
+    /* Mark the glyph as expired */
+    glyph -> expire(glyph);
+
+    /* Delete the glyph and any holders for that glyph.
+     * Keep the leading edge of the text in place */
+    if (self -> scroller.step < 0)
+    {
+	delete_left_to_right(self, glyph);
+    }
+    else
+    {
+	delete_right_to_left(self, glyph);
+    }
+
+    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
+    Redisplay((Widget) self, NULL, 0);
+}
+
 
 /* Simply remove the message from the scroller NOW */
 static void delete(Widget widget, XEvent *event)
@@ -1524,23 +1560,28 @@ static void delete(Widget widget, XEvent *event)
 	return;
     }
 
-    /* Mark the glyph as expired */
-    glyph -> expire(glyph);
-
-    /* Delete the glyph and any holders for that glyph, and keep the
-     * leading edge of the text in place */
-    if (self -> scroller.step < 0)
-    {
-	delete_left_to_right(self, glyph);
-    }
-    else
-    {
-	delete_right_to_left(self, glyph);
-    }
-
-    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-    Redisplay(widget, NULL, 0);
+    delete_glyph(self, glyph);
 }
+
+/* Kill a Message and any replies */
+static void kill(Widget widget, XEvent *event)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+    glyph_t glyph;
+
+    /* Abort if the pre_action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* Figure out which glyph to kill */
+    glyph = glyph_at_event(self, event);
+    XtCallCallbackList(
+	widget, self -> scroller.kill_callbacks,
+	(XtPointer)glyph -> get_message(glyph));
+}
+
 
 /* Scroll more quickly */
 static void faster(Widget widget, XEvent *event)
@@ -1686,5 +1727,28 @@ int ScGapWidth(ScrollerWidget self)
 {
     return gap_width(self, self -> scroller.last_width);
 }
+
+/* Delete a Message from the receiver */
+void ScDeleteMessage(ScrollerWidget self, Message message)
+{
+    glyph_t glyph;
+
+    /* Make sure there is a message */
+    if (message == NULL)
+    {
+	return;
+    }
+
+    /* Locate the Message's glyph and delete it */
+    for (glyph = self -> scroller.gap -> next; glyph != self -> scroller.gap; glyph = glyph -> next)
+    {
+	if (glyph -> get_message(glyph) == message)
+	{
+	    delete_glyph(self, glyph);
+	    return;
+	}
+    }
+}
+
 
 
