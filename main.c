@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.50 1999/05/06 00:34:34 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.51 1999/05/22 08:24:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -75,7 +75,7 @@ static void QuitAction(
 static void Usage(int argc, char *argv[]);
 static void ParseArgs(
     int argc, char *argv[],
-    char **user_return,
+    char **user_return, char **tickerDir_return,
     char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return);
 static Window CreateIcon(Widget shell);
@@ -120,7 +120,7 @@ static void Usage(int argc, char *argv[])
 /* Parses arguments and sets stuff up */
 static void ParseArgs(
     int argc, char *argv[],
-    char **user_return,
+    char **user_return, char **tickerDir_return,
     char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return)
 {
@@ -128,6 +128,7 @@ static void ParseArgs(
 
     /* Initialize arguments to sane values */
     *user_return = NULL;
+    *tickerDir_return = NULL;
     *groupsFile_return = NULL;
     *usenetFile_return = NULL;
     *host_return = HOST;
@@ -200,42 +201,6 @@ static void ParseArgs(
     if (*user_return == NULL)
     {
 	*user_return = getpwuid(getuid()) -> pw_name;
-    }
-
-    /* Set the groups/news filenames if not specified on the command line */
-    if ((*groupsFile_return == NULL) || (*usenetFile_return == NULL))
-    {
-	char *home;
-	char *ticker;
-
-	/* Try $TICKERDIR */
-	if ((ticker = getenv("TICKERDIR")) == NULL)
-	{
-	    /* No luck.  Try $HOME/.ticker */
-	    if ((home = getenv("HOME")) == NULL)
-	    {
-		/* Eek!  $HOME isn't set.  Use "/" */
-		home = "/";
-	    }
-
-	    /* ticker then become $HOME/.ticker */
-	    ticker = malloc(strlen(home) + sizeof("/.ticker"));
-	    sprintf(ticker, "%s/.ticker", home);
-	}
-
-	/* Set the groups filename if appropriate */
-	if (*groupsFile_return == NULL)
-	{
-	    *groupsFile_return = (char *)malloc(strlen(ticker) + sizeof("/groups"));
-		sprintf(*groupsFile_return, "%s/groups", ticker);
-	}
-
-	/* Set the news filename if appropriate */
-	if (*usenetFile_return == NULL)
-	{
-	    *usenetFile_return = (char *)malloc(strlen(ticker) + sizeof("/usenet"));
-	    sprintf(*usenetFile_return, "%s/usenet", ticker);
-	}
     }
 }
 
@@ -320,6 +285,7 @@ int main(int argc, char *argv[])
     XtAppContext context;
     Widget top;
     char *user;
+    char *tickerDir;
     char *groupsFile;
     char *usenetFile;
     char *host;
@@ -336,13 +302,13 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Scan what's left of the arguments */
-    ParseArgs(argc, argv, &user, &groupsFile, &usenetFile, &host, &port);
+    ParseArgs(argc, argv, &user, &tickerDir, &groupsFile, &usenetFile, &host, &port);
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, CreateIcon(top), NULL);
 
     /* Create a Tickertape */
-    tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
+    tickertape = Tickertape_alloc(user, tickerDir, groupsFile, usenetFile, host, port, top);
 
 #ifdef HAVE_LIBXMU
     /* Enable editres support */
