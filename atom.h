@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.7 2000/11/08 07:23:54 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.8 2000/11/08 12:38:53 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -88,6 +88,9 @@ atom_t builtin_alloc(builtin_t value, elvin_error_t error);
 /* Returns the atom's type */
 atom_type_t atom_get_type(atom_t atom);
 
+
+/* Allocates another reference to an atom */
+int atom_alloc_ref(atom_t atom, elvin_error_t error);
 
 /* Frees an atom */
 int atom_free(atom_t atom, elvin_error_t error);
