@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: subscription.c,v 2.4 2000/07/11 04:27:30 phelps Exp $";
+static const char cvsid[] = "$Id: subscription.c,v 2.5 2000/07/11 07:12:27 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -118,6 +118,197 @@ static int eval_bool(value_t *value, elvin_error_t error)
 	default:
 	{
 	    return 1;
+	}
+    }
+}
+
+/* Extracts a string value (or null) from the subscription */
+static int extract_string(
+    subscription_t self,
+    env_t env,
+    char *name,
+    char **string_out,
+    elvin_error_t error)
+{
+    value_t *value;
+    value_t result;
+
+    /* If the value isn't present then return NULL */
+    if (! (value = env_get(self -> env, name, error)))
+    {
+	*string_out = NULL;
+	return 1;
+    }
+
+    /* Evaluate it differently depending on its type */
+    switch (value -> type)
+    {
+	case VALUE_NONE:
+	case VALUE_OPAQUE:
+	{
+	    *string_out = NULL;
+	    return 1;
+	}
+
+	/* Just convert the value into a string */
+	case VALUE_INT32:
+	case VALUE_INT64:
+	case VALUE_FLOAT:
+	case VALUE_STRING:
+	case VALUE_LIST:
+	{
+	    if (! (*string_out = value_to_string(value, error)))
+	    {
+		return 0;
+	    }
+
+	    return 1;
+	}
+
+	/* Evaluate the block within the context of the environment */
+	case VALUE_BLOCK:
+	{
+	    if (! ast_eval(value -> value.block, env, &result, error))
+	    {
+		return 0;
+	    }
+
+	    /* Convert the resulting value into a string */
+	    switch (result.type)
+	    {
+		case VALUE_NONE:
+		case VALUE_OPAQUE:
+		{
+		    *string_out = NULL;
+		    return value_free(&result, error);
+		}
+
+		case VALUE_INT32:
+		case VALUE_INT64:
+		case VALUE_FLOAT:
+		case VALUE_STRING:
+		case VALUE_LIST:
+		case VALUE_BLOCK:
+		{
+		    if (! (*string_out = value_to_string(&result, error)))
+		    {
+			return 0;
+		    }
+
+		    return value_free(&result, error);
+		}
+	    }
+	}
+
+	default:
+	{
+	    fprintf(stderr, "extract_string(): invalid value type: %d\n", value -> type);
+	    abort();
+	}
+    }
+}
+
+
+/* Extracts an int32 value from the environment */
+static int extract_int32(
+    subscription_t self,
+    env_t env,
+    char *name,
+    int32_t *value_out,
+    elvin_error_t error)
+{
+    value_t *value;
+    value_t result;
+
+    /* If the value isn't present then return NULL */
+    if (! (value = env_get(self -> env, name, error)))
+    {
+	*value_out = 0;
+	return 1;
+    }
+
+    /* Evaluate it differently depending on its type */
+    switch (value -> type)
+    {
+	case VALUE_NONE:
+	case VALUE_OPAQUE:
+	case VALUE_STRING:
+	case VALUE_LIST:
+	{
+	    *value_out = 0;
+	    return 1;
+	}
+
+	case VALUE_INT32:
+	{
+	    *value_out = value -> value.int32;
+	    return 1;
+	}
+
+	case VALUE_INT64:
+	{
+	    *value_out = (int32_t)value -> value.int64;
+	    return 1;
+	}
+
+	case VALUE_FLOAT:
+	{
+	    *value_out = (int32_t)value -> value.real64;
+	    return 1;
+	}
+
+	/* Evaluate the block within the context of the environment */
+	case VALUE_BLOCK:
+	{
+	    if (! ast_eval(value -> value.block, env, &result, error))
+	    {
+		return 0;
+	    }
+
+	    /* Convert the resulting value into a string */
+	    switch (result.type)
+	    {
+		case VALUE_NONE:
+		case VALUE_STRING:
+		case VALUE_OPAQUE:
+		case VALUE_LIST:
+		case VALUE_BLOCK:
+		{
+		    *value_out = 0;
+		    return 1;
+		}
+
+		case VALUE_INT32:
+		{
+		    *value_out = result.value.int32;
+		    return 1;
+		}
+
+		case VALUE_INT64:
+		{
+		    *value_out = (int32_t)result.value.int64;
+		    return 1;
+		}
+
+		case VALUE_FLOAT:
+		{
+		    *value_out = (int32_t)result.value.real64;
+		    return 1;
+		}
+
+		default:
+		{
+		    fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
+		}
+	    }
+
+	    return 1;
+	}
+
+	default:
+	{
+	    fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
+	    abort();
 	}
     }
 }
@@ -437,13 +628,233 @@ int subscription_free(subscription_t self, elvin_error_t error)
     return ELVIN_FREE(self, error);
 }
 
+#if 0
+/* Helper function for notification_to_env */
+static int update_env(
+    void *rock,
+    char *name,
+    elvin_basetypes_t type,
+    elvin_value_t value,
+    elvin_error_t error)
+{
+    env_t env = (env_t)rock;
+    value_t result;
+
+    /* Copy the value into the result */
+    switch (type)
+    {
+	case ELVIN_INT32:
+	{
+	    result.type = VALUE_INT32;
+	    result.value.int32 = value.i;
+	    break;
+	}
+
+	case ELVIN_INT64:
+	{
+	    result.type = VALUE_INT64;
+	    result.value.int64 = value.h;
+	    break;
+	}
+
+	case ELVIN_REAL64:
+	{
+	    result.type = VALUE_FLOAT;
+	    result.value.real64 = value.d;
+	    break;
+	}
+
+	case ELVIN_STRING:
+	{
+	    result.type = VALUE_STRING;
+	    result.value.string = value.s;
+	    break;
+	}
+
+	case ELVIN_OPAQUE:
+	{
+	    result.type = VALUE_OPAQUE;
+	    result.value.opaque.length = value.o.length;
+	    result.value.opaque.data = value.o.data;
+	    break;
+	}
+
+	default:
+	{
+	    fprintf(stderr, "invalid type in notification: %d\n", type);
+	    abort();
+	}
+    }
+
+    /* Add the value to the environment */
+    if (! env_put(env, name, &result, error))
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Constructs an environment out of a notification */
+static env_t notification_to_env(elvin_notification_t notification, elvin_error_t error)
+{
+    env_t env;
+
+    /* Allocate a new environment */
+    if (! (env = env_alloc(error)))
+    {
+	return NULL;
+    }
+
+    /* Traverse the notification and copy fields */
+    if (! elvin_notification_traverse(notification, update_env, env, error))
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    return env;
+}
+#else
+/* Assumes that an environment is a supertype of a notification */
+static env_t notification_to_env(elvin_notification_t notification, elvin_error_t error)
+{
+    return (env_t)notification;
+}
+#endif
+
 /* Transforms a notification into a message */
 message_t subscription_transmute(
     subscription_t self,
     elvin_notification_t notification,
     elvin_error_t error)
 {
-    ELVIN_ERROR_XTICKERTAPE_NOT_YET_IMPL(
-	error, (uchar *)"subscription_transmute");
-    return NULL;
+    env_t env;
+    char *group = NULL;
+    char *user = "anonymous";
+    char *string = "no message";
+    uint32_t timeout = 0;
+    char *mime_type = NULL;
+    char *mime_args = NULL;
+    char *replace_id = NULL;
+    char *message_id = NULL;
+    char *reply_id = NULL;
+    message_t message;
+
+    /* Transform the notification into an environment */
+    if (! (env = notification_to_env(notification, error)))
+    {
+	return NULL;
+    }
+
+    /* FIX THIS: Evaluate the subscription fields */
+    /* FIX THIS: an environment is not the same as a notification! */
+    if (! extract_string(self, env, "group", &group, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "user", &user, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "message", &string, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_int32(self, env, "timeout", &timeout, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "mime-type", &mime_type, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "mime-args", &mime_args, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "replace-id", &replace_id, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "message-id", &message_id, error))
+    {
+	return NULL;
+    }
+
+    if (! extract_string(self, env, "reply-id", &reply_id, error))
+    {
+	return NULL;
+    }
+
+    /* create a message */
+    if (! (message = message_alloc(
+	self -> tag,
+	group ? group : self -> tag,
+	user ? user : "anonymous",
+	string ? string : "no message",
+	timeout ? timeout : 10,
+	mime_type, mime_args,
+	replace_id, message_id, reply_id)))
+    {
+	fprintf(stderr, "message_alloc(): failed\n");
+	abort();
+    }
+
+    /* Clean up */
+#if 0
+    if (! env_free(env, error))
+    {
+	return NULL;
+    }
+#endif
+
+    if (group && ! ELVIN_FREE(group, error))
+    {
+	return NULL;
+    }
+
+    if (user && ! ELVIN_FREE(user, error))
+    {
+	return NULL;
+    }
+
+    if (string && ! ELVIN_FREE(string, error))
+    {
+	return NULL;
+    }
+
+    if (mime_type && ! ELVIN_FREE(mime_type, error))
+    {
+	return NULL;
+    }
+
+    if (mime_args && ! ELVIN_FREE(mime_args, error))
+    {
+	return NULL;
+    }
+
+    if (replace_id && ! ELVIN_FREE(replace_id, error))
+    {
+	return NULL;
+    }
+
+    if (message_id && ! ELVIN_FREE(message_id, error))
+    {
+	return NULL;
+    }
+
+    if (reply_id && ! ELVIN_FREE(reply_id, error))
+    {
+	return NULL;
+    }
+
+    return message;
 }
