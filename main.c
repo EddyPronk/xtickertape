@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.62 1999/11/18 07:27:47 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.63 1999/11/19 02:16:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -309,6 +309,7 @@ static Window create_icon(Widget shell)
 	WhitePixelOfScreen(screen), black, depth);
     XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
     XFreePixmap(display, mask);
+    XFreeGC(display, gc);
 
     /* Create a shape mask and apply it to the window */
 #ifdef HAVE_LIBXEXT
