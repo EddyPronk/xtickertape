@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.6 1999/10/05 06:01:58 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.7 1999/10/06 01:47:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: mail_sub.c,v 1.6 1999/10/05 06:01:58 phelps Ex
 #include "mail_sub.h"
 
 #define MAIL_SUB "exists(elvinmail) && user == \"%s\""
+#define FOLDER_FMT "+%s"
 
 /* The MailSubscription data type */
 struct mail_sub
@@ -68,6 +69,7 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
     char *from;
     char *folder;
     char *subject;
+    char *buffer = NULL;
 
     /* Get the name from the "From" field */
     if ((en_search(notification, "From", &type, (void **)&from) != 0) || (type != EN_STRING))
@@ -96,14 +98,13 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
     }
     else
     {
-	/* Prepend a `+' to the folder name */
-	if ((folder = (char *)malloc(strlen(folder) + 2)) == NULL)
+	/* Format the folder name to use as the group */
+	buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1);
+	if (buffer != NULL)
 	{
-	    return;
+	    sprintf(buffer, FOLDER_FMT, folder);
+	    folder = buffer;
 	}
-
-	*folder = '+';
-	strcpy(folder + 1, folder);
     }
 
     /* Get the subject from the "Subject" field */
@@ -121,7 +122,10 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
     en_free(notification);
 
     /* Free the folder name */
-    free(folder);
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
 }
 
 /*
