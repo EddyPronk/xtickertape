@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.1 2000/07/05 05:23:44 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.2 2000/07/05 06:54:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,7 +37,8 @@ static const char cvsid[] = "$Id: parser.c,v 2.1 2000/07/05 05:23:44 phelps Exp 
 #include <unistd.h>
 #include <ctype.h>
 
-#define INITIAL_TOKEN_BUFFER_SIZE 32
+#define INITIAL_TOKEN_BUFFER_SIZE 64
+#define INITIAL_STACK_DEPTH 3
 
 
 /* Test ch to see if it's valid as a non-initial ID character */
@@ -70,14 +71,29 @@ typedef int (*lexer_state_t)(parser_t parser, int ch);
 /* The structure of the configuration file parser */
 struct parser
 {
-    /* The current lexical state */
-    lexer_state_t state;
-
     /* The tag for error messages */
     char *tag;
 
     /* The current line number */
     int line_num;
+
+    /* The state stack */
+    int *state_stack;
+
+    /* The top of the state stack */
+    int *state_top;
+
+    /* The end of the state stack */
+    int *state_end;
+
+    /* The value stack */
+    void *value_stack;
+
+    /* The top of the value stack */
+    void *value_top;
+
+    /* The current lexical state */
+    lexer_state_t state;
 
     /* The token construction buffer */
     char *token;
@@ -98,6 +114,10 @@ struct parser
 };
 
 
+/* Reduction function declarations */
+typedef void *(*reduction_t)(parser_t self);
+static void *function(parser_t self);
+
 /* Lexer state function headers */
 static int lex_start(parser_t self, int ch);
 static int lex_comment(parser_t self, int ch);
@@ -116,6 +136,85 @@ static int lex_sq_string(parser_t self, int ch);
 static int lex_sq_string_esc(parser_t self, int ch);
 static int lex_id(parser_t self, int ch);
 static int lex_id_esc(parser_t self, int ch);
+
+/* Include the parser tables */
+#include "grammar.h"
+
+/* Makes a deeper stack */
+static int grow_stack(parser_t self)
+{
+    fprintf(stderr, "grow_stack: not yet implemented\n");
+    abort();
+}
+
+/* Pushes a state and value onto the stack */
+static int push(parser_t self, int state, void *value)
+{
+    fprintf(stderr, "push: not yet implemented\n");
+    abort();
+}
+
+/* Moves the top of the stack back `count' positions */
+static void pop(parser_t self, int count)
+{
+    fprintf(stderr, "pop: not yet implemented\n");
+    abort();
+}
+
+/* Puts n elements back onto the stack */
+static void unpop(parser_t self, int count)
+{
+    fprintf(stderr, "unpop: not yet implemented\n");
+    abort();
+}
+
+/* Answers the top of the state stack */
+static int top(parser_t self)
+{
+    return *(self->state_top);
+}
+
+/* Frees everything on the stack */
+static void clean_stack(parser_t self)
+{
+    fprintf(stderr, "clean_stack: not yet implemented\n");
+    abort();
+}
+
+/* bogus function */
+static void *function(parser_t self)
+{
+    fprintf(stderr, "function: not yet implemented\n");
+    abort();
+}
+
+
+/* Accepts another token and performs as many parser transitions as
+ * possible with the data it has seen so far */
+static int shift_reduce(parser_t self, terminal_t terminal, void *value)
+{
+    fprintf(stderr, "shift_reduce: not yet implemented\n");
+    abort();
+}
+
+/* Accepts a token which has no value associated with it */
+static int accept_token(parser_t self, terminal_t terminal)
+{
+    return shift_reduce(self, terminal, NULL);
+}
+
+/* Accepts an int32 token */
+static int accept_int32(parser_t self, int32_t value)
+{
+    return shift_reduce(self, TT_INT32, NULL);
+}
+
+/* Accepts a string as an int32 token */
+static int accept_int32_string(parser_t self, char *string)
+{
+    
+}
+
 
 /* Expands the token buffer */
 static int grow_buffer(parser_t self)
@@ -544,7 +643,11 @@ static int lex_decimal(parser_t self, int ch)
     }
 
     /* Otherwise accept the int32 token */
-    printf("INT32: %s\n", self -> token);
+    if (accept_int32_string(self, self -> token) < 0)
+    {
+	return -1;
+    }
+
     return lex_start(self, ch);
 }
 
@@ -729,6 +832,20 @@ parser_t parser_alloc()
     /* Initialize all of the fields to sane values */
     memset(self, 0, sizeof(struct parser));
 
+    /* Allocate room for the state stack */
+    if ((self -> state_stack = (int *)calloc(INITIAL_STACK_DEPTH, sizeof(int))) == NULL)
+    {
+	parser_free(self);
+	return NULL;
+    }
+
+    /* Allocate room for the value stack */
+    if ((self -> value_stack = (void *)calloc(INITIAL_STACK_DEPTH, sizeof(void *))) == NULL)
+    {
+	parser_free(self);
+	return NULL;
+    }
+
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_BUFFER_SIZE)) == NULL)
     {
@@ -737,6 +854,11 @@ parser_t parser_alloc()
     }
 
     /* Initialize the rest of the values */
+    self -> state_end = self -> state_stack + INITIAL_STACK_DEPTH;
+    self -> state_top = self -> state_stack;
+    *(self -> state_top) = 0;
+
+    self -> value_top = self -> value_stack;
     self -> token_end = self -> token + INITIAL_TOKEN_BUFFER_SIZE;
     self -> line_num = 1;
     self -> state = lex_start;
