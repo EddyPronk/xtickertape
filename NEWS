@@ -24,6 +24,11 @@ Overview of changes in xtickertape-2.0b2
 
 * Binary package support for Redhat, Mandrake and Debian.
 
+* Fixed a counting error that could cause xtickertape to crash when
+  trying to display certain kinds of MIME attachments.  Also rewriting
+  the MIME headers before sending them to metamail, which doesn't cope
+  well with any end-of-line convention but LF.
+
 Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed
