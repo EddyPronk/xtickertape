@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.2 1997/02/15 02:32:16 phelps Exp $ */
+/* $Id: Control.h,v 1.3 1997/02/16 07:05:17 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -8,12 +8,15 @@
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include "Message.h"
+#include "List.h"
 
 typedef void (*ControlPanelCallback)(Message message, void *context);
 typedef struct ControlPanel_t *ControlPanel;
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(Widget parent, ControlPanelCallback callback, void *context);
+ControlPanel ControlPanel_alloc(
+    Widget parent, List subscriptions,
+    ControlPanelCallback callback, void *context);
 
 /* Releases the resources used by the receiver */
 void ControlPanel_free(ControlPanel self);

@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.5 1997/02/15 02:32:15 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.6 1997/02/16 07:05:17 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +15,7 @@
 
 #include <X11/Intrinsic.h>
 #include "BridgeConnection.h"
+#include "Subscription.h"
 
 #define BUFFERSIZE 4096
 /*#define CONNECTING*/
@@ -36,7 +37,7 @@ struct BridgeConnection_t
  */
 
 /* Sends a subscription for a single item expression to the bridge */
-static void sendItemSubscribe(char *name, BridgeConnection self);
+static void sendItemSubscribe(Subscription subscription, BridgeConnection self);
 
 /* Sends a subscription expression to the bridge */
 static void subscribe(BridgeConnection self);
@@ -47,10 +48,13 @@ static int readToSeparator(BridgeConnection self, char *buffer);
 
 
 /* Sends a subscription for a single item expression to the bridge */
-static void sendItemSubscribe(char *name, BridgeConnection self)
+static void sendItemSubscribe(Subscription subscription, BridgeConnection self)
 {
+    /* Get the name of the group */
+    char *name = Subscription_getGroup(subscription);
+
     /* Check to see if it's the first item */
-    if (name == List_first(self -> subscriptions))
+    if (subscription == List_first(self -> subscriptions))
     {
 	fprintf(self -> out, "+ TICKERTAPE == \"%s\"", name);
     }

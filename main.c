@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.12 1997/02/15 02:32:16 phelps Exp $ */
+/* $Id: main.c,v 1.13 1997/02/16 07:05:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include <X11/Shell.h>
 
 #include "Message.h"
+#include "Subscription.h"
 #include "BridgeConnection.h"
 #include "Control.h"
 #include "Tickertape.h"
@@ -60,13 +61,13 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 }
 
 /* Callback for buttonpress in tickertape window */
-void Click(Widget widget, XtPointer context, XtPointer ignored)
+static void Click(Widget widget, XtPointer context, XtPointer ignored)
 {
     ControlPanel_show(controlPanel);
 }
 
 /* Callback for message to send from control panel */
-void sendMessage(Message message, void *context)
+static void sendMessage(Message message, void *context)
 {
     BridgeConnection connection = (BridgeConnection)context;
 
@@ -75,11 +76,11 @@ void sendMessage(Message message, void *context)
 }
 
 
-
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
     BridgeConnection connection;
+    FILE *file;
     List subscriptions;
     TickertapeWidget tickertape;
     XtAppContext context;
@@ -87,26 +88,6 @@ int main(int argc, char *argv[])
     char *hostname = HOSTNAME;
     int port = PORT;
     int index = 1;
-
-    /* Connect to the bridge */
-    subscriptions = List_alloc();
-    List_addLast(subscriptions, "Chat");
-    List_addLast(subscriptions, "Coffee");
-    List_addLast(subscriptions, "Rooms");
-    List_addLast(subscriptions, "level7");
-    List_addLast(subscriptions, "email");
-    List_addLast(subscriptions, "Files");
-    List_addLast(subscriptions, "rwall");
-    List_addLast(subscriptions, "elvin_news");
-    List_addLast(subscriptions, "phelps");
-
-    /* Create the toplevel widget */
-    top = XtVaAppInitialize(
-	&context, "Tickertape",
-	NULL, 0, &argc, argv, NULL,
-	XtNtitle, "Tickertape",
-	XtNborderWidth, 0,
-	NULL);
 
     /* Read args for hostname and port */
     if (index < argc)
@@ -117,6 +98,20 @@ int main(int argc, char *argv[])
     {
 	port = atoi(argv[index++]);
     }
+
+    /* Read subscriptions from the groups file */
+    subscriptions = List_alloc();
+    file = fopen("/home/phelps/.ticker/groups", "r");
+    Subscription_readFromGroupFile(file, subscriptions);
+    fclose(file);
+
+    /* Create the toplevel widget */
+    top = XtVaAppInitialize(
+	&context, "Tickertape",
+	NULL, 0, &argc, argv, NULL,
+	XtNtitle, "Tickertape",
+	XtNborderWidth, 0,
+	NULL);
 
     /* Add a calback for when it gets destroyed (?) */
     XtAppAddActions(context, actions, XtNumber(actions));
@@ -137,7 +132,7 @@ int main(int argc, char *argv[])
 	connection);
 
     /* Build the widget */
-    controlPanel = ControlPanel_alloc(top, sendMessage, connection);
+    controlPanel = ControlPanel_alloc(top, subscriptions, sendMessage, connection);
     XtRealizeWidget(top);
 
     /* Quit when the window is closed */

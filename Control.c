@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.3 1997/02/15 02:32:15 phelps Exp $ */
+/* $Id: Control.c,v 1.4 1997/02/16 07:05:17 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +6,7 @@
 #include <pwd.h>
 
 #include "Control.h"
+#include "Subscription.h"
 
 #include <X11/Shell.h>
 #include <X11/Xaw/Box.h>
@@ -17,13 +18,6 @@
 #include <X11/Xaw/SmeBSB.h>
 #include <X11/Xaw/AsciiText.h>
 #include <X11/Xaw/MenuButton.h>
-
-char *groups[] =
-{
-    "Chat",
-    "level7",
-    NULL
-};
 
 char *timeouts[] =
 {
@@ -53,7 +47,7 @@ struct ControlPanel_t
     Widget group;
     Widget timeout;
     Widget text;
-    char **groups;
+    List subscriptions;
     char **timeouts;
     char *userName;
 };
@@ -154,27 +148,32 @@ static Widget createUserBox(ControlPanel self, Widget parent)
     return form;
 }
 
-/* Construct the menu for the Group list */
-static Widget createGroupMenu(ControlPanel self, Widget parent)
+/* Construct a menu item for the group list */
+static void createGroupMenuItem(Subscription subscription, Widget context[])
 {
-    char **group;
-    Widget item;
-    Widget menu = XtVaCreatePopupShell(
-	"groupMenu", simpleMenuWidgetClass, parent,
-	NULL);
-    
-    for (group = self -> groups; *group != NULL; group++)
+    Widget parent = context[0];
+    Widget menu = context[1];
+
+    if (Subscription_isInMenu(subscription))
     {
-	item = XtVaCreateManagedWidget(
-	    *group, smeBSBObjectClass, menu,
+	Widget item = XtVaCreateManagedWidget(
+	    Subscription_getGroup(subscription), smeBSBObjectClass, menu,
 	    NULL);
 	XtAddCallback(item, XtNcallback, setMBValue, parent);
     }
+}
 
-    item = XtVaCreateManagedWidget(
-	self -> userName, smeBSBObjectClass, menu,
+/* Construct the menu for the Group list */
+static Widget createGroupMenu(ControlPanel self, Widget parent)
+{
+    Widget context[2];
+
+    Widget menu = XtVaCreatePopupShell(
+	"groupMenu", simpleMenuWidgetClass, parent,
 	NULL);
-    XtAddCallback(item, XtNcallback, setMBValue, parent);
+    context[0] = parent;
+    context[1] = menu;
+    List_doWith(self -> subscriptions, createGroupMenuItem, context);
     return menu;
 }
 
@@ -204,9 +203,9 @@ static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 	NULL);
     self -> group = XtVaCreateManagedWidget(
 	"groupMenu", menuButtonWidgetClass, form,
-	XtNlabel, self -> groups[0],
 	XtNmenuName, "groupMenu",
-	XtNwidth, 60,
+	XtNresize, False,
+	XtNwidth, 70,
 	XtNfromHoriz, label,
 	XtNtop, XawChainTop,
 	XtNbottom, XawChainTop,
@@ -263,9 +262,9 @@ static Widget createTimeoutBox(ControlPanel self, Widget parent, Widget left)
 	NULL);
     self -> timeout = XtVaCreateManagedWidget(
 	"timeout", menuButtonWidgetClass, form,
-	XtNlabel, self -> timeouts[0],
 	XtNmenuName, "timeoutMenu",
-	XtNwidth, 80,
+	XtNresize, False,
+	XtNwidth, 70,
 	XtNfromHoriz, label,
 	XtNtop, XawChainTop,
 	XtNbottom, XawChainTop,
@@ -458,7 +457,7 @@ static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
 static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
 {
     ControlPanel self = (ControlPanel) context;
-    setGroup(self, self -> groups[0]);
+    setGroup(self, Subscription_getGroup(List_first(self -> subscriptions)));
     setUser(self, self -> userName);
     setText(self, "");
     setTimeout(self, 10);
@@ -474,11 +473,14 @@ static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
 
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(Widget parent, ControlPanelCallback callback, void *context)
+ControlPanel ControlPanel_alloc(
+    Widget parent, List subscriptions,
+    ControlPanelCallback callback, void *context)
 {
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
     Atom deleteAtom;
 
+    self -> subscriptions = subscriptions;
     self -> callback = callback;
     self -> context = context;
     self -> userName = getUserName();
@@ -486,10 +488,11 @@ ControlPanel ControlPanel_alloc(Widget parent, ControlPanelCallback callback, vo
 	"controlPanel", transientShellWidgetClass, parent,
 	XtNtitle, "Tickertape Control Panel",
 	NULL);
-    self -> groups = groups;
     self -> timeouts = timeouts;
 
     createControlPanelPopup(self, self -> top);
+    ActionClear(NULL, self, NULL);
+
     XtOverrideTranslations(
 	self -> top,
 	XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));

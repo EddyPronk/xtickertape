@@ -7,7 +7,7 @@ TICKERTAPE = tickertape
 ALL = $(TICKERTAPE) 
 
 OBJS = BridgeConnection.o Control.o Tickertape.o \
-	MessageView.o Message.o List.o main.o
+	MessageView.o Message.o Subscription.o List.o main.o
 
 CDEBUGFLAGS =
 #CDEBUGFLAGS = -g
