@@ -1,0 +1,5 @@
+1999-08-30  Ted Phelps  <phelps@pobox.com>
+
+	* Version-1.6 released
+	* history.c: added an #include and a prototype to get rid of some
+		     warnings
