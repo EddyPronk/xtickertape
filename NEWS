@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-1.6.0
 
+* Fixed the way the WM_DELETE_WINDOW protocol is handled so that it
+  works properly with both lesstif and Motif.
+
 * Added a `Help' menu and an `About' box.
 
 * The `not' operator in a usenet subscription no longer generates a

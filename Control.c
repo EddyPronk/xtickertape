@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.33 1999/04/27 03:56:29 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.34 1999/05/03 10:07:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -269,15 +269,19 @@ static Widget CreateAboutBox(ControlPanel self, Widget parent)
     Widget copyright;
     Widget buttonForm;
     Widget button;
+    Atom wm_delete_window;
     XmString string;
     char buffer[sizeof(PACKAGE) + sizeof(VERSION)];
 
     /* Create the shell widget */
     top = XtVaCreatePopupShell(
 	"aboutBox", topLevelShellWidgetClass, parent,
-	XmNdeleteResponse, XmUNMAP,
-	XmNbackground, 0,
+	XmNdeleteResponse, XmDO_NOTHING,
 	NULL);
+
+    /* Add a handler for the WM_DELETE_WINDOW protocol */
+    wm_delete_window = XmInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", False);
+    XmAddWMProtocolCallback(top, wm_delete_window, (XtCallbackProc)ActionDismiss, (XtPointer)self);
 
     /* Create a Form widget to manage the dialog box's children */
     form = XtVaCreateWidget(
@@ -683,6 +687,7 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     Widget textForm;
     Widget mimeForm;
     Widget buttonForm;
+    Atom wm_delete_window;
     SANITY_CHECK(self);
 
     /* Set some variables to sane values */
@@ -691,8 +696,12 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     /* Create a popup shell for the receiver */
     self -> top = XtVaCreatePopupShell(
 	"controlPanel", topLevelShellWidgetClass, parent,
-	XmNdeleteResponse, XmUNMAP,
+	XmNdeleteResponse, XmDO_NOTHING,
 	NULL);
+
+    /* Add a handler for the WM_DELETE_WINDOW protocol */
+    wm_delete_window = XmInternAtom(XtDisplay(self -> top), "WM_DELETE_WINDOW", False);
+    XmAddWMProtocolCallback(self -> top, wm_delete_window, (XtCallbackProc)ActionCancel, (XtPointer)self);
 
     /* Create a form widget to manage the dialog box's children */
     form = XtVaCreateWidget(
