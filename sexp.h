@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.6 2000/11/10 07:47:03 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.7 2000/11/12 01:52:07 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -120,6 +120,9 @@ int32_t int32_value(sexp_t sexp, elvin_error_t error);
 
 /* Returns the integer's value */
 int64_t int64_value(sexp_t sexp, elvin_error_t error);
+
+/* Returns the float's value */
+double float_value(sexp_t sexp, elvin_error_t error);
 
 /* Returns the string's bytes */
 char *string_value(sexp_t sexp, elvin_error_t error);

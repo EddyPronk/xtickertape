@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.10 2000/11/10 07:47:03 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.11 2000/11/12 01:52:07 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -303,6 +303,12 @@ sexp_t float_alloc(double value, elvin_error_t error)
 
     sexp -> value.d = value;
     return sexp;
+}
+
+/* Returns the float's value */
+double float_value(sexp_t sexp, elvin_error_t error)
+{
+    return sexp -> value.d;
 }
 
 
