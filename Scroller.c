@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.58 1999/08/19 11:18:47 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.59 1999/08/28 03:05:45 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -396,8 +396,8 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
-    /* Don't scroll if we're in the midst of a drag */
-    if (! self -> scroller.is_dragging)
+    /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
+    if ((! self -> scroller.is_dragging) && (self -> scroller.step != 0))
     {
 	scroll(self, self -> scroller.step);
 	Redisplay((Widget)self, NULL, 0);
@@ -567,6 +567,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 	    glyph_holder_paint(
 		holder, display, self -> scroller.pixmap,
 		offset, offset, 0, width, self -> core.height);
+	    Redisplay((Widget)self, NULL, 0);
 	}
 
 	holder = holder -> next;
