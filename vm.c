@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.17 2000/12/08 06:54:43 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.18 2000/12/09 01:45:30 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -750,6 +750,127 @@ int vm_make_lambda(vm_t self, elvin_error_t error)
     self -> stack[self -> sp - count - 2] = object;
     self -> sp -= count + 1;
 
+    return 1;
+}
+
+/* Evaluates the top two items on the stack as a let */
+int vm_let(vm_t self, elvin_error_t error)
+{
+    object_t object;
+    uint32_t count = 0;
+
+    /* Move the args and values to the top of the stack and look at it */
+    if (! vm_swap(self, error) ||
+	! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Unroll the arg/val list onto the stack */
+    while (object_type(object) == SEXP_CONS)
+    {
+	count++;
+
+	/* Extract the car of the list */
+	if (! vm_dup(self, error) ||
+	    ! vm_swap(self, error) ||
+	    ! vm_car(self, error) ||
+	    ! vm_top(self, &object, error))
+	{
+	    return 0;
+	}
+
+	/* Deal with this item */
+	switch (object_type(object))
+	{
+	    case SEXP_SYMBOL:
+	    {
+		/* Push a nil value onto the stack */
+		if (! vm_push_nil(self, error) ||
+		    ! vm_roll(self, 2, error) ||
+		    ! vm_roll(self, 1 + count, error))
+		{
+		    return 0;
+		}
+
+		break;
+	    }
+
+	    case SEXP_CONS:
+	    {
+		printf("sexp_cons!\n");
+		abort();
+	    }
+
+	    default:
+	    {
+		char *string = "<expr>";
+		ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "cons");
+		return 0;
+	    }
+	}
+
+	/* Move on to the next arg pair */
+	if (! vm_cdr(self, error) ||
+	    ! vm_top(self, &object, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Make sure the list has ended cleanly */
+    if (object_type(object) != SEXP_NIL)
+    {
+	ELVIN_ERROR_INTERP_ARGS_NOT_LIST(error);
+	return 0;
+    }
+
+    /* Pop the nil and make a list out of the values and move it out of the way */
+    if (! vm_pop(self, NULL, error) ||
+	! vm_make_list(self, count, error) ||
+	! vm_roll(self, count + 1, error))
+    {
+	return 0;
+    }
+
+    /* Create a lambda object big enough for the args, body and environment */
+    if (! vm_new(self, 2 + count, SEXP_LAMBDA, 0, error))
+    {
+	return 0;
+    }
+
+    /* Grab the object off the top of the stack */
+    if (! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Record the environment */
+    object[1] = self -> env;
+
+    /* Record the body and arg list */
+    memcpy(
+	object + 2,
+	self -> stack + self -> sp - count - 2,
+	POINTER_SIZE * (count + 1));
+
+    /* Fix the stack so that the lambda is on top */
+    self -> stack[self -> sp - count - 2] = object;
+    self -> sp -= count + 1;
+
+    /* Hack the processor state so that when we return we end up
+     * setting up our evaluation context to evaluate our new lambda */
+    if (! vm_push_integer(self, self -> fp, error) ||
+	! vm_push(self, self -> env, error) ||
+	! vm_unroll(self, 3, error) ||
+	! vm_push_integer(self, 1, error) ||
+	! vm_unroll(self, 4, error))
+    {
+	return 0;
+    }
+
+    /* Record the new frame pointer */
+    self -> fp = self -> sp - 5;
     return 1;
 }
 
