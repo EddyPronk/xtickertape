@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.23 1999/10/04 07:05:48 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.24 1999/10/04 11:07:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -54,7 +54,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.23 1999/10/04 07:05:48 phelps
 #include "usenet.h"
 #include "usenet_parser.h"
 #include "usenet_sub.h"
-#include "UsenetSubscription.h"
 #include "mail_sub.h"
 #include "connect.h"
 #ifdef ORBIT
@@ -103,7 +102,6 @@ struct tickertape
     int groups_count;
 
     /* The receiver's usenet subscription (from the usenet file) */
-    UsenetSubscription usenetSubscription;
     usenet_sub_t usenet_sub;
 
     /* The receiver's mail subscription */
@@ -148,7 +146,6 @@ static void subscribe_to_orbit(tickertape_t self);
 static char *tickertape_ticker_dir(tickertape_t self);
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
-static FILE *tickertape_usenet_file(tickertape_t self);
 
 
 /*
@@ -487,8 +484,6 @@ static int parse_usenet_callback(
     tickertape_t self, int has_not, char *pattern,
     struct usenet_expr *expressions, size_t count)
 {
-    struct usenet_expr *pointer;
-
     /* Forward the information to the usenet subscription */
     return usenet_sub_add(self -> usenet_sub, has_not, pattern, expressions, count);
 }
@@ -552,27 +547,6 @@ static int parse_usenet_file(tickertape_t self)
 	}
     }
 }
-
-/* Read from the usenet file.  Returns a Usenet subscription. */
-static UsenetSubscription read_usenet_file(tickertape_t self)
-{
-    FILE *file;
-    UsenetSubscription subscription;
-
-    /* Open the usenet file and read */
-    if ((file = tickertape_usenet_file(self)) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Read the file */
-    subscription = UsenetSubscription_readFromUsenetFile(
-	file, (UsenetSubscriptionCallback)receive_callback, self);
-    fclose(file);
-
-    return subscription;
-}
-
 
 /* Returns the index of the group with the given expression (-1 it none) */
 static int find_group(group_sub_t *groups, int count, char *expression)
@@ -659,26 +633,18 @@ void tickertape_reload_groups(tickertape_t self)
 /* Request from the ControlPanel to reload usenet file */
 void tickertape_reload_usenet(tickertape_t self)
 {
-    UsenetSubscription subscription;
-    SANITY_CHECK(self);
+    /* Release the old usenet subscription */
+    usenet_sub_free(self -> usenet_sub);
+    self -> usenet_sub = NULL;
 
-    /* Read the new usenet subscription */
-    subscription = read_usenet_file(self);
-
-    /* Stop listening to old subscription */
-    if (self -> usenetSubscription != NULL)
+    /* Try to read in the new one */
+    if (parse_usenet_file(self) < 0)
     {
-	UsenetSubscription_setConnection(self -> usenetSubscription, NULL);
-	UsenetSubscription_free(self -> usenetSubscription);
+	return;
     }
 
-    /* Start listening to the new subscription */
-    self -> usenetSubscription = subscription;
-
-    if (self -> usenetSubscription != NULL)
-    {
-	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
-    }
+    /* Set its connection */
+    usenet_sub_set_connection(self -> usenet_sub, self -> connection);
 }
 
 
@@ -917,11 +883,8 @@ tickertape_t tickertape_alloc(
     self -> groups = NULL;
     self -> groups_count = 0;
 
-    self -> usenetSubscription = read_usenet_file(self);
     self -> usenet_sub = NULL;
-    parse_usenet_file(self);
-    self -> mail_sub = mail_sub_alloc(
-	user, (mail_sub_callback_t)receive_callback, self);
+    self -> mail_sub = NULL;
     self -> connection = NULL;
     self -> history = history_alloc();
 
@@ -931,6 +894,16 @@ tickertape_t tickertape_alloc(
 	exit(1);
     }
 
+    /* Read the subscriptions from the usenet file */
+    if (parse_usenet_file(self) < 0)
+    {
+	exit(1);
+    }
+
+    /* Initialize the e-mail subscription */
+    self -> mail_sub = mail_sub_alloc(user, (mail_sub_callback_t)receive_callback, self);
+
+    /* Draw the user interface */
     init_ui(self);
 
     /* Connect to elvin and subscribe */
@@ -942,12 +915,6 @@ tickertape_t tickertape_alloc(
     for (index = 0; index < self -> groups_count; index++)
     {
 	group_sub_set_connection(self -> groups[index], self -> connection);
-    }
-
-    /* Subscribe to the Usenet subscription if we have one */
-    if (self -> usenetSubscription != NULL)
-    {
-	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
     }
 
     /* Subscribe to the usenet_sub */
@@ -1133,45 +1100,6 @@ static char *tickertape_usenet_filename(tickertape_t self)
     return self -> usenet_file;
 }
 
-
-/* Answers the receiver's usenet file */
-static FILE *tickertape_usenet_file(tickertape_t self)
-{
-    char *filename = tickertape_usenet_filename(self);
-    FILE *file;
-    int result;
-
-    /* Try to open the file */
-    if ((file = fopen(filename, "r")) != NULL)
-    {
-	return file;
-    }
-
-    /* If failure was not due to a missing file, then fail */
-    if (errno != ENOENT)
-    {
-	return NULL;
-    }
-
-    /* Try to create the file */
-    if ((file = fopen(filename, "w")) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Try to write a default usenet file for the current user */
-    result = UsenetSubscription_writeDefaultUsenetFile(file);
-    fclose(file);
-
-    if (result < 0)
-    {
-	unlink(filename);
-	return NULL;
-    }
-
-    /* Try to open the newly created file */
-    return fopen(filename, "r");
-}
 
 /* Displays a message's MIME attachment */
 int tickertape_show_attachment(tickertape_t self, message_t message)
