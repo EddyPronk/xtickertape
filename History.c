@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.59 2002/04/12 13:21:20 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.60 2002/04/12 14:36:38 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -438,7 +438,7 @@ node_t node_find(node_t self, message_t message)
 	/* Is it one of our children? */
 	if (self -> child)
 	{
-	    if (! (result = node_find(self -> child, message)))
+	    if ((result = node_find(self -> child, message)) != NULL)
 	    {
 		return result;
 	    }
@@ -2282,7 +2282,7 @@ void HistoryKillThread(Widget widget, message_t message)
     }
 
     /* Look for the node which wraps the message */
-    if (! (node = node_find(self -> history.nodes, message)))
+    if ((node = node_find(self -> history.nodes, message)) == NULL)
     {
 	/* The message is killed now */
 	message_set_killed(message, True);
