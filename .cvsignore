@@ -1,5 +1,7 @@
+*.nfn
 *.xpm
 .deps
+.gdbinit
 .pure
 Makefile
 Makefile.in
