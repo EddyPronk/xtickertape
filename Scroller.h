@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.14 2001/08/25 14:04:42 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.15 2002/04/12 13:39:25 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -152,7 +152,9 @@ extern WidgetClass scrollerWidgetClass;
 #include "message.h"
 
 /* Adds a Message to the receiver */
-void ScAddMessage(ScrollerWidget self, message_t message);
+void ScAddMessage(Widget self, message_t message);
 
+/* Purge any killed messages */
+void ScPurgeKilled(Widget self);
 
 #endif /* SCROLLER_H */

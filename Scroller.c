@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.128 2002/04/04 12:32:15 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.129 2002/04/12 13:39:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -2313,8 +2313,9 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
  */
 
 /* Adds a message to the receiver */
-void ScAddMessage(ScrollerWidget self, message_t message)
+void ScAddMessage(Widget widget, message_t message)
 {
+    ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
     glyph_t probe;
     glyph_holder_t holder;
@@ -2360,6 +2361,30 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     {
 	self -> scroller.is_stopped = False;
 	enable_clock(self);
+    }
+}
+
+/* Purge any killed messages */
+void ScPurgeKilled(Widget widget)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+    glyph_t glyph, next;
+
+    /* Go through all of the messages in the scroller, and delete the
+     * ones which have been killed */
+    glyph = self -> scroller.gap -> next;
+    while (glyph != self -> scroller.gap)
+    {
+	/* Remember the next glyph in the list */
+	next = glyph -> next;
+	
+	/* Get the glyph's message */
+	if (message_is_killed(glyph_get_message(glyph)))
+	{
+	    delete_glyph(self, glyph);
+	}
+
+	glyph = next;
     }
 }
 
