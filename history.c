@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.12 1999/08/22 12:40:53 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.13 1999/08/22 13:50:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -363,6 +363,8 @@ static XmString *history_get_strings(history_t self, int count)
 /* Sets the history's threadedness */
 void history_set_threaded(history_t self, int is_threaded)
 {
+    int *selection_positions;
+    Message selection;
     int count;
     XmString *items;
     int index;
@@ -373,14 +375,25 @@ void history_set_threaded(history_t self, int is_threaded)
 	return;
     }
 
-    /* Set our `threadedness' */
-    self -> is_threaded = is_threaded;
-
     /* If we don't have a list to update then we're done */
     if (self -> list == NULL)
     {
+	self -> is_threaded = is_threaded;
 	return;
     }
+
+    /* Remember the current selection (if any) */
+    if (XmListGetSelectedPos(self -> list, &selection_positions, &count))
+    {
+	selection = history_get(self, selection_positions[0]);
+    }
+    else
+    {
+	selection = NULL;
+    }
+
+    /* Switch our `threadedness' */
+    self -> is_threaded = is_threaded;
 
     /* Update the list */
     count = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
@@ -398,7 +411,11 @@ void history_set_threaded(history_t self, int is_threaded)
     /* Free the array */
     free(items);
 
-    /* Probably need to reselect */
+    /* Locate the previously selected item */
+    index = history_index(self, selection);
+
+    /* Re-select the previously selected item */
+    XmListSelectPos(self -> list, index, False);
 }
 
 
@@ -451,7 +468,7 @@ int history_add(history_t self, Message message)
 }
 
 /* Answers the Message at the given index */
-static Message history_get_unthreaded(history_t self, int index)
+static history_node_t history_get_unthreaded(history_t self, int index)
 {
     history_node_t probe;
     int i = self -> count;
@@ -461,7 +478,7 @@ static Message history_get_unthreaded(history_t self, int index)
     {
 	if (index == i)
 	{
-	    return probe -> message;
+	    return probe;
 	}
 
 	i--;
@@ -472,7 +489,7 @@ static Message history_get_unthreaded(history_t self, int index)
 
 
 /* Answers the Message at the given index */
-static Message history_get_threaded(history_t self, int index)
+static history_node_t history_get_threaded(history_t self, int index)
 {
     history_node_t node = self -> last_thread;
     int max = self -> count + 1;
@@ -497,7 +514,7 @@ static Message history_get_threaded(history_t self, int index)
 	else if (node_index == index)
 	{
 	    /* Found a match */
-	    return node -> message;
+	    return node;
 	}
 	else
 	{
@@ -509,8 +526,8 @@ static Message history_get_threaded(history_t self, int index)
     return NULL;
 }
 
-/* Answers the Message at the given index */
-Message history_get(history_t self, int index)
+/* Answers the history_node_t at the given index */
+history_node_t history_get_node(history_t self, int index)
 {
     int i = index;
 
@@ -536,6 +553,20 @@ Message history_get(history_t self, int index)
 	return history_get_unthreaded(self, i);
     }
 }
+
+/* Answers the Message at the given index */
+Message history_get(history_t self, int index)
+{
+    history_node_t node;
+
+    if ((node = history_get_node(self, index)) == NULL)
+    {
+	return NULL;
+    }
+
+    return node -> message;
+}
+
 
 /* Answers the index of given Message in the history */
 static int history_index_unthreaded(history_t self, Message message)
