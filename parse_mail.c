@@ -1,17 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
-#define MAX_PACKET_SIZE 8192
-#define BUFFER_SIZE 1024
+#define MAX_PACKET_SIZE 16384
+#define BUFFER_SIZE 4096
 
 #define UNOTIFY_TYPECODE 1
 #define STRING_TYPECODE 4
 #define PROTO_VERSION_MAJOR 4
 #define PROTO_VERSION_MINOR 0
 
+#define DEFAULT_HOST "127.0.0.1"
+#define DEFAULT_PORT 13131
 
 typedef struct lexer *lexer_t;
 typedef int (*lexer_state_t)(lexer_t self, int ch);
@@ -57,6 +67,9 @@ struct lexer
     /* The position of the length of the current string */
     char *length_point;
 };
+
+char *hostname = DEFAULT_HOST;
+int port = DEFAULT_PORT;
 
 /* The length-prefixed string `From' */
 static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
@@ -215,9 +228,6 @@ static int lexer_append_unotify_footer(lexer_t self)
     /* No keys */
     return append_int32(self, 0);
 }
-
-
-
 
 
 
@@ -702,10 +712,63 @@ static int lex(lexer_t self, char *buffer, ssize_t length)
     return 0;
 }
 
-static void dump_buffer(char *buffer, int length)
+static int dump_buffer(char *buffer, int length)
 {
-    fwrite(buffer, 1, length, stdout);
-    fflush(stdout);
+    struct sockaddr_in name;
+    int fd;
+
+    /* Initialize the name */
+    memset(&name, 0, sizeof(name));
+    name.sin_family = AF_INET;
+    name.sin_port = htons(port);
+
+    /* See if the hostname is in dot notation */
+    if ((name.sin_addr.s_addr = inet_addr(hostname)) == (unsigned long)-1)
+    {
+	struct hostent *host;
+
+	/* Check with the name service */
+	while ((host = gethostbyname(hostname)) == NULL)
+	{
+	    switch (h_errno)
+	    {
+		case HOST_NOT_FOUND:
+		{
+		    fprintf(stderr, "Error: unknown host: %s\n", hostname);
+		    exit(1);
+		}
+
+		case TRY_AGAIN:
+		{
+		    break;
+		}
+
+		default:
+		{
+		    fprintf(stderr, "Error: internal error: %s\n", hostname);
+		    return -1;
+		}
+	    }
+	}
+
+	name.sin_addr = *(struct in_addr *)host -> h_addr;
+    }
+
+    /* Create a socket */
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+	perror("socket(): failed");
+	return -1;
+    }
+
+    /* Send the packet */
+    if (sendto(fd, buffer, length, 0, (struct sockaddr *)&name, sizeof(name)) < 0)
+    {
+	perror("sendto(): failed");
+	return -1;
+    }
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -713,13 +776,9 @@ int main(int argc, char *argv[])
     struct lexer lexer;
     char packet[MAX_PACKET_SIZE];
     char buffer[BUFFER_SIZE];
-    int fd;
+    int fd = STDIN_FILENO;
 
-    if (argc < 2)
-    {
-	fd = STDIN_FILENO;
-    }
-    else
+    if (argc > 1)
     {
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
 	{
