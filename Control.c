@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.36 1999/05/06 00:34:30 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.37 1999/05/17 12:40:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -683,7 +683,6 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 {
     Widget form;
     Widget menubar;
-    Widget helpMenu;
     Widget topForm;
     Widget textForm;
     Widget mimeForm;
