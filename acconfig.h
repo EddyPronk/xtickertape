@@ -27,8 +27,12 @@
 
 ****************************************************************/
 
+/* Define to be the path to the metamail program */
+#undef METAMAIL
+
 /* package name */
 #undef PACKAGE
 
 /* package version */
 #undef VERSION
+
