@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.45 1998/12/24 05:48:31 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.46 1998/12/24 06:16:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,9 +37,7 @@ static const char cvsid[] = "$Id: main.c,v 1.45 1998/12/24 05:48:31 phelps Exp $
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifdef HAVE_GETOPT_H
 #include <getopt.h>
-#endif /* HAVE_GETOPT_H */
 #include <pwd.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
@@ -56,7 +54,6 @@ static const char cvsid[] = "$Id: main.c,v 1.45 1998/12/24 05:48:31 phelps Exp $
 #define PORT 5678
 
 /* The list of long options */
-#ifdef HAVE_GETOPT_H
 static struct option long_options[] =
 {
     { "host", required_argument, NULL, 'h' },
@@ -68,8 +65,6 @@ static struct option long_options[] =
     { "help", no_argument, NULL, 'z' },
     { NULL, no_argument, NULL, '\0' }
 };
-#endif /* HAVE_GETOPT_H */
-
 
 /* Static function headers */
 static void NotifyAction(
@@ -114,7 +109,6 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 static void Usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
-#ifdef HAVE_GETOPT_H
     fprintf(stderr, "  -h host,     --host=host\n");
     fprintf(stderr, "  -p port,     --port=port\n");
     fprintf(stderr, "  -u username, --user=username\n");
@@ -122,14 +116,6 @@ static void Usage(int argc, char *argv[])
     fprintf(stderr, "  -n filename, --news=filename\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
-#else /* HAVE_GETOPT_H */
-    fprintf(stderr, "  -h host\n");
-    fprintf(stderr, "  -p port\n");
-    fprintf(stderr, "  -u username\n");
-    fprintf(stderr, "  -g groupsfile\n");
-    fprintf(stderr, "  -n newsfile\n");
-    fprintf(stderr, "  -v\n");
-#endif /* HAVE_GETOPT_H */
 }
 
 /* Parses arguments and sets stuff up */
@@ -149,11 +135,7 @@ static void ParseArgs(
     *port_return = PORT;
 
     /* Read each argument using getopt */
-#ifdef HAVE_GETOPT_H
     while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) > 0)
-#else /* HAVE_GETOPT_H */
-    while ((choice = getopt(argc, argv, "h:p:u:g:n:v")) > 0)
-#endif /* HAVE_GETOPT_H */
     {
 	switch (choice)
 	{
