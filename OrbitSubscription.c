@@ -1,4 +1,4 @@
-/* $Id: OrbitSubscription.c,v 1.4 1998/10/21 04:03:46 arnold Exp $ */
+/* $Id: OrbitSubscription.c,v 1.5 1998/10/21 05:24:22 phelps Exp $ */
 
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
@@ -166,8 +166,8 @@ void SendMessage(OrbitSubscription self, Message message)
     SANITY_CHECK(self);
 
     timeout = Message_getTimeout(message);
-    msg_id = Message_getID(message);
-    thread_id = Message_getThreadID(message);
+    msg_id = Message_getId(message);
+    thread_id = Message_getThreadId(message);
 
     notification = en_new();
     en_add_string(notification, "zone.id", self -> id);

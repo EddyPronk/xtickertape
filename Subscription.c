@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.10 1998/10/21 04:03:47 arnold Exp $ */
+/* $Id: Subscription.c,v 1.11 1998/10/21 05:24:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,8 +294,8 @@ static void SendMessage(Subscription self, Message message)
     SANITY_CHECK(self);
 
     timeout = Message_getTimeout(message);
-    msg_id = Message_getID(message);
-    thread_id = Message_getThreadID(message);
+    msg_id = Message_getId(message);
+    thread_id = Message_getThreadId(message);
 
     notification = en_new();
     en_add_string(notification, "TICKERTAPE", self -> group);

@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.9 1998/10/21 04:03:46 arnold Exp $ */
+/* $Id: Message.c,v 1.10 1998/10/21 05:24:03 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,17 +190,17 @@ char *Message_getMimeArgs(Message self)
 }
 
 /* Answers the receiver's message identifier */
-unsigned long Message_getID(Message self)
+unsigned long Message_getId(Message self)
 {
-  SANITY_CHECK(self);
-  return self -> msg_id;
+    SANITY_CHECK(self);
+    return self -> msg_id;
 }
 
 /* Answers the receiver's discussion thread identifier */
-unsigned long Message_getThreadID(Message self)
+unsigned long Message_getThreadId(Message self)
 {
-  SANITY_CHECK(self);
-  return self -> thread_id;
+    SANITY_CHECK(self);
+    return self -> thread_id;
 }
 
 /* Prints debugging information */

@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.7 1998/10/21 04:03:46 arnold Exp $ */
+/* $Id: Message.h,v 1.8 1998/10/21 05:24:12 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -43,10 +43,10 @@ char *Message_getMimeType(Message self);
 char *Message_getMimeArgs(Message self);
 
 /* Answers the receiver's message identifier */
-unsigned long Message_getID(Message self);
+unsigned long Message_getId(Message self);
 
 /* Answers the receiver's discussion thread identifier */
-unsigned long Message_getThreadID(Message self);
+unsigned long Message_getThreadId(Message self);
 
 /* Answers the Subscription info for the receiver's subscription */
 void *Message_getInfo(Message self);
