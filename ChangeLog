@@ -1,3 +1,12 @@
+1999-10-02  Ted Phelps  <phelps@pobox.com>
+
+	* Control.c: fixed the miscount of the number of digits in the
+		  year portion of the message-id.  This will break again
+		  in 10000AD.
+
+	* Control.c: set minimum width and height for the control panel
+		  and the about box based on their initial sizes.
+	
 1999-09-29  Ted Phelps  <phelps@pobox.com>
 
 	* message_glyph.c: This time I think I've got it -- when measuring 
