@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.57 2000/06/13 12:41:52 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.58 2000/06/14 01:56:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1094,6 +1094,9 @@ static void status_cb(
 
 	case ELVIN_STATUS_PROTOCOL_ERROR:
 	{
+	    /* Tell the control panel that we're no longer connected */
+	    control_panel_set_connected(self -> control_panel, False);
+
 	    /* Make room for a message string */
 	    if ((buffer = (char *)malloc(sizeof(PROTOCOL_ERROR_MSG) + strlen(url) - 2)) == NULL)
 	    {
