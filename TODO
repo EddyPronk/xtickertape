@@ -57,9 +57,6 @@ History Widget
   selected message so that people on black and white machines can
   still read it.
 
-- The history window should scroll messages up when the visible window
-  is full rather than waiting until the history buffer is full.
-
 - The highlight around the selection which indicates that the widget
   has focus should acknowledge the highlight_thickness resource, which
   will need to affect the spacing between lines.
@@ -70,8 +67,7 @@ History Widget
 
 - The timestamp should optionally include the date as well as simply
   HH:MM(am|pm), and should be internationalized.  It should be
-  possible to switch between date formats at runtime.  Perhaps this
-  could be done via the Scheme interpreter via a lambda expression?
+  possible to switch between date formats at runtime.
 
 - Messages should be indented to indicate threading.  This will expose
   a bit of unimplemented functionality in regards to inserting a
@@ -87,6 +83,10 @@ History Widget
 
 - Messages containing non-ASCII characters appear garbled because we
   don't do anything intelligent with the UTF-8 encoding.
+
+- Check the max ascent and descent rather than blindly trusting the
+  font description since it's known to have incorrect values for some
+  fonts.
 
 
 Scheme Interpreter [POSTPONED until v2.1]:
