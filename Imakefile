@@ -1,0 +1,63 @@
+XCOMM
+XCOMM Rough-and-ready makefile for building xtickertape.
+XCOMM Assumes that the elvin source tree has been extracted
+XCOMM and that DSTCDIR points at it.
+XCOMM
+
+#include <Threads.tmpl>
+
+GMAKE		= gmake
+DSTCDIR		= /homes/leonard/dstc
+SYSTYPE		= `${DSTCDIR}/script/systype`
+
+PREFIX		= /homes/leonard/public
+INSTALLDIR	= ${PREFIX}
+BINDIR		= ${PREFIX}/bin
+LIBDIR		= ${PREFIX}/lib
+
+ELVININCDIR	= ${DSTCDIR}/units/arch/elvin3.11/include
+ELVINLIBDIR	= ${DSTCDIR}/units/arch/elvin3.11/${SYSTYPE}/lib
+ELVINLIBS	= -lvin
+ELVINLIBDEP	= ${ELVINLIBDIR}/libvin.a
+
+ELVIN_HOST	= -DELVIN_HOSTNAME='"localhost"'
+
+DSTCSTDINCDIR	=  ${DSTCDIR}/units/common/include
+DSTCSTDLIBDIR	=  ${DSTCDIR}/units/common/${SYSTYPE}/lib
+DSTCSTDLIBS	= -ldstc_std
+DSTCSTDLIBDEP	= ${DSTCSTDLIBDIR}/libdstc_std.a
+
+SRCS		= ElvinConnection.c \
+		  Control.c Tickertape.c \
+		  MessageView.c Message.c Subscription.c List.c main.c
+OBJS		= ${SRCS:.c=.o} ${ELVINLIBDEP} ${DSTCSTDLIBDEP}
+
+EXTRA_DEFINES	= -DUSE_ELVIN -D`${DSTCDIR}/script/systype -_` ${ELVIN_HOST}
+EXTRA_INCLUDES	= -I${ELVININCDIR} -I${DSTCSTDINCDIR}
+EXTRA_LDOPTIONS	= -L${ELVINLIBDIR} -L${DSTCSTDLIBDIR} \
+		  -R${ELVINLIBDIR} -R${DSTCSTDLIBDIR}
+EXTRA_LIBRARIES	= ${ELVINLIBS} ${DSTCSTDLIBS} XawClientLibs ExtraLibraries
+
+ComplexProgramTarget(xtickertape)
+CleanTarget()
+
+XCOMM
+XCOMM Simple way of building just enough elvin to get by
+XCOMM
+
+DSTCMAKEFLAGS= DSTCDIR=${DSTCDIR} IGROUP=`id -g` IOWNER=`id -u` \
+		YACC='bison -y' PACKAGES='common elvin3'
+
+${DSTCSTDLIBDEP}:
+	@test -f "$@" || \
+	( cd ${DSTCDIR}/units/common/install; \
+	  ${GMAKE} build ${DSTCMAKEFLAGS} )
+
+${ELVINLIBDEP}:
+	@test -f "$@" || \
+	( cd ${DSTCDIR}/units/arch/elvin3.11/src/lib; \
+	  ${GMAKE} build ${DSTCMAKEFLAGS}; \
+	  cd ../server; \
+	  ${GMAKE} build ${DSTCMAKEFLAGS} )
+	
+
