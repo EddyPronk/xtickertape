@@ -13,9 +13,9 @@
 #include "parser.h"
 
 /* Parser callback */
-int parsed(void *rock, parser_t parser, vm_object_t sexp, elvin_error_t error)
+int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
 {
-    printf("parsed!\n");
+    vm_print_stack(vm, error);
     printf("> "); fflush(stdout);
     return 1;
 }
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     }
 
     /* Allocate a new parser */
-    if ((parser = parser_alloc(parsed, NULL, error)) == NULL)
+    if ((parser = parser_alloc(vm, parsed, NULL, error)) == NULL)
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);

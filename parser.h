@@ -31,7 +31,7 @@
 #define PARSER_H
 
 #ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.7 2000/11/17 09:48:14 phelps Exp $";
+static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.8 2000/11/17 13:17:49 phelps Exp $";
 #endif /* lint */
 
 typedef struct parser *parser_t;
@@ -39,9 +39,9 @@ typedef struct parser *parser_t;
 
 /* The format of a parser callback function. */
 typedef int (*parser_callback_t)(
-    void *rock,
+    vm_t vm,
     parser_t parser,
-    vm_object_t object,
+    void *rock,
     elvin_error_t error);
 
 
@@ -56,7 +56,11 @@ typedef int (*parser_callback_t)(
  *     success: a valid parser_t
  *     failure: NULL
  */
-parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t error);
+parser_t parser_alloc(
+    vm_t vm,
+    parser_callback_t callback,
+    void *rock,
+    elvin_error_t error);
 
 /* Frees the resources consumed by the parser */
 int parser_free(parser_t self, elvin_error_t error);
