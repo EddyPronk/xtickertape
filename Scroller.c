@@ -1,4 +1,4 @@
-/* $Id: Scroller.c,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: Scroller.c,v 1.2 1997/02/05 09:15:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +14,7 @@
 /*#define FONT "-adobe-helvetica-medium-r-normal--12-120-75-75-p-67-iso8859-1"*/
 #define FONT "*-times-medium-r-normal-*-18-*"
 #define END_SPACING 10
-#define WIDTH 800
+#define WIDTH 400
 
 struct Scroller_t
 {
@@ -23,13 +23,15 @@ struct Scroller_t
     unsigned int width;
     unsigned int height;
     Window window;
-    List pending;
     List messages;
+    List visible;
     List widths;
+    unsigned int nextVisible;
     long offset;
     long messagesWidth;
+    long visibleWidth;
     int clock;
-    int isStalled;
+    int isSuspended;
 };
 
 
@@ -59,20 +61,20 @@ Scroller Scroller_alloc(char *displayName, int screen)
     Graphics_flush(self -> graphics);
 
     /* List of messages we're scrolling */
-    self -> pending = List_alloc();
     self -> messages = List_alloc();
+    self -> visible = List_alloc();
     self -> widths = List_alloc();
+    self -> nextVisible = 0;
 
     /* Add the spacers */
-    List_addLast(self -> messages, NULL);
+    List_addLast(self -> visible, NULL);
     List_addLast(self -> widths, (void *)self -> width);
-    List_addLast(self -> messages, NULL);
-    List_addLast(self -> widths, (void *)self -> width);
+    self -> visibleWidth = self -> width;
 
-    self -> offset = self -> width - 1;
+    self -> offset = 0;
     self -> messagesWidth = 0;
     self -> clock = FREQUENCY;
-    self -> isStalled = 0;
+    self -> isSuspended = 1;
 
     return self;
 }
@@ -112,7 +114,7 @@ void Scroller_handle(Scroller self, fd_set *readSet, fd_set *writeSet, fd_set *e
 	{
 	    Message message;
 
-	    message = Message_alloc("tickertape", "internal", "buttonpress ignored", 30);
+	    message = Message_alloc("tickertape", "internal", "buttonpress ignored", 90);
 	    Scroller_addMessage(self, message);
 	}
 	else if (event.type == NoExpose)
@@ -126,21 +128,58 @@ void Scroller_handle(Scroller self, fd_set *readSet, fd_set *writeSet, fd_set *e
     }
 }
 
+/* Stalls the Scroller thread (FIX THIS: should play with timer) */
+void Scroller_suspend(Scroller self)
+{
+    printf("suspending...\n");
+    self -> isSuspended = 1;
+}
 
-/* Adds a message to the receiver */
+/* Resume the Scroller thread (FIX THIS: should play with timer) */
+void Scroller_resume(Scroller self)
+{
+    printf("resuming...\n");
+    self -> isSuspended = 0;
+}
+
+
+
+
+/* Adds a MessageView to the receiver */
+void Scroller_addMessageView(Scroller self, MessageView view)
+{
+    MessageView_allocReference(view);
+    List_addLast(self -> messages, view);
+    self -> messagesWidth += MessageView_getWidth(view);
+
+    if (self -> isSuspended)
+    {
+	Scroller_resume(self);
+    }
+}
+
+/* Removes a MessageView from the receiver */
+void Scroller_removeMessageView(Scroller self, MessageView view)
+{
+    List_remove(self -> messages, view);
+    self -> messagesWidth -= MessageView_getWidth(view);
+    MessageView_freeReference(view);
+}
+
+
+/* Creates a MessageView for the Message and adds it to the receiver */
 void Scroller_addMessage(Scroller self, Message message)
 {
     MessageView view;
 
-    /* Add the message to the queue */
     view = MessageView_alloc(self -> graphics, message, self -> fontInfo);
-    List_addLast(self -> pending, view);
-    printf("\n---\n");
-    List_do(self -> pending, MessageView_debug);
-    printf("---\n");
+    Scroller_addMessageView(self, view);
 }
 
 
+
+
+/* Redraws a message view at the appropriate location */
 void Scroller_refreshMessageView(MessageView view, void *context[])
 {
     Scroller self = context[0];
@@ -150,11 +189,6 @@ void Scroller_refreshMessageView(MessageView view, void *context[])
 
     context[1] = (void *)(offset + swidth);
     context[2] = (void *)(index + 1);
-    /* Don't worry about messages past the right edge */
-/*    if (self -> width + offset < 0)
-    {
-	return;
-    }*/
 
     if (view != NULL)
     {
@@ -173,124 +207,113 @@ void Scroller_refresh(Scroller self)
     context[1] = (void *)offset;
     context[2] = (unsigned int) 0;
 
-    List_doWith(self -> messages, Scroller_refreshMessageView, context);
-/*    List_doWith(self -> messages, Scroller_refreshMessageView, context);*/
+    List_doWith(self -> visible, Scroller_refreshMessageView, context);
     Graphics_flush(self -> graphics);
 }
 
 
-/* Pull items off the pending queue and add them to the end of the messages list */
-void Scroller_addQueued(Scroller self)
-{
-    MessageView pending;
-
-    /* copy in the pending messages */
-    while ((pending = List_dequeue(self -> pending)) != NULL)
-    {
-	unsigned long width = MessageView_getWidth(pending);
-	
-	MessageView_allocReference(pending);
-	List_addLast(self -> messages, pending);
-	List_addLast(self -> widths, (void *)width);
-	self -> messagesWidth += width;
-    }
-}
-
-/* Remove the first message from the queue and copy the 2nd to the end */
-void Scroller_rotate(Scroller self)
-{
-    MessageView first, second;
-    unsigned long wFirst, wSecond;
-
-    /* Discard the first message */
-    wFirst = (unsigned long) List_dequeue(self -> widths);
-    if ((first = List_dequeue(self -> messages)) != NULL)
-    {
-	MessageView_freeReference(first);
-	if (MessageView_getReferenceCount(first) == 0)
-	{
-	    self -> messagesWidth -= wFirst;
-	    MessageView_free(first);
-	}
-    }
-
-    /* Duplicate the second to the end of the list */
-    second = List_first(self -> messages);
-    wSecond = (unsigned long) List_first(self -> widths);
-    if (second == NULL)
-    {
-	unsigned long newWidth;
-
-	/* Add the pending messages to the queue */
-	printf("dequeue\n");
-	Scroller_addQueued(self);
-
-	/* Figure out new width */
-	newWidth = self -> width - self -> messagesWidth;
-	newWidth = newWidth < END_SPACING ? END_SPACING : newWidth;
-	List_addLast(self -> messages, second);
-	List_addLast(self -> widths, (void *)newWidth);
-    }
-    else if (! MessageView_isTimedOut(second))
-    {
-	MessageView_allocReference(second);
-	List_addLast(self -> messages, second);
-	List_addLast(self -> widths, (void *)wSecond);
-    }
-}
-
 
 /* Move the scroller display one pixel left */
-void Scroller_tick(Scroller self)
+void Scroller_scroll(Scroller self)
 {
     MessageView view;
     unsigned long width;
 
-    /* Abort if no messages */
-    if (self -> messagesWidth == 0)
+    /* increment the offset */
+    self -> offset++;
+
+    /* Check if a message has vanished off the left edge */
+    while ((width = (unsigned long) List_first(self -> widths)) <= self -> offset)
     {
-	if (List_size(self -> pending) > 0)
+	MessageView view = List_dequeue(self -> visible);
+	List_dequeue(self -> widths);
+
+	if (view != NULL)
 	{
-	    Scroller_addQueued(self);
+	    MessageView_freeReference(view);
 	}
-	else if (self -> isStalled)
+
+	self -> offset -= width;
+	self -> visibleWidth -= width;
+    }
+
+    /* Determine if message(s) should be added to the end */
+    while (self -> visibleWidth - self -> offset <= (signed)(self -> width))
+    {
+	MessageView view;
+
+	view = List_get(self -> messages, self -> nextVisible);
+	while ((view != NULL) && (MessageView_isTimedOut(view)))
 	{
-	    return;
+	    Scroller_removeMessageView(self, view);
+	    view = List_get(self -> messages, self -> nextVisible);
+	}
+	self -> nextVisible++;
+
+	if (view == NULL)
+	{
+	    MessageView last = List_last(self -> visible);
+
+	    if (last == NULL)
+	    {
+		/* If we're displaying only spaces then suspend */
+		if (List_first(self -> visible) == NULL)
+		{
+		    Scroller_suspend(self);
+		    self -> nextVisible = 0;
+		    
+		    return;
+		}
+
+		/* Messages list is empty */
+		if (List_last(self -> visible) == NULL)
+		{
+		    /* There's already a space, so add a spacer to fill to end */
+		    width = self -> width - (unsigned long)List_last(self -> widths);
+		}
+		else
+		{
+		    /* Otherwise add a spacer the width of the scroller */
+		    width = self -> width;
+		}
+	    }
+	    else
+	    {
+		width = self -> width - MessageView_getWidth(last);
+		width = width > END_SPACING ? width : END_SPACING;
+	    }
+
+	    self -> nextVisible = 0;
 	}
 	else
 	{
-	    printf("stalling...\n");
-	    /* Shortcut so new messages show up quickly */
-	    List_dequeue(self -> widths);
-	    List_dequeue(self -> widths);
-	    List_addLast(self -> widths, (void *)self -> width);
-	    List_addLast(self -> widths, (void *)self -> width);
-	    self -> offset = self -> width - 1;
-	    self -> isStalled = 1;
+	    MessageView_allocReference(view);
+	    width = MessageView_getWidth(view);
 	}
+
+	List_addLast(self -> visible, view);
+	List_addLast(self -> widths, (void *)width);
+	self -> visibleWidth += width;
     }
-    else
+}
+
+/* Move the scroller display one pixel left */
+void Scroller_tick(Scroller self)
+{
+    /* Abort if stalled (FIX THIS: should be taken care of by playing with timer) */
+    if (self -> isSuspended)
     {
-	if (self -> isStalled)
-	{
-	    printf("restarted\n");
-	    self -> isStalled = 0;
-	}
-	self -> offset++;
+	return;
     }
 
+    /* Fade messages */
     if (self -> clock-- <= 0)
     {
 	List_do(self -> messages, MessageView_tick);
 	self -> clock = FREQUENCY;
     }
 
-    view = List_first(self -> messages);
-    width = (unsigned long) List_first(self -> widths);
-    if ((self -> messagesWidth) > 0 && (width <= self -> offset))
-    {
-	Scroller_rotate(self);
-	self -> offset = 0;
-    }
+    Scroller_scroll(self);
     Scroller_refresh(self);
 }
+
