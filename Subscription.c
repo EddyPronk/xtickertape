@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.29 1999/05/22 08:22:16 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.30 1999/05/22 08:34:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -502,7 +502,7 @@ static void SendMessage(Subscription self, Message message)
  *
  */
 
-/* Create a default groups file and write it to the named file */
+/* Write a default `groups' file onto the output stream */
 int Subscription_writeDefaultGroupsFile(
     FILE *out, char *username)
 {
