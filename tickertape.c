@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.37 1999/11/18 07:27:47 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.38 1999/11/18 07:32:02 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -576,7 +576,8 @@ static int find_group(group_sub_t *groups, int count, char *expression)
 
     for (pointer = groups; pointer < groups + count; pointer++)
     {
-	if ((*pointer != NULL) && (strcmp(group_sub_expression(*pointer), expression) == 0))
+	if (*pointer != NULL && 
+	    strcmp(group_sub_expression(*pointer), expression) == 0)
 	{
 	    return pointer - groups;
 	}
@@ -588,8 +589,6 @@ static int find_group(group_sub_t *groups, int count, char *expression)
 /* Request from the control panel to reload groups file */
 void tickertape_reload_groups(tickertape_t self)
 {
-    printf("tickertape_reload_groups() is not yet implemented\n");
-#if 0
     group_sub_t *old_groups = self -> groups;
     int old_count = self -> groups_count;
     int index;
@@ -618,7 +617,7 @@ void tickertape_reload_groups(tickertape_t self)
 	    group_sub_expression(group))) < 0)
 	{
 	    /* None found.  Set the subscription's connection */
-	    group_sub_set_connection(group, self -> connection);
+	    group_sub_set_connection(group, self -> handle, self -> error);
 	}
 	else
 	{
@@ -638,7 +637,7 @@ void tickertape_reload_groups(tickertape_t self)
 
 	if (old_group != NULL)
 	{
-	    group_sub_set_connection(old_group, NULL);
+	    group_sub_set_connection(old_group, NULL, self -> error);
 	    group_sub_set_control_panel(old_group, NULL);
 	    group_sub_free(old_group);
 	}
@@ -651,18 +650,18 @@ void tickertape_reload_groups(tickertape_t self)
     count = 0;
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_control_panel_index(self -> groups[index], self -> control_panel, &count);
+	group_sub_set_control_panel_index(
+	    self -> groups[index],
+	    self -> control_panel,
+	    &count);
     }
-#endif /* 0 */
 }
 
 /* Request from the control panel to reload usenet file */
 void tickertape_reload_usenet(tickertape_t self)
 {
-    printf("tickertape_reload_usenet not yet implemented\n");
-#if 0
     /* Release the old usenet subscription */
-    usenet_sub_set_connection(self -> usenet_sub, NULL);
+    usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
     usenet_sub_free(self -> usenet_sub);
     self -> usenet_sub = NULL;
 
@@ -673,8 +672,10 @@ void tickertape_reload_usenet(tickertape_t self)
     }
 
     /* Set its connection */
-    usenet_sub_set_connection(self -> usenet_sub, self -> connection);
-#endif /* 0 */
+    usenet_sub_set_connection(
+	self -> usenet_sub,
+	self -> handle,
+	self -> error);
 }
 
 
