@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.83 2000/07/28 05:57:01 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.84 2000/08/03 22:42:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -148,8 +148,11 @@ static char *get_domain()
     /* Otherwise look up the node name */
     if (! (uname(&name) < 0))
     {
-	/* Use that to get the host entry */
-	host = gethostbyname(name.nodename);
+	/* And use that to look up the host entry */
+	if ((host = gethostbyname(name.nodename)) == NULL)
+	{
+	    return DEFAULT_DOMAIN;
+	}
 
 	/* Strip everything up to and including the first `.' */
 	for (domain = host -> h_name; *domain != '\0'; domain++)
