@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.16 1999/09/09 14:29:50 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.17 1999/09/13 03:52:45 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -67,14 +67,42 @@ struct message_glyph
     /* The width of the receiver's separator string */
     unsigned int separator_width;
 
+    /* The separator's left bearing */
+    int separator_lbearing;
+
+    /* The separator's right bearing */
+    int separator_rbearing;
+
+
     /* The width of the receiver's group string */
     unsigned int group_width;
+
+    /* The group string's left bearing */
+    int group_lbearing;
+
+    /* The group string's right bearing */
+    int group_rbearing;
+
 
     /* The width of the receiver's user string */
     unsigned int user_width;
 
+    /* The user string's left bearing */
+    int user_lbearing;
+
+    /* The user string's right bearing */
+    int user_rbearing;
+
+
     /* The width of the receiver's message string */
     unsigned int string_width;
+
+    /* The message string's left bearing */
+    int string_lbearing;
+
+    /* The message string's right bearing */
+    int string_rbearing;
+
 
     /* The width of the whitepspace after the message */
     unsigned int spacing;
@@ -215,42 +243,75 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
 }
 
 /* Measure all of the characters in a string */
-static unsigned int measure_string(XFontStruct *font, char *string)
+static unsigned int measure_string(XFontStruct *font, char *string, int *lbearing, int *rbearing)
 {
     unsigned char *pointer;
-    unsigned int width = 0;
-    unsigned int result = 0;
+    XCharStruct *char_info;
+    unsigned int width;
 
-    /* Include the right bearing of the last character in the width */
-    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
+
+    /* Shortcut for empty strings that makes sure everything gets set */
+    if (*string == '\0')
     {
-	XCharStruct *char_info = per_char(font, *pointer);
-	result = width + char_info -> rbearing;
+	if (lbearing != NULL)
+	{
+	    *lbearing = 0;
+	}
+
+	if (rbearing != NULL)
+	{
+	    *rbearing = 0;
+	}
+
+	return 0;
+    }
+
+    /* Get the first character's information for the string's lbearing */
+    pointer = (unsigned char *)string;
+    char_info = per_char(font, *(pointer++));
+    width = char_info -> width;
+    if (lbearing != NULL)
+    {
+	*lbearing = char_info -> lbearing;
+    }
+
+    /* Measure the rest of the characters */
+    while (*pointer != '\0')
+    {
+	char_info = per_char(font, *(pointer++));
 	width += char_info -> width;
     }
 
-    return result < width ? width : result;
+    /* Adjust the width by the last character's rbearing */
+    if (rbearing != NULL)
+    {
+	*rbearing = width + char_info -> rbearing - char_info -> width;
+    }
+
+    return width;
 }
 
 /* Draws a String with an optional underline */
 static void paint_string(
     message_glyph_t self,
     Display *display, Drawable drawable, GC gc, XFontStruct *font,
-    int left, int right, int baseline, char *string, int do_underline,
+    int offset, int lbearing, int rbearing, int baseline,
+    int string_width, char *string, int do_underline,
     int x, int y, int width, int height)
 {
     XCharStruct *char_info;
     unsigned char *first;
     unsigned char *last;
+    int left, right;
 
     /* If the glyph is off to the left of the rectangle then quit */
-    if (right < x)
+    if (offset + rbearing < x)
     {
 	return;
     }
 
     /* If the glyph is off to the right of the rectangle then quit */
-    if (x + width < left)
+    if (x + width < offset + lbearing)
     {
 	return;
     }
@@ -263,18 +324,8 @@ static void paint_string(
     }
 #endif /* DEBUG */
 
-    /* Draw the underline now because we're going to squeeze left and
-     * right to match the bounds of the characters we draw and we'll
-     * end up with gaps */
-    if (do_underline)
-    {
-	XDrawLine(
-	    display, drawable, gc,
-	    x < left ? left : x, baseline + 1,
-	    right < x + width ? right : x + width, baseline + 1);
-    }
-
     /* Find the first visible character in the string */
+    left = offset;
     first = (unsigned char *)string;
     char_info = per_char(font, *first);
 
@@ -296,8 +347,18 @@ static void paint_string(
 	char_info = per_char(font, *last);
     }
 
+
     /* Draw all of the characters of the string */
     XDrawString(display, drawable, gc, left, baseline, first, last - first);
+
+    /* Draw the underline based on the string's width to avoid gaps */
+    if (do_underline)
+    {
+	XDrawLine(
+	    display, drawable, gc,
+	    x < offset ? offset : x, baseline + 1,
+	    offset + string_width < x + width ? offset + string_width : x + width, baseline + 1);
+    }
 }
 
 /* Draw the receiver */
@@ -317,7 +378,8 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForGroup(self -> widget, level),
 	ScFontForGroup(self -> widget),
-	left, right, baseline, message_get_group(self -> message), do_underline,
+	left, self -> group_lbearing, self -> group_rbearing, baseline,
+	self -> group_width, message_get_group(self -> message), do_underline,
 	x, y, width, height);
 
     /* Draw the separator */
@@ -326,7 +388,8 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForSeparator(self -> widget, level),
 	ScFontForSeparator(self -> widget),
-	left, right, baseline, SEPARATOR, do_underline,
+	left, self -> separator_lbearing, self -> separator_rbearing, baseline,
+	self -> separator_width, SEPARATOR, do_underline,
 	x, y, width, height);
 
     /* Draw the user string */
@@ -335,7 +398,8 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForUser(self -> widget, level),
 	ScFontForUser(self -> widget),
-	left, right, baseline, message_get_user(self -> message), do_underline,
+	left, self -> user_lbearing, self -> user_rbearing, baseline,
+	self -> user_width, message_get_user(self -> message), do_underline,
 	x, y, width, height);
 
     /* Draw the separator */
@@ -344,7 +408,8 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForSeparator(self -> widget, level),
 	ScFontForSeparator(self -> widget),
-	left, right, baseline, SEPARATOR, do_underline,
+	left, self -> separator_lbearing, self -> separator_rbearing, baseline,
+	self -> separator_width, SEPARATOR, do_underline,
 	x, y, width, height);
 
     /* Draw the message */
@@ -353,7 +418,8 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForString(self -> widget, level),
 	ScFontForString(self -> widget),
-	left, right, baseline, message_get_string(self -> message), do_underline,
+	left, self -> string_lbearing, self -> string_rbearing, baseline,
+	self -> string_width, message_get_string(self -> message), do_underline,
 	x, y, width, height);
 }
 
@@ -410,22 +476,34 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message)
 
     /* Compute sizes of various strings */
     font = ScFontForSeparator(self -> widget);
-    self -> separator_width = measure_string(font, SEPARATOR);
+    self -> separator_width = measure_string(
+	font, SEPARATOR,
+	&self -> separator_lbearing,
+	&self -> separator_rbearing);
     self -> ascent = font -> ascent;
 
     font = ScFontForGroup(self -> widget);
-    self -> group_width = measure_string(font, message_get_group(self -> message));
+    self -> group_width = measure_string(
+	font, message_get_group(self -> message),
+	&self -> group_lbearing,
+	&self -> group_rbearing);
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
     font = ScFontForString(self -> widget);
-    self -> user_width = measure_string(font, message_get_user(self -> message));
+    self -> user_width = measure_string(
+	font, message_get_user(self -> message),
+	&self -> user_lbearing,
+	&self -> user_rbearing);
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
     font = ScFontForString(self -> widget);
-    self -> string_width = measure_string(font, message_get_string(self -> message));
+    self -> string_width = measure_string(
+	font, message_get_string(self -> message),
+	&self -> string_lbearing,
+	&self -> string_rbearing);
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
-    self -> spacing = measure_string(font, "n");
+    self -> spacing = measure_string(font, "n", NULL, NULL);
 
     set_clock(self);
 
