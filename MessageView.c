@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.39 1999/05/18 00:11:36 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.40 1999/06/15 07:51:19 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -60,7 +60,9 @@ static char *sanity_freed = "Freed MessageView";
 
 
 /* Static function headers */
-static void Paint(MessageView self, Drawable drawable, int x, int y);
+static void Paint(
+    MessageView self, Drawable drawable, int offset,
+    int x, int y, unsigned int width, unsigned int height);
 static void SetClock(MessageView self);
 static void ClearClock(MessageView self);
 static void Tick(MessageView self, XtIntervalId *ignored);
@@ -95,11 +97,14 @@ struct MessageView_t
 
 
 /* Displays the receiver on the drawable */
-static void Paint(MessageView self, Drawable drawable, int x, int y)
+static void Paint(
+    MessageView self, Drawable drawable, int offset,
+    int x, int y, unsigned int width, unsigned int height)
 {
     Display *display;
     int hasAttachment;
     int xpos;
+    int nextpos;
     int level;
     char *string;
     GC gc;
@@ -107,70 +112,91 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     SANITY_CHECK(self);
     display = XtDisplay(self -> widget);
     hasAttachment = Message_hasAttachment(self -> message);
-    xpos = x;
+    xpos = offset;
     level = self -> fadeLevel;
 
-    /* Draw the group string */
-    gc = ScGCForGroup(self -> widget, level);
-    string = Message_getGroup(self -> message);
-    XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
-
-    /* Underline the group string if there's a MIME attachment */
-    if (hasAttachment)
+    /* If the group fits, draw it */
+    nextpos = xpos + self -> groupWidth;
+    if ((xpos <= x + width) && (x < nextpos))
     {
-	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> groupWidth, y + 1);
+	/* Draw the group string */
+	gc = ScGCForGroup(self -> widget, level);
+	string = Message_getGroup(self -> message);
+	XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+	/* Underline the group string if there's a MIME attachment */
+	if (hasAttachment)
+	{
+	    XDrawLine(display, drawable, gc, xpos, y + 1, nextpos, y + 1);
+	}
     }
 
-    xpos += self -> groupWidth;
-
-    /* Draw the separator */
-    gc = ScGCForSeparator(self -> widget, level);
-    string = SEPARATOR;
-    XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
-
-    /* Underline the separator if there's a MIME attachment */
-    if (hasAttachment)
+    /* If the separator fits, draw it */
+    xpos = nextpos;
+    nextpos = xpos + self -> separatorWidth;
+    if ((xpos <= x + width) && (x < nextpos))
     {
-	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> separatorWidth, y + 1);
+	/* Draw the separator */
+	gc = ScGCForSeparator(self -> widget, level);
+	string = SEPARATOR;
+	XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+	/* Underline the separator if there's a MIME attachment */
+	if (hasAttachment)
+	{
+	    XDrawLine(display, drawable, gc, xpos, y + 1, nextpos, y + 1);
+	}
     }
 
-    xpos += self -> separatorWidth;
-
-    /* Draw the user string */
-    gc = ScGCForUser(self -> widget, level);
-    string = Message_getUser(self -> message);
-    XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
-
-    /* Underline the user if there's a MIME attachment */
-    if (hasAttachment)
+    /* If the user string fits, draw it */
+    xpos = nextpos;
+    nextpos = xpos + self -> userWidth;
+    if ((xpos <= x + width) && (x < nextpos))
     {
-	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> userWidth, y + 1);
+	/* Draw the user string */
+	gc = ScGCForUser(self -> widget, level);
+	string = Message_getUser(self -> message);
+	XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+	/* Underline the user if there's a MIME attachment */
+	if (hasAttachment)
+	{
+	    XDrawLine(display, drawable, gc, xpos, y + 1, nextpos, y + 1);
+	}
     }
 
-    xpos += self -> userWidth;
-
-    /* Draw the separator */
-    gc = ScGCForSeparator(self -> widget, level);
-    string = SEPARATOR;
-    XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
-
-    /* Underline the separator if there's a MIME attachment */
-    if (hasAttachment)
+    /* If the separator fits, draw it */
+    xpos = nextpos;
+    nextpos = xpos + self -> separatorWidth;
+    if ((xpos <= x + width) && (x < nextpos))
     {
-	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> separatorWidth, y + 1);
+	/* Draw the separator */
+	gc = ScGCForSeparator(self -> widget, level);
+	string = SEPARATOR;
+	XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+	/* Underline the separator if there's a MIME attachment */
+	if (hasAttachment)
+	{
+	    XDrawLine(display, drawable, gc, xpos, y + 1, nextpos, y + 1);
+	}
     }
 
-    xpos += self -> separatorWidth;
-
-    /* Draw the text string */
-    gc = ScGCForString(self -> widget, level);
-    string = Message_getString(self -> message);
-    XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
-
-    /* Underline the text string if it's got a MIME attachment */
-    if (hasAttachment)
+    /* If the text fits, draw it */
+    xpos = nextpos;
+    nextpos = xpos + self -> stringWidth;
+    if ((xpos <= x + width) && (x < nextpos))
     {
-	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> stringWidth, y + 1);
+	/* Draw the text string */
+	gc = ScGCForString(self -> widget, level);
+	string = Message_getString(self -> message);
+	XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+	/* Underline the text string if it's got a MIME attachment */
+	if (hasAttachment)
+	{
+	    XDrawLine(display, drawable, gc, xpos, y + 1, nextpos, y + 1);
+	}
     }
 }
 
@@ -468,10 +494,12 @@ unsigned int MessageView_getWidth(MessageView self)
 }
 
 /* Redisplays the receiver on the drawable */
-void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
+void MessageView_redisplay(
+    MessageView self, Drawable drawable, int offset,
+    int x, int y, unsigned int width, unsigned int height)
 {
     SANITY_CHECK(self);
-    Paint(self, drawable, x, y + self -> ascent);
+    Paint(self, drawable, offset, x, y + self -> ascent, width, height);
 }
 
 

@@ -35,7 +35,7 @@
 #define MESSAGEVIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGEVIEW_H[] = "$Id: MessageView.h,v 1.10 1999/01/21 00:43:56 phelps Exp $";
+static const char cvs_MESSAGEVIEW_H[] = "$Id: MessageView.h,v 1.11 1999/06/15 07:51:19 phelps Exp $";
 #endif /* lint */
 
 typedef struct MessageView_t *MessageView;
@@ -65,7 +65,9 @@ Message MessageView_getMessage(MessageView self);
 unsigned int MessageView_getWidth(MessageView self);
 
 /* Redisplays the receiver on the drawable */
-void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y);
+void MessageView_redisplay(
+    MessageView self, Drawable drawable, int offset,
+    int x, int y, unsigned int width, unsigned int height);
 
 /* Answers non-zero if the receiver has outstayed its welcome */
 int MessageView_isTimedOut(MessageView self);
