@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.29 2001/08/24 04:59:25 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.30 2001/08/24 07:14:41 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -222,6 +222,8 @@ static XtGeometryResult query_geometry(
     Widget self,
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred);
+static void border_highlight(Widget widget);
+static void border_unhighlight(Widget widget);
 
 /*
  *
@@ -269,9 +271,9 @@ HistoryClassRec historyClassRec =
 
     /* Primitive class fields initialization */
     {
-	NULL, /* border_highlight */
-	NULL, /* border_unhighlight */
-	NULL, /* translations */
+	border_highlight, /* border_highlight */
+	border_unhighlight, /* border_unhighlight */
+	XtInheritTranslations, /* translations */
 	NULL, /* arm_and_activate_proc */
 	NULL, /* synthetic resources */
 	0, /* num syn res */
@@ -638,6 +640,19 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 		display, window, gc,
 		0, y, self -> core.width,
 		self -> history.line_height);
+
+	    /* Is the widget highlighted? */
+	    if (self -> primitive.highlighted)
+	    {
+		values.foreground = self -> primitive.highlight_color;
+		XChangeGC(display, gc, GCForeground, &values);
+
+		/* Draw a rectangle around the selection */
+		XDrawRectangle(
+		    display, window, gc,
+		    -self -> history.x, y,
+		    self -> history.width - 1, self -> history.line_height - 1);
+	    }
 	}
 
 	/* Draw the view */
@@ -651,7 +666,8 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 	y += self -> history.line_height;
 
 	/* Bail out if the next line is past the end of the screen */
-	if (! (y < self -> core.height)) {
+	if (! (y < self -> core.height))
+	{
 	    return;
 	}
     }
@@ -671,6 +687,33 @@ static void redisplay(Widget widget, XEvent *event, Region region)
     compensate_bbox(self, x_event -> serial, &bbox);
 
     /* Repaint the region */
+    paint(self, &bbox);
+}
+
+
+/* Redraw the item at the given index */
+static void redisplay_index(HistoryWidget self, unsigned int index)
+{
+    XRectangle bbox;
+    long y;
+    
+    /* Bail if the index is out of range */
+    if (! (index < self -> history.message_count))
+    {
+	return;
+    }
+
+    /* Figure out where the message is */
+    y = index * self -> history.line_height -
+	self -> history.y + self -> history.margin_height;
+
+    /* Create a bounding box for the message */
+    bbox.x = 0;
+    bbox.y = y;
+    bbox.width = self -> core.width;
+    bbox.height = self -> history.line_height;
+
+    /* Paint it */
     paint(self, &bbox);
 }
 
@@ -852,8 +895,16 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	height += self -> history.line_height;
     }
 
-    /* Update the widget's dimensions */
-    self -> history.width = width + (long)self -> history.margin_width * 2;
+    /* Has the width changed? */
+    if (self -> history.width != width + (long)self -> history.margin_width * 2)
+    {
+	self -> history.width = width + (long)self -> history.margin_width * 2;
+
+	/* Repaint the selection so that the right edge is drawn properly */
+	redisplay_index(self, self -> history.selection_index);
+    }
+
+    /* Update our height */
     self -> history.height = height + (long)self -> history.margin_height * 2;
 
     /* Update the scrollbars */
@@ -981,6 +1032,19 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 		display, window, gc,
 		0, y, self -> core.width, self -> history.line_height);
 
+	    /* Is the widget highlighted? */
+	    if (self -> primitive.highlighted)
+	    {
+		values.foreground = self -> primitive.highlight_color;
+		XChangeGC(display, gc, GCForeground, &values);
+
+		/* Draw a rectangle around the selection */
+		XDrawRectangle(
+		    display, window, gc,
+		    -self -> history.x, y,
+		    self -> history.width - 1, self -> history.line_height - 1);
+	    }
+
 	    /* And then draw the message view on top of it */
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
@@ -1056,6 +1120,36 @@ static XtGeometryResult query_geometry(
 {
     dprintf(("History: query_geometry()\n"));
     return XtGeometryYes;
+}
+
+/* Hightlight the border */
+static void border_highlight(Widget widget)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+
+    /* Skip out if we're already highlighted */
+    if (self -> primitive.highlighted)
+    {
+	return;
+    }
+
+    /* We're now highlighted */
+    self -> primitive.highlighted = True;
+
+    /* Repaint the selection */
+    redisplay_index(self, self -> history.selection_index);
+}
+
+/* Unhighlight the border */
+static void border_unhighlight(Widget widget)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+
+    /* No longer highlighting */
+    self -> primitive.highlighted = False;
+
+    /* Repaint the selection */
+    redisplay_index(self, self -> history.selection_index);
 }
 
 /*
@@ -1172,6 +1266,9 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     HistoryWidget self = (HistoryWidget)widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
 
+    /* This widget now gets keyboard input */
+    XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
+
     /* FIgure out what's going on */
     if (button_event -> y < 0)
     {
@@ -1249,6 +1346,9 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
     XButtonEvent *button_event = (XButtonEvent *)event;
     unsigned int index;
 
+    /* This widget now gets keyboard input */
+    XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
+
     /* Convert the y coordinate into an index and select it */
     index = index_of_y(self, button_event -> y);
     set_selection_index(self, index);
@@ -1260,6 +1360,9 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
     HistoryWidget self = (HistoryWidget)widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
     unsigned int index;
+
+    /* This widget now gets keyboard input */
+    XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
 
     /* Convert the y coordinate into an index */
     index = (self -> history.y + button_event -> y - self -> history.margin_height) /
@@ -1287,6 +1390,9 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     HistoryWidget self = (HistoryWidget)widget;
+
+    /* This widget now gets keyboard input */
+    XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
 
     /* Finish the dragging */
     if (self -> history.drag_timeout != None)
