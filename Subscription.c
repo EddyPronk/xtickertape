@@ -1,11 +1,9 @@
-/* $Id: Subscription.c,v 1.13 1998/10/21 08:20:41 phelps Exp $ */
+/* $Id: Subscription.c,v 1.14 1998/10/22 07:06:27 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <alloca.h>
-#include <elvin3/elvin.h>
-#include <elvin3/element.h>
 #include "sanity.h"
 #include "Subscription.h"
 

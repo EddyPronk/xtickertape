@@ -1,16 +1,18 @@
-/* $Id: ElvinConnection.h,v 1.9 1998/10/21 01:58:07 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.10 1998/10/22 07:06:27 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
 
 typedef struct ElvinConnection_t *ElvinConnection;
 
+#include <elvin3/elvin.h>
+#include <elvin3/element.h>
+#include <X11/Intrinsic.h>
+#include "Message.h"
+
 /* The format of the error callback function */
 typedef void (*ErrorCallback)(void *context, char *message);
 typedef void (*NotifyCallback)(void *context, en_notify_t notification);
-
-#include <X11/Intrinsic.h>
-#include "Message.h"
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
