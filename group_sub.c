@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.37 2002/04/11 11:53:54 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.38 2002/04/11 15:36:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -38,7 +38,6 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.37 2002/04/11 11:53:54 phelps 
 #include <assert.h>
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
-#include <elvin/xt_mainloop.h>
 #include "group_sub.h"
 
 #define F3_USER_AGENT "User-Agent"
@@ -902,7 +901,7 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Send the notification */
-    elvin_xt_notify(
+    elvin_async_notify(
 	self -> handle,
 	notification, 
 	1, /* deliver_insecure */
@@ -1096,13 +1095,13 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 {
     if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
-	if (elvin_xt_delete_subscription(
+	if (elvin_async_delete_subscription(
 	    self -> handle, self -> subscription,
 	    unsubscribe_cb, self,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_xt_delete_subscription(): failed\n");
-	    abort();
+	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+	    exit(1);
 	}
 
 	self -> is_pending = 1;
@@ -1113,7 +1112,7 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 
     if (self -> handle != NULL)
     {
-	if (elvin_xt_add_subscription(
+	if (elvin_async_add_subscription(
 	    self -> handle, self -> expression,
 	    self -> consumer_keys,
 	    (self -> consumer_keys == NULL) ? 1 : 0,
@@ -1121,8 +1120,8 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
 	    subscribe_cb, self,
 	    error) == 0)
 	{
-	    fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
-	    abort();
+	    fprintf(stderr, "elvin_async_add_subscription(): failed\n");
+	    exit(1);
 	}
 
 	self -> is_pending = 1;
