@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.61 2000/07/28 05:57:01 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.62 2000/08/28 06:05:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -48,10 +48,12 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.61 2000/07/28 05:57:01 phelps
 #include "tickertape.h"
 #include "Scroller.h"
 #include "panel.h"
+#if 0
 #include "def-config.h"
 #include "ast.h"
 #include "subscription.h"
 #include "parser.h"
+#endif
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -380,6 +382,7 @@ static int open_config_file(
     return fd;
 }
 
+#if 0
 /* The callback for the config file parser */
 static int parse_config_callback(
     void *rock,
@@ -426,7 +429,7 @@ static int read_config_file(tickertape_t self, elvin_error_t error)
     /* Clean up */
     return parser_free(parser, error);
 }
-
+#endif
 
 /* The callback for the groups file parser */
 static int parse_groups_callback(
@@ -1242,12 +1245,14 @@ tickertape_t tickertape_alloc(
     self -> scroller = NULL;
     self -> history = history_alloc();
 
+#if 0
     /* Read the config file */
     if (! read_config_file(self, error))
     {
 	elvin_error_fprintf(stderr, "en", error);
 	exit(1);
     }
+#endif
 
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)

@@ -1,6 +1,6 @@
 # First work out the executables
 bin_PROGRAMS = xtickertape
-noinst_PROGRAMS = test-parser
+# noinst_PROGRAMS = test-parser
 bin_SCRIPTS = show-url
 
 # Automatically generated sources
@@ -14,9 +14,6 @@ xtickertape_SOURCES = \
 	panel.h panel.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	message.h message.c \
-	subscription.h subscription.c \
-	ast.h ast.c grammar.h \
-	def-config.h parser.h parser.c \
 	groups.h groups_parser.h groups_parser.c \
 	group_sub.h group_sub.c \
 	usenet.h usenet_parser.h usenet_parser.c \
@@ -26,13 +23,16 @@ xtickertape_SOURCES = \
 	mask.xbm red.xbm white.xbm \
 	getopt.h getopt.c getopt1.c \
 	main.c
+#	subscription.h subscription.c \
+#	ast.h ast.c grammar.h \
+#	def-config.h parser.h parser.c \
 
-test_parser_SOURCES = \
-	message.h message.c \
-	subscription.h subscription.c \
-	ast.h ast.c \
-	grammar.h parser.h parser.c \
-	test-parser.c
+# test_parser_SOURCES = \
+#	message.h message.c \
+#	subscription.h subscription.c \
+#	ast.h ast.c \
+#	grammar.h parser.h parser.c \
+#	test-parser.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
