@@ -1,31 +1,170 @@
-/* $Id: MessageView.c,v 1.2 1997/02/05 09:21:40 phelps Exp $ */
+/* $Id: MessageView.c,v 1.3 1997/02/10 08:07:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <X11/Xlib.h>
+#include <X11/IntrinsicP.h>
+#include <X11/Xresource.h>
+#include <X11/StringDefs.h>
+#include "TickertapeP.h"
 #include "MessageView.h"
 
-#define MESSAGE_SPACING 10
+#define MIN_SPACING 10
+#define SEPARATOR ":"
 
 struct MessageView_t
 {
-    Graphics graphics;
-    Drawable drawable;
+    unsigned int refcount;
+    TickertapeWidget widget;
     Message message;
-    FontInfo fontInfo;
     unsigned int groupWidth;
     unsigned int userWidth;
     unsigned int stringWidth;
-    unsigned int colonWidth;
-    unsigned long intensity;
-    Pixmap pixmap;
-    unsigned long time;
-    unsigned int refcount;
+    unsigned int separatorWidth;
 };
 
+static unsigned long getStringWidth(XFontStruct *font, char *string)
+{
+    unsigned int first = font -> min_char_or_byte2;
+    unsigned int last = font -> max_char_or_byte2;
+    unsigned long width = 0;
+    unsigned int defaultWidth;
+    unsigned char *pointer;
 
+    /* make sure default_char is valid */
+    if ((first <= font -> default_char) && (font -> default_char <= last))
+    {
+	defaultWidth = font -> per_char[font -> default_char].width;
+    }
+    /* if no default char then see if a space will work */
+    else if ((first <= ' ') && (' ' <= last))
+    {
+	defaultWidth = font -> per_char[' '].width;
+    }
+    /* abandon all hope and use max_width */
+    else
+    {
+	defaultWidth = font -> max_bounds.width;
+    }
+
+    /* add up character widths */
+    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
+    {
+	unsigned char ch = *pointer;
+
+	if ((first <= ch) && (ch <= last))
+	{
+	    width += font -> per_char[ch - first].width;
+	}
+	else
+	{
+	    width += defaultWidth;
+	}
+    }
+
+    return width;
+}
+
+
+/* Computes the widths of the various components of the MessageView */
+static void computeWidths(MessageView self)
+{
+    self -> groupWidth = getStringWidth(
+	TtFontForGroup(self -> widget),
+	Message_getGroup(self -> message));
+
+    self -> userWidth = getStringWidth(
+	TtFontForUser(self -> widget),
+	Message_getUser(self -> message));
+
+    self -> stringWidth = getStringWidth(
+	TtFontForString(self -> widget),
+	Message_getString(self -> message));
+
+    self -> stringWidth = getStringWidth(
+	TtFontForString(self -> widget),
+	Message_getString(self -> message));
+
+    self -> separatorWidth = getStringWidth(
+	TtFontForSeparator(self -> widget),
+	SEPARATOR);
+}
+
+
+
+/* Prints debugging information */
+void MessageView_debug(MessageView self)
+{
+    printf("MessageView (0x%p)", self);
+    printf("  refcount = %u\n", self -> refcount);
+    printf("  message = Message[%s:%s:%s (%ld)]\n",
+	   Message_getGroup(self -> message),
+	   Message_getUser(self -> message),
+	   Message_getString(self -> message),
+	   Message_getTimeout(self -> message)
+	);
+    printf("  groupWidth = %u\n", self -> groupWidth);
+    printf("  userWidth = %u\n", self -> userWidth);
+    printf("  stringWidth = %u\n", self -> stringWidth);
+    printf("  separatorWidth = %u\n", self -> separatorWidth);
+}
 
 /* Creates and returns a 'view' on a Message */
-MessageView MessageView_alloc(Graphics graphics, Message message, FontInfo fontInfo)
+MessageView MessageView_alloc(TickertapeWidget widget, Message message)
+{
+    MessageView self = (MessageView) malloc(sizeof(struct MessageView_t));
+
+    self -> refcount = 0;
+    self -> widget = widget;
+    self -> message = message;
+    computeWidths(self);
+    return self;
+}
+
+/* Free the memory allocated by the receiver */
+void MessageView_free(MessageView self)
+{
+    free(self);
+}
+
+
+/* Displays the receiver on the drawable */
+void MessageView_redisplay(MessageView self, TickertapeWidget widget, Drawable drawable, int x, int y)
+{
+    int xpos = x;
+    int level = 0;
+    char *string;
+    GC gc;
+
+    gc = TtGCForGroup(widget, level);
+    string = Message_getGroup(self -> message);
+    XDrawString(XtDisplay(widget), drawable, gc, xpos, y, string, strlen(string));
+    xpos += self -> groupWidth;
+
+    gc = TtGCForSeparator(widget, level);
+    string = SEPARATOR;
+    XDrawString(XtDisplay(widget), drawable, gc, xpos, y, string, strlen(string));
+    xpos += self -> separatorWidth;
+
+    gc = TtGCForUser(widget, level);
+    string = Message_getUser(self -> message);
+    XDrawString(XtDisplay(widget), drawable, gc, xpos, y, string, strlen(string));
+    xpos += self -> userWidth;
+
+    gc = TtGCForSeparator(widget, level);
+    string = SEPARATOR;
+    XDrawString(XtDisplay(widget), drawable, gc, xpos, y, string, strlen(string));
+    xpos += self -> separatorWidth;
+
+    gc = TtGCForString(widget, level);
+    string = Message_getString(self -> message);
+    XDrawString(XtDisplay(widget), drawable, gc, xpos, y, string, strlen(string));
+}
+
+
+#if 0
+/* Creates and returns a 'view' on a Message */
+MessageView MessageView_alloc(TickertapeWidget widget, Message message)
 {
     MessageView view = (MessageView) malloc(sizeof(struct MessageView_t));
 
@@ -263,15 +402,4 @@ void MessageView_tick(MessageView self)
 }
 
 
-/* Prints debugging information */
-void MessageView_debug(MessageView self)
-{
-    printf("MessageView (0x%p)", self);
-    if (self == NULL)
-    {
-	printf("\n");
-	return;
-    }
-
-    printf("\"%s\"\n", Message_getString(self -> message));
-}
+#endif /* 0 */

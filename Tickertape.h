@@ -1,4 +1,4 @@
-/* $Id: Tickertape.h,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
+/* $Id: Tickertape.h,v 1.3 1997/02/10 08:07:35 phelps Exp $ */
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
@@ -20,6 +20,7 @@
  groupPixel	GroupPixel	Pixel		Blue
  userPixel	UerPixel		Pixel		Green
  stringPixel	StringPixel	Pixel		Red
+ separatorPixel	SeparatorPixel	Pixel		Black
  fadeLevels	FadeLevels	Dimension	5
 
  background	     Background		Pixel		XtDefaultBackground
@@ -47,6 +48,8 @@
 #define XtCUserPixel "UserPixel"
 #define XtNstringPixel "stringPixel"
 #define XtCStringPixel "StringPixel"
+#define XtNseparatorPixel "separatorPixel"
+#define XtCSeparatorPixel "SeparatorPixel"
 #define XtNfadeLevels "fadeLevels"
 #define XtCFadeLevels "FadeLevels"
 
@@ -54,5 +57,8 @@ typedef struct _TickertapeClassRec *TickertapeWidgetClass;
 typedef struct _TickertapeRec *TickertapeWidget;
 
 extern WidgetClass tickertapeWidgetClass;
+
+
+
 
 #endif /* TICKERTAPE_H */

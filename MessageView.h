@@ -1,36 +1,29 @@
-/* $Id: MessageView.h,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: MessageView.h,v 1.2 1997/02/10 08:07:34 phelps Exp $ */
 
 #ifndef MESSAGEVIEW_H
 #define MESSAGEVIEW_H
 
-#include <X11/Xlib.h>
-
 typedef struct MessageView_t *MessageView;
 
-#include "Graphics.h"
-#include "FontInfo.h"
 #include "Message.h"
 
+/* Prints debugging information */
+void MessageView_debug(MessageView self);
+
 /* Creates and returns a 'view' on a Message */
-MessageView MessageView_alloc(Graphics graphics, Message message, FontInfo fontInfo);
+MessageView MessageView_alloc(TickertapeWidget widget, Message message);
 
 /* Free the memory allocated by the receiver */
 void MessageView_free(MessageView self);
 
-/* Answers the width of the receiver */
-unsigned long MessageView_getWidth(MessageView self);
+/* Displays the receiver on the drawable */
+void MessageView_redisplay(
+    MessageView self, TickertapeWidget widget, Drawable drawable,
+    int x, int y);
 
-/* Answers the height of the receiver */
-unsigned long MessageView_getHeight(MessageView self);
-
-/* Answers the height of the receiver */
-unsigned long MessageView_getHeight(MessageView self);
-
-/* Answers non-zero if the receiver has outstayed its welcome */
-int MessageView_isTimedOut(MessageView self);
-
-/* Answers the number of references to the receiver */
-int MessageView_getReferenceCount(MessageView self);
+#if 0
+/* Free the memory allocated by the receiver */
+void MessageView_free(MessageView self);
 
 /* Adds another reference to the count */
 MessageView MessageView_allocReference(MessageView self);
@@ -39,13 +32,19 @@ MessageView MessageView_allocReference(MessageView self);
 void MessageView_freeReference(MessageView self);
 
 
+
+/* Answers the width of the receiver */
+unsigned long MessageView_getWidth(MessageView self);
+
+/* Answers non-zero if the receiver has outstayed its welcome */
+int MessageView_isTimedOut(MessageView self);
+
 /* Display the receiver */
-void MessageView_display(MessageView self, Drawable drawable, long offset);
+void MessageView_redisplay(MessageView self, Drawable drawable, GC gc);
+
 
 /* One second has passed */
 void MessageView_tick(MessageView self);
 
-/* Prints debugging information */
-void MessageView_debug(MessageView self);
-
+#endif /* 0 */
 #endif /* MESSAGEVIEW_H */

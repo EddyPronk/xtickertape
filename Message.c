@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.2 1997/02/10 07:11:34 phelps Exp $ */
+/* $Id: Message.c,v 1.3 1997/02/10 08:07:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,6 @@ struct Message_t
     char *group;
     char *user;
     char *string;
-    unsigned long length;
     unsigned long timeout; /* in seconds */
 };
 
@@ -23,7 +22,6 @@ Message Message_alloc(char *group, char *user, char *string, unsigned int timeou
     message -> group = strdup(group);
     message -> user = strdup(user);
     message -> string = strdup(string);
-    message -> length = strlen(string);
     message -> timeout = timeout;
     return message;
 }
@@ -52,12 +50,6 @@ char *Message_getUser(Message self)
 char *Message_getString(Message self)
 {
     return self -> string;
-}
-
-/* Answers the length of the receiver's string */
-unsigned long Message_getStringLength(Message self)
-{
-    return self -> length;
 }
 
 /* Answers the receiver's timout */

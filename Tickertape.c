@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.3 1997/02/09 14:02:22 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.4 1997/02/10 08:07:35 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include <X11/CoreP.h>
 #include <X11/Xaw/SimpleP.h>
 #include "TickertapeP.h"
+#include "MessageView.h"
 
 /*
  * Resources
@@ -41,10 +42,15 @@ static XtResource resources[] =
 	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
 	offset(tickertape.stringPixel), XtRString, "Red"
     },
+    /* Pixel separatorPixel */
+    {
+	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
+	offset(tickertape.separatorPixel), XtRString, XtDefaultForeground
+    },
     /* Dimension fadeLevels */
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
-	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
+	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)8
     }
 };
 #undef offset
@@ -147,10 +153,11 @@ static void CreateGC(TickertapeWidget self)
 {
     XGCValues values;
 
+    values.font = self -> tickertape.font -> fid;
     values.background = self -> core.background_pixel;
     self -> tickertape.gc = XCreateGC(
 	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
-	GCBackground, &values);
+	GCFont | GCBackground, &values);
 }
 
 static Pixel *CreateFadedColors(
@@ -158,19 +165,19 @@ static Pixel *CreateFadedColors(
     XColor *first, XColor *last, unsigned int levels)
 {
     Pixel *result = calloc(levels, sizeof(Pixel));
-    float redNumerator = last -> red - first -> red;
-    float greenNumerator = last -> green - first -> green;
-    float blueNumerator = last -> blue - first -> blue;
-    unsigned long denominator = levels + 1;
-    unsigned int index;
+    long redNumerator = (long)last -> red - first -> red;
+    long greenNumerator = (long)last -> green - first -> green;
+    long blueNumerator = (long)last -> blue - first -> blue;
+    long denominator = levels + 1;
+    long index;
 
     for (index = 0; index < levels; index++)
     {
 	XColor color;
 
-	color.red = first -> red + index * (redNumerator / denominator);
-	color.green = first -> green + ((greenNumerator * index) / denominator);
-	color.blue = first -> blue + index * blueNumerator / denominator;
+	color.red = first -> red + (redNumerator * index / denominator);
+	color.green = first -> green + (greenNumerator * index / denominator);
+	color.blue = first -> blue + (blueNumerator * index / denominator);
 	color.flags = DoRed | DoGreen | DoBlue;
 	XAllocColor(display, colormap, &color);
 	result[index] = color.pixel;
@@ -179,6 +186,90 @@ static Pixel *CreateFadedColors(
     return result;
 }
 
+
+
+/*
+ * Semi-private methods
+ */
+
+/* Answers a GC for displaying the Group field of a message at the given fade level */
+GC TtGCForGroup(TickertapeWidget self, int level)
+{
+    XGCValues values;
+
+    values.foreground = self -> tickertape.groupPixels[level];
+    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
+    return self -> tickertape.gc;
+}
+
+/* Answers a GC for displaying the User field of a message at the given fade level */
+GC TtGCForUser(TickertapeWidget self, int level)
+{
+    XGCValues values;
+
+    values.foreground = self -> tickertape.userPixels[level];
+    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
+    return self -> tickertape.gc;
+}
+
+/* Answers a GC for displaying the String field of a message at the given fade level */
+GC TtGCForString(TickertapeWidget self, int level)
+{
+    XGCValues values;
+
+    values.foreground = self -> tickertape.stringPixels[level];
+    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
+    return self -> tickertape.gc;
+}
+
+/* Answers a GC for displaying the field separators at the given fade level */
+GC TtGCForSeparator(TickertapeWidget self, int level)
+{
+    XGCValues values;
+
+    values.foreground = self -> tickertape.separatorPixels[level];
+    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
+    return self -> tickertape.gc;
+}
+
+/* Answers the XFontStruct to be use for displaying the group */
+XFontStruct *TtFontForGroup(TickertapeWidget self)
+{
+    /* Fix this: should allow user to specify various fonts */
+    return self -> tickertape.font;
+}
+
+/* Answers the XFontStruct to be use for displaying the user */
+XFontStruct *TtFontForUser(TickertapeWidget self)
+{
+    /* Fix this: should allow user to specify various fonts */
+    return self -> tickertape.font;
+}
+
+
+/* Answers the XFontStruct to be use for displaying the string */
+XFontStruct *TtFontForString(TickertapeWidget self)
+{
+    /* Fix this: should allow user to specify various fonts */
+    return self -> tickertape.font;
+}
+
+/* Answers the XFontStruct to be use for displaying the user */
+XFontStruct *TtFontForSeparator(TickertapeWidget self)
+{
+    /* Fix this: should allow separator to specify various fonts */
+    return self -> tickertape.font;
+}
+
+
+/* Answers a Pixmap of the given width */
+Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width)
+{
+    return XCreatePixmap(
+	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
+	width, self -> core.height,
+	DefaultDepthOfScreen(XtScreen(self)));
+}
 
 
 /*
@@ -191,19 +282,19 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     TickertapeWidget self = (TickertapeWidget) widget;
     Display *display = XtDisplay(self);
     Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
-    XColor colors[4];
+    XColor colors[5];
 
     CreateGC(self);
-    fprintf(stderr, "initializing tickertape 0x%p\n", self);
     self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
-    self -> core.width = 200;
+    self -> core.width = 200; /* FIX THIS: should be what? */
 
-    fprintf(stderr, "background_pixel = %ld\n", self -> core.background_pixel);
+    /* Initialize colors */
     colors[0].pixel = self -> core.background_pixel;
     colors[1].pixel = self -> tickertape.groupPixel;
     colors[2].pixel = self -> tickertape.userPixel;
     colors[3].pixel = self -> tickertape.stringPixel;
-    XQueryColors(display, colormap, colors, 4);
+    colors[4].pixel = self -> tickertape.separatorPixel;
+    XQueryColors(display, colormap, colors, 5);
 
     self -> tickertape.groupPixels = CreateFadedColors(
 	display, colormap, &colors[1], &colors[0], self -> tickertape.fadeLevels);
@@ -211,6 +302,15 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 	display, colormap, &colors[2], &colors[0], self -> tickertape.fadeLevels);
     self -> tickertape.stringPixels = CreateFadedColors(
 	display, colormap, &colors[3], &colors[0], self -> tickertape.fadeLevels);
+    self -> tickertape.separatorPixels = CreateFadedColors(
+	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
+
+    /* give us a message to play with */
+    {
+	Message message = Message_alloc("Tickertape", "internal", "startup", 60);
+	self -> tickertape.view = MessageView_alloc(self, message);
+	MessageView_debug(self -> tickertape.view);
+    }
 }
 
 /* ARGSUSED */
@@ -219,22 +319,21 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
     TickertapeWidget self = (TickertapeWidget)widget;
     Display *display = event -> xany.display;
     Window window = event -> xany.window;
-    GC gc = self -> tickertape.gc;
     unsigned int index;
     unsigned width = self -> core.width / self -> tickertape.fadeLevels;
 
     fprintf(stderr, "Redisplay 0x%p\n", widget);
     for (index = 0; index < self -> tickertape.fadeLevels; index++)
     {
-	XGCValues values;
-
-	values.foreground = self -> tickertape.userPixels[index];
-	XChangeGC(display, gc, GCForeground, &values);
+	GC gc = TtGCForSeparator(self, index);
 	XFillRectangle(display, window, gc,
 		       width * index, 0,
 		       self -> core.width, self -> core.height);
     }
-    
+
+    /* Paint the message view */
+    MessageView_redisplay(self -> tickertape.view, self, XtWindow(self),
+			  0, self -> tickertape.font -> ascent);
 }
 
 static void Destroy(Widget widget)
@@ -264,7 +363,7 @@ static XtGeometryResult QueryGeometry(
 {
     return XtGeometryYes;
 }
-				      
+
 
 /* Action definitions */
 void Click(Widget widget, XEvent event)

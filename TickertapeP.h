@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.2 1997/02/09 13:55:44 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.3 1997/02/10 08:07:36 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -7,6 +7,7 @@
 
 #include <X11/Xaw/SimpleP.h>
 #include "Tickertape.h"
+#include "MessageView.h"
 
 /* New fields for the Tickertape widget record */
 typedef struct
@@ -32,6 +33,7 @@ typedef struct
     Pixel groupPixel;
     Pixel userPixel;
     Pixel stringPixel;
+    Pixel separatorPixel;
     Dimension fadeLevels;
 
     /* Private state */
@@ -39,6 +41,10 @@ typedef struct
     Pixel *groupPixels;
     Pixel *userPixels;
     Pixel *stringPixels;
+    Pixel *separatorPixels;
+
+    /* Broken */
+    MessageView view;
 } TickertapePart;
 
 
@@ -49,5 +55,23 @@ typedef struct _TickertapeRec
     SimplePart simple;
     TickertapePart tickertape;
 } TickertapeRec;
+
+
+
+/* Private methods */
+GC TtGCForGroup(TickertapeWidget self, int level);
+XFontStruct *TtFontForGroup(TickertapeWidget self);
+
+GC TtGCForUser(TickertapeWidget self, int level);
+XFontStruct *TtFontForUser(TickertapeWidget self);
+
+GC TtGCForString(TickertapeWidget self, int level);
+XFontStruct *TtFontForString(TickertapeWidget self);
+
+GC TtGCForSeparator(TickertapeWidget self, int level);
+XFontStruct *TtFontForSeparator(TickertapeWidget self);
+
+Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width);
+
 
 #endif /* TickertapeP_H */

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.4 1997/02/09 13:55:44 phelps Exp $ */
+/* $Id: main.c,v 1.5 1997/02/10 08:07:36 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +27,7 @@
 #define PORT 8800
 #define PERIOD (1000000 / FREQUENCY)
 
+#if 0
 Scroller scroller;
 
 void tick();
@@ -150,7 +151,6 @@ Message getMessage(FILE *in)
 }
 
 
-#if 0
 int main(int argc, char *argv[])
 {
 #ifdef CONNECTING
@@ -261,11 +261,10 @@ int main(int argc, char *argv[])
     Widget top;
     XtAppContext context;
 
-    top = XtVaOpenApplication(
+    top = XtVaAppInitialize(
 	&context, "Tickertape",
 	NULL, 0, &argc, argv,
-	NULL, applicationShellWidgetClass,
-	NULL);
+	NULL, NULL);
 
     XtVaCreateManagedWidget(
 	"ticker", tickertapeWidgetClass, top,
