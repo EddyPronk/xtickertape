@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.19 1998/10/21 05:23:44 phelps Exp $ */
+/* $Id: Control.c,v 1.20 1998/10/21 08:20:41 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +70,12 @@ struct ControlPanel_t
     /* The receiver's timeout menu button */
     Widget timeout;
 
+    /* The receiver's mime menu button */
+    Widget mimeType;
+
+    /* The receiver's mime args text widget */
+    Widget mimeArgs;
+
     /* The receiver's text text widget */
     Widget text;
 
@@ -90,13 +96,18 @@ struct ControlPanel_t
 };
 
 
-/* Prototypes for static functions */
+/*
+ *
+ * Static function prototypes
+ *
+ */
 static void SetLabel(Widget widget, char *label);
 static char *GetLabel(Widget widget);
 static void SetString(Widget widget, char *string);
 static char *GetString(Widget widget);
 static void SetGroupValue(Widget item, MenuItemTuple tuple, XtPointer unused);
 static void SetTimeoutValue(Widget item, XtPointer ignored, XtPointer unused);
+static void SetMimeTypeValue(Widget widget, XtPointer ignored, XtPointer unused);
 static Widget CreateUserBox(ControlPanel self, Widget parent);
 static Widget CreateGroupMenu(ControlPanel self, Widget parent);
 static Widget CreateGroupBox(ControlPanel self, Widget parent, Widget left);
@@ -104,6 +115,8 @@ static Widget CreateTimeoutMenu(ControlPanel self, Widget parent);
 static Widget CreateTimeoutBox(ControlPanel self, Widget parent, Widget left);
 static Widget CreateTopBox(ControlPanel self, Widget parent);
 static Widget CreateTextBox(ControlPanel self, Widget parent);
+static Widget CreateMimeTypeMenu(ControlPanel self, Widget parent);
+static Widget CreateMimeBox(ControlPanel self, Widget parent);
 static Widget CreateBottomBox(ControlPanel self, Widget parent);
 static Widget CreateControlPanelPopup(ControlPanel self, Widget parent);
 static void SetSelection(ControlPanel self, MenuItemTuple tuple);
@@ -112,6 +125,10 @@ static void SetUser(ControlPanel self, char *user);
 static char *GetText(ControlPanel self);
 static void SetText(ControlPanel self, char *text);
 static int GetTimeout(ControlPanel self);
+static void SetMimeArgs(ControlPanel self, char *args);
+static char *GetMimeArgs(ControlPanel self);
+static char *GetMimeType(ControlPanel self);
+Message ConstructMessage(ControlPanel self);
 static void ActionOK(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionClear(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
@@ -171,9 +188,15 @@ static void SetGroupValue(Widget item, MenuItemTuple tuple, XtPointer unused)
 }
 
 /* Sets the label of a MenuButton to the label of a Menu Object */
-static void SetTimeoutValue(Widget item, XtPointer ignored, XtPointer unused)
+static void SetTimeoutValue(Widget widget, XtPointer ignored, XtPointer unused)
 {
-    SetLabel(XtParent(XtParent(item)), GetLabel(item));
+    SetLabel(XtParent(XtParent(widget)), GetLabel(widget));
+}
+
+/* Sets the label of the MimeType field */
+static void SetMimeTypeValue(Widget widget, XtPointer ignored, XtPointer unused)
+{
+    SetLabel(XtParent(XtParent(widget)), GetLabel(widget));
 }
 
 /* Constructs the User label box */
@@ -358,7 +381,7 @@ static Widget CreateTextBox(ControlPanel self, Widget parent)
 	NULL);
     label = XtVaCreateManagedWidget(
 	"textLabel", labelWidgetClass, form,
-	XtNlabel, "text",
+	XtNlabel, "Text",
 	XtNborderWidth, 0,
 	XtNtop, XawChainTop,
 	XtNleft, XawChainLeft,
@@ -374,6 +397,74 @@ static Widget CreateTextBox(ControlPanel self, Widget parent)
 	XtNright, XawChainRight,
 	NULL);
     XtOverrideTranslations(self -> text, XtParseTranslationTable("<Key>Return: notify()"));
+    return form;
+}
+
+/* Constructs the Mime type menu */
+static Widget CreateMimeTypeMenu(ControlPanel self, Widget parent)
+{
+    Widget menu;
+    Widget item;
+
+    SANITY_CHECK(self);
+    menu = XtVaCreatePopupShell("mimeTypeMenu", simpleMenuWidgetClass, parent, NULL);
+
+    /* For now we only support one type... */
+    item = XtVaCreateManagedWidget(
+	"x-elvin/url", smeBSBObjectClass, menu,
+	NULL);
+    XtAddCallback(item, XtNcallback, SetMimeTypeValue, NULL);
+
+    return menu;
+}
+
+/* Constructs the Mime box */
+static Widget CreateMimeBox(ControlPanel self, Widget parent)
+{
+    Widget form, label;
+
+    SANITY_CHECK(self);
+    form = XtVaCreateManagedWidget(
+	"mimeForm", formWidgetClass, parent,
+	XtNborderWidth, 0,
+	XtNshowGrip, False,
+	NULL);
+
+    label = XtVaCreateManagedWidget(
+	"mimeLabel", labelWidgetClass, form,
+	XtNlabel, "Mime",
+	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
+	XtNbottom, XawChainTop,
+	XtNresizable, False,
+	NULL);
+
+    self -> mimeType = XtVaCreateManagedWidget(
+	"mimeTypeMenu", menuButtonWidgetClass, form,
+	XtNmenuName, "mimeTypeMenu",
+	XtNresize, False,
+	XtNfromHoriz, label,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
+	XtNlabel, "x-elvin/url",
+	XtNresizable, False,
+	NULL);
+    CreateMimeTypeMenu(self, self -> mimeType);
+
+    self -> mimeArgs = XtVaCreateManagedWidget(
+	"mimeArgs", asciiTextWidgetClass, form,
+	XtNeditType, XawtextEdit,
+	XtNstring, "",
+	XtNfromHoriz, self -> mimeType,
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainRight,
+	NULL);
+
     return form;
 }
 
@@ -438,6 +529,7 @@ static Widget CreateControlPanelPopup(ControlPanel self, Widget parent)
     box = XtVaCreateManagedWidget("paned", panedWidgetClass, parent, NULL);
     CreateTopBox(self, box);
     CreateTextBox(self, box);
+    CreateMimeBox(self, box);
     CreateBottomBox(self, box);
     return box;
 }
@@ -496,6 +588,64 @@ static int GetTimeout(ControlPanel self)
     return atoi(GetLabel(self -> timeout));
 }
 
+/* Sets the receiver's MIME args */
+static void SetMimeArgs(ControlPanel self, char *args)
+{
+    SANITY_CHECK(self);
+    SetString(self -> mimeArgs, args);
+}
+
+/* Answers the receiver's MIME args */
+static char *GetMimeArgs(ControlPanel self)
+{
+    char *args;
+    SANITY_CHECK(self);
+
+    args = GetString(self -> mimeArgs);
+    if (strlen(args) > 0)
+    {
+	return args;
+    }
+    else
+    {
+	return NULL;
+    }
+}
+
+/* Answers the receiver's MIME type */
+static char *GetMimeType(ControlPanel self)
+{
+    SANITY_CHECK(self);
+    return GetLabel(self -> mimeType);
+}
+
+
+/* Answers a message based on the receiver's current state */
+Message ConstructMessage(ControlPanel self)
+{
+    unsigned long msg_id;
+    char *mimeArgs;
+    SANITY_CHECK(self);
+    
+    /* Allocate new message identifier */
+    msg_id = random();
+
+    /* Determine our MIME args */
+    mimeArgs = GetMimeArgs(self);
+
+    /* Construct a message */
+    return Message_alloc(
+	self -> selection,
+	self -> selection -> title,
+	GetUser(self),
+	GetText(self),
+	GetTimeout(self),
+	(mimeArgs == NULL) ? NULL : GetMimeType(self),
+	mimeArgs,
+	msg_id,
+	self -> reply_thread_id == -1 ? 0 : msg_id ^ self -> reply_thread_id);
+}
+
 /*
  *
  * Actions
@@ -509,7 +659,7 @@ static void ActionOK(Widget button, ControlPanel self, XtPointer ignored)
 
     if (self -> selection != NULL)
     {
-	Message message = ControlPanel_createMessage(self);
+	Message message = ConstructMessage(self);
 	(*self -> selection -> callback)(self -> selection -> context, message);
 	Message_free(message);
     }
@@ -523,6 +673,7 @@ static void ActionClear(Widget button, ControlPanel self, XtPointer ignored)
     SANITY_CHECK(self);
     SetUser(self, self -> username);
     SetText(self, "");
+    SetMimeArgs(self, "");
 }
 
 /* Callback for Cancel button */
@@ -691,29 +842,6 @@ void ControlPanel_show(ControlPanel self, Message message)
     XtPopup(self -> top, XtGrabNone);
 }
 
-
-/* Answers the receiver's values as a Message */
-Message ControlPanel_createMessage(ControlPanel self)
-{
-    unsigned long msg_id;
-
-    /* Allocate new message identifier */
-    msg_id = random();
-
-    SANITY_CHECK(self);
-
-    /* FIX THIS: should include MIME stuff */
-    return Message_alloc(
-	self -> selection,
-	self -> selection -> title,
-	GetUser(self),
-	GetText(self),
-	GetTimeout(self),
-	NULL,
-	NULL,
-	msg_id,
-	self -> reply_thread_id == -1 ? 0 : msg_id ^ self -> reply_thread_id);
-}
 
 /* Handle notifications */
 void ControlPanel_handleNotify(ControlPanel self, Widget widget)

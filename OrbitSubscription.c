@@ -1,4 +1,4 @@
-/* $Id: OrbitSubscription.c,v 1.6 1998/10/21 05:36:52 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.7 1998/10/21 08:20:41 phelps Exp $ */
 
 #include <alloca.h>
 #include <elvin3/elvin.h>
@@ -164,11 +164,14 @@ void SendMessage(OrbitSubscription self, Message message)
 {
     en_notify_t notification;
     int32 timeout, msg_id, thread_id;
+    char *mimeArgs, *mimeType;
     SANITY_CHECK(self);
 
     timeout = Message_getTimeout(message);
     msg_id = Message_getId(message);
     thread_id = Message_getThreadId(message);
+    mimeArgs = Message_getMimeArgs(message);
+    mimeType = Message_getMimeType(message);
 
     notification = en_new();
     en_add_string(notification, "zone.id", self -> id);
@@ -177,6 +180,13 @@ void SendMessage(OrbitSubscription self, Message message)
     en_add_int32(notification, "TIMEOUT", timeout);
     en_add_int32(notification, "message", msg_id);
     en_add_int32(notification, "thread", thread_id);
+
+    /* Add mime information if both mimeArgs and mimeType are provided */
+    if ((mimeArgs != NULL) && (mimeType != NULL))
+    {
+	en_add_string(notification, "MIME_ARGS", mimeArgs);
+	en_add_string(notification, "MIME_TYPE", mimeType);
+    }
 
     ElvinConnection_send(self -> connection, notification);
     en_free(notification);
