@@ -120,7 +120,7 @@ AC_PATH_PROG(METAMAIL, metamail)
 if test x"$METAMAIL" = x ; then
     echo "WARNING: \`metamail' is missing on your system. Without it,"
     echo "          xtickertape will be unable to decode MIME messages"
-    echo "          Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
+    echo "          Grab it from ftp://thumper.bellcore.com/pub/nsb/mm2.7.tar.Z"
 else
     AC_DEFINE_UNQUOTED(METAMAIL, "$METAMAIL")
 fi
