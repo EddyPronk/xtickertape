@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.19 2000/12/09 01:59:37 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.20 2000/12/09 03:18:48 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -786,9 +786,7 @@ int vm_let(vm_t self, elvin_error_t error)
 	    case SEXP_SYMBOL:
 	    {
 		/* Push a nil value onto the stack */
-		if (! vm_push_nil(self, error) ||
-		    ! vm_roll(self, 2, error) ||
-		    ! vm_roll(self, 1 + count, error))
+		if (! vm_push_nil(self, error))
 		{
 		    return 0;
 		}
@@ -798,8 +796,71 @@ int vm_let(vm_t self, elvin_error_t error)
 
 	    case SEXP_CONS:
 	    {
-		printf("sexp_cons!\n");
-		abort();
+		/* Extract the car of the cons cell */
+		if (! vm_dup(self, error) ||
+		    ! vm_car(self, error) ||
+		    ! vm_top(self, &object, error))
+		{
+		    return 0;
+		}
+
+		/* Make sure it's a symbol */
+		if (object_type(object) != SEXP_SYMBOL)
+		{
+		    char *string = "<expr>";
+		    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "symbol");
+		    return 0;
+		}
+
+		/* Extract the cdr of the cons cell */
+		if (! vm_swap(self, error) ||
+		    ! vm_cdr(self, error) ||
+		    ! vm_top(self, &object, error))
+		{
+		    return 0;
+		}
+
+		/* Make sure that it's a cons cell */
+		if (object_type(object) != SEXP_CONS)
+		{
+		    char *string = "<expr>";
+		    do_print(object);
+		    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "cons");
+		    return 0;
+		}
+
+		/* Extract the value from the list */
+		if (! vm_dup(self, error) ||
+		    ! vm_car(self, error) ||
+		    ! vm_swap(self, error) ||
+		    ! vm_cdr(self, error) ||
+		    ! vm_top(self, &object, error))
+		{
+		    return 0;
+		}
+
+		/* Watch for oddness */
+		if (object_type(object) != SEXP_NIL)
+		{
+		    /* Dotted list? */
+		    if (object_type(object) != SEXP_CONS)
+		    {
+			ELVIN_ERROR_INTERP_ARGS_NOT_LIST(error);
+			return 0;
+		    }
+
+		    /* List too long? */
+		    ELVIN_ERROR_INTERP_WRONG_ARGC(error, "[let]", count);
+		    return 0;
+		}
+
+		/* Pop the nil off the top of the stack */
+		if (! vm_pop(self, NULL, error))
+		{
+		    return 0;
+		}
+
+		break;
 	    }
 
 	    default:
@@ -810,8 +871,11 @@ int vm_let(vm_t self, elvin_error_t error)
 	    }
 	}
 
-	/* Move on to the next arg pair */
-	if (! vm_cdr(self, error) ||
+	/* Push the arg and value further into the stack and move on
+	 * to the next argument */
+	if (! vm_roll(self, 2, error) ||
+	    ! vm_roll(self, 1 + count, error) ||
+	    ! vm_cdr(self, error) ||
 	    ! vm_top(self, &object, error))
 	{
 	    return 0;
