@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.12 2000/11/24 06:50:26 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.13 2000/11/28 00:33:59 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -147,6 +147,9 @@ int vm_add(vm_t self, elvin_error_t error);
 
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error);
+
+/* Catch non-local returns */
+int vm_catch(vm_t self, elvin_error_t error);
 
 /* Perform garbage collection */
 int vm_gc(vm_t self, elvin_error_t error);
