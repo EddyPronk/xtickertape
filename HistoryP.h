@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.6 2001/07/10 02:19:10 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.7 2001/07/12 08:45:21 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -54,6 +54,9 @@ typedef struct _HistoryClassRec
     HistoryClassPart history_class;
 } HistoryClassRec;
 
+
+/* The type of outstanding movement events */
+typedef struct delta_queue *delta_queue_t;
 
 /* New fields for the History widget record */
 typedef struct
@@ -78,17 +81,20 @@ typedef struct
     /* The horizontal scrollbar */
     Widget hscrollbar;
 
+    /* The width of the longest string in the history widget */
+    unsigned long width;
+
+    /* The height of the strings in the history widget */
+    unsigned long height;
+
     /* The x coordinate of the origin of the visible region */
     long x;
 
     /* The y coordinate of the origin of the visible region */
     long y;
 
-    /* The width of the longest string in the history widget */
-    unsigned long width;
-
-    /* The height of the strings in the history widget */
-    unsigned long height;
+    /* The queue of outstanding movements */
+    delta_queue_t dqueue;
 
     /* A message view for playing with */
     message_view_t mv;
