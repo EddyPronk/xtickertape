@@ -277,6 +277,13 @@ static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t err
 	return 0;
     }
 
+    /* Grab references to the arg list and body */
+    if (sexp_alloc_ref(arg_list, error) == 0 ||
+	sexp_alloc_ref(body, error) == 0)
+    {
+	return 0;
+    }
+
     /* Create a lambda node from the args and body */
     if ((*result = lambda_alloc(arg_list, body, error)) == NULL)
     {
