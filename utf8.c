@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.8 2003/01/27 16:16:52 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.9 2004/02/11 10:40:38 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -50,6 +50,11 @@ static const char cvsid[] = "$Id: utf8.c,v 1.8 2003/01/27 16:16:52 phelps Exp $"
 #include <X11/Xatom.h>
 #include "globals.h"
 #include "utf8.h"
+
+/* Make sure EILSEQ is defined for our switch statement */
+#ifndef EILSEQ
+#define EILSEQ -1
+#endif /* EILSEQ */
 
 /* The CHARSET_REGISTRY atom */
 #define CHARSET_REGISTRY "CHARSET_REGISTRY"
@@ -102,7 +107,7 @@ struct guess guesses[] =
     { "ISO8859-14", { "ISO-8859-14", "iso8859_14", NULL } },
     { "ISO8859-15", { "ISO-8859-15", "iso8859_15", NULL } },
     { "ISO8859-16", { "ISO-8859-16", "iso8859_16", NULL } },
-    { NULL, { NULL } },
+    { NULL, { NULL } }
 };
 
 
@@ -176,12 +181,23 @@ static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
     /* Give up */
     return (iconv_t)-1;
 }
-#else
+#else /* !HAVE_ICONV_OPEN */
 static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
 {
     return (iconv_t)-1;
 }
-#endif
+#endif /* HAVE_ICONV_OPEN */
+
+#ifndef HAVE_ICONV
+size_t iconv(
+    iconv_t cd,
+    char **inbuf, size_t *inbytesleft,
+    char **outbuf, size_t *outbytesleft)
+{
+    abort();
+}
+
+#endif /* HAVE_ICONV */
 
 /* Allocates memory for and returns a string containing the font's
  * registry and encoding separated by a dash, or NULL if it can't be
