@@ -53,14 +53,13 @@ LIBS="$LIBS -threads"
 AC_TRY_LINK(, pthread_create();, ok=yes, ok=no)
 AC_MSG_RESULT($ok)
 
-dnl If we didn't succeed, then revert LIBS back to what it used to be
 dnl If -threads didn't work, then revert LIBS back to what it used to be
 dnl and see if we can find the pthreads library
 if test "$ok" = "no" ; then
 	LIBS="$ac_save_LIBS"
 	AC_CHECK_LIB(pthread, pthread_create, LIBS="-lpthread $LIBS" ; ok=yes , ok=no)
 	if test "$ok" = "no" ; then
-		echo "ERROR: \`libpthreads' is missing on your system.  xtickertape"
+		echo "ERROR: \`libpthread' is missing on your system.  xtickertape"
 		echo "       cannot be compiled without it.  Sorry."
 		exit 1
 	fi
