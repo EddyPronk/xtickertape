@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.5 1998/09/30 08:44:09 phelps Exp $ */
+/* $Id: Subscription.c,v 1.6 1998/10/15 06:15:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +14,11 @@
 static char *sanity_value = "Subscription";
 static char *sanity_freed = "Freed Subscription";
 #endif /* SANITY */
+
+/* Static function definitions */
+static Subscription GetFromGroupFileLine(char *line, SubscriptionCallback callback, void *context);
+static Subscription GetFromGroupFile(FILE *file, SubscriptionCallback callback, void *context);
+
 
 /* The subscription data type */
 struct Subscription_t
@@ -91,7 +96,7 @@ void Subscription_debug(Subscription self)
 
 
 /* Create a subscription from a line of the group file */
-Subscription getFromGroupFileLine(char *line, SubscriptionCallback callback, void *context)
+static Subscription GetFromGroupFileLine(char *line, SubscriptionCallback callback, void *context)
 {
     char *group = strtok(line, SEPARATORS);
     char *pointer = strtok(NULL, SEPARATORS);
@@ -158,7 +163,7 @@ Subscription getFromGroupFileLine(char *line, SubscriptionCallback callback, voi
 }
 
 /* Read the next subscription from file (answers NULL if EOF) */
-Subscription getFromGroupFile(FILE *file, SubscriptionCallback callback, void *context)
+static Subscription GetFromGroupFile(FILE *file, SubscriptionCallback callback, void *context)
 {
     char buffer[BUFFERSIZE];
     char *pointer;
@@ -175,7 +180,7 @@ Subscription getFromGroupFile(FILE *file, SubscriptionCallback callback, void *c
 	/* check for empty line or comment */
 	if ((*pointer != '\0') && (*pointer != '\n') && (*pointer != '#'))
 	{
-	    return getFromGroupFileLine(pointer, callback, context);
+	    return GetFromGroupFileLine(pointer, callback, context);
 	}
     }
 
@@ -188,7 +193,7 @@ void Subscription_readFromGroupFile(FILE *groups, List list, SubscriptionCallbac
 {
     Subscription subscription;
 
-    while ((subscription = getFromGroupFile(groups, callback, context)) != NULL)
+    while ((subscription = GetFromGroupFile(groups, callback, context)) != NULL)
     {
 	List_addLast(list, subscription);
     }
