@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.12 2000/11/12 02:39:30 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.13 2000/11/13 08:06:46 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -630,7 +630,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_INT64:
 	{
-	    printf("%" INT64_PRINT, sexp -> value.h);
+	    printf("%" INT64_PRINT "L", sexp -> value.h);
 	    return 1;
 	}
 
