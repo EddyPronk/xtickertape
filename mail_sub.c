@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.2 1999/09/13 13:45:08 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.3 1999/09/15 03:33:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -108,10 +108,13 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
 	subject = "No subject";
     }
 
-    /* Construct a message_t and deliver it */
+    /* Construct a message_t out of all of that */
     message = message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
     (*self -> callback)(self -> rock, message);
+
+    /* Clean up */
     message_free(message);
+    en_free(notification);
 
     /* Free the folder name */
     free(folder);

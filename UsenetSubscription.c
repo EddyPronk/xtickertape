@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.22 1999/09/09 14:29:49 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.23 1999/09/15 03:33:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -664,8 +664,9 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
     /* Deliver the message */
     (*self -> callback)(self -> context, message);
 
-    /* Release our reference to the message */
+    /* Clean up */
     message_free(message);
+    en_free(notification);
 }
 
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.15 1999/09/12 07:33:40 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.16 1999/09/15 03:33:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -534,6 +534,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	(type != EN_STRING))
     {
 	/* Not provided or not a string -- can't determine a useful course of action */
+	en_free(notification);
 	return;
     }
 
@@ -554,6 +555,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	if ((subscription = Hashtable_get(self -> orbitSubscriptionsById, id)) != NULL)
 	{
 	    OrbitSubscription_setTitle(subscription, title);
+	    en_free(notification);
 	    return;
 	}
 
@@ -578,6 +580,8 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	    OrbitSubscription_setControlPanel(subscription, NULL);
 	}
     }
+
+    en_free(notification);
 }
 
 
