@@ -1,0 +1,15 @@
+# xtickertape errors
+
+# Randomly assign a facility number
+facility xtickertape 42
+
+# Parser stuff
+00400	PARSE_ERROR	string(tag) int32(line) string(token)
+00401	INVALID_TOKEN	string(tag) int32(line) string(token)
+00402	UNTERM_STRING	string(tag) int32(line)
+00403	UNTERM_ID	string(tag) int32(line)
+00404	UNKNOWN_FUNC	string(tag) int32(line) string(name)
+00405	OVERFLOW	string(tag) int32(line) string(token)
+00406	TYPE_MISMATCH	string(tag) int32(line) string(exp) string(type)
+00407	TOO_FEW_ARGS	string(tag) int32(line) string(function)
+00408	TOO_MANY_ARGS	string(tag) int32(line) string(function)

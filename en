@@ -1,0 +1,11 @@
+# xtickertape english error strings
+
+PARSE_ERROR	%1:%2: parse error before `%3'
+INVALID_TOKEN	%1:%2: invalid token: `%3'
+UNTERM_STRING	%1:%2: unterminated string constant
+UNTERM_ID	%1:%2: unterminated identifier
+UNKNOWN_FUNC	%1:%2: unknown function `%3'
+OVERFLOW	%1:%2: numeric constant overflow: %3
+TYPE_MISMATCH	%1:%2: type mismatch: `%3' is not a %4
+TOO_FEW_ARGS	%1:%2: too few arguments to function `%3'
+TOO_MANY_ARGS	%1:%2: too many arguments to function `%3'
