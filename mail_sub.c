@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.9 1999/11/19 04:05:04 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.10 1999/11/19 07:44:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -208,31 +208,7 @@ static void subscribe_cb(
     dstc_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
-
-    printf("subscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
-    if (self -> subscription_id != 0)
-    {
-	printf("uh oh.. self -> subscription_id = %lld\n", self -> subscription_id);
-    }
-
     self -> subscription_id = subscription_id;
-}
-
-/* Callback for an unsubscribe request */
-static void unsubscribe_cb(
-    elvin_handle_t handle, int result,
-    int64_t subscription_id, void *rock,
-    dstc_error_t error)
-{
-    mail_sub_t self = (mail_sub_t)rock;
-
-    printf("unsubscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
-    if (self -> subscription_id != subscription_id)
-    {
-	printf("uh oh.. self -> subscription_id = %lld\n", self -> subscription_id);
-    }
-
-    self -> subscription_id = 0;
 }
 
 /* Sets the receiver's connection */
@@ -243,7 +219,7 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, dstc_error_
     {
 	if (elvin_async_delete_subscription(
 	    self -> handle, self -> subscription_id,
-	    unsubscribe_cb, self,
+	    NULL, NULL,
 	    error) == 0)
 	{
 	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
