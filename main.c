@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.37 1998/12/18 15:35:50 phelps Exp $ */
+/* $Id: main.c,v 1.38 1998/12/19 08:26:11 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -265,10 +265,12 @@ static Window CreateIcon(Widget shell)
     XFreePixmap(display, mask);
 
     /* Create a shape mask and apply it to the window */
+#ifdef HAVE_LIBXEXT
     mask = XCreatePixmapFromBitmapData(
 	display, pixmap, mask_bits, mask_width, mask_height,
 	0, 1, 1);
     XShapeCombineMask(display, window, 0, 0, 0, mask, X_ShapeCombine);
+#endif /* HAVE_LIBEXT */
 
     /* Set the window's background to be the pixmap */
     XSetWindowBackgroundPixmap(display, window, pixmap);
@@ -327,7 +329,9 @@ int main(int argc, char *argv[])
     tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
 
     /* Enable editres support */
+#ifdef HAVE_LIBXMU
     XtAddEventHandler(top, (EventMask)0, True, _XEditResCheckMessages, NULL);
+#endif /* HAVE_LIBXMU */
 
     /* Let 'er rip! */
     XtAppMainLoop(context);
