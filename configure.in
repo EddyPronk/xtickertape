@@ -55,12 +55,12 @@ if test "$with_elvin" != yes ; then
 fi
 
 # Check for the various libraries
-AC_CHECK_LIB(vin4c, elvin_async_init,
+AC_CHECK_LIB(vin4c, elvin_client_init,
     LIBS="-lvin4c -lvin4 $LIBS -lm",
     AC_MSG_ERROR("unable to locate the elvin4 libraries"); exit 1,
     -lvin4c -lvin4 -lm)
 
-AC_CHECK_LIB(vin4Xt, elvin_xt_async_init,
+AC_CHECK_LIB(vin4Xt, elvin_xt_init,
     LIBS="-lvin4Xt $LIBS",
     AC_MSG_ERROR("unable to locate the elvin4 Xt main loop library"); exit 1
     -lvin4Xt)
