@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.40 1999/06/15 07:51:19 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.41 1999/06/15 08:01:02 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -106,6 +106,7 @@ static void Paint(
     int xpos;
     int nextpos;
     int level;
+    int right;
     char *string;
     GC gc;
 
@@ -114,10 +115,11 @@ static void Paint(
     hasAttachment = Message_hasAttachment(self -> message);
     xpos = offset;
     level = self -> fadeLevel;
+    right = x + width;
 
     /* If the group fits, draw it */
     nextpos = xpos + self -> groupWidth;
-    if ((xpos <= x + width) && (x < nextpos))
+    if ((xpos <= right) && (x < nextpos))
     {
 	/* Draw the group string */
 	gc = ScGCForGroup(self -> widget, level);
@@ -134,7 +136,7 @@ static void Paint(
     /* If the separator fits, draw it */
     xpos = nextpos;
     nextpos = xpos + self -> separatorWidth;
-    if ((xpos <= x + width) && (x < nextpos))
+    if ((xpos <= right) && (x < nextpos))
     {
 	/* Draw the separator */
 	gc = ScGCForSeparator(self -> widget, level);
@@ -151,7 +153,7 @@ static void Paint(
     /* If the user string fits, draw it */
     xpos = nextpos;
     nextpos = xpos + self -> userWidth;
-    if ((xpos <= x + width) && (x < nextpos))
+    if ((xpos <= right) && (x < nextpos))
     {
 	/* Draw the user string */
 	gc = ScGCForUser(self -> widget, level);
@@ -168,7 +170,7 @@ static void Paint(
     /* If the separator fits, draw it */
     xpos = nextpos;
     nextpos = xpos + self -> separatorWidth;
-    if ((xpos <= x + width) && (x < nextpos))
+    if ((xpos <= right) && (x < nextpos))
     {
 	/* Draw the separator */
 	gc = ScGCForSeparator(self -> widget, level);
@@ -185,7 +187,7 @@ static void Paint(
     /* If the text fits, draw it */
     xpos = nextpos;
     nextpos = xpos + self -> stringWidth;
-    if ((xpos <= x + width) && (x < nextpos))
+    if ((xpos <= right) && (x < nextpos))
     {
 	/* Draw the text string */
 	gc = ScGCForString(self -> widget, level);
