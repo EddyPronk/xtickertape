@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.104 2001/05/01 07:58:43 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.105 2001/05/02 00:30:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -352,7 +352,6 @@ static void EnableClock(ScrollerWidget self);
 static void DisableClock(ScrollerWidget self);
 static void SetClock(ScrollerWidget self);
 static void Tick(XtPointer widget, XtIntervalId *interval);
-static void drag_to(ScrollerWidget self, int x);
 
 
 /* Answers a GC with the right background color and font */
@@ -1960,20 +1959,6 @@ static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *n
 }
 
 
-/* Drag to the given x position */
-static void drag_to(ScrollerWidget self, int x)
-{
-    /* Don't bother if there's no change */
-    if (self -> scroller.last_x == x)
-    {
-	return;
-    }
-
-    /* Scroll to the x position */
-    scroll(self, self -> scroller.last_x - x);
-    self -> scroller.last_x = x;
-}
-
 /* Someone is dragging the mouse */
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
@@ -2003,8 +1988,9 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	DisableClock(self);
     }
 
-    /* Do the drag thing */
-    drag_to(self, motion_event -> x);
+    /* Drag the scroller to the right place */
+    scroll(self, self -> scroller.last_x - motion_event -> x);
+    self -> scroller.last_x = motion_event -> x;
 }
 
 
