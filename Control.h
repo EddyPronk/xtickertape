@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.8 1998/10/21 08:20:41 phelps Exp $ */
+/* $Id: Control.h,v 1.9 1998/11/05 01:50:43 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -16,9 +16,14 @@ typedef struct ControlPanel_t *ControlPanel;
 /* The ControlPanelCallback type */
 typedef void (*ControlPanelCallback)(void *context, Message message);
 
+/* The ReloadCallback type */
+typedef void (*ReloadCallback)(void *context);
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(Widget parent, char *user);
+ControlPanel ControlPanel_alloc(
+    Widget parent, char *user,
+    ReloadCallback groupsCallback, void *groupsContext,
+    ReloadCallback usenetCallback, void *usenetContext);
 
 /* Releases the resources used by the receiver */
 void ControlPanel_free(ControlPanel self);
@@ -30,6 +35,9 @@ void *ControlPanel_addSubscription(
 
 /* Removes a subscription from the receiver (info was returned by addSubscription) */
 void ControlPanel_removeSubscription(ControlPanel self, void *info);
+
+/* Changes the location of the subscription within the ControlPanel */
+void ControlPanel_setSubscriptionIndex(ControlPanel self, void *info, int index);
 
 /* Retitles an entry */
 void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title);
