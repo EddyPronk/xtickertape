@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.60 2002/04/12 14:36:38 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.61 2002/04/12 21:48:30 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -555,7 +555,6 @@ static void realize(
     XtValueMask *value_mask,
     XSetWindowAttributes *attributes);
 static void redisplay(Widget self, XEvent *event, Region region);
-static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void destroy(Widget self);
 static void resize(Widget self);
@@ -597,7 +596,7 @@ HistoryClassRec historyClassRec =
 	XtNumber(resources), /* num_resources */
 	NULLQUARK, /* xrm_class */
 	True, /* compress_motion */
-	XtExposeCompressMultiple, /* compress_exposure */
+	XtExposeCompressMaximal, /* compress_exposure */
 	True, /* compress_enterleave */
 	False, /* visible_interest */
 	destroy, /* destroy */
@@ -758,6 +757,8 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     /* Initialize the x and y coordinates of the visible region */
     self -> history.x = 0;
     self -> history.y = 0;
+    self -> history.pointer_x = 0;
+    self -> history.pointer_y = 0;
 
     /* Start with an empty delta queue */
     self -> history.dqueue = NULL;
@@ -1131,6 +1132,12 @@ static void redisplay(Widget widget, XEvent *event, Region region)
     HistoryWidget self = (HistoryWidget)widget;
     XExposeEvent *x_event = (XExposeEvent *)event;
     XRectangle bbox;
+
+    /* Sanity check */
+    if (! region)
+    {
+	return;
+    }
 
     /* Find the smallest rectangle which contains the region */
     XClipBox(region, &bbox);
@@ -1760,66 +1767,63 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     self -> history.drag_direction = DRAG_NONE;
     self -> history.drag_timeout = None;
 
-    /* Determine the current position of the pointer */
-    if (XQueryPointer(
-	    XtDisplay((Widget)self), XtWindow((Widget)self),
-	    &root, &child,
-	    &root_x, &root_y, &x, &y, &mask))
+    /* Determine the position of the pointer */
+    x = self -> history.pointer_x;
+    y = self -> history.pointer_y;
+
+    /* Figure out what's happening */
+    if (y < 0)
     {
-	/* Figure out what's happening */
-	if (y < 0)
-	{
-	    /* We're being dragged up. */
-	    self -> history.drag_direction = DRAG_UP;
+	/* We're being dragged up. */
+	self -> history.drag_direction = DRAG_UP;
 
-	    /* If we've already selected at the first message then make
-	     * the top margin visible */
-	    if (self -> history.selection_index == 0)
-	    {
-		set_origin(self, self -> history.x, 0, 1);
-	    }
-	    else
-	    {
- 		/* Otherwise select the item before the first completely visible one */
-		index = index_of_y(self, -1);
-		set_selection_index(self, index);
-	    }
+	/* If we've already selected at the first message then make
+	 * the top margin visible */
+	if (self -> history.selection_index == 0)
+	{
+	    set_origin(self, self -> history.x, 0, 1);
 	}
-	else if (self -> core.height < y)
+	else
 	{
-	    /* We're being dragged down */
-	    self -> history.drag_direction = DRAG_DOWN;
+	    /* Otherwise select the item before the first completely visible one */
+	    index = index_of_y(self, -1);
+	    set_selection_index(self, index);
+	}
+    }
+    else if (self -> core.height < y)
+    {
+	/* We're being dragged down */
+	self -> history.drag_direction = DRAG_DOWN;
 
-	    /* If we've already select the last message then make the
-	     * bottom margin visible */
-	    if (self -> history.selection_index == self -> history.message_count - 1)
+	/* If we've already select the last message then make the
+	 * bottom margin visible */
+	if (self -> history.selection_index == self -> history.message_count - 1)
+	{
+	    if (! (self -> history.height < self -> core.height))
 	    {
-		if (! (self -> history.height < self -> core.height))
-		{
-		    set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
-		}
-	    }
-	    else
-	    {
-		/* Otherwise select the item below the last completely visible one */
-		index = index_of_y(self, self -> core.height + 1);
-		set_selection_index(self, index);
+		set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
 	    }
 	}
 	else
 	{
-	    /* We're within the widget's bounds */
-	    index = index_of_y(self, y);
-
-	    /* Don't go past the last message */
-	    if (! (index < self -> history.message_count))
-	    {
-		index = self -> history.message_count - 1;
-	    }
-
-	    /* Select */
+	    /* Otherwise select the item below the last completely visible one */
+	    index = index_of_y(self, self -> core.height + 1);
 	    set_selection_index(self, index);
 	}
+    }
+    else
+    {
+	/* We're within the widget's bounds */
+	index = index_of_y(self, y);
+
+	/* Don't go past the last message */
+	if (! (index < self -> history.message_count))
+	{
+	    index = self -> history.message_count - 1;
+	}
+
+	/* Select */
+	set_selection_index(self, index);
     }
 
     /* Arrange to scroll again after a judicious pause */
@@ -1832,10 +1836,14 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     HistoryWidget self = (HistoryWidget)widget;
-    XButtonEvent *button_event = (XButtonEvent *)event;
+    XMotionEvent *button_event = (XMotionEvent *)event;
 
     /* This widget now gets keyboard input */
     XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
+
+    /* Record the current mouse position */
+    self -> history.pointer_x = button_event -> x;
+    self -> history.pointer_y = button_event -> y;
 
     /* FIgure out what's going on */
     if (button_event -> y < 0)

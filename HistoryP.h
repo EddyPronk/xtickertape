@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.22 2002/04/08 14:54:30 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.23 2002/04/12 21:48:30 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -142,6 +142,12 @@ typedef struct
 
     /* The y coordinate of the origin of the visible region */
     long y;
+
+    /* The x coordinate of the pointer during a drag operation */
+    short pointer_x;
+
+    /* The y coordinate of the pointer during a drag operation */
+    short pointer_y;
 
     /* The queue of outstanding movements */
     delta_queue_t dqueue;
