@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.16 1999/08/27 08:30:35 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.17 1999/08/28 04:10:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -141,19 +141,23 @@ static XmString history_node_string(history_node_t self, int is_threaded)
     char *string = Message_getString(self -> message);
     int spaces = is_threaded ? (history_node_indent(self) * 2) : 0;
     char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string) + spaces + 3);
+    char *pointer = buffer;
+    char *tag;
     XmString result;
     int i;
 
     /* Set up the indent */
     for (i = 0; i < spaces; i++)
     {
-	buffer[i] = ' ';
+	*(pointer++) = ' ';
     }
 
-    sprintf(buffer + spaces, "%s:%s:%s", group, user, string);
-    result = XmStringCreateSimple(buffer);
-    free(buffer);
+    /* Print the message */
+    sprintf(pointer, "%s:%s:%s", group, user, string);
+    tag = Message_hasAttachment(self -> message) ? "MIME" : XmFONTLIST_DEFAULT_TAG;
+    result = XmStringCreate(buffer, tag);
 
+    free(buffer);
     return result;
 }
 
