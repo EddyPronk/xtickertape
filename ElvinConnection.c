@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ElvinConnection.c,v 1.31 1998/12/24 05:48:27 phelps Exp $";
+static const char cvsid[] = "$Id: ElvinConnection.c,v 1.32 1999/04/13 10:11:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -222,6 +222,7 @@ static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
 
     /* Notify the user that we've lost our connection */
     self -> state = LostConnection;
+    self -> retryPause = INITIAL_PAUSE;
     (*self -> disconnectCallback)(self -> disconnectContext, self);
 
     /* Try to reconnect */
