@@ -1,0 +1,7 @@
+xtickertape was written by Ted Phelps <phelps@pobox.com>, with help
+from David Arnold <davida@pobox.com>.
+
+It is based on the original python tickertape by Bill Segall
+<bill@segall.net> with contributions from the Reject Room, and it
+blatantly steals features introduced in jtickertape by Julian Boot
+<boot@dstc.edu.au>
