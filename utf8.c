@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.1 2003/01/14 16:54:57 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.2 2003/01/14 17:01:33 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -516,7 +516,7 @@ void utf8_renderer_draw_string(
     Display *display,
     Drawable drawable,
     GC gc,
-    utf8_renderer_t cs_info,
+    utf8_renderer_t renderer,
     int x, int y,
     XRectangle *bbox,
     char *string)
@@ -539,7 +539,7 @@ void utf8_renderer_draw_string(
 	out_length = BUFFER_SIZE;
 	out_point = buffer;
 	if (utf8_renderer_iconv(
-		cs_info,
+		renderer,
 		&string, &in_length,
 		&out_point, &out_length) == (size_t)-1 &&
 	    errno != E2BIG)
@@ -549,7 +549,7 @@ void utf8_renderer_draw_string(
 	}
 
 	/* Are characters in this code set one byte wide? */
-	if (cs_info -> dimension == 1)
+	if (renderer -> dimension == 1)
 	{
 	    unsigned char *first;
 	    unsigned char *last;
@@ -558,7 +558,7 @@ void utf8_renderer_draw_string(
 	    first = (unsigned char *)buffer;
 	    while (first < (unsigned char *)out_point)
 	    {
-		info = per_char(cs_info -> font, 0, *first);
+		info = per_char(renderer -> font, 0, *first);
 
 		/* Skip anything to the left of the bounding box */
 		if (left + info -> rbearing < bbox -> x)
@@ -573,7 +573,7 @@ void utf8_renderer_draw_string(
 		    right = left;
 		    while (last < (unsigned char *)out_point)
 		    {
-			info = per_char(cs_info -> font, 0, *last);
+			info = per_char(renderer -> font, 0, *last);
 
 			if (right + info -> lbearing < bbox -> x + bbox -> width)
 			{
@@ -584,7 +584,7 @@ void utf8_renderer_draw_string(
 			{
 			    /* Reset the conversion descriptor */
 			    if (utf8_renderer_iconv(
-				    cs_info,
+				    renderer,
 				    NULL, NULL,
 				    NULL, NULL) == (size_t)-1)
 			    {
@@ -612,7 +612,7 @@ void utf8_renderer_draw_string(
 	    first = (XChar2b *)buffer;
 	    while (first < (XChar2b *)out_point)
 	    {
-		info = per_char(cs_info -> font, first -> byte1, first -> byte2);
+		info = per_char(renderer -> font, first -> byte1, first -> byte2);
 
 		if (left + info -> rbearing < bbox -> x)
 		{
@@ -626,7 +626,7 @@ void utf8_renderer_draw_string(
 		    right = left;
 		    while (last < (XChar2b *)out_point)
 		    {
-			info = per_char(cs_info -> font, last -> byte1, last -> byte2);
+			info = per_char(renderer -> font, last -> byte1, last -> byte2);
 
 			if (right + info -> lbearing < bbox -> x + bbox -> width)
 			{
@@ -637,7 +637,7 @@ void utf8_renderer_draw_string(
 			{
 			    /* Reset the conversion descriptor */
 			    if (utf8_renderer_iconv(
-				    cs_info,
+				    renderer,
 				    NULL, NULL,
 				    NULL, NULL) == (size_t)-1)
 			    {

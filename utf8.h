@@ -33,7 +33,7 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.1 2003/01/14 16:54:57 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.2 2003/01/14 17:01:34 phelps Exp $";
 #endif /* lint */
 
 /* String measurements */
@@ -84,7 +84,7 @@ void utf8_renderer_draw_string(
     Display *display,
     Drawable drawable,
     GC gc,
-    utf8_renderer_t cs_info,
+    utf8_renderer_t renderer,
     int x, int y,
     XRectangle *bbox,
     char *string);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.24 2003/01/14 16:57:53 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.25 2003/01/14 17:01:33 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -81,7 +81,7 @@ struct message_view
     long indent_width;
 
     /* Code set information */
-    utf8_renderer_t cs_info;
+    utf8_renderer_t renderer;
 
     /* Should the message be underlined? */
     Bool has_underline;
@@ -138,7 +138,7 @@ static void paint_string(
     long x, long y,
     XRectangle *bbox,
     string_sizes_t sizes,
-    utf8_renderer_t cs_info,
+    utf8_renderer_t renderer,
     char *string,
     Bool has_underline)
 {
@@ -156,13 +156,13 @@ static void paint_string(
 	XChangeGC(display, gc, GCForeground, &values);
 
 	/* Draw the string */
-	utf8_renderer_draw_string(display, drawable, gc, cs_info, x, y, bbox, string);
+	utf8_renderer_draw_string(display, drawable, gc, renderer, x, y, bbox, string);
 
 	/* Draw the underline */
 	if (has_underline)
 	{
 	    utf8_renderer_draw_underline(
-		cs_info, display, drawable, gc,
+		renderer, display, drawable, gc,
 		x, y, bbox, sizes -> width);
 	}
     }
@@ -173,7 +173,7 @@ static void paint_string(
 message_view_t message_view_alloc(
     message_t message,
     long indent,
-    utf8_renderer_t cs_info)
+    utf8_renderer_t renderer)
 {
     message_view_t self;
     struct tm *timestamp;
@@ -197,7 +197,7 @@ message_view_t message_view_alloc(
 
     /* Record the indentation and code set info */
     self -> indent = indent;
-    self -> cs_info = cs_info;
+    self -> renderer = renderer;
 
     /* If the message has an attachment then compute the underline info */
     self -> has_underline = message_has_attachment(message);
@@ -217,19 +217,24 @@ message_view_t message_view_alloc(
 	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
 
     /* Measure the width of the string to use for noon */
-    utf8_renderer_measure_string(cs_info, NOON_TIMESTAMP, &sizes);
+    utf8_renderer_measure_string(renderer, NOON_TIMESTAMP, &sizes);
     self -> noon_width = sizes.width;
 
     /* Figure out how much to indent the message */
-    utf8_renderer_measure_string(cs_info, INDENT, &sizes);
+    utf8_renderer_measure_string(renderer, INDENT, &sizes);
     self -> indent_width = sizes.width * 2;
 
     /* Measure the message's strings */
-    utf8_renderer_measure_string(cs_info, self -> timestamp, &self -> timestamp_sizes);
-    utf8_renderer_measure_string(cs_info, message_get_group(message), &self -> group_sizes);
-    utf8_renderer_measure_string(cs_info, message_get_user(message), &self -> user_sizes);
-    utf8_renderer_measure_string(cs_info, message_get_string(message), &self -> message_sizes);
-    utf8_renderer_measure_string(cs_info, SEPARATOR, &self -> separator_sizes);
+    utf8_renderer_measure_string(
+	renderer, self -> timestamp, &self -> timestamp_sizes);
+    utf8_renderer_measure_string(
+	renderer, message_get_group(message), &self -> group_sizes);
+    utf8_renderer_measure_string(
+	renderer, message_get_user(message), &self -> user_sizes);
+    utf8_renderer_measure_string(
+	renderer, message_get_string(message), &self -> message_sizes);
+    utf8_renderer_measure_string(
+	renderer, SEPARATOR, &self -> separator_sizes);
     return self;
 }
 
@@ -378,7 +383,7 @@ void message_view_paint(
 	    display, drawable, gc, timestamp_pixel,
 	    x - self -> timestamp_sizes.width , y,
 	    bbox, &self -> timestamp_sizes,
-	    self -> cs_info, self -> timestamp, False);
+	    self -> renderer, self -> timestamp, False);
 
 	/* Indent the next bit */
 	x += self -> indent_width;
@@ -391,7 +396,7 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, group_pixel,
 	x, y, bbox, &self -> group_sizes,
-	self -> cs_info, message_get_group(self -> message),
+	self -> renderer, message_get_group(self -> message),
 	self -> has_underline);
     x += self -> group_sizes.width;
 
@@ -399,7 +404,7 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> cs_info, SEPARATOR,
+	self -> renderer, SEPARATOR,
 	self -> has_underline);
     x += self -> separator_sizes.width;
 
@@ -407,7 +412,7 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, user_pixel,
 	x, y, bbox, &self -> user_sizes,
-	self -> cs_info, message_get_user(self -> message),
+	self -> renderer, message_get_user(self -> message),
 	self -> has_underline);
     x += self -> user_sizes.width;
 
@@ -415,7 +420,7 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, separator_pixel,
 	x, y, bbox, &self -> separator_sizes,
-	self -> cs_info, SEPARATOR,
+	self -> renderer, SEPARATOR,
 	self -> has_underline);
     x += self -> separator_sizes.width;
 
@@ -423,7 +428,7 @@ void message_view_paint(
     paint_string(
 	display, drawable, gc, message_pixel,
 	x, y, bbox, &self -> message_sizes,
-	self -> cs_info, message_get_string(self -> message),
+	self -> renderer, message_get_string(self -> message),
 	self -> has_underline);
     x += self -> message_sizes.width;
 }

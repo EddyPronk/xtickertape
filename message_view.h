@@ -31,7 +31,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.9 2003/01/14 16:57:53 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.10 2003/01/14 17:01:33 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */
@@ -41,7 +41,7 @@ typedef struct message_view *message_view_t;
 message_view_t message_view_alloc(
     message_t message,
     long indent,
-    utf8_renderer_t cs_info);
+    utf8_renderer_t renderer);
 
 /* Frees a message_view_t */
 void message_view_free(message_view_t self);
