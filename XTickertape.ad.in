@@ -74,6 +74,7 @@ XTickertape.sendHistoryCapacity: 32
 
 *menuBar*reloadGroups.labelString: Reload Groups File
 *menuBar*reloadUsenet.labelString: Reload Usenet File
+*menuBar*reloadKeys.labelString: Reload Keys File
 *menuBar*exit.labelString: Exit
 *menuBar*exit.mnemonic: x
 *menuBar*exit.accelerator: Alt<Key>Q
