@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.29 1998/10/16 02:05:38 phelps Exp $ */
+/* $Id: main.c,v 1.30 1998/10/16 02:09:19 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +23,9 @@
 static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
 static void Click(Widget widget, XtPointer ignored, XtPointer context);
+static void *RegisterInput(int fd, void *callback, void *rock);
+static void UnregisterInput(void *rock);
+static void RegisterTimer(unsigned long interval, void *callback, void *rock);
 static void SendMessage(Message message, void *context);
 static void ReceiveMessage(Message message, void *context);
 static FILE *GetGroupFile();
@@ -283,7 +286,7 @@ int main(int argc, char *argv[])
 
     /* listen for messages from elvin */
     connection = ElvinConnection_alloc(
-	host, port, subscriptions,
+	host, port, user, subscriptions,
 	Subscription_alloc("tickertape", "", 0, 0, 10, 10, ReceiveMessage, tickertape));
 
     /* Build the widget */
