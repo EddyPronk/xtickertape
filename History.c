@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.50 2002/04/04 16:10:16 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.51 2002/04/04 20:48:10 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -874,6 +874,75 @@ static void compensate_bbox(
     }
 }
 
+/* Draws the highlight */
+static void paint_highlight(HistoryWidget self)
+{
+    Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
+    GC gc = self -> history.gc;
+    XGCValues values;
+    XSegment segments[4];
+    long y;
+    int i;
+
+    /* Bail out if we're not highlighted */
+    if (! self -> primitive.highlighted)
+    {
+	return;
+    }
+
+    /* Determine the location of the selection */
+    y = self -> history.selection_index * self -> history.line_height -
+	self  -> history.y + self -> history.margin_height;
+
+    /* Bail if it isn't visible */
+    if (y + self -> history.line_height < 0 && (long)self -> history.height <= y)
+    {
+	return;
+    }
+
+    /* We'll always draw the top and bottom segments */
+    i = 0;
+    segments[i].x1 = 0;
+    segments[i].y1 = y;
+    segments[i].x2 = self -> core.width - 1;
+    segments[i].y2 = y;
+    i++;
+
+    segments[i].x1 = 0;
+    segments[i].y1 = y + self -> history.line_height - 1;
+    segments[i].x2 = self -> core.width - 1;
+    segments[i].y2 = y + self -> history.line_height - 1;
+    i++;
+
+    /* Draw the left edge iff the we're scrolled all the way to the left */
+    if (self -> history.x == 0)
+    {
+	segments[i].x1 = 0;
+	segments[i].y1 = y;
+	segments[i].x2 = 0;
+	segments[i].y2 = y + self -> history.line_height - 1;
+	i++;
+    }
+
+    /* Draw the right edge iff we're scrolled all the way to the right */
+    if (self -> history.x + self -> core.width >= self -> history.width)
+    {
+	segments[i].x1 = self -> core.width - 1;
+	segments[i].y1 = y;
+	segments[i].x2 = self -> core.width - 1;
+	segments[i].y2 = y + self -> history.line_height - 1;
+	i++;
+    }
+
+    /* Set up the graphics context */
+    values.foreground = self -> primitive.highlight_color;
+    XChangeGC(display, gc, GCForeground, &values);
+
+    /* Draw the segments */
+    XDrawSegments(display, window, gc, segments, i);
+}
+
 /* Repaint the widget */
 static void paint(HistoryWidget self, XRectangle *bbox)
 {
@@ -930,18 +999,8 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 		0, y, self -> core.width,
 		self -> history.line_height);
 
-	    /* Is the widget highlighted? */
-	    if (self -> primitive.highlighted)
-	    {
-		values.foreground = self -> primitive.highlight_color;
-		XChangeGC(display, gc, GCForeground, &values);
-
-		/* Draw a rectangle around the selection */
-		XDrawRectangle(
-		    display, window, gc,
-		    -self -> history.x, y,
-		    self -> history.width - 1, self -> history.line_height - 1);
-	    }
+	    /* Draw the highlight */
+	    paint_highlight(self);
 	}
 
 	/* Draw the view */
@@ -1401,18 +1460,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 		display, window, gc,
 		0, y, self -> core.width, self -> history.line_height);
 
-	    /* Is the widget highlighted? */
-	    if (self -> primitive.highlighted)
-	    {
-		values.foreground = self -> primitive.highlight_color;
-		XChangeGC(display, gc, GCForeground, &values);
-
-		/* Draw a rectangle around the selection */
-		XDrawRectangle(
-		    display, window, gc,
-		    -self -> history.x, y,
-		    self -> history.width - 1, self -> history.line_height - 1);
-	    }
+	    /* Draw the highlight */
+	    paint_highlight(self);
 
 	    /* And then draw the message view on top of it */
 	    message_view_paint(
