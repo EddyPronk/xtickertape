@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.46 1999/07/29 13:10:08 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.47 1999/07/30 04:56:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1139,7 +1139,9 @@ static glyph_holder_t holder_at_point(ScrollerWidget self, int x, int y)
     /* Points outside the scroller bounds return NULL */
     if ((x < 0) || (self -> core.width <= x) || (y < 0) || (self -> core.height <= y))
     {
-	printf("out of bounds! (x=%d, y=%d\n", x, y);
+#ifdef DEBUG
+	printf("out of bounds! (x=%d, y=%d)\n", x, y);
+#endif /* DEBUG */
 	return NULL;
     }
 
@@ -1336,8 +1338,79 @@ static void delete(Widget widget, XEvent *event)
      * leading edge of the text in place */
     if (self -> scroller.step < 0)
     {
-	printf("L->R delete() not yet implemented\n");
-	exit(1);
+	int offset = self -> core.width + self -> scroller.right_offset;
+	int missing_width = 0;
+	glyph_holder_t holder = self -> scroller.right_holder;
+
+	/* If we're deleting the leftmost glyph then we add another
+	 * now so that we know what comes next */
+	if (self -> scroller.left_holder -> glyph == glyph)
+	{
+	    add_left_holder(self);
+	}
+
+	/* Go through the glyphs and compensate */
+	while (holder != NULL)
+	{
+	    glyph_holder_t previous = holder -> previous;
+
+	    /* If we've found the gap then insert any lost width into it */
+	    if ((holder -> glyph == self -> scroller.gap) && (missing_width != 0))
+	    {
+		holder -> width += missing_width;
+		missing_width = 0;
+	    }
+
+	    /* If we've found a holder for the deleted glyph, then extract it now */
+	    if (holder -> glyph == glyph)
+	    {
+		missing_width += glyph_holder_width(holder);
+
+		/* We'll always have a previous glyph */
+		holder -> previous -> next = holder -> next;
+
+		/* Remove the holder from the list */
+		if (holder -> next == NULL)
+		{
+		    self -> scroller.right_holder = holder -> previous;
+		}
+		else
+		{
+		    holder -> next -> previous = holder -> previous;
+
+		    /* If the glyph was surrounded by gaps, then join the gaps into one */
+		    if ((holder -> previous -> glyph == self -> scroller.gap) &&
+			(holder -> next -> glyph == self -> scroller.gap))
+		    {
+			offset -= holder -> previous -> width;
+			holder -> next -> width += holder -> previous -> width;
+			holder -> next -> previous = holder -> previous -> previous;
+
+			previous = holder -> previous -> previous;
+			if (previous == NULL)
+			{
+			    self -> scroller.left_holder = holder -> next;
+			}
+			else
+			{
+			    previous -> next = holder -> next;
+			}
+		    }
+		}
+
+		glyph_holder_free(holder);
+	    }
+	    else
+	    {
+		offset -= holder -> width;
+	    }
+
+	    holder = previous;
+	}
+
+	self -> scroller.left_offset = -offset;
+	adjust_left_left(self);
+	adjust_right_left(self);
     }
     else
     {
@@ -1373,7 +1446,11 @@ static void delete(Widget widget, XEvent *event)
 		holder -> next -> previous = holder -> previous;
 
 		/* Remove the holder from the list */
-		if (holder -> previous != NULL)
+		if (holder -> previous == NULL)
+		{
+		    self -> scroller.left_holder = holder -> next;
+		}
+		else
 		{
 		    holder -> previous -> next = holder -> next;
 
@@ -1394,12 +1471,7 @@ static void delete(Widget widget, XEvent *event)
 			{
 			    next -> previous = holder -> previous;
 			}
-
 		    }
-		}
-		else
-		{
-		    self -> scroller.left_holder = holder -> next;
 		}
 
 		glyph_holder_free(holder);
@@ -1419,113 +1491,6 @@ static void delete(Widget widget, XEvent *event)
 
     Paint(self, 0, 0, self -> core.width, self -> scroller.height);
     Redisplay(widget, NULL, 0);
-
-#if 0
-    ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph = glyph_at_event(self, event);
-    glyph_t left = self -> scroller.left_glyph;
-    glyph_t right = self -> scroller.right_glyph;
-    int width = glyph -> get_width(glyph);
-
-    /* If the glyph is the gap then don't bother */
-    if (glyph == self -> scroller.gap)
-    {
-	printf("missed\n");
-	return;
-    }
-
-    /* Figure out which way we're scrolling to determine what to do */
-    if (self -> scroller.step < 0)
-    {
-	/* Scrolling left-to-right */
-
-	/* Make sure the left_offset lines up properly by either
-	 * increasing the size of the gap (if the gap is the
-	 * left_glyph) or by reducing the left_offset */
-	if (left == self -> scroller.gap)
-	{
-	    self -> scroller.last_width -= width;
-
-	    /* If the right_glyph is also the gap then adjust its
-	     * offset to compensate */
-	    if (right == self -> scroller.gap)
-	    {
-		self -> scroller.right_offset += width;
-	    }
-	}
-	else
-	{
-	    self -> scroller.left_offset -= width;
-	}
-
-	/* If we've deleted the right_glyph, then find a new one */
-	if (glyph == right)
-	{
-	    self -> scroller.right_glyph = right -> previous;
-	}
-
-	/* If we've deleted the left_glyph then roll back */
-	if (glyph == left)
-	{
-	    self -> scroller.left_glyph = left -> next;
-	}
-
-	/* Remove the deleted glyph from the queue */
-	queue_remove(glyph);
-	glyph -> free(glyph);
-
-	/* Attempt to recover */
-	adjust_right_right(self);
-	adjust_right_left(self);
-    }
-    else
-    {
-	/* Scrolling right-to-left */
-
-	/* Make sure the right_offset lines up properly by either
-	 * increasing the size of the gap (if the gap is the
-	 * right_glyph) or by reducing the right_offset */
-	if (right == self -> scroller.gap)
-	{
-	    self -> scroller.last_width -= width;
-
-	    /* If the left_glyph is also the gap, then adjust its
-	     * offset to compensate */
-	    if (left == self -> scroller.gap)
-	    {
-		self -> scroller.left_offset += width;
-	    }
-	}
-	else
-	{
-	    self -> scroller.right_offset -= width;
-	}
-
-	/* If we've deleted the left_glyph, then update */
-	if (glyph == left)
-	{
-	    self -> scroller.left_glyph = left -> next;
-	}
-
-	/* If we've deleted the right_glyph then roll back */
-	if (glyph == right)
-	{
-	    self -> scroller.right_glyph = right -> previous;
-	}
-
-	/* Remove the deleted glyph from the queue */
-	queue_remove(glyph);
-	glyph -> free(glyph);
-
-	/* Attempt to recover */
-	adjust_left_left(self);
-	adjust_left_right(self);
-    }
-
-    /* Repaint everything */
-    Paint(self, 0, 0, self -> core.width, self -> core.height);
-    Redisplay(widget, NULL, 0);
-#endif /* 0 */
 }
 
 /* Scroll more quickly */
