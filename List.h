@@ -1,5 +1,5 @@
 /*
- * $Id: List.h,v 1.6 1998/10/21 01:58:07 phelps Exp $
+ * $Id: List.h,v 1.7 1998/11/05 01:51:04 phelps Exp $
  *
  * Generic support for singly-linked lists
  */
@@ -32,6 +32,12 @@ void *List_dequeue(List self);
 /* Adds an item to the end of the list */
 void List_addLast(List self, void *value);
 
+/* Inserts the item into the middle of the list */
+void List_insert(List self, int index, void *value);
+
+/* Replaces all occurences of a value in the receiver with newValue */
+void List_replaceAll(List self, void *value, void *newValue);
+
 /* Removes an item from the list */
 void *List_remove(List self, void *item);
 
@@ -54,6 +60,9 @@ int List_isEmpty(List self);
 /* Answers 0 if the receiver contains the value, 1 otherwise */
 int List_includes(List self, void *value);
 
+/* Answers the index of the element (using pointer equality) 
+ * in the receiver, -1 if not present */
+int List_index(List self, void *value);
 
 /* Answers the first element for which function returns non-zero */
 void *List_findFirst(List self, ListFindFunc function);

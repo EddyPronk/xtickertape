@@ -134,6 +134,57 @@ void List_addLast(List self, void *value)
     self -> tail = link;
 }
 
+/* Inserts the item into the middle of the list */
+void List_insert(List self, int index, void *value)
+{
+    ListLink link, prev, newLink;
+    int i;
+    SANITY_CHECK(self);
+
+    /* Shortcut if we're inserting at the beginning */
+    if (index == 0)
+    {
+	List_addFirst(self, value);
+	return;
+    }
+
+    /* Spin through the elements until we reach the nth element or the end */
+    prev = self -> head;
+    link = self -> head -> next;
+    for (i = 1; i < index; i++)
+    {
+	/* If we reach the end of the list then use addLast to do the insert */
+	if (link == NULL)
+	{
+	    List_addLast(self, value);
+	    return;
+	}
+
+	prev = link;
+	link = prev -> next;
+    }
+
+    /* Neither head nor tail */
+    newLink = ListLink_alloc(value);
+    newLink -> next = link;
+    prev -> next = newLink;
+}
+
+/* Replaces all occurences of a value in the receiver with newValue */
+void List_replaceAll(List self, void *value, void *newValue)
+{
+    ListLink link;
+    SANITY_CHECK(self);
+
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if (link -> value == value)
+	{
+	    link -> value = newValue;
+	}
+    }
+}
+
 
 /* Removes an value from the list */
 void *List_remove(List self, void *value)
@@ -266,6 +317,29 @@ int List_includes(List self, void *value)
 
     return 0;
 }
+
+/* Answers the index of the element (using pointer equality) 
+ * in the receiver, -1 if not present */
+int List_index(List self, void *value)
+{
+    ListLink link;
+    int index = 0;
+    SANITY_CHECK(self);
+
+    for (link = self -> head; link != NULL; link = link -> next)
+    {
+	if (link -> value == value)
+	{
+	    return index;
+	}
+
+	index++;
+    }
+
+    /* Not found */
+    return -1;
+}
+
 
 /* Answers the first element for which function returns non-zero */
 void *List_findFirst(List self, ListFindFunc function)
