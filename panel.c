@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.89 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.90 2004/11/24 11:39:25 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -909,15 +909,14 @@ static void update_send_button_sensitive(control_panel_t self)
     }
 
     /* Is there any message text? */
-    string = get_text(self);
-    if (string == NULL || *string == '\0')
-    {
-	XtSetSensitive(self -> send, False);
-	return;
+    if ((string = get_text(self)) == NULL) {
+        XtSetSensitive(self -> send, False);
+        return;
     }
 
-    /* Everything is ready for sending */
-    XtSetSensitive(self -> send, True);
+    /* Enable the send button iff there's something to send */
+    XtSetSensitive(self -> send, *string == '\0' ? False : True);
+    free(string);
 }
 
 /* Callback for changes in the text box */
