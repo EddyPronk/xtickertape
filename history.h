@@ -31,8 +31,8 @@
 
 ****************************************************************/
 
-#ifndef HISTORY_H
-#define HISTORY_H
+#ifndef _HISTORY_H
+#define _HISTORY_H
 
 /* The history type */
 typedef struct history *history_t;
@@ -71,4 +71,4 @@ int history_index(history_t self, message_t message);
 /* Kill off a thread */
 void history_kill_thread(history_t self, ScrollerWidget scroller, message_t message);
 
-#endif /* HISTORY_H */
+#endif /* _HISTORY_H */
