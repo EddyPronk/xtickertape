@@ -71,6 +71,13 @@
 *menuBar*threaded.set: True
 *menuBar*threaded.visibleWhenOff: True
 
+*menuBar*closePolicy.labelString: Close On Send
+*menuBar*closePolicy.mnemonic: c
+*menuBar*closePolicy.accelerator: Alt<Key>C
+*menuBar*closePolicy.acceleratorText: Alt+C
+*menuBar*closePolicy.set: True
+*menuBar*closePolicy.visibleWhenOff: True
+
 ! help menu labels
 *menuBar.helpMenu.labelString: Help
 *menuBar.helpMenu.mnemonic: H

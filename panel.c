@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.26 2000/01/28 04:56:57 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.27 2000/03/16 05:17:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -208,6 +208,10 @@ struct control_panel
 
     /* The message to which we are replying (0 if none) */
     char *message_id;
+
+    /* Non-zero indicates that the the control panel should be closed
+     * after a notification is sent */
+    int close_on_send;
 };
 
 
@@ -224,7 +228,8 @@ static void create_file_menu(control_panel_t self, Widget parent);
 static void help_about(Widget widget, control_panel_t self, XtPointer unused);
 static void create_help_menu(control_panel_t self, Widget parent);
 
-static void options_threaded(Widget w, control_panel_t self, XmToggleButtonCallbackStruct *i);
+static void options_threaded(Widget widget, XtPointer rock, XtPointer data);
+static void options_close_policy(Widget widget, XtPointer rock, XtPointer data);
 static void create_options_menu(control_panel_t self, Widget parent);
 
 static void configure_about_box(Widget shell, XtPointer rock, XConfigureEvent *event);
@@ -323,13 +328,22 @@ static void create_file_menu(control_panel_t self, Widget parent)
 	NULL);
 }
 
-/* This is called when the `threaded' toggle button is selected */
-static void options_threaded(
-    Widget widget,
-    control_panel_t self,
-    XmToggleButtonCallbackStruct *info)
+/* This is called when the `threaded' toggle button is changed */
+static void options_threaded(Widget widget, XtPointer rock, XtPointer data)
 {
+    control_panel_t self = (control_panel_t)rock;
+    XmToggleButtonCallbackStruct *info = (XmToggleButtonCallbackStruct *)data;
+
     history_set_threaded(tickertape_history(self -> tickertape), info -> set);
+}
+
+/* This is called when the `close_policy' toggle button is changed */
+static void options_close_policy(Widget widget, XtPointer rock, XtPointer data)
+{
+    control_panel_t self = (control_panel_t)rock;
+    XmToggleButtonCallbackStruct *info = (XmToggleButtonCallbackStruct *)data;
+
+    self -> close_on_send = info -> set;
 }
 
 /* Creates the `Options' menu */
@@ -343,10 +357,13 @@ static void create_options_menu(control_panel_t self, Widget parent)
 
     /* Create the `threaded' menu item */
     item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass, menu, NULL);
-    XtAddCallback(
-	item, XmNvalueChangedCallback,
-	(XtCallbackProc)options_threaded, (XtPointer)self);
+    XtAddCallback(item, XmNvalueChangedCallback, options_threaded, (XtPointer)self);
     history_set_threaded(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
+
+    /* Create a `close_policy' menu item */
+    item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass, menu, NULL);
+    XtAddCallback(item, XmNvalueChangedCallback, options_close_policy, (XtPointer)self);
+    self -> close_on_send = XmToggleButtonGetState(item);
 
     /* Create the menu's cascade button */
     XtVaCreateManagedWidget(
@@ -1491,8 +1508,11 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 	message_free(message);
     }
 
-    /* Close the box */
-    XtPopdown(self -> top);
+    /* Close the box if appropriate */
+    if (self -> close_on_send)
+    {
+	XtPopdown(self -> top);
+    }
 
     /* Shift focus back to the text field */
     XmProcessTraversal(self -> text, XmTRAVERSE_CURRENT);
