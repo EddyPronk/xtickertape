@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.2 2003/01/14 17:01:33 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.3 2003/01/14 17:18:46 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -70,8 +70,79 @@ static Atom encoding = None;
 #define MAX_CHAR_SIZE 2
 
 
+/* The code set name we'd expect for ISO10646-1 fonts */
+#define ISO10646 "ISO10646-1"
+
+/* The code set name that works for ISO10646-1 fonts */
+#define UCS2BE "UCS-2BE"
+
+
 /* The empty character */
 static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
+
+
+/* Guess the name of a font's code set */
+static char *guess_font_code_set(Display *display, XFontStruct *font)
+{
+    Atom atoms[2];
+    char *names[2];
+    char *string;
+    size_t length;
+
+    /* Look up the CHARSET_REGISTRY atom */
+    if (registry == None)
+    {
+	registry = XInternAtom(display, CHARSET_REGISTRY, False);
+    }
+
+    /* Look up the font's CHARSET_REGISTRY property */
+    if (! XGetFontProperty(font, registry, &atoms[0]))
+    {
+	return NULL;
+    }
+
+    /* Look up the CHARSET_ENCODING atom */
+    if (encoding == None)
+    {
+	encoding = XInternAtom(display, CHARSET_ENCODING, False);
+    }
+
+    /* Look up the font's CHARSET_ENCODING property */
+    if (! XGetFontProperty(font, encoding, &atoms[1]))
+    {
+	return NULL;
+    }
+
+    /* Stringify the names */
+    if (! XGetAtomNames(display, atoms, 2, names))
+    {
+	return NULL;
+    }
+
+    /* Allocate some memory to hold the code set name */
+    length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
+    if ((string = malloc(length)) == NULL)
+    {
+	XFree(names[0]);
+	XFree(names[1]);
+	return NULL;
+    }
+
+    /* Construct the code set name */
+    sprintf(string, "%s-%s", names[0], names[1]);
+
+    /* Clean up a bit */
+    XFree(names[0]);
+    XFree(names[1]);
+
+    /* HACK: Replace ISO10646-1 with UCS-2BE */
+    if (strcmp(string, ISO10646) == 0)
+    {
+	strcpy(string, UCS2BE);
+    }
+
+    return string;
+}
 
 
 /* Information used to display a UTF-8 string in a given font */
@@ -185,10 +256,7 @@ utf8_renderer_t utf8_renderer_alloc(
     utf8_renderer_t self;
     iconv_t cd;
     int dimension;
-    Atom atoms[2];
-    char *names[2];
     char *string;
-    size_t length;
     unsigned long value;
 
     /* Allocate room for the new utf8_renderer */
@@ -232,6 +300,7 @@ utf8_renderer_t utf8_renderer_alloc(
 	/* Yes.  Use it to create a conversion descriptor */
 	if ((cd = iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
 	{
+	    perror("iconv_open() failed");
 	    return self;
 	}
 
@@ -247,59 +316,19 @@ utf8_renderer_t utf8_renderer_alloc(
 	return self;
     }
 
-    /* Look up the CHARSET_REGISTRY atom */
-    if (registry == None)
-    {
-	registry = XInternAtom(display, CHARSET_REGISTRY, False);
-    }
 
-    /* Look up the font's CHARSET_REGISTRY property */
-    if (! XGetFontProperty(font, registry, &atoms[0]))
+    /* Guess the font's code set */
+    if ((string = guess_font_code_set(display, font)) == NULL)
     {
 	return self;
     }
-
-    /* Look up the CHARSET_ENCODING atom */
-    if (encoding == None)
-    {
-	encoding = XInternAtom(display, CHARSET_ENCODING, False);
-    }
-
-    /* Look up the font's CHARSET_ENCODING property */
-    if (! XGetFontProperty(font, encoding, &atoms[1]))
-    {
-	return self;
-    }
-
-    /* Stringify the names */
-    if (! XGetAtomNames(display, atoms, 2, names))
-    {
-	return self;
-    }
-
-    /* Allocate some memory to hold the code set name */
-    length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
-    if ((string = malloc(length)) == NULL)
-    {
-	XFree(names[0]);
-	XFree(names[1]);
-	free(self);
-	return NULL;
-    }
-
-    /* Construct the code set name */
-    sprintf(string, "%s-%s", names[0], names[1]);
-
-    /* Clean up a bit */
-    XFree(names[0]);
-    XFree(names[1]);
 
     /* Open a conversion descriptor */
     if ((cd = iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
     {
+	self -> dimension = 1;
 	free(string);
-	free(self);
-	return NULL;
+	return self;
     }
 
     /* Clean up some more */
@@ -698,10 +727,7 @@ utf8_encoder_t utf8_encoder_alloc(
     XmFontContext context;
     XmStringCharSet charset;
     XFontStruct *font = NULL;
-    Atom atoms[2];
-    char *names[2];
     char *string;
-    size_t length;
 
     /* Allocate memory for a utf8_encoder */
     if ((self = (utf8_encoder_t)malloc(sizeof(struct utf8_encoder))) == NULL)
@@ -733,6 +759,7 @@ utf8_encoder_t utf8_encoder_alloc(
     /* Look for a font */
     while (1)
     {
+	/* Get the next font from the font list */
 	if (! XmFontListGetNextFont(context, &charset, &font))
 	{
 	    perror("XmFontListGetNextFont() failed");
@@ -740,56 +767,18 @@ utf8_encoder_t utf8_encoder_alloc(
 	    return self;
 	}
 
-	/* Look up the CHARSET_REGISTRY atom */
-	if (registry == None)
-	{
-	    registry = XInternAtom(display, CHARSET_REGISTRY, False);
-	}
-
-	/* Look up the font's CHARSET_REGISTRY property */
-	if (! XGetFontProperty(font, registry, &atoms[0]))
+	/* Guess it's code set name */
+	if ((string = guess_font_code_set(display, font)) == NULL)
 	{
 	    continue;
 	}
-
-	/* Look up the CHARSET_ENCODING atom */
-	if (encoding == None)
-	{
-	    encoding = XInternAtom(display, CHARSET_ENCODING, False);
-	}
-
-	/* Look up the font's CHARSET_ENCODING property */
-	if (! XGetFontProperty(font, encoding, &atoms[1]))
-	{
-	    continue;
-	}
-
-	/* Stringify the names */
-	if (! XGetAtomNames(display, atoms, 2, names))
-	{
-	    continue;
-	}
-
-	/* Allocate some memory to hold the code set name */
-	length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
-	if ((string = malloc(length)) == NULL)
-	{
-	    XFree(names[0]);
-	    XFree(names[1]);
-	    XmFontListFreeFontContext(context);
-	    printf("4\n");
-	    return (iconv_t)-1;
-	}
-
-	/* Construct the code set name */
-	sprintf(string, "%s-%s", names[0], names[1]);
-
-	/* Clean up a bit */
-	XFree(names[0]);
-	XFree(names[1]);
 
 	/* Open a conversion descriptor */
-	self -> cd = iconv_open(UTF8_CODE, string);
+	if ((self -> cd = iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
+	{
+	    perror("iconv_open() failed");
+	}
+
 	free(string);
 
 	XmFontListFreeFontContext(context);
