@@ -28,10 +28,9 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: FileStreamTokenizer.c,v 1.8 1998/12/24 05:48:27 phelps Exp $";
+static const char cvsid[] = "$Id: FileStreamTokenizer.c,v 1.9 1999/05/06 00:34:30 phelps Exp $";
 #endif /* lint */
 
-#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include "FileStreamTokenizer.h"

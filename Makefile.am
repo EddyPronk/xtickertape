@@ -4,7 +4,6 @@ bin_SCRIPTS = show-url
 
 # xtickertape has many sources
 xtickertape_SOURCES = \
-	config.h \
 	sanity.h \
 	Tickertape.h Tickertape.c \
 	Control.h Control.c \

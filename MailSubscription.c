@@ -28,10 +28,9 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MailSubscription.c,v 1.5 1998/12/24 05:48:28 phelps Exp $";
+static const char cvsid[] = "$Id: MailSubscription.c,v 1.6 1999/05/06 00:34:31 phelps Exp $";
 #endif /* lint */
 
-#include <config.h>
 #include <stdlib.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>

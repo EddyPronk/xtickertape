@@ -28,10 +28,9 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: StringBuffer.c,v 1.5 1998/12/24 05:48:29 phelps Exp $";
+static const char cvsid[] = "$Id: StringBuffer.c,v 1.6 1999/05/06 00:34:33 phelps Exp $";
 #endif /* lint */
 
-#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "StringBuffer.h"
