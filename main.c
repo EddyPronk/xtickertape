@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.26 1998/10/15 09:11:48 phelps Exp $ */
+/* $Id: main.c,v 1.27 1998/10/15 09:25:26 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,7 +84,6 @@ static void Click(Widget widget, XtPointer ignored, XtPointer context)
 /* Registers an ElvinConnection with the Xt event loop */
 static void *RegisterInput(int fd, void *callback, void *rock)
 {
-    fprintf(stderr, "*** RegisterInput %d\n", fd);
     return (void *) XtAppAddInput(
 	context,
 	fd, (XtPointer) XtInputReadMask,
@@ -94,7 +93,6 @@ static void *RegisterInput(int fd, void *callback, void *rock)
 /* Unregisters an ElvinConnection with the Xt event loop */
 static void UnregisterInput(void *rock)
 {
-    fprintf(stderr, "*** UnregisterInput\n");
     XtRemoveInput((XtInputId) rock);
 }
 
