@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.20 2003/01/14 11:02:50 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.21 2003/01/14 12:16:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -100,32 +100,54 @@ struct code_set_info
 };
 
 /* Answers the statistics to use for a given character in the font */
-static XCharStruct *per_char(XFontStruct *font, int ch)
+static XCharStruct *per_char(
+    XFontStruct *font,
+    unsigned char byte1,
+    unsigned char byte2)
 {
-    unsigned int first = font -> min_char_or_byte2;
-    unsigned int last = font -> max_char_or_byte2;
     XCharStruct *info;
 
-    /* Is the character present? */
-    if (first <= ch && ch <= last)
+    /* Fixed-width font? */
+    if (font -> per_char == NULL)
     {
-	info = font -> per_char + ch - first;
+	return &font -> max_bounds;
+    }
 
-	/* If the bounding box is non-zero then return the info */
+    /* Is the character present? */
+    if (font -> min_byte1 <= byte1 && byte1 <= font -> max_byte1 &&
+	font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
+    {
+	/* Look up the character info */
+	info = font -> per_char +
+	    (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
+	    byte2 - font -> min_char_or_byte2;
+
+	/* If the bounding box is non-zero then use it */
 	if (info -> width != 0)
 	{
 	    return info;
 	}
     }
 
-    /* Is the default character defined? */
-    if (first <= font -> default_char && font -> default_char <= last)
+    /* Is the default charater present? */
+    byte1 = font -> default_char >> 8;
+    byte2 = font -> default_char & 0xFF;
+    if (font -> min_byte1 <= byte1 && byte1 <= font -> max_byte1 &&
+	font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
     {
-	/* Then use it */
-	return font -> per_char + font -> default_char - first;
+	/* Look up the character info */
+	info = font -> per_char +
+	    (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
+	    byte2 - font -> min_char_or_byte2;
+
+	/* If the bounding box is non-zero then use it */
+	if (info -> width != 0)
+	{
+	    return info;
+	}
     }
 
-    /* Fall back on a 0-width character */
+    /* If all else fails then use an empty character */
     return &empty_char;
 }
 
@@ -240,12 +262,6 @@ static void measure_string(
     /* Count the number of bytes in the string */
     in_length = strlen(string);
 
-    /* Reset the iconv() converter */
-    if (code_set_info_iconv(self, NULL, NULL, NULL, NULL) == (size_t)-1)
-    {
-	abort();
-    }
-
     /* Keep going until we get the whole string */
     is_first = True;
     while (in_length != 0)
@@ -272,7 +288,7 @@ static void measure_string(
 	    if (is_first)
 	    {
 		is_first = False;
-		info = per_char(self -> font, *point);
+		info = per_char(self -> font, 0, *point);
 		lbearing = info -> lbearing;
 		rbearing = info -> rbearing;
 		width = info -> width;
@@ -282,7 +298,7 @@ static void measure_string(
 	    /* Adjust for the rest of the string */
 	    while (point < (unsigned char *)out_point)
 	    {
-		info = per_char(self -> font, *point);
+		info = per_char(self -> font, 0, *point);
 		lbearing = MIN(lbearing, width + (long)info -> lbearing);
 		rbearing = MAX(rbearing, width + (long)info -> rbearing);
 		width += (long)info -> width;
@@ -297,7 +313,7 @@ static void measure_string(
 	    if (is_first)
 	    {
 		is_first = False;
-		info = per_char(self -> font, (point -> byte1 << 8) | point -> byte2);
+		info = per_char(self -> font, point -> byte1, point -> byte2);
 		lbearing = info -> lbearing;
 		rbearing = info -> rbearing;
 		width = info -> width;
@@ -307,7 +323,7 @@ static void measure_string(
 	    /* Adjust for the rest of the string */
 	    while (point < (XChar2b *)out_point)
 	    {
-		info = per_char(self -> font, (point -> byte1 << 8) | point -> byte2);
+		info = per_char(self -> font, point -> byte1, point -> byte2);
 		lbearing = MIN(lbearing, width + (long)info -> lbearing);
 		rbearing = MAX(rbearing, width + (long)info -> rbearing);
 		width += (long)info -> width;
@@ -547,7 +563,7 @@ static void draw_string(
 	    first = (unsigned char *)buffer;
 	    while (first < (unsigned char *)out_point)
 	    {
-		info = per_char(cs_info -> font, *first);
+		info = per_char(cs_info -> font, 0, *first);
 
 		/* Skip anything to the left of the bounding box */
 		if (left + info -> rbearing < bbox -> x)
@@ -562,7 +578,7 @@ static void draw_string(
 		    right = left;
 		    while (last < (unsigned char *)out_point)
 		    {
-			info = per_char(cs_info -> font, *last);
+			info = per_char(cs_info -> font, 0, *last);
 
 			if (right + info -> lbearing < bbox -> x + bbox -> width)
 			{
@@ -601,7 +617,7 @@ static void draw_string(
 	    first = (XChar2b *)buffer;
 	    while (first < (XChar2b *)out_point)
 	    {
-		info = per_char(cs_info -> font, (first -> byte1 << 8) | first -> byte2);
+		info = per_char(cs_info -> font, first -> byte1, first -> byte2);
 
 		if (left + info -> rbearing < bbox -> x)
 		{
@@ -615,7 +631,7 @@ static void draw_string(
 		    right = left;
 		    while (last < (XChar2b *)out_point)
 		    {
-			info = per_char(cs_info -> font, (last -> byte1 << 8) | last -> byte2);
+			info = per_char(cs_info -> font, last -> byte1, last -> byte2);
 
 			if (right + info -> lbearing < bbox -> x + bbox -> width)
 			{
@@ -823,7 +839,7 @@ message_view_t message_view_alloc(
     self -> noon_width = sizes.width;
 
     /* Figure out how much to indent the message */
-    info = per_char(cs_info -> font, ' ');
+    info = per_char(cs_info -> font, 0, ' ');
     self -> indent_width = info -> width * 2;
 
     /* Measure the message's strings */
