@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.6 1998/05/16 05:49:11 phelps Exp $ */
+/* $Id: Message.c,v 1.7 1998/10/16 06:02:50 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,12 +18,24 @@ struct Message_t
 #ifdef SANITY
     char *sanity_check;
 #endif /* SANITY */
+
+    /* The receiver's group (tickertape) */
     char *group;
+
+    /* The receiver's user */
     char *user;
+
+    /* The receiver's string (tickertext) */
     char *string;
+
+    /* The receiver's MIME type information */
     char *mimeType;
+
+    /* The receiver's MIME arg */
     char *mimeArgs;
-    unsigned long timeout; /* in seconds */
+
+    /* The lifetime of the message in seconds */
+    unsigned long timeout;
 };
 
 
