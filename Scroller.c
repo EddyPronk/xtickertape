@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.84 2000/04/04 05:56:09 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.85 2000/04/04 07:00:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -346,11 +346,8 @@ static void CreateGC(ScrollerWidget self)
     values.font = self -> scroller.font -> fid;
     values.background = self -> core.background_pixel;
     values.foreground = self -> core.background_pixel;
-    values.graphics_exposures = True;
     self -> scroller.backgroundGC = XCreateGC(
-	XtDisplay(self), XtWindow(self),
-	GCFont | GCBackground | GCForeground | GCGraphicsExposures,
-	&values);
+	XtDisplay(self), XtWindow(self), GCFont | GCBackground | GCForeground, &values);
     self -> scroller.gc = XCreateGC(
 	XtDisplay(self), XtWindow(self), GCFont | GCBackground, &values);
 }
@@ -562,15 +559,12 @@ static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width
 {
     XGCValues values;
 
-#ifdef USE_PIXMAP
     /* Try to reuse the clip mask if at all possible */
     if (self -> scroller.clip_width == width)
     {
-#endif
 	values.foreground = foreground;
 	values.clip_x_origin = x;
 	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground | GCClipXOrigin, &values);
-#ifdef USE_PIXMAP
     }
     else
     {
@@ -589,7 +583,6 @@ static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width
 	values.foreground = foreground;
 	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     }
-#endif
 
     return self -> scroller.gc;
 }
@@ -1160,9 +1153,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     XFillRectangle(
 	display, self -> scroller.pixmap, self -> scroller.backgroundGC,
 	x, y, width, height);
-#else
-    /* Don't need to do this in the window? */
-#endif /* USE_PIXMAP */
+#endif
 
     /* Draw each visible glyph */
     while (offset < end)
@@ -1206,7 +1197,6 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 
 	XClipBox(region, &rectangle);
 	Paint(self, rectangle.x, 0, rectangle.width, self -> core.height);
-/*	printf("."); fflush(stdout);*/
     }
     else
     {
