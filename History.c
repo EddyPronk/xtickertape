@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.23 2001/07/20 07:44:20 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.24 2001/07/20 08:10:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -66,9 +66,6 @@ static const char cvsid[] = "$Id: History.c,v 1.23 2001/07/20 07:44:20 phelps Ex
 # define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
-
-/* Define this to debug the delta queue */
-/* #define DEBUG_DELTA_QUEUE 1 */
 
 /*
  *
@@ -868,6 +865,12 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    self -> history.message_views[i - 1] = view;
 	}
 
+	/* Update the selection index if we've just moved it */
+	if (self -> history.selection_index <= index)
+	{
+	    self -> history.selection_index--;
+	}
+
 	/* Move the messages upwards as a block */
 	if (gc != None)
 	{
@@ -940,13 +943,6 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	message_view_get_sizes(self -> history.message_views[i], &sizes);
 	width = MAX(width, sizes.width);
 	height += self -> history.line_height;
-    }
-
-    /* Update the selection index */
-    if (self -> history.selection_index != (unsigned int)-1 &&
-	! (index < self -> history.selection_index))
-    {
-	self -> history.selection_index--;
     }
 
     /* Update the widget's dimensions */
