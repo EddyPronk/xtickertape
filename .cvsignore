@@ -1,5 +1,6 @@
 *.xpm
 .deps
+.pure
 Makefile
 Makefile.in
 aclocal.m4
