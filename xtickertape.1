@@ -8,6 +8,7 @@ xtickertape \- scrolling text chat tool
 .nf
 xtickertape [-e elvin-url] [--elvin=elvin-url]
             [-S scope] [--scope=scope]
+            [-p http-proxy] [--proxy=http-proxy]
             [-u user] [--user=user]
             [-D domain] [--domain=domain]
             [-G groups-file] [--groups=groups-file]
@@ -28,6 +29,14 @@ Connect to the elvin server specified by \fIelvin-url\fP.
 .TP
 .BI --scope= scope
 Connect to an elvin server advertising \fIscope\fP.
+.TP
+.B -p \fIhttp-proxy\fP
+.TP
+.BI --proxy= http-proxy
+Connect via the proxy server \fIhttp-proxy\fP, which should be of the
+form \fBhost\fR:\fBport\fR, or \fBuser\fR:\fBpassword\fR@\fBhost\fR:\fBport\fR
+if the proxy server requires a password.  This value overrides the
+value of the \fIhttp_proxy\fP environment variable.
 .TP
 .B -u \fIuser\fP
 .TP
@@ -249,10 +258,10 @@ command-line, the
 .B DOMAIN
 environment variable is checked before \*(xt goes mucking about with
 fully-qualified domain names.  The
-.B ELVIN_URL
-can be used to specify an elvin server to connect to if not specified
-on the command-line.
-
+.B http_proxy
+variable can be used to specify an http proxy server to connect through
+for those who live behind paranoid firewalls.  See the \fI--proxy\fP
+option above for the format of its value.
 .SH FILES
 .PP
 .TP

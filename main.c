@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.89 2000/10/10 03:58:27 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.90 2000/10/26 05:20:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -62,7 +62,7 @@ static struct option long_options[] =
 {
     { "elvin", required_argument, NULL, 'e' },
     { "scope", required_argument, NULL, 'S' },
-    { "port", required_argument, NULL, 'p' },
+    { "proxy", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
     { "config", required_argument, NULL, 'c' },
@@ -100,6 +100,7 @@ static void usage(int argc, char *argv[])
 	"usage: %s [OPTION]...\n"
 	"  -e elvin-url,   --elvin=elvin-url\n"
 	"  -S scope,       --scope=scope\n"
+	"  -p http-proxy,  --proxy=http-proxy\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
 	"  -c config-file, --config=config-file\n"
@@ -179,6 +180,7 @@ static void parse_args(
     elvin_error_t error)
 {
     int choice;
+    char *http_proxy = NULL;
 
     /* Initialize arguments to sane values */
     *user_return = NULL;
@@ -191,7 +193,7 @@ static void parse_args(
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:S:u:D:c:G:U:vh", long_options,
+	"e:S:p:u:D:c:G:U:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -218,6 +220,13 @@ static void parse_args(
 		    exit(1);
 		}
 
+		break;
+	    }
+
+	    /* --proxy= or -p */
+	    case 'p':
+	    {
+		http_proxy = optarg;
 		break;
 	    }
 
@@ -289,6 +298,18 @@ static void parse_args(
     if (*domain_return == NULL)
     {
 	*domain_return = get_domain();
+    }
+
+    /* If no proxy set then check the environment */
+    if (http_proxy == NULL)
+    {
+	http_proxy = getenv("http_proxy");
+    }
+
+    /* If we now have a proxy, then set its property */
+    if (http_proxy != NULL)
+    {
+	elvin_handle_set_property(handle, "http.proxy", http_proxy, NULL);
     }
 
     return;
