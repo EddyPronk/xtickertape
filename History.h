@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.6 2001/07/21 01:12:35 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.7 2001/08/25 08:51:23 phelps Exp $";
 #endif /* lint */
 
 
@@ -47,6 +47,7 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.6 2001/07/21 01:12:35 ph
  Name		     Class		RepType		Default Value
  ----		     -----		-------		-------------
  font		     Font		XFontStruct *	XtDefaultFont
+ timestampPixel	     TimestampPixel	Pixel		Black
  groupPixel	     GroupPixel		Pixel		Blue
  userPixel	     UserPixel		Pixel		Green
  stringPixel	     StringPixel	Pixel		Red
@@ -77,6 +78,12 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.6 2001/07/21 01:12:35 ph
 
 #ifndef XtNattachmentCallback
 # define XtNattachmentCallback "attachmentCallback"
+#endif
+#ifndef XtNtimestampPixel
+# define XtNtimestampPixel "timestampPixel"
+#endif
+#ifndef XtCTimestampPixel
+# define XtCTimestampPixel "TimestampPixel"
 #endif
 #ifndef XtNgroupPixel
 # define XtNgroupPixel "groupPixel"

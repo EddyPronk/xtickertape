@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.15 2001/07/22 02:31:28 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.16 2001/08/25 08:51:23 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -79,6 +79,9 @@ typedef struct
 
     /* The font to use when displaying the history messages */
     XFontStruct *font;
+
+    /* The color to use when drawing the timestamp */
+    Pixel timestamp_pixel;
 
     /* The color to use when drawing group strings */
     Pixel group_pixel;
