@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.2 2002/10/04 16:43:47 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.3 2002/10/04 17:19:57 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -65,7 +65,7 @@ static char hex[16] =
 /* A table of characters which should be escaped */
 static char do_esc[128] =
 {
-    1, 0, 1, 0,  1, 0, 1, 1,  1, 1, 1, 0,  0, 0, 0, 0,  /* 0x20 */
+    1, 1, 1, 1,  1, 0, 1, 1,  1, 1, 1, 0,  0, 0, 0, 0,  /* 0x20 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1,  1, 0, 1, 0,  /* 0x30 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x40 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  /* 0x50 */
@@ -123,14 +123,8 @@ static void append_url(char *url)
 	    return;
 	}
 
-	/* Escape interesting shell characters */
+	/* Escape other stuff that can confuse the shell */
 	if (ch < 32 || ch > 127 || do_esc[ch - 32])
-	{
-	    append_char('\\');
-	    append_char(ch);
-	}
-	/* Escape other stuff that can confuse netscape */
-	else if (ch == ' ' || ch == ')' || ch == ',')
 	{
 	    append_char('%');
 	    append_char(hex[(ch >> 4) & 0xf]);
