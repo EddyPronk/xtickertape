@@ -1,3 +1,17 @@
+Overview of changes in xtickertape-1.6.2
+
+* The widths of the gaps between messages are now based on the size of 
+  the Scroller's font instead of being completely arbitrary.
+
+* Plugged a memory leak -- one must release ones notifications once
+  one has finished playing with them
+
+* Further tweaks of the Scroller resulting in rather dramatic
+  reduction of X network traffic when there are lots of messages on
+  the scroller.
+
+* Partial major naming reform.
+
 Overview of changes in xtickertape-1.6.1
 
 * Fixed a bug in the history stuff which could crash xtickertape when
