@@ -35,24 +35,26 @@
 #define GROUPS_PARSER_H
 
 #ifndef lint
-static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.1 1999/10/02 13:28:40 phelps Exp $";
+static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.2 1999/10/02 16:02:58 phelps Exp $";
 #endif /* lint */
 
 /* The groups parser data type */
 typedef struct groups_parser *groups_parser_t;
 
-#include "Subscription.h"
+/* The groups_parser callback type */
+typedef int (*groups_parser_callback_t)(
+    void *rock, char *name,
+    int in_menu, int has_nazi,
+    int min_time, int max_time);
 
-/* Allocates and initializes a new groups_parser_t */
-groups_parser_t groups_parser_alloc();
+/* Allocates and initializes a new groups file parser */
+groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag);
 
 /* Frees the resources consumed by the receiver */
 void groups_parser_free(groups_parser_t self);
 
-/* Parses the given file into an array of subscriptions */
-int groups_parser_parse(groups_parser_t self, char *tag, char *buffer, ssize_t length);
-
-/* Answers the subscriptions that we've parsed (or NULL if an error occurred */
-Subscription *groups_parser_get_subscriptions(groups_parser_t self);
+/* Parses the given file into an array of subscriptions.  A zero-
+ * length buffer is interpreted as an end of input marker */
+int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length);
 
 #endif /* GROUPS_PARSER_H */

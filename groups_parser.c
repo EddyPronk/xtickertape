@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.1 1999/10/02 13:28:39 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.2 1999/10/02 16:02:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -47,6 +47,15 @@ typedef int (*lexer_state_t)(groups_parser_t self, int ch);
 /* The structure of a groups_parser */
 struct groups_parser
 {
+    /* The callback for when we've completed a subscription entry */
+    groups_parser_callback_t callback;
+
+    /* The client data for the callback */
+    void *rock;
+
+    /* The tag for error messages */
+    char *tag;
+
     /* The buffer in which the token is assembled */
     char *token;
 
@@ -55,15 +64,6 @@ struct groups_parser
 
     /* The end of the token buffer */
     char *token_end;
-
-    /* The tag for error messages */
-    char *tag;
-
-    /* The list of subscriptions */
-    Subscription *subscriptions;
-
-    /* The number of subscriptions thus far */
-    int subscription_count;
 
     /* The current lexical state */
     lexer_state_t lexer_state;
@@ -101,22 +101,20 @@ static int lex_bad_time(groups_parser_t self, int ch);
 static int lex_superfluous(groups_parser_t self, int ch);
 
 
-/* Constructs a subscription from the given information and appends it
- * to the end of the array */
+/* Calls the callback with the given information */
 static int accept_subscription(groups_parser_t self)
 {
-    Subscription subscription = Subscription_alloc(
-	self -> name,
-	"HELLO DOLLY",
-	self -> in_menu,
-	self -> has_nazi,
-	self -> min_time,
-	self -> max_time,
-	NULL,
-	NULL);
+    /* Make sure there is a callback */
+    if (self -> callback == NULL)
+    {
+	return 0;
+    }
 
-    Subscription_debug(subscription);
-    return 0;
+    /* Call it with the information */
+    return (self -> callback)(
+	self -> rock, self -> name,
+	self -> in_menu, self -> has_nazi,
+	self -> min_time, self -> max_time);
 }
 
 /* Prints a consistent error message */
@@ -156,7 +154,6 @@ static int lex_start(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	printf("<EOF>\n");
 	return 0;
     }
 
@@ -554,7 +551,7 @@ static int lex_superfluous(groups_parser_t self, int ch)
 
 
 /* Allocates and initializes a new groups file parser */
-groups_parser_t groups_parser_alloc()
+groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag)
 {
     groups_parser_t self;
 
@@ -572,11 +569,12 @@ groups_parser_t groups_parser_alloc()
     }
 
     /* Initialize everything else to sane values */
+    self -> callback = callback;
+    self -> rock = rock;
+    self -> tag = tag;
     self -> token_pointer = self -> token;
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
     self -> lexer_state = lex_start;
-    self -> subscriptions = NULL;
-    self -> subscription_count = 0;
     self -> line_num = 1;
     return self;
 }
@@ -588,13 +586,17 @@ void groups_parser_free(groups_parser_t self)
     free(self);
 }
 
-/* Parses the given file into an array of subscriptions */
-int groups_parser_parse(groups_parser_t self, char *tag, char *buffer, int length)
+/* Parses the given file into an array of subscriptions.  A zero-
+ * length buffer is interpreted as an end of input marker */
+int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length)
 {
     char *pointer;
 
-    /* Initialize the receiver's state to do some parsing */
-    self -> tag = tag;
+    /* Length of 0 indicates EOF */
+    if (length == 0)
+    {
+	return (self -> lexer_state)(self, EOF);
+    }
 
     /* Parse the buffer */
     for (pointer = buffer; pointer < buffer + length; pointer++)
@@ -608,17 +610,3 @@ int groups_parser_parse(groups_parser_t self, char *tag, char *buffer, int lengt
     return 0;
 }
 
-/* Answers the subscriptions that we've parsed (or NULL if an error occurred */
-Subscription *groups_parser_get_subscriptions(groups_parser_t self)
-{
-    /* Send an EOF through the lexer to clean up */
-    if ((self -> lexer_state)(self, EOF) < 0)
-    {
-	return NULL;
-    }
-
-    /* Return the resulting array */
-    self -> subscriptions = NULL;
-    self -> subscription_count = 0;
-    return NULL;
-}
