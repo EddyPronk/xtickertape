@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.27 1999/09/27 05:09:08 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.28 1999/10/07 03:42:58 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -77,6 +77,11 @@ typedef struct
     Position step;
 
     /* Private state */
+
+    /* The timer used to do the scrolling */
+    XtIntervalId timer;
+
+    /* True if there are no messages to scroll */
     Bool is_stopped;
 
     /* True if we're dragging the scroller around */

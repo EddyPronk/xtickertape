@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.72 1999/10/04 12:47:34 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.73 1999/10/07 03:42:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -368,37 +368,37 @@ static Pixel *CreateFadedColors(
 
 
 
-/* Starts the clock if it isn't already going */
-static void StartClock(ScrollerWidget self)
+/* Re-enables the timer */
+static void EnableClock(ScrollerWidget self)
 {
-    if (self -> scroller.is_stopped)
+    if ((self -> scroller.timer == 0) && (self -> scroller.step != 0))
     {
 #ifdef DEBUG
-	fprintf(stderr, "restarting\n");
-#endif /* DEBUG */
-	fflush(stderr);
-	self -> scroller.is_stopped = False;
+	fprintf(stderr, "clock enabled\n");
+#endif /* DEBUG */	
 	SetClock(self);
     }
 }
 
-/* Stops the clock */
-static void StopClock(ScrollerWidget self)
+/* Temporarily disables the timer */
+static void DisableClock(ScrollerWidget self)
 {
+    if (self -> scroller.timer != 0)
+    {
 #ifdef DEBUG
-    fprintf(stderr, "stalling\n");
+	fprintf(stderr, "clock disabled\n");
 #endif /* DEBUG */
-    fflush(stderr);
-    self -> scroller.is_stopped = True;
+	ScStopTimer(self, self -> scroller.timer);
+	self -> scroller.timer = 0;
+    }
 }
+
 
 /* Sets the timer if the clock isn't stopped */
 static void SetClock(ScrollerWidget self)
 {
-    if (! self -> scroller.is_stopped)
-    {
-	ScStartTimer(self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
-    }
+    self -> scroller.timer = ScStartTimer(
+	self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
 }
 
 
@@ -408,7 +408,8 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     ScrollerWidget self = (ScrollerWidget) widget;
 
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
-    if ((! self -> scroller.is_dragging) && (self -> scroller.step != 0))
+    self -> scroller.timer = 0;
+    if (self -> scroller.step != 0)
     {
 	scroll(self, self -> scroller.step);
 	Redisplay((Widget)self, NULL, 0);
@@ -664,6 +665,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     holder = glyph_holder_alloc(gap, self -> core.width);
 
     /* Initialize the queue to only contain the gap with 0 offsets */
+    self -> scroller.timer = 0;
     self -> scroller.is_stopped = True;
     self -> scroller.is_dragging = False;
     self -> scroller.left_holder = holder;
@@ -939,7 +941,8 @@ static void adjust_left(ScrollerWidget self)
 	self -> scroller.left_offset = 0;
 	self -> scroller.right_offset = 0;
 	self -> scroller.left_holder -> width = self -> core.width;
-	StopClock(self);
+	self -> scroller.is_stopped = True;
+	DisableClock(self);
     }
 }
 
@@ -963,7 +966,8 @@ static void adjust_right(ScrollerWidget self)
 	self -> scroller.left_offset = 0;
 	self -> scroller.right_offset = 0;
 	self -> scroller.right_holder -> width = self -> core.width;
-	StopClock(self);
+	self -> scroller.is_stopped = True;
+	DisableClock(self);
     }
 }
 
@@ -1300,7 +1304,9 @@ static int pre_action(ScrollerWidget self, XEvent *event)
     {
 	if (self -> scroller.is_dragging)
 	{
+	    /* Restart the timer */
 	    self -> scroller.is_dragging = False;
+	    EnableClock(self);
 	    return -1;
 	}
     }
@@ -1632,7 +1638,15 @@ static void faster(Widget widget, XEvent *event)
 	return;
     }
 
-    self -> scroller.step++;
+    /* Make sure the clock runs if we're scrolling and not if we're stationary */
+    if (++self -> scroller.step != 0)
+    {
+	EnableClock(self);
+    }
+    else
+    {
+	DisableClock(self);
+    }
 }
 
 /* Scroll more slowly */
@@ -1646,7 +1660,15 @@ static void slower(Widget widget, XEvent *event)
 	return;
     }
 
-    self -> scroller.step--;
+    /* Make sure the clock runs if we're scrolling and not if we're stationary */
+    if (--self -> scroller.step != 0)
+    {
+	EnableClock(self);
+    }
+    else
+    {
+	DisableClock(self);
+    }
 }
 
 /* Someone has pressed a mouse button */
@@ -1690,11 +1712,8 @@ static void drag(Widget widget, XEvent *event)
     /* Ok, we're definitely dragging */
     self -> scroller.is_dragging = True;
 
-    /* If the scroller is stopped then do nothing */
-    if (self -> scroller.is_stopped)
-    {
-	return;
-    }
+    /* Disable the timer until the drag is done */
+    DisableClock(self);
 
     /* Otherwise scroll by the difference */
     scroll(self, self -> scroller.last_x - motion_event -> x);
@@ -1748,7 +1767,11 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     }
 
     /* Make sure the clock is running */
-    StartClock(self);
+    if (self -> scroller.is_stopped)
+    {
+	self -> scroller.is_stopped = False;
+	EnableClock(self);
+    }
 }
 
 /* Callback for expiring glyphs */
