@@ -35,7 +35,7 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.4 1999/10/04 07:04:41 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.5 1999/10/04 11:54:05 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
@@ -101,6 +101,6 @@ void usenet_parser_free(usenet_parser_t self);
 /* Parses the given buffer, calling callbacks for each usenet
  * subscription expression that is successfully read.  A zero-length
  * buffer is interpreted as an end-of-input marker */
-int usenet_parser_parse(usenet_parser_t self, char *buffer, ssize_t length);
+int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length);
 
 #endif /* USENET_PARSER_H */

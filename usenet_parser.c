@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.6 1999/10/04 10:54:01 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.7 1999/10/04 11:54:05 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -165,7 +165,7 @@ static int accept_expression(
     {
 	/* Grow the expressions array */
 	struct usenet_expr *new_array;
-	ssize_t length = (self -> expr_end - self -> expressions) * 2;
+	size_t length = (self -> expr_end - self -> expressions) * 2;
 
 	/* Try to allocate more memory */
 	if ((new_array = (struct usenet_expr *)realloc(
@@ -868,7 +868,7 @@ void usenet_parser_free(usenet_parser_t self)
 /* Parses the given buffer, calling callbacks for each usenet
  * subscription expression that is successfully read.  A zero-length
  * buffer is interpreted as an end-of-input marker */
-int usenet_parser_parse(usenet_parser_t self, char *buffer, ssize_t length)
+int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length)
 {
     char *pointer;
 
