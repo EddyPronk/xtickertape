@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.123 2001/07/10 02:19:26 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.124 2001/07/17 01:18:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -420,6 +420,7 @@ static void glyph_tick(XtPointer closure, XtIntervalId *id)
 	if (! self -> is_expired)
 	{
 	    /* FIX THIS: we can do this ourselves */
+	    self -> is_expired = True;
 	    ScGlyphExpired(self -> widget, self);
 	}
 
