@@ -1,10 +1,11 @@
-/* $Id: Control.c,v 1.6 1997/05/29 03:40:31 phelps Exp $ */
+/* $Id: Control.c,v 1.7 1997/05/31 03:42:23 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
 
+#include "sanity.h"
 #include "Control.h"
 #include "Subscription.h"
 
@@ -18,6 +19,12 @@
 #include <X11/Xaw/SmeBSB.h>
 #include <X11/Xaw/AsciiText.h>
 #include <X11/Xaw/MenuButton.h>
+
+#ifdef SANITY
+static char *sanity_value = "ControlPanel";
+static char *sanity_freed = "Freed ControlPanel";
+#endif /* SANITY */
+
 
 char *timeouts[] =
 {
@@ -41,6 +48,9 @@ static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
 /* The pieces of the control panel */
 struct ControlPanel_t
 {
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
     ControlPanelCallback callback;
     void *context;
     Widget top;
@@ -117,6 +127,8 @@ static void setMBValue(Widget item, XtPointer context, XtPointer ignored)
 static Widget createUserBox(ControlPanel self, Widget parent)
 {
     Widget form, label;
+
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"userForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
@@ -168,10 +180,10 @@ static void createGroupMenuItem(Subscription subscription, Widget context[])
 static Widget createGroupMenu(ControlPanel self, Widget parent)
 {
     Widget context[2];
+    Widget menu;
 
-    Widget menu = XtVaCreatePopupShell(
-	"groupMenu", simpleMenuWidgetClass, parent,
-	NULL);
+    SANITY_CHECK(self);
+    menu = XtVaCreatePopupShell("groupMenu", simpleMenuWidgetClass, parent, NULL);
     context[0] = parent;
     context[1] = menu;
     List_doWith(self -> subscriptions, createGroupMenuItem, context);
@@ -183,6 +195,7 @@ static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 {
     Widget form, label;
 
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"groupForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
@@ -222,9 +235,10 @@ static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 static Widget createTimeoutMenu(ControlPanel self, Widget parent)
 {
     char **timeout;
-    Widget menu = XtVaCreatePopupShell(
-	"timeoutMenu", simpleMenuWidgetClass, parent,
-	NULL);
+    Widget menu;
+
+    SANITY_CHECK(self);
+    menu = XtVaCreatePopupShell("timeoutMenu", simpleMenuWidgetClass, parent, NULL);
     
     for (timeout = self -> timeouts; *timeout != NULL; timeout++)
     {
@@ -242,6 +256,7 @@ static Widget createTimeoutBox(ControlPanel self, Widget parent, Widget left)
 {
     Widget form, label;
 
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"timeoutForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
@@ -281,6 +296,7 @@ static Widget createTopBox(ControlPanel self, Widget parent)
 {
     Widget form, widget;
 
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"topForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
@@ -298,6 +314,8 @@ static Widget createTopBox(ControlPanel self, Widget parent)
 static Widget createTextBox(ControlPanel self, Widget parent)
 {
     Widget form, label;
+
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"textForm", formWidgetClass, parent,
 	XtNborderWidth, 0,
@@ -329,6 +347,7 @@ static Widget createBottomBox(ControlPanel self, Widget parent)
 {
     Widget form, button;
 
+    SANITY_CHECK(self);
     form = XtVaCreateManagedWidget(
 	"bottomForm", formWidgetClass, parent,
 	XtNtop, XawChainTop,
@@ -378,9 +397,10 @@ static Widget createBottomBox(ControlPanel self, Widget parent)
 /* Constructs the entire control panel */
 static Widget createControlPanelPopup(ControlPanel self, Widget parent)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"paned", panedWidgetClass, parent,
-	NULL);
+    Widget box;
+
+    SANITY_CHECK(self);
+    box = XtVaCreateManagedWidget("paned", panedWidgetClass, parent, NULL);
     createTopBox(self, box);
     createTextBox(self, box);
     createBottomBox(self, box);
@@ -390,24 +410,28 @@ static Widget createControlPanelPopup(ControlPanel self, Widget parent)
 /* Answers the receiver's group */
 char *getGroup(ControlPanel self)
 {
+    SANITY_CHECK(self);
     return getLabel(self -> group);
 }
 
 /* Sets the receiver's group */
 void setGroup(ControlPanel self, char *group)
 {
+    SANITY_CHECK(self);
     setLabel(self -> group, group);
 }
 
 /* Answers the receiver's user */
 char *getUser(ControlPanel self)
 {
+    SANITY_CHECK(self);
     return getString(self -> user);
 }
 
 /* Sets the receiver's user */
 void setUser(ControlPanel self, char *user)
 {
+    SANITY_CHECK(self);
     setString(self -> user, user);
 }
 
@@ -415,18 +439,21 @@ void setUser(ControlPanel self, char *user)
 /* Answers the receiver's text */
 char *getText(ControlPanel self)
 {
+    SANITY_CHECK(self);
     return getString(self -> text);
 }
 
 /* Sets the receiver's text */
 void setText(ControlPanel self, char *text)
 {
+    SANITY_CHECK(self);
     setString(self -> text, text);
 }
 
 /* Answers the receiver's timeout */
 int getTimeout(ControlPanel self)
 {
+    SANITY_CHECK(self);
     return atoi(getLabel(self -> timeout));
 }
 
@@ -435,6 +462,7 @@ void setTimeout(ControlPanel self, int timeout)
 {
     char buffer[80];
 
+    SANITY_CHECK(self);
     sprintf(buffer, "%d", timeout);
     setLabel(self -> timeout, buffer);
 }
@@ -446,6 +474,8 @@ void setTimeout(ControlPanel self, int timeout)
 static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
 {
     ControlPanel self = (ControlPanel) context;
+    SANITY_CHECK(self);
+
     if (self -> callback)
     {
 	Message message = ControlPanel_createMessage(self);
@@ -458,6 +488,8 @@ static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
 static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
 {
     ControlPanel self = (ControlPanel) context;
+
+    SANITY_CHECK(self);
     setGroup(self, Subscription_getGroup(List_first(self -> subscriptions)));
     setUser(self, self -> userName);
     setText(self, "");
@@ -468,6 +500,8 @@ static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
 static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
 {
     ControlPanel self = (ControlPanel) context;
+
+    SANITY_CHECK(self);
     XtPopdown(self -> top);
 }
 
@@ -481,6 +515,9 @@ ControlPanel ControlPanel_alloc(
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
     Atom deleteAtom;
 
+#ifdef SANITY
+    self -> sanity_check = sanity_value;
+#endif /* SANITY */
     self -> subscriptions = subscriptions;
     self -> callback = callback;
     self -> context = context;
@@ -506,6 +543,10 @@ ControlPanel ControlPanel_alloc(
 /* Releases the resources used by the receiver */
 void ControlPanel_free(ControlPanel self)
 {
+    SANITY_CHECK(self);
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#endif /* SANITY */
     free(self);
 }
 
@@ -513,6 +554,7 @@ void ControlPanel_free(ControlPanel self)
 /* Makes the ControlPanel window visible */
 void ControlPanel_show(ControlPanel self)
 {
+    SANITY_CHECK(self);
     XtPopup(self -> top, XtGrabNone);
 }
 
@@ -520,12 +562,15 @@ void ControlPanel_show(ControlPanel self)
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self)
 {
-    return Message_alloc(getGroup(self), getUser(self), getText(self), 60 * getTimeout(self));
+    SANITY_CHECK(self);
+    return Message_alloc(getGroup(self), getUser(self), getText(self), getTimeout(self));
 }
 
 /* Handle notifications */
 void ControlPanel_handleNotify(ControlPanel self, Widget widget)
 {
+    SANITY_CHECK(self);
+
     if (widget == self -> text)
     {
 	ActionOK(widget, (XtPointer)self, NULL);

@@ -1,17 +1,28 @@
-/* $Id: Hash.c,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: Hash.c,v 1.2 1997/05/31 03:42:25 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "sanity.h"
 #include "Hash.h"
+
+/* Sanity checking strings */
+#ifdef SANITY
+static char *sanity_value = "Hash";
+static char *sanity_freed = "Freed Hash";
+#endif /* SANITY */
+
 
 /* The hashtable associations */
 typedef struct HashEntry_t *HashEntry;
 
-
 struct Hashtable_t
 {
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
     unsigned long size;
     unsigned long count;
     HashEntry *table;
@@ -31,6 +42,9 @@ Hashtable Hashtable_alloc(int size)
     Hashtable hash;
 
     hash = (Hashtable) malloc(sizeof(struct Hashtable_t));
+#ifdef SANITY
+    hash -> sanity_check = sanity_value;
+#endif /* SANITY */
     hash -> size = size;
     hash -> count = 0;
     hash -> table = calloc(size, sizeof(HashEntry));
@@ -41,6 +55,12 @@ Hashtable Hashtable_alloc(int size)
 /* Releases a Hashtable [Doesn't release table contents] */
 void Hashtable_free(Hashtable self)
 {
+    SANITY_CHECK(self);
+
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#endif /* SANITY */
+
     /* FIX THIS: need to release the HashEntry's as well */
     free(self -> table);
     free(self);
@@ -70,9 +90,12 @@ void HashEntry_free(HashEntry self)
 /* Compute the hash value of a string */
 unsigned long Hashtable_hash(Hashtable self, char *key)
 {
-    unsigned long hash = 0;
-    char *pointer = key;
+    unsigned long hash;
+    char *pointer;
 
+    SANITY_CHECK(self);
+    hash = 0;
+    pointer = key;
     while (*pointer != '\0')
     {
 	hash = hash * 3 + *pointer++;
@@ -85,7 +108,10 @@ unsigned long Hashtable_hash(Hashtable self, char *key)
 /* Gets an entry from the Hashtable */
 void *Hashtable_get(Hashtable self, char *key)
 {
-    HashEntry entry = self -> table[Hashtable_hash(self, key)];
+    HashEntry entry;
+
+    SANITY_CHECK(self);
+    entry = self -> table[Hashtable_hash(self, key)];
     while (entry != NULL)
     {
 	if (strcmp(key, entry -> key) == 0)
@@ -103,9 +129,14 @@ void *Hashtable_get(Hashtable self, char *key)
 /* Puts an entry in the Hashtable, returning the old value */
 void *Hashtable_put(Hashtable self, char *key, void *value)
 {
-    unsigned long index = Hashtable_hash(self, key);
-    HashEntry entry = self -> table[index];
-    HashEntry previous = NULL;
+    unsigned long index;
+    HashEntry entry;
+    HashEntry previous;
+
+    SANITY_CHECK(self);
+    index = Hashtable_hash(self, key);
+    entry = self -> table[index];
+    previous = NULL;
 
     while (entry != NULL)
     {
@@ -139,9 +170,14 @@ void *Hashtable_put(Hashtable self, char *key, void *value)
 /* Removes an entry from the Hashtable */
 void *Hashtable_remove(Hashtable self, char *key)
 {
-    unsigned long index = Hashtable_hash(self, key);
-    HashEntry entry = self -> table[index];
-    HashEntry previous = NULL;
+    unsigned long index;
+    HashEntry entry;
+    HashEntry previous;
+
+    SANITY_CHECK(self);
+    index = Hashtable_hash(self, key);
+    entry = self -> table[index];
+    previous = NULL;
 
     while (entry != NULL)
     {
@@ -176,6 +212,7 @@ void Hashtable_do(Hashtable self, void (*function)(void *value))
     unsigned long index;
     HashEntry entry, next;
 
+    SANITY_CHECK(self);
     for (index = 0; index < self -> size; index++)
     {
 	entry = self -> table[index];
@@ -195,6 +232,7 @@ void Hashtable_doWith(Hashtable self, void (*function)(void *value, void *contex
     unsigned long index;
     HashEntry entry, next;
 
+    SANITY_CHECK(self);
     for (index = 0; index < self -> size; index++)
     {
 	entry = self -> table[index];
@@ -213,6 +251,7 @@ void Hashtable_doWith(Hashtable self, void (*function)(void *value, void *contex
 /* Print debugging information to stdout */
 void Hashtable_debug(Hashtable self)
 {
+    SANITY_CHECK(self);
     Hashtable_fdebug(self, stdout);
 }
 
@@ -223,6 +262,7 @@ void Hashtable_fdebug(Hashtable self, FILE *out)
     unsigned long index;
     HashEntry entry;
 
+    SANITY_CHECK(self);
     for (index = 0; index < self -> size; index++)
     {
 	entry = self -> table[index];

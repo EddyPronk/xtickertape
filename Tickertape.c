@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.15 1997/02/24 01:14:33 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.16 1997/05/31 03:42:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,8 +8,11 @@
 #include <X11/StringDefs.h>
 #include <X11/CoreP.h>
 #include <X11/Xaw/SimpleP.h>
+
 #include "TickertapeP.h"
 #include "MessageView.h"
+
+
 
 #define END_SPACING 30
 

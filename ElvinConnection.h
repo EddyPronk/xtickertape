@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.4 1997/02/25 06:41:15 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.5 1997/05/31 03:42:24 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -8,16 +8,9 @@ typedef struct ElvinConnection_t *ElvinConnection;
 #include "List.h"
 #include "Message.h"
 
-/* The format for an the callback function */
-typedef void (*ElvinConnectionCallback)(Message message, void *context);
 
 /* Answers a new ElvinConnection */
-ElvinConnection ElvinConnection_alloc(
-    char *hostname,
-    int port,
-    List subscriptions,
-    ElvinConnectionCallback callback,
-    void *context);
+ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptions);
 
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self);

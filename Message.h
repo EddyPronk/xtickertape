@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.3 1997/02/13 08:13:44 phelps Exp $ */
+/* $Id: Message.h,v 1.4 1997/05/31 03:42:27 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -21,8 +21,11 @@ char *Message_getUser(Message self);
 /* Answers the receiver's string */
 char *Message_getString(Message self);
 
-/* Answers the receiver's timout */
+/* Answers the receiver's timout in minutes */
 unsigned long Message_getTimeout(Message self);
+
+/* Sets the receiver's timeout in minutes*/
+void Message_setTimeout(Message self, unsigned long timeout);
 
 /* Prints debugging information */
 void Message_debug(Message self);

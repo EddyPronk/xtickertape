@@ -2,13 +2,25 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "sanity.h"
 #include "List.h"
+
+
+/* Sanity checking strings */
+#ifdef SANITY
+static char *sanity_value = "List";
+static char *sanity_freed = "Freed List";
+#endif /* SANITY */
 
 /* The List links */
 typedef struct ListLink_t *ListLink;
 
 struct List_t
 {
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
     ListLink head;
     ListLink tail;
 };
@@ -44,6 +56,9 @@ List List_alloc()
     List list;
 
     list = (List) malloc(sizeof(struct List_t));
+#ifdef SANITY
+    list -> sanity_check = sanity_value;
+#endif /* SANITY */
     list -> head = NULL;
     list -> tail = NULL;
     return list;
@@ -52,8 +67,10 @@ List List_alloc()
 /* Releases a List [Doesn't release its contents] */
 void List_free(List self)
 {
-    ListLink link = self -> head;
+    ListLink link;
 
+    SANITY_CHECK(self);
+    link = self -> head;
     while (link != NULL)
     {
 	ListLink next = link -> next;
@@ -61,6 +78,9 @@ void List_free(List self)
 	link = next;
     }
 
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#endif /* SANITY */
     free(self);
 }
 
@@ -69,8 +89,10 @@ void List_free(List self)
 /* Adds an value to the beginning of the list */
 void List_addFirst(List self, void *value)
 {
-    ListLink link = ListLink_alloc(value);
+    ListLink link;
 
+    SANITY_CHECK(self);
+    link = ListLink_alloc(value);
     if (self -> tail == NULL)
     {
 	self -> tail = link;
@@ -83,7 +105,10 @@ void List_addFirst(List self, void *value)
 /* Removes the first item from the list */
 void *List_dequeue(List self)
 {
-    void *value = List_first(self);
+    void *value;
+
+    SANITY_CHECK(self);
+    value = List_first(self);
     List_remove(self, value);
     return value;
 }
@@ -92,8 +117,10 @@ void *List_dequeue(List self)
 /* Adds an value to the end of the list */
 void List_addLast(List self, void *value)
 {
-    ListLink link = ListLink_alloc(value);
+    ListLink link;
 
+    SANITY_CHECK(self);
+    link = ListLink_alloc(value);
     if (self -> head == NULL)
     {
 	self -> head = link;
@@ -111,8 +138,12 @@ void List_addLast(List self, void *value)
 /* Removes an value from the list */
 void *List_remove(List self, void *value)
 {
-    ListLink link = self -> head;
-    ListLink previous = NULL;
+    ListLink link;
+    ListLink previous;
+
+    SANITY_CHECK(self);
+    link = self -> head;
+    previous = NULL;
 
     while (link != NULL)
     {
@@ -148,8 +179,10 @@ void *List_remove(List self, void *value)
 void *List_get(List self, unsigned long index)
 {
     ListLink link;
-    int count = 0;
+    int count;
 
+    SANITY_CHECK(self);
+    count = 0;
     for (link = self -> head; link != NULL; link = link -> next)
     {
 	if (count++ == index)
@@ -165,6 +198,8 @@ void *List_get(List self, unsigned long index)
 /* Answers the first element of the receiver */
 void *List_first(List self)
 {
+    SANITY_CHECK(self);
+
     if (self -> head)
     {
 	return self -> head -> value;
@@ -178,6 +213,8 @@ void *List_first(List self)
 /* Answers the last element of the receiver */
 void *List_last(List self)
 {
+    SANITY_CHECK(self);
+
     if (self -> tail)
     {
 	return self -> tail -> value;
@@ -192,9 +229,11 @@ void *List_last(List self)
 /* Answers the number of elements in the receiver */
 unsigned long List_size(List self)
 {
-    unsigned long count = 0;
+    unsigned long count;
     ListLink link;
 
+    SANITY_CHECK(self);
+    count = 0;
     for (link = self -> head; link != NULL; link = link -> next)
     {
 	count++;
@@ -206,6 +245,7 @@ unsigned long List_size(List self)
 /* Answers non-zero if the list has no elements */
 int List_isEmpty(List self)
 {
+    SANITY_CHECK(self);
     return self -> head == NULL;
 }
 
@@ -215,6 +255,7 @@ int List_includes(List self, void *value)
 {
     ListLink link;
 
+    SANITY_CHECK(self);
     for (link = self -> head; link != NULL; link = link -> next)
     {
 	if (link -> value == value)
@@ -233,6 +274,7 @@ void List_do(List self, void (*function)())
 {
     ListLink link;
 
+    SANITY_CHECK(self);
     for (link = self -> head; link != NULL; link = link -> next)
     {
 	(*function)(link -> value);
@@ -245,6 +287,7 @@ void List_doWith(List self, void (*function)(), void *context)
 {
     ListLink link;
 
+    SANITY_CHECK(self);
     for (link = self -> head; link != NULL; link = link -> next)
     {
 	(*function)(link -> value, context);
@@ -260,7 +303,11 @@ void List_debug(List self)
 {
     ListLink link;
 
+    SANITY_CHECK(self);
     printf("\nList (0x%p)\n", self);
+#ifdef SANITY
+    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
+#endif /* SANITY */
     printf("  head = 0x%p\n", self -> head);
     printf("  tail = 0x%p\n", self -> tail);
     printf("  elements:\n");

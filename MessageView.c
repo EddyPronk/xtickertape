@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.12 1997/02/24 01:14:32 phelps Exp $ */
+/* $Id: MessageView.c,v 1.13 1997/05/31 03:42:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,21 +6,28 @@
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
 #include <X11/StringDefs.h>
+
+#include "sanity.h"
 #include "TickertapeP.h"
 #include "MessageView.h"
+
+/* Sanity checking strings */
+#ifdef SANITY
+static char *sanity_value = "MessageView";
+static char *sanity_freed = "Freed MessageView";
+#endif /* SANITY */
+
 
 #define SPACING 10
 #define SEPARATOR ":"
 
-/*#define SANITY_CHECK(x) SanityCheck(x)*/
-#define SANITY_CHECK(x)
 
 struct MessageView_t
 {
     /* State */
-#ifdef SANITY_CHECK
-    int isDeleted;
-#endif /* SANITY_CHECK */
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
     unsigned int refcount;
     TickertapeWidget widget;
     Message message;
@@ -38,31 +45,19 @@ struct MessageView_t
 };
 
 
-#ifdef SANITY_CHECK
-void Suicide(MessageView self)
-{
-    exit(0);
-}
-
-void SanityCheck(MessageView self)
-{
-    if (self -> isDeleted)
-    {
-	Suicide(self);
-    }
-}
-#endif /* SANITY_CHECK */
 
 /* Displays the receiver on the drawable */
 static void paint(MessageView self, Drawable drawable, int x, int y)
 {
-    int xpos = x;
+    int xpos;
     int level;
     char *string;
     GC gc;
 
     SANITY_CHECK(self);
+    xpos = x;
     level = self -> fadeLevel;
+
     gc = TtGCForGroup(self -> widget, level);
     string = Message_getGroup(self -> message);
     XDrawString(XtDisplay(self -> widget), drawable, gc, xpos, y, string, strlen(string));
@@ -98,7 +93,7 @@ static void setClock(MessageView self)
 
     self -> timer = TtStartTimer(
 	self -> widget,
-	1000 * Message_getTimeout(self -> message) / TtGetFadeLevels(self -> widget),
+	60 * 1000 * Message_getTimeout(self -> message) / TtGetFadeLevels(self -> widget),
 	tick,
 	(XtPointer) self);
 }
@@ -247,6 +242,9 @@ void MessageView_debug(MessageView self)
 {
     SANITY_CHECK(self);
     printf("MessageView (0x%p)\n", self);
+#ifdef SANITY
+    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
+#endif /* SANITY */
     printf("  refcount = %u\n", self -> refcount);
     printf("  widget = 0x%p\n", self -> widget);
     printf("  fadeLevel = %d\n", self -> fadeLevel);
@@ -272,7 +270,7 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
     MessageView self = (MessageView) malloc(sizeof(struct MessageView_t));
 
 #ifdef SANITY_CHECK
-    self -> isDeleted = FALSE;
+    self -> sanity_check = sanity_value;
 #endif /* SANITY_CHECK */
     self -> refcount = 0;
     self -> widget = widget;
@@ -300,7 +298,7 @@ void MessageView_free(MessageView self)
     }
 
 #ifdef SANITY_CHECK
-    self -> isDeleted = True;
+    self -> sanity_check = sanity_freed;
 #else /* SANITY_CHECK */
     Message_free(self -> message);
     XFreePixmap(XtDisplay(self -> widget), self -> pixmap);

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.18 1997/03/18 05:52:39 phelps Exp $ */
+/* $Id: main.c,v 1.19 1997/05/31 03:42:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,20 +133,6 @@ int main(int argc, char *argv[])
     int port = PORT;
     int index = 1;
 
-    /* Read subscriptions from the groups file */
-    subscriptions = List_alloc();
-    file = getGroupFile();
-    if (file == NULL)
-    {
-	printf("*** unable to read ${TICKERDIR}/groups\n");
-	exit(1); /* This shouldn't need to exit! */
-    }
-    else
-    {
-	Subscription_readFromGroupFile(file, subscriptions);
-	fclose(file);
-    }
-
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
 	&context, "Tickertape",
@@ -174,10 +160,23 @@ int main(int argc, char *argv[])
 	port = atoi(argv[index++]);
     }
 
+    /* Read subscriptions from the groups file */
+    subscriptions = List_alloc();
+    file = getGroupFile();
+    if (file == NULL)
+    {
+	printf("*** unable to read ${TICKERDIR}/groups\n");
+	exit(1); /* This shouldn't need to exit! */
+    }
+    else
+    {
+	Subscription_readFromGroupFile(file, subscriptions, receiveMessage, tickertape);
+	fclose(file);
+    }
+
+
     /* listen for messages from the bridge */
-    connection = CONNECTION_ALLOC(
-	hostname, port, subscriptions,
-	receiveMessage, tickertape);
+    connection = CONNECTION_ALLOC(hostname, port, subscriptions);
 
       XtAppAddInput(
 	context,

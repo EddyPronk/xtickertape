@@ -1,51 +1,84 @@
-/* $Id: Subscription.c,v 1.2 1997/02/17 01:21:55 phelps Exp $ */
+/* $Id: Subscription.c,v 1.3 1997/05/31 03:42:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sanity.h"
 #include "Subscription.h"
 
 #define BUFFERSIZE 8192
 #define SEPARATORS ":\n"
 
+/* Sanity checking strings */
+#ifdef SANITY
+static char *sanity_value = "Subscription";
+static char *sanity_freed = "Freed Subscription";
+#endif /* SANITY */
+
 /* The subscription data type */
 struct Subscription_t
 {
+#ifdef SANITY
+    char *sanity_check;
+#endif /* SANITY */
     char *group;
     int inMenu;
     int hasNazi;
     int minTime;
     int maxTime;
+    SubscriptionCallback callback;
+    void *context;
 };
 
 
 /* Answers a new Subscription */
-Subscription Subscription_alloc(char *group, int inMenu, int autoMime, int minTime, int maxTime)
+Subscription Subscription_alloc(
+    char *group,
+    int inMenu,
+    int autoMime,
+    int minTime,
+    int maxTime,
+    SubscriptionCallback callback,
+    void *context)
 {
     Subscription self = (Subscription) malloc(sizeof(struct Subscription_t));
+#ifdef SANITY
+    self -> sanity_check = sanity_value;
+#endif /* SANITY */
     self -> group = strdup(group);
     self -> inMenu = inMenu;
     self -> hasNazi = autoMime;
     self -> minTime = minTime;
     self -> maxTime = maxTime;
+    self -> callback = callback;
+    self -> context = context;
     return self;
 }
 
 /* Releases resources used by a Subscription */
 void Subscription_free(Subscription self)
 {
+    SANITY_CHECK(self);
+
     if (self -> group)
     {
 	free(self -> group);
     }
 
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#endif /* SANITY */
     free(self);
 }
 
 /* Prints debugging information */
 void Subscription_debug(Subscription self)
 {
+    SANITY_CHECK(self);
     printf("Subscription (0x%p)\n", self);
+#ifdef SANITY
+    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
+#endif /* SANITY */    
     printf("  group = \"%s\"\n", self -> group ? self -> group : "<none>");
     printf("  inMenu = %s\n", self -> inMenu ? "true" : "false");
     printf("  hasNazi = %s\n", self -> hasNazi ? "true" : "false");
@@ -55,7 +88,7 @@ void Subscription_debug(Subscription self)
 
 
 /* Create a subscription from a line of the group file */
-Subscription getFromGroupFileLine(char *line)
+Subscription getFromGroupFileLine(char *line, SubscriptionCallback callback, void *context)
 {
     char *group = strtok(line, SEPARATORS);
     char *pointer = strtok(NULL, SEPARATORS);
@@ -106,11 +139,11 @@ Subscription getFromGroupFileLine(char *line)
 	maxTime = 60;
     }
 
-    return Subscription_alloc(group, inMenu, hasNazi, minTime, maxTime);
+    return Subscription_alloc(group, inMenu, hasNazi, minTime, maxTime, callback, context);
 }
 
 /* Read the next subscription from file (answers NULL if EOF) */
-Subscription getFromGroupFile(FILE *file)
+Subscription getFromGroupFile(FILE *file, SubscriptionCallback callback, void *context)
 {
     char buffer[BUFFERSIZE];
     char *pointer;
@@ -127,7 +160,7 @@ Subscription getFromGroupFile(FILE *file)
 	/* check for empty line or comment */
 	if ((*pointer != '\0') && (*pointer != '\n') && (*pointer != '#'))
 	{
-	    return getFromGroupFileLine(pointer);
+	    return getFromGroupFileLine(pointer, callback, context);
 	}
     }
 
@@ -136,11 +169,11 @@ Subscription getFromGroupFile(FILE *file)
 
 
 /* Read Subscriptions from the group file 'groups' and add them to 'list' */
-void Subscription_readFromGroupFile(FILE *groups, List list)
+void Subscription_readFromGroupFile(FILE *groups, List list, SubscriptionCallback callback, void *context)
 {
     Subscription subscription;
 
-    while ((subscription = getFromGroupFile(groups)) != NULL)
+    while ((subscription = getFromGroupFile(groups, callback, context)) != NULL)
     {
 	List_addLast(list, subscription);
     }
@@ -150,33 +183,55 @@ void Subscription_readFromGroupFile(FILE *groups, List list)
 /* Answers the receiver's group */
 char *Subscription_getGroup(Subscription self)
 {
+    SANITY_CHECK(self);
     return self -> group;
 }
 
 /* Answers if the receiver should appear in the Control Panel menu */
 int Subscription_isInMenu(Subscription self)
 {
+    SANITY_CHECK(self);
     return self -> inMenu;
 }
 
 /* Answers true if the receiver should automatically show mime messages */
 int Subscription_isAutoMime(Subscription self)
 {
+    SANITY_CHECK(self);
     return self -> hasNazi;
 }
 
 /* Answers the adjusted timeout for a message in this group */
-int Subscription_adjustTimeout(Subscription self, int timeout)
+void Subscription_adjustTimeout(Subscription self, Message message)
 {
+    unsigned long timeout;
+
+    SANITY_CHECK(self);
+    timeout = Message_getTimeout(message);
     if (timeout < self -> minTime)
     {
-	return self -> minTime;
+	Message_setTimeout(message, self -> minTime);
+	return;
     }
 
     if (timeout > self -> maxTime)
     {
-	return self -> maxTime;
+	Message_setTimeout(message, self -> maxTime);
+	return;
     }
+}
 
-    return timeout;
+
+/* Delivers a Message received because of the receiver */
+void Subscription_deliverMessage(Subscription self, Message message)
+{
+    SANITY_CHECK(self);
+
+    /* Make sure the timeout conforms */
+    Subscription_adjustTimeout(self, message);
+
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(message, self -> context);
+    }
 }
