@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.120 2004/07/30 14:29:02 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.121 2004/08/02 19:00:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -570,9 +570,7 @@ static RETSIGTYPE reload_subs(int signum)
     signal(SIGHUP, reload_subs);
 
     /* Reload configuration files */
-    tickertape_reload_keys(tickertape);
-    tickertape_reload_groups(tickertape);
-    tickertape_reload_usenet(tickertape);
+    tickertape_reload_all(tickertape);
 }
 
 /* Print an error message indicating that the app-defaults file is bogus */

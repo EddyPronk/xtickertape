@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.20 2003/05/15 20:23:03 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.21 2004/08/02 19:00:27 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -91,6 +91,9 @@ void tickertape_reload_groups(tickertape_t self);
 
 /* Reloads the tickertape's usenet file */
 void tickertape_reload_usenet(tickertape_t self);
+
+/* Reloads all of tickertape's config files */
+void tickertape_reload_all(tickertape_t self);
 
 /* Show the previous item in the history */
 void tickertape_history_prev(tickertape_t self);

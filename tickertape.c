@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.112 2004/08/02 16:52:00 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.113 2004/08/02 19:00:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -899,6 +899,8 @@ void tickertape_reload_keys(tickertape_t self)
     if (parse_keys_file(self) < 0)
     {
         fprintf(stderr, PACKAGE ": errors in keys file; not reloading\n");
+        key_table_free(self -> keys);
+        self -> keys = old_keys;
         return;
     }
 
@@ -914,6 +916,40 @@ void tickertape_reload_keys(tickertape_t self)
     if (old_keys != NULL)
     {
 	key_table_free(old_keys);
+    }
+}
+
+/* Reload all config files */
+void tickertape_reload_all(tickertape_t self)
+{
+    key_table_t old_keys;
+
+    /* Hang onto the old keys */
+    old_keys = self -> keys;
+    self -> keys = NULL;
+
+    /* Try to read in the new ones */
+    if (parse_keys_file(self) < 0)
+    {
+        fprintf(stderr, PACKAGE ": errors in keys file; not reloading\n");
+        if (self -> keys != NULL)
+        {
+            key_table_free(self -> keys);
+        }
+
+        self -> keys = old_keys;
+    }
+
+    /* Reload the groups file */
+    reload_groups(self, old_keys, self -> keys);
+
+    /* And the usenet file */
+    tickertape_reload_usenet(self);
+
+    /* Release the old keys table */
+    if (old_keys != NULL)
+    {
+        key_table_free(old_keys);
     }
 }
 
