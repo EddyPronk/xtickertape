@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.3 2003/01/14 17:18:46 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.4 2003/01/16 16:42:06 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -796,7 +796,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
     size_t length;
 
     /* Measure the input string */
-    in_length = strlen(input);
+    in_length = strlen(input) + 1;
 
     /* Special case for empty strings */
     if (in_length == 0)
@@ -818,7 +818,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
     }
 
     /* Guess twice as much should suffice for the output */
-    length = 2 * in_length + 1;
+    length = 2 * in_length;
     if ((buffer = (char *)malloc(length)) == NULL)
     {
 	perror("malloc() failed");
@@ -839,7 +839,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 		char *new_buffer;
 		size_t new_length;
 
-		new_length = (length - 1) * 2 + 1;
+		new_length = length * 2;
 		if ((new_buffer = realloc(buffer, new_length)) == NULL)
 		{
 		    perror("realloc() failed");
