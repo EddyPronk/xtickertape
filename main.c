@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.68 1999/12/06 13:06:44 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.69 1999/12/09 13:21:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -46,6 +46,7 @@ static const char cvsid[] = "$Id: main.c,v 1.68 1999/12/06 13:06:44 phelps Exp $
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xmu/Editres.h>
+#include <elvin/elvin.h>
 #include "tickertape.h"
 
 #include "red.xbm"
@@ -157,11 +158,13 @@ static char *get_domain()
 /* Parses arguments and sets stuff up */
 static void parse_args(
     int argc, char *argv[],
+    elvin_handle_t handle,
     char **user_return, char **domain_return,
     char **ticker_dir_return,
     char **groups_file_return, char **usenet_file_return,
-    char **elvin_url_return)
+    dstc_error_t error)
 {
+    char *url;
     int choice;
 
     /* Initialize arguments to sane values */
@@ -170,7 +173,6 @@ static void parse_args(
     *ticker_dir_return = NULL;
     *groups_file_return = NULL;
     *usenet_file_return = NULL;
-    *elvin_url_return = NULL;
 
     /* Read each argument using getopt */
     while ((choice = getopt_long(
@@ -183,7 +185,12 @@ static void parse_args(
 	    /* --elvin= or -e */
 	    case 'e':
 	    {
-		*elvin_url_return = optarg;
+		if (elvin_hdl_insert_server(handle, 0, optarg, error) == 0)
+		{
+		    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
+		    exit(1);
+		}
+
 		break;
 	    }
 
@@ -250,11 +257,14 @@ static void parse_args(
 	*domain_return = get_domain();
     }
 
-    /* Generate a host name if none provided */
-    if (*elvin_url_return == NULL)
+    /* If the ELVIN_URL environment variable is set then add it to the list */
+    if ((url = getenv("ELVIN_URL")) != NULL && *url != '\0')
     {
-	/* Try the environment variable */
-	*elvin_url_return = getenv("ELVIN_URL");
+	if (elvin_hdl_insert_server(handle, 0, url, error) == 0)
+	{
+	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", url);
+	    exit(1);
+	}
     }
 }
 
@@ -343,13 +353,14 @@ char *strdup(const char *string)
 int main(int argc, char *argv[])
 {
     XtAppContext context;
-    Widget top;
+    elvin_handle_t handle;
+    dstc_error_t error;
     char *user;
     char *domain;
     char *ticker_dir;
     char *groups_file;
     char *usenet_file;
-    char *elvin_url;
+    Widget top;
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
@@ -361,14 +372,41 @@ int main(int argc, char *argv[])
     /* Add a calback for when it gets destroyed */
     XtAppAddActions(context, actions, XtNumber(actions));
 
+    /* Initialize the elvin client library */
+    if ((error = elvin_async_init(
+	"en",
+	context,
+	(elvin_add_io_handler_func_t)XtAppAddInput,
+	(void *)XtInputReadMask,
+	(elvin_del_io_handler_func_t)XtRemoveInput,
+	context,
+	(elvin_add_timeout_func_t)XtAppAddTimeOut,
+	(elvin_del_timeout_func_t)XtRemoveTimeOut)) == NULL)
+    {
+	fprintf(stderr, "*** elvin_async_init(): failed\n");
+	abort();
+    }
+
+    /* Create a new elvin connection handle */
+    if ((handle = elvin_hdl_alloc(error)) == NULL)
+    {
+	fprintf(stderr, "*** elvin_hdl_alloc(): failed\n");
+	abort();
+    }
+
     /* Scan what's left of the arguments */
-    parse_args(argc, argv, &user, &domain, &ticker_dir, &groups_file, &usenet_file, &elvin_url);
+    parse_args(argc, argv, handle, &user, &domain, &ticker_dir, &groups_file, &usenet_file, error);
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
 
     /* Create a tickertape */
-    tickertape = tickertape_alloc(user, domain, ticker_dir, groups_file, usenet_file, elvin_url, top);
+    tickertape = tickertape_alloc(
+	handle,
+	user, domain,
+	ticker_dir, groups_file, usenet_file,
+	top,
+	error);
 
     /* Set up SIGHUP to reload the subscriptions */
     signal(SIGHUP, reload_subs);

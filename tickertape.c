@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.42 1999/11/29 03:59:07 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.43 1999/12/09 13:21:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1040,18 +1040,16 @@ static void connect_cb(
  */
 
 /* Answers a new tickertape_t for the given user using the given file as
- * her groups file and connecting to the notification service
- * specified by host and port */
+ * her groups file and connecting to the notification service */
 tickertape_t tickertape_alloc(
+    elvin_handle_t handle,
     char *user, char *domain, 
     char *ticker_dir,
     char *groups_file, char *usenet_file,
-    char *elvin_url,
-    Widget top)
+    Widget top,
+    dstc_error_t error)
 {
-    XtAppContext app_context = XtWidgetToApplicationContext(top);
     tickertape_t self;
-    elvin_handle_t handle;
 
     /* Allocate some space for the new tickertape */
     if ((self = (tickertape_t) malloc(sizeof(struct tickertape))) == NULL)
@@ -1060,7 +1058,7 @@ tickertape_t tickertape_alloc(
     }
 
     /* Initialize its contents to sane values */
-    self -> error = NULL;
+    self -> error = error;
     self -> handle = NULL;
     self -> user = strdup(user);
     self -> domain = strdup(domain);
@@ -1098,38 +1096,6 @@ tickertape_t tickertape_alloc(
     /* Draw the user interface */
     init_ui(self);
 
-    /* Connect to an elvin server */
-    if ((self -> error = elvin_async_init(
-	"en",
-	app_context,
-	(elvin_add_io_handler_func_t)XtAppAddInput,
-	(void *)XtInputReadMask,
-	(elvin_del_io_handler_func_t)XtRemoveInput,
-	app_context,
-	(elvin_add_timeout_func_t)XtAppAddTimeOut,
-	(elvin_del_timeout_func_t)XtRemoveTimeOut)) == NULL)
-    {
-	fprintf(stderr, "*** elvin_async_init(): failed\n");
-	exit(1);
-    }
-
-    /* Create an elvin connection handle */
-    if ((handle = elvin_hdl_alloc(self -> error)) == NULL)
-    {
-	fprintf(stderr, "*** elvin_hdl_alloc(): failed\n");
-	exit(1);
-    }
-
-    /* Specify the server address if given on the command-line */
-    if (elvin_url != NULL)
-    {
-	if (elvin_hdl_insert_server(handle, 0, elvin_url, self -> error) == 0)
-	{
-	    printf("Bad URL: no doughnut \"%s\"\n", elvin_url);
-	    exit(1);
-	}
-    }
-
     /* Connect to the elvin server */
     if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
     {
@@ -1138,7 +1104,9 @@ tickertape_t tickertape_alloc(
     }
 
     /* Register a timeout in case the connect request doesn't come back */
-    XtAppAddTimeOut(app_context, CONNECT_TIMEOUT, connect_timeout, self);
+    XtAppAddTimeOut(
+	XtWidgetToApplicationContext(top), CONNECT_TIMEOUT,
+	connect_timeout, self);
     return self;
 }
 

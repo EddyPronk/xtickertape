@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.9 1999/11/18 07:27:47 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.10 1999/12/09 13:21:37 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -45,14 +45,14 @@ typedef struct tickertape *tickertape_t;
 #include "history.h"
 
 /* Answers a new Tickertape for the given user using the given file as
- * her groups file and connecting to the notification service
- * specified by elvin_url */
+ * her groups file and connecting to the notification service */
 tickertape_t tickertape_alloc(
+    elvin_handle_t handle,
     char *user, char *domain,
     char *ticker_dir,
     char *groupsFile, char *usenetFile,
-    char *elvin_url,
-    Widget top);
+    Widget top,
+    dstc_error_t error);
 
 /* Frees the resources used by the Tickertape */
 void tickertape_free(tickertape_t self);
