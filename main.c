@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.47 1999/01/06 02:36:37 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.48 1999/01/26 12:25:18 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -346,8 +346,8 @@ int main(int argc, char *argv[])
     /* Create a Tickertape */
     tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
 
-    /* Enable editres support */
 #ifdef HAVE_LIBXMU
+    /* Enable editres support */
     XtAddEventHandler(top, (EventMask)0, True, _XEditResCheckMessages, NULL);
 #endif /* HAVE_LIBXMU */
 
