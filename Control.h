@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.1 1997/02/14 10:52:31 phelps Exp $ */
+/* $Id: Control.h,v 1.2 1997/02/15 02:32:16 phelps Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -23,5 +23,8 @@ void ControlPanel_show(ControlPanel self);
 
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self);
+
+/* Handle notifications */
+void ControlPanel_handleNotify(ControlPanel self, Widget widget);
 
 #endif /* CONTROLPANEL_H */

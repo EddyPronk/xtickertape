@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.2 1997/02/14 16:33:14 phelps Exp $ */
+/* $Id: Control.c,v 1.3 1997/02/15 02:32:15 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +43,7 @@ static void ActionClear(Widget button, XtPointer context, XtPointer ignored);
 static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
 
 
+/* The pieces of the control panel */
 struct ControlPanel_t
 {
     ControlPanelCallback callback;
@@ -149,6 +150,7 @@ static Widget createUserBox(ControlPanel self, Widget parent)
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
 	NULL);
+    XtOverrideTranslations(self -> user, XtParseTranslationTable("<Key>Return: notify()"));
     return form;
 }
 
@@ -318,6 +320,7 @@ static Widget createTextBox(ControlPanel self, Widget parent)
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
 	NULL);
+    XtOverrideTranslations(self -> text, XtParseTranslationTable("<Key>Return: notify()"));
     return form;
 }
 
@@ -333,6 +336,7 @@ static Widget createBottomBox(ControlPanel self, Widget parent)
 	XtNbottom, XawChainTop,
 	XtNright, XawChainRight,
 	XtNborderWidth, 0,
+	XtNallowResize, False,
 	NULL);
     button = XtVaCreateManagedWidget(
 	"ok", commandWidgetClass, form,
@@ -438,7 +442,6 @@ void setTimeout(ControlPanel self, int timeout)
 /*
  * Actions
  */
-
 /* Callback for OK button */
 static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
 {
@@ -516,4 +519,11 @@ Message ControlPanel_createMessage(ControlPanel self)
     return Message_alloc(getGroup(self), getUser(self), getText(self), 60 * getTimeout(self));
 }
 
-
+/* Handle notifications */
+void ControlPanel_handleNotify(ControlPanel self, Widget widget)
+{
+    if (widget == self -> text)
+    {
+	ActionOK(widget, self, NULL);
+    }
+}

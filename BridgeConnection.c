@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.4 1997/02/14 16:33:13 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.5 1997/02/15 02:32:15 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +17,7 @@
 #include "BridgeConnection.h"
 
 #define BUFFERSIZE 4096
-#define CONNECTING
+/*#define CONNECTING*/
 #define EOL '\2'
 #define SEPARATOR '|'
 
@@ -125,6 +125,9 @@ BridgeConnection BridgeConnection_alloc(
 
 #ifdef CONNECTING 
     /* Look up the host name */
+#ifdef DEBUG
+    fprintf(stderr, "  hostname[%s]", hostname); fflush(stderr);
+#endif
     if ((host = gethostbyname(hostname)) == NULL)
     {
 	fprintf(stderr, "*** can't find host \"%s\"\n", hostname);
@@ -137,6 +140,9 @@ BridgeConnection BridgeConnection_alloc(
     address.sin_port = htons(port);
 
     /* Make a socket */
+#ifdef DEBUG
+    fprintf(stderr, "  socket"); fflush(stderr);
+#endif
     if ((self -> fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
 	fprintf(stderr, "*** unable to create socket\n");
@@ -151,14 +157,23 @@ BridgeConnection BridgeConnection_alloc(
     }
 
     /* Construct files from the fd */
+    fprintf(stderr, "  streams"); fflush(stderr);
     self -> in = fdopen(self -> fd, "r");
     self -> out = fdopen(self -> fd, "a");
 #else /* CONNECTING */
+    self -> fd = STDIN_FILENO;
     self -> in = stdin;
     self -> out = stdout;
 #endif /* CONNECTING */
 
+#ifdef DEBUG
+    fprintf(stderr, "  subscribe"); fflush(stderr);
+#endif
     subscribe(self);
+
+#ifdef DEBUG
+    fprintf(stderr, "\n");
+#endif    
     return self;
 }
 

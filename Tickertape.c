@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.12 1997/02/14 16:33:15 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.13 1997/02/15 02:32:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -520,15 +520,6 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
 
     EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
-
-    {
-	Message message = Message_alloc("tickertape", "internal", "nevermind", 30);
-	MessageView view = MessageView_alloc(self, message);
-
-	AddMessageView(self, view);
-    }
-
-    StartClock(self);
 }
 
 

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.11 1997/02/14 16:33:16 phelps Exp $ */
+/* $Id: main.c,v 1.12 1997/02/15 02:32:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,10 +13,12 @@
 #include "Control.h"
 #include "Tickertape.h"
 
-#define CONNECTING 1
-#define HOSTNAME "fatcat.dstc.edu.au"
+#define HOSTNAME "fatcat"
 #define PORT 8800
 
+
+/* Notification of something */
+static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
 
 /* Shuts everything down and go away */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
@@ -30,9 +32,16 @@ Widget top;
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
+    {"notify", NotifyAction},
     {"quit", QuitAction}
 };
 
+/* Notification of something */
+static void NotifyAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
+{
+    /* pass this on to the control panel */
+    ControlPanel_handleNotify(controlPanel, widget);
+}
 
 /* Callback for when the Window Manager wants to close a window */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
@@ -75,6 +84,9 @@ int main(int argc, char *argv[])
     TickertapeWidget tickertape;
     XtAppContext context;
     Atom deleteAtom;
+    char *hostname = HOSTNAME;
+    int port = PORT;
+    int index = 1;
 
     /* Connect to the bridge */
     subscriptions = List_alloc();
@@ -96,6 +108,16 @@ int main(int argc, char *argv[])
 	XtNborderWidth, 0,
 	NULL);
 
+    /* Read args for hostname and port */
+    if (index < argc)
+    {
+	hostname = argv[index++];
+    }
+    if (index < argc)
+    {
+	port = atoi(argv[index++]);
+    }
+
     /* Add a calback for when it gets destroyed (?) */
     XtAppAddActions(context, actions, XtNumber(actions));
 
@@ -106,7 +128,7 @@ int main(int argc, char *argv[])
     XtAddCallback((Widget)tickertape, XtNcallback, Click, NULL);
 
     /* listen for messages from the bridge */
-    connection = BridgeConnection_alloc(tickertape, HOSTNAME, PORT, subscriptions);
+    connection = BridgeConnection_alloc(tickertape, hostname, port, subscriptions);
     XtAppAddInput(
 	context,
 	BridgeConnection_getFD(connection),
@@ -122,6 +144,11 @@ int main(int argc, char *argv[])
     XtOverrideTranslations(top, XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));
     deleteAtom = XInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", FALSE);
     XSetWMProtocols(XtDisplay(top), XtWindow(top), &deleteAtom, 1);
+
+    {
+	Message message = Message_alloc("tickertape", "internal", "nevermind", 30);
+	TtAddMessage(tickertape, message);
+    }
 
     /* Let 'er rip! */
     XtAppMainLoop(context);
