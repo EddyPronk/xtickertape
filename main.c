@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.46 1998/12/24 06:16:31 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.47 1999/01/06 02:36:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -221,7 +221,7 @@ static void ParseArgs(
 
 	    /* ticker then become $HOME/.ticker */
 	    ticker = malloc(strlen(home) + sizeof("/.ticker"));
-	    sprintf(ticker, "%s/.ticker");
+	    sprintf(ticker, "%s/.ticker", home);
 	}
 
 	/* Set the groups filename if appropriate */
