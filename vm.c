@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.18 2000/12/09 01:45:30 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.19 2000/12/09 01:59:37 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -962,7 +962,9 @@ int vm_assign(vm_t self, elvin_error_t error)
 	    return
 		vm_swap(self, error) &&
 		vm_set_cdr(self, error) &&
-		vm_cdr(self, error);
+		vm_cdr(self, error) &&
+		vm_swap(self, error) &&
+		vm_pop(self, NULL, error);
 	}
 
 	/* If this is the root environment then just set the variable */
