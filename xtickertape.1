@@ -1,6 +1,6 @@
 .TH XTICKERTAPE 1 "1998 December 23"
 .ds xt \fIxtickertape\fP
-.ds Xt \fIXtickertape\fP
+.ds Xt \fIXTickertape\fP
 .UC 4
 .SH NAME
 xtickertape \- scrolling text chat tool
@@ -21,7 +21,7 @@ Connect to the elvin server running on \fIhost\fP.
 .B -p \fIport\fP
 .TP
 .BI --port= port
-Connect to the elvin server running listening on \fIport\fP.
+Connect to the elvin server listening on \fIport\fP.
 .TP
 .B -u \fIuser\fP
 .TP
@@ -177,12 +177,20 @@ then \*(xt will look in the directory specified by the \fBHOME\fP
 environment variable for a directory named \fB.ticker\fP under which
 it will look for \fBgroups\fP and \fBusenet\fP.
 .SH FILES
+.PP
+.TP
+.B $TICKERDIR/groups
+Specifes which tickertape groups to subscribe to.
+.TP
+.B $TICKERDIR/usenet
+Specifies which usenet news articles to subscribe to.
 .SH SEE ALSO
+.BR show-url (1),
 .BR groups (5),
 .BR usenet (5),
 .BR elvin (1)
 .na
-http://www.dstc.edu.au/elvin
+http://www.dstc.edu.au/Elvin
 .SH BUGS
 E-mail bug reports to
 .BR phelps@pobox.com .
