@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.39 2002/04/03 10:33:22 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.40 2002/04/03 23:06:18 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -206,6 +206,196 @@ struct delta_queue
     /* The displacement in the Y direction */
     long dy;
 };
+
+
+/* We store the history of messages as a tree, according to
+ * message-ids and in-reply-to ids */
+struct node
+{
+    /* The message recorded by the node */
+    message_t message;
+
+    /* The node's youngest child */
+    node_t child;
+
+    /* The node's youngest elder sibling */
+    node_t sibling;
+};
+
+/* Allocates and returns a new node */
+static node_t node_alloc(message_t message)
+{
+    node_t self;
+
+    /* Allocate memory for the node */
+    if ((self = malloc(sizeof(struct node))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Initialize its fields to sane values */
+    memset(self, 0, sizeof(struct node));
+
+    /* Record the message */
+    self -> message = message_alloc_reference(message);
+    return self;
+}
+
+/* Frees a node */
+static void node_free(node_t self)
+{
+    /* Make sure we decrement the message's reference count */
+    if (self -> message != NULL)
+    {
+	message_free(self -> message);
+	self -> message = NULL;
+    }
+
+    dprintf(("node_free(): %p\n", self));
+    free(self);
+}
+
+/* Returns the id of the node's message */
+static char *node_get_id(node_t self)
+{
+    return message_get_id(self -> message);
+}
+
+
+/* Add a node to the tree.  WARNING: this is not a friendly function.
+ * To avoid having to traverse the tree more than once when adding a
+ * node, this function both finds a parent and adds a child to it and
+ * also discards any nodes which no longer have visible children.
+ *
+ * self
+ *    The pointer to the root node of the tree.  This will be updated,
+ *    so it should really be the official pointer to the tree.
+ *
+ * parent_id
+ *    The Message-Id of the parent of the node to add.
+ *
+ * child
+ *    The child node to be added.  This will be set to NULL, so don't
+ *    use a pointer you want to use later.
+ *
+ * index
+ *    The display index of the root node.  This should initially be
+ *    one less than the number of visible nodes.  Note that this value
+ *    will be overwritten, so don't point to a value you wish to keep.
+ *
+ * index_out
+ *    Will be set to the index of the newly added node.
+ *
+ * depth
+ *    The depth (indentation level) of self.  Should initially be 0.
+ *
+ * depth_out
+ *    Will be set to the depth of the newly added node.
+ */
+static void node_add(node_t *self,
+		     char *parent_id, node_t *child,
+		     int *index, int *index_out,
+		     int depth, int *depth_out)
+{
+    node_t *root = self;
+
+    /* Record the last index, just in case */
+    if (depth == 0)
+    {
+	*index_out = *index;
+    }
+
+    /* Traverse all of our siblings */
+    while (*self != NULL)
+    {
+	/* Check with the descendents */
+	if ((*self) -> child)
+	{
+	    node_add(&(*self) -> child,
+		     parent_id, child,
+		     index, index_out,
+		     depth + 1, depth_out);
+	}
+
+	/* If no match yet, then check for one here */
+	if (parent_id && *child != NULL && strcmp(node_get_id(*self), parent_id) == 0)
+	{
+	    /* Match!  Add the child to this node */
+	    (*child) -> sibling = (*self) -> child;
+	    (*self) -> child = *child;
+	    *child = NULL;
+
+	    /* Record output information */
+	    *index_out = *index;
+	    *depth_out = depth + 1;
+	}
+
+	/* We've actually checked a node */
+	(*index)--;
+
+	/* If this node has scrolled off the top of the history and
+	 * has no children then we can safely remove it from the tree.
+	 * Note: this check is simplistic, but it will work since the
+	 * new node must always be added after any nodes that have
+	 * scrolled off the top. */
+	if (*index < 0 && (*self) -> child == NULL)
+	{
+	    /* If the above statement is true, then it follows that
+	     * the node may not have any elder siblings.  Hence this
+	     * is a good sanity check. */
+	    assert((*self) -> sibling == NULL);
+
+	    /* Free the node */
+	    node_free(*self);
+
+	    /* End the loop */
+	    *self = NULL;
+	}
+	else
+	{
+	    /* The pointer we want to update if this node disappears */
+	    self = &(*self) -> sibling;
+	}
+    }
+
+    /* If no suitable parent node was found then we have to add it here */
+    if (depth == 0 && *child != NULL)
+    {
+	(*child) -> sibling = *root;
+	*root = *child;
+	*depth_out = 0;
+    }
+}
+
+#ifdef DEBUG
+static void node_dump(node_t self, int depth)
+{
+    int i;
+
+    /* Nothing to print... */
+    if (self == NULL)
+    {
+	return;
+    }
+
+    /* Print our siblings */
+    node_dump(self -> sibling, depth);
+
+    /* Indent */
+    for (i = 0; i < depth; i++)
+    {
+	printf("  ");
+    }
+
+    /* Print this node's message */
+    printf("%p: %s\n", self, message_get_string(self -> message));
+
+    /* Print our children */
+    node_dump(self -> child, depth + 1);
+}
+#endif
+		     
+
 
 /*
  *
@@ -1655,9 +1845,29 @@ Boolean HistoryIsShowingTimestamps(Widget widget)
 void HistoryAddMessage(Widget widget, message_t message)
 {
     HistoryWidget self = (HistoryWidget)widget;
+    node_t node;
+    int count;
+    int index;
+    int depth;
 
     /* For now just insert at the end */
     insert_message(self, self -> history.message_count, message);
+
+    /* Wrap the message in a node */
+    if ((node = node_alloc(message)) == NULL)
+    {
+	return;
+    }
+
+#ifdef DEBUG
+    count = 3; 
+    node_add(&self -> history.nodes,
+	     message_get_reply_id(message), &node,
+	     &count, &index, 0, &depth);
+
+    printf("added node; index=%d, depth=%d\n", index, depth);
+    node_dump(self -> history.nodes, 0);
+#endif
 }
 
 /* Kills the thread of the given message */
