@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.96 2000/04/28 08:30:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.97 2000/04/28 08:41:53 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -786,7 +786,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     /* Initialize the queue to only contain the gap with 0 offsets */
     self -> scroller.timer = 0;
     self -> scroller.is_stopped = True;
-    self -> scroller.is_dragging = False;
+    self -> scroller.drag_state = DS_NOT_DRAGGING;
     self -> scroller.left_holder = holder;
     self -> scroller.right_holder = holder;
     self -> scroller.left_offset = 0;
@@ -1295,21 +1295,28 @@ static void overflow_recover(ScrollerWidget self)
 	}
     }
 
-    /* If we were dragging then update the position now */
-    if (self -> scroller.is_dragging)
+    /* What we do now depends on whether or not we were dragging */
+    switch (self -> scroller.drag_state)
     {
-	drag_to(self, self -> scroller.overflow_x);
-
-	/* If we received a mouse-up event then restart the scroller */
-	if (self -> scroller.is_dragging < 0)
+	case DS_NOT_DRAGGING:
 	{
-	    self -> scroller.is_dragging = False;
-	    EnableClock(self);
+	    Tick((Widget)self, NULL);
+	    return;
 	}
-    }
-    else
-    {
-	Tick((Widget)self, NULL);
+
+	case DS_DRAGGING:
+	{
+	    drag_to(self, self -> scroller.overflow_x);
+	    return;
+	}
+
+	case DS_PENDING:
+	{
+	    drag_to(self, self -> scroller.overflow_x);
+	    self -> scroller.drag_state = DS_NOT_DRAGGING;
+	    EnableClock(self);
+	    return;
+	}
     }
 }
 
@@ -1644,18 +1651,17 @@ static int pre_action(ScrollerWidget self, XEvent *event)
     /* Watch for a button release after a drag */
     if (event -> type == ButtonRelease)
     {
-	if (self -> scroller.is_dragging)
+	if (self -> scroller.drag_state != DS_NOT_DRAGGING)
 	{
 	    if (self -> scroller.state == SS_OVERFLOW)
 	    {
-		/* Hideous hack -- use -1 to indicate dragging should stop */
-		self -> scroller.is_dragging = -1;
+		self -> scroller.drag_state = DS_PENDING;
 		return -1;
 	    }
 	    else
 	    {
 		/* Restart the timer */
-		self -> scroller.is_dragging = False;
+		self -> scroller.drag_state = DS_NOT_DRAGGING;
 		EnableClock(self);
 		return -1;
 	    }
@@ -2122,7 +2128,7 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     }
 
     /* Do we know if we're dragging yet? */
-    if (! self -> scroller.is_dragging)
+    if (self -> scroller.drag_state == DS_NOT_DRAGGING)
     {
 	/* Give a little leeway so that a wobbly click doesn't become a drag */
 	if (self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x &&
@@ -2132,7 +2138,7 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	}
 
 	/* Otherwise we're definitely dragging */
-	self -> scroller.is_dragging = True;
+	self -> scroller.drag_state = DS_DRAGGING;
 
 	/* Disable the timer until the drag is done */
 	DisableClock(self);

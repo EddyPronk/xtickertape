@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.34 2000/04/28 07:26:24 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.35 2000/04/28 08:41:53 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -59,6 +59,21 @@ typedef struct _ScrollerClassRec
 
 
 typedef struct glyph_holder *glyph_holder_t;
+
+/* Various dragging states */
+enum drag_state
+{
+    /* Not dragging */
+    DS_NOT_DRAGGING,
+
+    /* Dragging */
+    DS_DRAGGING,
+
+    /* Dragging with the intention of stopping when we get caught up */
+    DS_PENDING
+};
+
+typedef enum drag_state drag_state_t;
 
 /* Indicates how much of the last scroll request has completed */
 enum scroller_state
@@ -104,8 +119,8 @@ typedef struct
     /* True if there are no messages to scroll */
     Bool is_stopped;
 
-    /* True if we're dragging the scroller around */
-    Bool is_dragging;
+    /* Are we dragging? */
+    drag_state_t drag_state;
 
     /* The leftmost glyph holder */
     glyph_holder_t left_holder;
