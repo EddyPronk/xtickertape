@@ -1,3 +1,8 @@
+Overview of changes in xtickertape-2.0b2
+
+* Fixed a bug that prevented the connection status from being updated
+* properly.
+
 Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed
