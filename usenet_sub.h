@@ -35,7 +35,7 @@
 #define USENET_SUB_H
 
 #ifndef lint
-static const char cvs_USENET_SUB_H[] = "$Id: usenet_sub.h,v 1.4 1999/12/16 07:32:44 phelps Exp $";
+static const char cvs_USENET_SUB_H[] = "$Id: usenet_sub.h,v 1.5 2000/04/12 05:33:10 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -45,7 +45,7 @@ typedef struct usenet_sub *usenet_sub_t;
 #include "message.h"
 
 /* The format of the callback function */
-typedef void (*usenet_sub_callback_t)(void *rock, message_t message);
+typedef void (*usenet_sub_callback_t)(void *rock, message_t message, int show_attachment);
 
 /* Allocates and initializes a new usenet_sub_t */
 usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.53 2000/04/12 00:34:39 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.54 2000/04/12 05:33:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -145,7 +145,7 @@ struct tickertape
  */
 static int mkdirhier(char *dirname);
 static void menu_callback(Widget widget, tickertape_t self, message_t message);
-static void receive_callback(tickertape_t self, message_t message);
+static void receive_callback(void *rock, message_t message, int show_attachment);
 static int parse_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
 #if 0
@@ -252,12 +252,20 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 }
 
 /* Receive a message_t matched by a subscription */
-static void receive_callback(tickertape_t self, message_t message)
+static void receive_callback(void *rock, message_t message, int show_attachment)
 {
+    tickertape_t self = (tickertape_t)rock;
+
     /* Add the message to the history */
     if (history_add(self -> history, message) == 0)
     {
 	ScAddMessage(self -> scroller, message);
+    }
+
+    /* Show the attachment if requested */
+    if (show_attachment != False)
+    {
+	tickertape_show_attachment(self, message);
     }
 }
 
@@ -384,7 +392,7 @@ static int parse_groups_callback(
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
 	    name, expression, in_menu, has_nazi, min_time, max_time,
-	    (group_sub_callback_t)receive_callback, self)) == NULL)
+	    receive_callback, self)) == NULL)
     {
 	return -1;
     }
@@ -485,8 +493,7 @@ static int parse_usenet_file(tickertape_t self)
     }
 
     /* Allocate a new usenet subscription */
-    if ((self -> usenet_sub = usenet_sub_alloc(
-	(usenet_sub_callback_t)receive_callback, self)) == NULL)
+    if ((self -> usenet_sub = usenet_sub_alloc(receive_callback, self)) == NULL)
     {
 	usenet_parser_free(parser);
 	return -1;
@@ -922,8 +929,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 
 	/* Otherwise we need to make a new one */
 	if ((subscription = orbit_sub_alloc(
-	    title, id,
-	    (orbit_sub_callback_t)receive_callback, self)) == NULL)
+	    title, id, receive_callback, self)) == NULL)
 	{
 	    en_free(notification);
 	    return;
@@ -1112,7 +1118,7 @@ static void status_cb(
 	NULL, NULL,
 	NULL, NULL, NULL)) != NULL)
     {
-	receive_callback(self, message);
+	receive_callback(self, message, False);
 	message_free(message);
     }
 
@@ -1181,7 +1187,7 @@ tickertape_t tickertape_alloc(
     }
 
     /* Initialize the e-mail subscription */
-    self -> mail_sub = mail_sub_alloc(user, (mail_sub_callback_t)receive_callback, self);
+    self -> mail_sub = mail_sub_alloc(user, receive_callback, self);
 
     /* Draw the user interface */
     init_ui(self);

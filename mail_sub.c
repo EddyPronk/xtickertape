@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.17 2000/04/11 09:36:25 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.18 2000/04/12 05:33:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -149,7 +149,7 @@ static void notify_cb(
 	NULL, NULL,
 	NULL, NULL, NULL);
 
-    (*self -> callback)(self -> rock, message);
+    (*self -> callback)(self -> rock, message, False);
 
     /* Clean up */
     message_free(message);

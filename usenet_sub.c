@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.19 2000/04/12 00:45:50 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.20 2000/04/12 05:33:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -243,7 +243,7 @@ static void notify_cb(
 	NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */
-	(*self -> callback)(self -> rock, message);
+	(*self -> callback)(self -> rock, message, False);
 	message_free(message);
     }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.15 2000/04/12 00:45:49 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.16 2000/04/12 05:33:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -271,7 +271,7 @@ static void notify_cb(
 	tag, message_id, reply_id);
 
     /* Deliver the message */
-    (*self -> callback)(self -> rock, message);
+    (*self -> callback)(self -> rock, message, self -> has_nazi);
 
     /* Clean up */
     message_free(message);

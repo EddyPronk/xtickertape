@@ -34,7 +34,7 @@
 #define GROUP_SUB_H
 
 #ifndef lint
-static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.5 1999/12/16 07:32:43 phelps Exp $";
+static const char cvs_GROUP_SUB_H[] = "$Id: group_sub.h,v 1.6 2000/04/12 05:33:09 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -44,7 +44,7 @@ typedef struct group_sub *group_sub_t;
 #include "panel.h"
 
 /* The format for the callback function */
-typedef void (*group_sub_callback_t)(void *rock, message_t message);
+typedef void (*group_sub_callback_t)(void *rock, message_t message, int show_attachment);
 
 /* Allocates and initializes a new group_sub_t */
 group_sub_t group_sub_alloc(
