@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.24 1999/10/04 11:07:58 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.25 1999/10/04 11:23:06 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -45,7 +45,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.24 1999/10/04 11:07:58 phelps
 #include "history.h"
 #include "tickertape.h"
 #include "Hash.h"
-#include "StringBuffer.h"
 #include "Scroller.h"
 #include "Control.h"
 #include "groups.h"
@@ -73,6 +72,12 @@ static char *sanity_freed = "Freed Ticker";
 #define METAMAIL_OPTIONS "-B -q -b -c"
 
 #define BUFFER_SIZE 1024
+
+#define NO_CONNECT_MSG "Unable to connect to elvin server at %s:%d.  Still trying..."
+#define LOST_CONNECT_MSG \
+"Lost connection to elvin server at %s:%d.  Attemptin to reconnect..."
+
+#define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
 
 /* The tickertape data type */
 struct tickertape
@@ -594,10 +599,6 @@ void tickertape_reload_groups(tickertape_t self)
 	{
 	    group_sub_t old_group = old_groups[old_index];
 
-	    printf("match: %s and %s\n", 
-		   group_sub_expression(old_group),
-		   group_sub_expression(group));
-
 	    group_sub_update_from_sub(old_group, group);
 	    group_sub_free(group);
 	    self -> groups[index] = old_group;
@@ -707,49 +708,43 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
 /* This is called when we lose our elvin connection */
 static void disconnect_callback(tickertape_t self, connection_t connection)
 {
-    StringBuffer buffer;
     message_t message;
-    SANITY_CHECK(self);
-
-    /* Construct a disconnect message */
-    buffer = StringBuffer_alloc();
+    char *host = connection_host(connection);
+    int port = connection_port(connection);
+    char *format;
+    char *buffer;
 
     /* If this is called in the middle of connection_alloc, then
      * self -> connection will be NULL.  Let the user know that we've
      * never managed to connect. */
     if (self -> connection == NULL)
     {
-	StringBuffer_append(buffer, "Unable to connect to elvin server at ");
+	format = NO_CONNECT_MSG;
     }
     else
     {
-	StringBuffer_append(buffer, "Lost connection to elvin server at ");
+	format = LOST_CONNECT_MSG;
     }
 
-    StringBuffer_append(buffer, connection_host(connection));
-    StringBuffer_appendChar(buffer, ':');
-    StringBuffer_appendInt(buffer, connection_port(connection));
+    /* Compose our message */
+    if ((buffer = (char *)malloc(strlen(format) + strlen(host) + 6)) == NULL)
+    {
+	return;
+    }
 
-    if (self -> connection == NULL)
-    {
-	StringBuffer_appendChar(buffer, '.');
-    }
-    else
-    {
-	StringBuffer_append(buffer, ".  Attempting to reconnect.");
-    }
+    sprintf(buffer, format, host, port);
 
     /* Display the message on the scroller */
     message = message_alloc(
 	NULL,
 	"internal", "tickertape",
-	StringBuffer_getBuffer(buffer), 10,
+	buffer, 10,
 	NULL, NULL,
 	0, 0);
     receive_callback(self, message);
     message_free(message);
 
-    StringBuffer_free(buffer);
+    free(buffer);
 }
 
 
@@ -835,22 +830,22 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 /* Subscribes to the Orbit meta-subscription */
 static void subscribe_to_orbit(tickertape_t self)
 {
-    StringBuffer buffer;
-    SANITY_CHECK(self);
+    char *buffer;
 
     /* Construct the subscription expression */
-    buffer = StringBuffer_alloc();
-    StringBuffer_append(buffer, "exists(orbit.view_update) && exists(tickertape) && ");
-    StringBuffer_append(buffer, "user == \"");
-    StringBuffer_append(buffer, self -> user);
-    StringBuffer_append(buffer, "\"");
+    if ((buffer = (char *)malloc(strlen(ORBIT_SUB) + strlen(self -> user) - 1)) == NULL)
+    {
+	return;
+    }
+
+    sprintf(buffer, ORBIT_SUB, self -> user);
 
     /* Subscribe to the meta-subscription */
     connection_subscribe(
-	self -> connection, StringBuffer_getBuffer(buffer),
+	self -> connection, buffer,
 	(notify_callback_t)orbit_callback, self);
 
-    StringBuffer_free(buffer);
+    free(buffer);
 }
 
 #endif /* ORBIT */
