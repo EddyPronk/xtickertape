@@ -3,7 +3,7 @@
 ##
 ## MIME helper to show a URL
 ##
-## $Id: show-url,v 1.1 1998/12/18 07:55:54 phelps Exp $
+## $Id: show-url,v 1.2 1999/01/08 01:56:17 phelps Exp $
 ##
 
 # Where to find netscape
@@ -17,11 +17,12 @@ if [ $# -ne "1" ] ; then
 fi
 
 # If $1 is a filename, then read its contents as a URL
-# otherwise, assume that $1 *IS* the URL
+# otherwise, assume that $1 *IS* the URL.
+# Also run it through sed to get rid of troublesome characters
 if [ -r $1 ] ; then
-    URL=`cat $1`
+    URL=`sed 's/,/%2c/g' $1`
 else
-    URL=$1
+    URL=`echo $1 | sed 's/,/%2c/g'`
 fi
 
 # Try to get netscape to open the URL
