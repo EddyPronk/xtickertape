@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.117 2004/08/03 12:29:17 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.118 2004/09/07 16:31:41 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -115,6 +115,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.117 2004/08/03 12:29:17 phelp
 #define CONNECT_MSG "Connected to elvin server: %s"
 #define LOST_CONNECT_MSG "Lost connection to elvin server %s"
 #define PROTOCOL_ERROR_MSG "Protocol error encountered with server: %s"
+#define NO_DISCOVERY_MSG "Unable to use service discovery"
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 #define DROP_WARN_MSG "One or more packets were dropped"
 
@@ -1347,6 +1348,12 @@ static int status_cb(
 
 	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
 	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_NO_DISCOVERY:
+	{
+	    string = NO_DISCOVERY_MSG;
 	    break;
 	}
 
