@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.16 1998/10/21 02:44:52 phelps Exp $ */
+/* $Id: Control.c,v 1.17 1998/10/21 04:03:45 arnold Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +84,9 @@ struct ControlPanel_t
 
     /* The default user name */
     char *username;
+
+    /* The thread id of the message to which we are replying (if any) */
+    unsigned long reply_thread_id;
 };
 
 
@@ -453,6 +456,8 @@ static void SetSelection(ControlPanel self, MenuItemTuple tuple)
     {
 	SetLabel(self -> group, tuple -> title);
     }
+
+    self -> reply_thread_id = -1;
 }
 
 /* Answers the receiver's user */
@@ -553,6 +558,7 @@ ControlPanel ControlPanel_alloc(Widget parent, char *user)
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
     self -> username = strdup(user);
+    self -> reply_thread_id = -1;
 
     CreateControlPanelPopup(self, self -> top);
     ActionClear(NULL, self, NULL);
@@ -661,18 +667,26 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
 }
 
 
-
 /* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self, void *info)
+void ControlPanel_show(ControlPanel self, Message message)
 {
     MenuItemTuple tuple;
     SANITY_CHECK(self);
 
-    tuple = (MenuItemTuple) info;
-
-    if (tuple != NULL)
+    if (message != NULL)
     {
+      tuple = (MenuItemTuple) Message_getInfo(message);
+
+      if (tuple != NULL)
+      {
 	SetSelection(self, tuple);
+      }
+
+      self -> reply_thread_id = Message_getThreadID(message);
+    }
+    else
+    {
+      self -> reply_thread_id = -1;
     }
 
     XtPopup(self -> top, XtGrabNone);
@@ -682,6 +696,11 @@ void ControlPanel_show(ControlPanel self, void *info)
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self)
 {
+    unsigned long msg_id;
+
+    /* Allocate new message identifier */
+    msg_id = random();
+
     SANITY_CHECK(self);
 
     /* FIX THIS: should include MIME stuff */
@@ -692,7 +711,9 @@ Message ControlPanel_createMessage(ControlPanel self)
 	GetText(self),
 	GetTimeout(self),
 	NULL,
-	NULL);
+	NULL,
+	msg_id,
+	self -> reply_thread_id == -1 ? 0 : msg_id ^ self -> reply_thread_id);
 }
 
 /* Handle notifications */

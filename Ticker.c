@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.3 1998/10/21 02:44:52 phelps Exp $
+ * $Id: Ticker.c,v 1.4 1998/10/21 04:03:47 arnold Exp $
  * COPYRIGHT!
  */
 
@@ -89,12 +89,7 @@ static void Click(Widget widget, Tickertape self, Message message)
     void *info = NULL;
     SANITY_CHECK(self);
 
-    if (message != NULL)
-    {
-	info = Message_getInfo(message);
-    }
-
-    ControlPanel_show(self -> controlPanel, info);
+    ControlPanel_show(self -> controlPanel, message);
 }
 
 /* Receive a Message matched by Subscription */
@@ -178,7 +173,8 @@ static void Error(Tickertape self, char *message)
 
     /* Publish error messages onto the special group tickertape */
     ReceiveMessage(
-	self, Message_alloc(NULL, "internal", "tickertape", message, 10, NULL, NULL));
+	self,
+	Message_alloc(NULL, "internal", "tickertape", message, 10, NULL, NULL, 0, 0));
 
     /* Republish the startup notification */
     PublishStartupNotification(self);

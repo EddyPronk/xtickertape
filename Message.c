@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.8 1998/10/21 01:58:07 phelps Exp $ */
+/* $Id: Message.c,v 1.9 1998/10/21 04:03:46 arnold Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +39,12 @@ struct Message_t
 
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
+
+    /* The identifier for this message */
+    unsigned long msg_id;
+
+    /* The identifier for the discussion thread */
+    unsigned long thread_id;
 };
 
 
@@ -50,7 +56,9 @@ Message Message_alloc(
     char *string,
     unsigned int timeout,
     char *mimeType,
-    char *mimeArgs)
+    char *mimeArgs,
+    unsigned long msg_id,
+    unsigned long thread_id)
 {
     Message self = (Message) malloc(sizeof(struct Message_t));
 
@@ -81,6 +89,9 @@ Message Message_alloc(
     }
 
     self -> timeout = timeout;
+    self -> msg_id = msg_id;
+    self -> thread_id = thread_id;
+
     return self;
 }
 
@@ -178,6 +189,20 @@ char *Message_getMimeArgs(Message self)
     return self -> mimeArgs;
 }
 
+/* Answers the receiver's message identifier */
+unsigned long Message_getID(Message self)
+{
+  SANITY_CHECK(self);
+  return self -> msg_id;
+}
+
+/* Answers the receiver's discussion thread identifier */
+unsigned long Message_getThreadID(Message self)
+{
+  SANITY_CHECK(self);
+  return self -> thread_id;
+}
+
 /* Prints debugging information */
 void Message_debug(Message self)
 {
@@ -192,6 +217,8 @@ void Message_debug(Message self)
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
     printf("  timeout = %ld\n", self -> timeout);
+    printf("  msg_id = %ld\n", self -> msg_id);
+    printf("  thread_id = %ld\n", self -> thread_id);
 }
 
 

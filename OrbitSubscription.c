@@ -1,4 +1,4 @@
-/* $Id: OrbitSubscription.c,v 1.3 1998/10/21 02:44:52 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.4 1998/10/21 04:03:46 arnold Exp $ */
 
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
@@ -68,10 +68,14 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
     en_type_t type;
     char *user;
     char *text;
-    int32 *timeout;
-    int32 value;
+    int32 *timeout_p;
+    int32 timeout;
     char *mimeType;
     char *mimeArgs;
+    int32 *msg_id_p;
+    int32 msg_id;
+    int32 *thread_id_p;
+    int32 thread_id;
     SANITY_CHECK(self);
 
     /* If we don't have a callback then just quit now */
@@ -95,22 +99,22 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
     }
 
     /* Get the timeout for the notification (if provided) */
-    if ((en_search(notification, "TIMEOUT", &type, (void **)&timeout) != 0) ||
+    if ((en_search(notification, "TIMEOUT", &type, (void **)&timeout_p) != 0) ||
 	(type != EN_INT32))
     {
-	timeout = &value;
-	value = 0;
+	timeout_p = &timeout;
+	timeout = 0;
 
 	/* Check to see if it's in ascii format */
 	if (type == EN_STRING)
 	{
 	    char *timeoutString;
 	    en_search(notification, "TIMEOUT", &type, (void **)&timeoutString);
-	    value = atoi(timeoutString);
-	    printf("value=%d\n", value);
+	    timeout = atoi(timeoutString);
+	    printf("timeout=%d\n", timeout);
 	}
 
-	value = (value == 0) ? 10 : value;
+	timeout = (timeout == 0) ? 10 : timeout;
     }
 
     /* Get the MIME type (if provided) */
@@ -127,11 +131,28 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 	mimeArgs = NULL;
     }
 
+    /* Get the message id (if provided) */
+    if ((en_search(notification, "message", &type, (void **)&msg_id_p) != 0) ||
+	(type != EN_INT32))
+    {
+        msg_id = 0;
+	msg_id_p = &msg_id;
+    }
+
+    /* Get the thread id (if provided) */
+    if ((en_search(notification, "thread", &type, (void **)&thread_id_p) != 0) ||
+	(type != EN_INT32))
+    {
+        thread_id = 0;
+	thread_id_p = &thread_id;
+    }
+
     /* Construct the message */
     message = Message_alloc(
 	self -> controlPanelInfo, self -> title,
-	user, text, *timeout,
-	mimeType, mimeArgs);
+	user, text, *timeout_p,
+	mimeType, mimeArgs,
+	*msg_id_p, *thread_id_p);
 
     /* Deliver the message */
     (*self -> callback)(self -> context, message);
@@ -141,15 +162,20 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 void SendMessage(OrbitSubscription self, Message message)
 {
     en_notify_t notification;
-    int32 timeout;
+    int32 timeout, msg_id, thread_id;
     SANITY_CHECK(self);
 
     timeout = Message_getTimeout(message);
+    msg_id = Message_getID(message);
+    thread_id = Message_getThreadID(message);
+
     notification = en_new();
     en_add_string(notification, "zone.id", self -> id);
     en_add_string(notification, "USER", Message_getUser(message));
     en_add_string(notification, "TICKERTEXT", Message_getString(message));
     en_add_int32(notification, "TIMEOUT", timeout);
+    en_add_int32(notification, "message", msg_id);
+    en_add_int32(notification, "thread", thread_id);
 
     ElvinConnection_send(self -> connection, notification);
     en_free(notification);

@@ -1,4 +1,4 @@
-/* $Id: Control.h,v 1.6 1998/10/21 01:58:06 phelps Exp $ */
+/* $Id: Control.h,v 1.7 1998/10/21 04:03:46 arnold Exp $ */
 
 #ifndef CONTROLPANEL_H
 #define CONTROLPANEL_H
@@ -36,7 +36,7 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
 
 
 /* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self, void *data);
+void ControlPanel_show(ControlPanel self, Message message);
 
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self);
