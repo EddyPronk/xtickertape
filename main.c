@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.33 1998/10/29 04:23:10 phelps Exp $ */
+/* $Id: main.c,v 1.34 1998/11/05 01:55:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +8,7 @@
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
+#include <X11/Xmu/Editres.h>
 #include "Ticker.h"
 
 #include "red.xbm"
@@ -283,7 +284,6 @@ int main(int argc, char *argv[])
     char *usenetFile;
     char *host;
     int port;
-    Atom deleteAtom;
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
@@ -305,11 +305,8 @@ int main(int argc, char *argv[])
     /* Create a Tickertape */
     tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
 
-    /* Quit when the window is closed */
-    XtOverrideTranslations(
-	top, XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));
-    deleteAtom = XInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", FALSE);
-    XSetWMProtocols(XtDisplay(top), XtWindow(top), &deleteAtom, 1);
+    /* Enable editres support */
+    XtAddEventHandler(top, (EventMask)0, True, _XEditResCheckMessages, NULL);
 
     /* Let 'er rip! */
     XtAppMainLoop(context);
