@@ -50,7 +50,7 @@ static struct production productions[8] =
     { extend_cons, 2, 2 },
 
     /* 7: <expression-list> ::= <expression> */
-    { identity, 2, 1 }
+    { make_cons, 2, 1 }
 };
 
 #define ERR 0

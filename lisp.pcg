@@ -55,4 +55,4 @@
 <expression-list> ::= <expression-list> <expression>
     [extend_cons]
 <expression-list> ::= <expression>
-    [identity]
+    [make_cons]
