@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.2 1999/10/05 04:31:46 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.3 1999/10/05 05:30:38 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1339,6 +1339,7 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
     /* Destroy it's widget so it isn't in the menu anymore */
     XtDestroyWidget(tuple -> widget);
     tuple -> widget = NULL;
+    self -> group_count--;
 
     /* Update the indices of the other tuples */
     XtVaGetValues(
@@ -1361,7 +1362,7 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 	    }
 
 	    /* Remember the first tuple just in case */
-	    if ((child_tuple -> index == 0) && (child_tuple != tuple))
+	    if ((child_tuple -> index == 0) && (child_tuple -> widget != NULL))
 	    {
 		first_tuple = child_tuple;
 	    }
@@ -1373,8 +1374,6 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
     {
 	set_group_selection(self, first_tuple);
     }
-
-    self -> group_count--;
 
     /* Free up some memory */
     free(tuple -> title);
@@ -1429,7 +1428,7 @@ void control_panel_set_index(control_panel_t self, void *info, int index)
 	XmNlabelString, string,
 	XmNuserData, tuple,
 	NULL);
-	XmStringFree(string);
+    XmStringFree(string);
 
     /* Add a callback to update the selection when the item is specified */
     XtAddCallback(
