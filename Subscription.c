@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.15 1998/10/23 17:01:44 phelps Exp $ */
+/* $Id: Subscription.c,v 1.16 1998/10/23 17:40:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -212,10 +212,7 @@ static void GetFromGroupFileLine(
     maxTime = TranslateTime(token);
 
     /* optional subscription expression */
-    FileStreamTokenizer_setWhitespace(tokenizer, "");
-    token = FileStreamTokenizer_next(tokenizer);
-    FileStreamTokenizer_setWhitespace(tokenizer, ":");
-
+    token = FileStreamTokenizer_nextWithSpec(tokenizer, "", "\n");
     if ((token == NULL) || (*token == '\n'))
     {
 	StringBuffer buffer = StringBuffer_alloc();
@@ -230,7 +227,7 @@ static void GetFromGroupFileLine(
 	    callback, context);
 	StringBuffer_free(buffer);
     }
-    else
+    else /* token should be the subscription expression */
     {
 	subscription = Subscription_alloc(
 	    group, token,
