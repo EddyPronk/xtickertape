@@ -5,6 +5,7 @@ bin_SCRIPTS = show-url
 # xtickertape has many sources
 xtickertape_SOURCES = \
 	sanity.h \
+	glyph.h gap.c message_glyph.c \
 	Tickertape.h Tickertape.c \
 	Control.h Control.c \
 	Scroller.h ScrollerP.h Scroller.c \
