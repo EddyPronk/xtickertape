@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.32 2001/08/25 09:44:43 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.33 2001/08/25 10:04:04 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -279,7 +279,7 @@ HistoryClassRec historyClassRec =
     {
 	border_highlight, /* border_highlight */
 	border_unhighlight, /* border_unhighlight */
-	XtInheritTranslations, /* translations */
+	NULL, /* translations */
 	NULL, /* arm_and_activate_proc */
 	NULL, /* synthetic resources */
 	0, /* num syn res */
