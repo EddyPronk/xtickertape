@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.25 1999/11/08 08:17:52 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.26 1999/11/08 09:26:16 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -283,7 +283,6 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
     /* Update the lbearing and rbearing */
     if (lbearing != NULL)
     {
-	printf("final left=%d\n", left);
 	*lbearing = left;
     }
 
