@@ -47,6 +47,8 @@
     [make_dot_list]
 <expression> ::= LPAREN RPAREN
     [make_nil]
+<expression> ::= QUOTE <expression>
+    [make_quote]
 <expression> ::= ATOM
     [identity]
 
