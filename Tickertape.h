@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: Tickertape.h,v 1.8 1998/12/24 05:48:30 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: Tickertape.h,v 1.9 1999/05/22 08:23:28 phelps Exp $";
 #endif /* lint */
 
 typedef struct Tickertape_t *Tickertape;
@@ -47,7 +47,7 @@ typedef struct Tickertape_t *Tickertape;
  * her groups file and connecting to the notification service
  * specified by host and port */
 Tickertape Tickertape_alloc(
-    char *user,
+    char *user, char *tickerDir,
     char *groupsFile, char *usenetFile,
     char *host, int port,
     Widget top);
@@ -63,5 +63,21 @@ void Tickertape_handleNotify(Tickertape self, Widget widget);
 
 /* Handles the quit action */
 void Tickertape_handleQuit(Tickertape self, Widget widget);
+
+
+/* Answers the receiver's tickerDir filename */
+char *Tickertape_tickerDir(Tickertape self);
+
+/* Answers the receiver's groups file filename */
+char *Tickertape_groupsFilename(Tickertape self);
+
+/* Answers the receiver's usenet filename */
+char *Tickertape_usenetFilename(Tickertape self);
+
+/* Answers the receiver's groups file */
+FILE *Tickertape_groupsFile(Tickertape self);
+
+/* Answers the receiver's usenet file */
+FILE *Tickertape_usenetFile(Tickertape self);
 
 #endif /* TICKERTAPE_H */

@@ -28,11 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.36 1999/05/21 05:29:09 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.37 1999/05/22 08:23:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 #include <X11/Intrinsic.h>
 #include "sanity.h"
 #include "Tickertape.h"
@@ -53,6 +58,11 @@ static char *sanity_value = "Ticker";
 static char *sanity_freed = "Freed Ticker";
 #endif /* SANITY */
 
+#define DEFAULT_TICKERDIR ".ticker"
+#define DEFAULT_GROUPS_FILE "groups"
+#define DEFAULT_USENET_FILE "usenet"
+
+
 /* The Tickertape data type */
 struct Tickertape_t
 {
@@ -62,6 +72,9 @@ struct Tickertape_t
 
     /* The user's name */
     char *user;
+
+    /* The receiver's ticker directory */
+    char *tickerDir;
 
     /* The group file from which we read our subscriptions */
     char *groupsFile;
@@ -101,6 +114,7 @@ struct Tickertape_t
  * Static function headers
  *
  */
+static int mkdirhier(char *dirname);
 static void PublishStartupNotification(Tickertape self);
 static void Click(Widget widget, Tickertape self, Message message);
 static void ReceiveMessage(Tickertape self, Message message);
@@ -121,6 +135,45 @@ static void SubscribeToOrbit(Tickertape self);
  * Static functions
  *
  */
+
+/* Makes the named directory and any parent directories needed */
+static int mkdirhier(char *dirname)
+{
+    char *pointer;
+
+    /* End the recursion */
+    if (*dirname == '\0')
+    {
+	return 0;
+    }
+
+    /* Find the last '/' in the directory name */
+    if ((pointer = strrchr(dirname, '/')) != NULL)
+    {
+	int result;
+
+	/* Call ourselves recursively to make sure the parent
+	 * directory exists */
+	*pointer = '\0';
+	result = mkdirhier(dirname);
+	*pointer = '/';
+
+	/* If we couldn't create the parent directory, then fail */
+	if (result < 0)
+	{
+	    return result;
+	}
+    }
+
+    /* Try to make the directory */
+    if (mkdir(dirname, 0777) == 0)
+    {
+	return 0;
+    }
+
+    /* Directory already exists is the same as success! */
+    return (errno == EEXIST) ? 0 : -1;
+}
 
 /* Publishes a notification indicating that the receiver has started */
 static void PublishStartupNotification(Tickertape self)
@@ -159,19 +212,20 @@ static void ReceiveMessage(Tickertape self, Message message)
  * successful, NULL otherwise */
 static List ReadGroupsFile(Tickertape self)
 {
+    FILE *file;
     List subscriptions;
-    
-    /* No groups file, no subscriptions list */
-    if (self -> groupsFile == NULL)
+
+    /* Open the groups file and read */
+    if ((file = Tickertape_groupsFile(self)) == NULL)
     {
 	return List_alloc();
     }
 
-    /* Open the groups file and read */
+    /* Read the file */
     subscriptions = Subscription_readFromGroupFile(
-	self -> groupsFile, self -> user,
-	(SubscriptionCallback)ReceiveMessage, self);
+	file, (SubscriptionCallback)ReceiveMessage, self);
 
+    fclose(file);
     return subscriptions;
 }
 
@@ -182,9 +236,9 @@ static UsenetSubscription ReadUsenetFile(Tickertape self)
     FILE *file;
     UsenetSubscription subscription;
 
-    if ((file = fopen(self -> usenetFile, "r")) == NULL)
+    /* Open the usenet file and read */
+    if ((file = Tickertape_usenetFile(self)) == NULL)
     {
-	fprintf(stderr, "*** unable to open usenet file %s\n", self -> usenetFile);
 	return NULL;
     }
 
@@ -501,7 +555,7 @@ static void SubscribeToOrbit(Tickertape self)
  * her groups file and connecting to the notification service
  * specified by host and port */
 Tickertape Tickertape_alloc(
-    char *user,
+    char *user, char *tickerDir,
     char *groupsFile, char *usenetFile,
     char *host, int port,
     Widget top)
@@ -511,8 +565,9 @@ Tickertape Tickertape_alloc(
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
     self -> user = strdup(user);
-    self -> groupsFile = strdup(groupsFile);
-    self -> usenetFile = strdup(usenetFile);
+    self -> tickerDir = (tickerDir == NULL) ? NULL : strdup(tickerDir);
+    self -> groupsFile = (groupsFile == NULL) ? NULL : strdup(groupsFile);
+    self -> usenetFile = (usenetFile == NULL) ? NULL : strdup(usenetFile);
     self -> top = top;
     self -> subscriptions = ReadGroupsFile(self);
     self -> usenetSubscription = ReadUsenetFile(self);
@@ -598,6 +653,26 @@ void Tickertape_free(Tickertape self)
 #endif /* SANITY */
 }
 
+/* Debugging */
+void Tickertape_debug(Tickertape self)
+{
+    SANITY_CHECK(self);
+
+    printf("Tickertape\n");
+    printf("  user = \"%s\"\n", self -> user);
+    printf("  tickerDir = \"%s\"\n", (self -> tickerDir == NULL) ? "null" : self -> tickerDir);
+    printf("  groupsFile = \"%s\"\n", (self -> groupsFile == NULL) ? "null" : self -> groupsFile);
+    printf("  usenetFile = \"%s\"\n", (self -> usenetFile == NULL) ? "null" : self -> usenetFile);
+    printf("  top = 0x%p\n", self -> top);
+    printf("  subscriptions = 0x%p\n", self -> subscriptions);
+#ifdef ORBIT
+    printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
+#endif /* ORBIT */
+    printf("  connection = 0x%p\n", self -> connection);
+    printf("  controlPanel = 0x%p\n", self -> controlPanel);
+    printf("  scroller = 0x%p\n", self -> scroller);
+}
+
 
 /* Handle the notify action */
 void Tickertape_handleNotify(Tickertape self, Widget widget)
@@ -621,22 +696,146 @@ void Tickertape_handleQuit(Tickertape self, Widget widget)
     XtPopdown(widget);
 }
 
-/* Debugging */
-void Tickertape_debug(Tickertape self)
+/* Answers the receiver's tickerDir filename */
+char *Tickertape_tickerDir(Tickertape self)
 {
-    SANITY_CHECK(self);
+    /* See if we've already looked it up */
+    if (self -> tickerDir != NULL)
+    {
+	return self -> tickerDir;
+    }
 
-    printf("Tickertape\n");
-    printf("  user = \"%s\"\n", self -> user);
-    printf("  groupsFile = \"%s\"\n", self -> groupsFile);
-    printf("  usenetFile = \"%s\"\n", self -> usenetFile);
-    printf("  top = 0x%p\n", self -> top);
-    printf("  subscriptions = 0x%p\n", self -> subscriptions);
-#ifdef ORBIT
-    printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
-#endif /* ORBIT */
-    printf("  connection = 0x%p\n", self -> connection);
-    printf("  controlPanel = 0x%p\n", self -> controlPanel);
-    printf("  scroller = 0x%p\n", self -> scroller);
+    /* Use the TICKERDIR environment variable if it is set */
+    if ((self -> tickerDir = getenv("TICKERDIR")) == NULL)
+    {
+	char *home;
+
+	/* Else look up the user's home directory (default to '/' if not set) */
+	if ((home = getenv("HOME")) == NULL)
+	{
+	    home = "/";
+	}
+
+	/* And append /.ticker to it to construct the directory name */
+	self -> tickerDir = (char *)malloc(strlen(home) + sizeof(DEFAULT_TICKERDIR) + 1);
+	strcpy(self -> tickerDir, home);
+	strcat(self -> tickerDir, "/");
+	strcat(self -> tickerDir, DEFAULT_TICKERDIR);
+    }
+
+    /* Make sure the TICKERDIR exists 
+     * Note: we're being clever here and assuming that nothing will
+     * call Tickertape_tickerDir() if both groupsFile and usenetFile
+     * are set */
+    mkdirhier(self -> tickerDir);
+    return self -> tickerDir;
 }
 
+/* Answers the receiver's groups file filename */
+char *Tickertape_groupsFilename(Tickertape self)
+{
+    if (self -> groupsFile == NULL)
+    {
+	char *dir = Tickertape_tickerDir(self);
+	self -> groupsFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
+	strcpy(self -> groupsFile, dir);
+	strcat(self -> groupsFile, "/");
+	strcat(self -> groupsFile, DEFAULT_GROUPS_FILE);
+    }
+
+    return self -> groupsFile;
+}
+
+/* Answers the receiver's usenet filename */
+char *Tickertape_usenetFilename(Tickertape self)
+{
+    if (self -> usenetFile == NULL)
+    {
+	char *dir = Tickertape_tickerDir(self);
+	self -> usenetFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
+	strcpy(self -> usenetFile, dir);
+	strcat(self -> usenetFile, "/");
+	strcat(self -> usenetFile, DEFAULT_USENET_FILE);
+    }
+
+    return self -> usenetFile;
+}
+
+
+/* Answers the receiver's groups file */
+FILE *Tickertape_groupsFile(Tickertape self)
+{
+    char *filename = Tickertape_groupsFilename(self);
+    FILE *file;
+    int result;
+
+    /* Try to open the file */
+    if ((file = fopen(filename, "r")) != NULL)
+    {
+	return file;
+    }
+
+    /* If failure was not due to a missing file, then fail */
+    if (errno != ENOENT)
+    {
+	return NULL;
+    }
+
+    /* Try to create the file */
+    if ((file = fopen(filename, "w")) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Try to write a default groups file for the current user */
+    result = Subscription_writeDefaultGroupsFile(file, self -> user);
+    fclose(file);
+
+    if (result < 0)
+    {
+	unlink(filename);
+	return NULL;
+    }
+
+    /* Try to open the newly created file */
+    return fopen(filename, "r");
+}
+
+/* Answers the receiver's usenet file */
+FILE *Tickertape_usenetFile(Tickertape self)
+{
+    char *filename = Tickertape_usenetFilename(self);
+    FILE *file;
+    int result;
+
+    /* Try to open the file */
+    if ((file = fopen(filename, "r")) != NULL)
+    {
+	return file;
+    }
+
+    /* If failure was not due to a missing file, then fail */
+    if (errno != ENOENT)
+    {
+	return NULL;
+    }
+
+    /* Try to create the file */
+    if ((file = fopen(filename, "w")) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Try to write a default usenet file for the current user */
+/*    result = UsenetSubscription_writeDefaultUsenetFile(file, self -> user);*/
+    fclose(file);
+
+    if (result < 0)
+    {
+	unlink(filename);
+	return NULL;
+    }
+
+    /* Try to open the newly created file */
+    return fopen(filename, "r");
+}
