@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2000.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.8 2002/04/23 16:22:24 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.9 2003/01/23 09:47:11 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -490,7 +490,7 @@ void mbox_parser_debug(mbox_parser_t self, FILE *out)
 int mbox_parser_parse(mbox_parser_t self, char *mailbox)
 {
     int length;
-    char *pointer;
+    unsigned char *pointer;
 
     /* Make sure we have enough room in our buffers */
     length = strlen(mailbox) + 1;
@@ -508,9 +508,9 @@ int mbox_parser_parse(mbox_parser_t self, char *mailbox)
     self -> parser_state = PRE_ROUTE_ADDR;
 
     /* Send each character to the lexer */
-    for (pointer = mailbox; *pointer != '\0'; pointer++)
+    for (pointer = (unsigned char *)mailbox; *pointer != '\0'; pointer++)
     {
-	if ((self -> lexer_state)(self, *pointer) < 0)
+	if (self -> lexer_state(self, *pointer) < 0)
 	{
 	    return -1;
 	}

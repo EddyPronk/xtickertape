@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2002-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.6 2003/01/11 13:25:37 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.7 2003/01/23 09:47:11 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -728,7 +728,8 @@ void keys_parser_free(keys_parser_t self)
  * interpreted as an end-of-input marker */
 int keys_parser_parse(keys_parser_t self, char *buffer, size_t length)
 {
-    char *pointer;
+    unsigned char *end = (unsigned char *)buffer;
+    unsigned char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0)
@@ -737,7 +738,7 @@ int keys_parser_parse(keys_parser_t self, char *buffer, size_t length)
     }
 
     /* Parse the buffer */
-    for (pointer = buffer; pointer < buffer + length; pointer++)
+    for (pointer = (unsigned char *)buffer; pointer < end; pointer++)
     {
 	if (parse_char(self, *pointer) < 0)
 	{

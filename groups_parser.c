@@ -1,7 +1,7 @@
 /* -*- mode: c; c-file-style: "elvin" -*- */
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -29,7 +29,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.27 2002/07/04 06:55:47 arnold Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.28 2003/01/23 09:47:11 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1113,7 +1113,8 @@ void groups_parser_free(groups_parser_t self)
  * interpreted as an end-of-input marker */
 int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
 {
-    char *pointer;
+    unsigned char *end = (unsigned char *)buffer + length;
+    unsigned char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0)
@@ -1122,7 +1123,7 @@ int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
     }
 
     /* Parse the buffer */
-    for (pointer = buffer; pointer < buffer + length; pointer++)
+    for (pointer = (unsigned char *)buffer; pointer < end; pointer++)
     {
 	if (parse_char(self, *pointer) < 0)
 	{
