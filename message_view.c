@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.21 2003/01/14 12:16:32 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.22 2003/01/14 12:52:49 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -80,7 +80,7 @@ static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
 
 /* Information used to display a UTF-8 string in a given font */
-struct code_set_info
+struct utf8_renderer
 {
     /* The font to use */
     XFontStruct *font;
@@ -151,195 +151,6 @@ static XCharStruct *per_char(
     return &empty_char;
 }
 
-/* Wrapper around iconv() to catch most of the nasty gotchas */
-static size_t code_set_info_iconv(
-    code_set_info_t self,
-    char **inbuf, size_t *inbytesleft,
-    char **outbuf, size_t *outbytesleft)
-{
-    size_t length;
-    size_t count;
-
-    /* An invalid conversion descriptor becomes memcpy */
-    if (self -> cd == (iconv_t)-1)
-    {
-	if (inbytesleft == NULL || outbytesleft == NULL)
-	{
-	    return 0;
-	}
-
-	length =  MIN(*inbytesleft, *outbytesleft);
-	memcpy(*outbuf, *inbuf, length);
-	*inbuf += length;
-	*inbytesleft -= length;
-	*outbuf += length;
-	*outbytesleft -= length;
-	return 0;
-    }
-
-    /* Watch for a NULL transformation */
-    if (inbytesleft == NULL || outbytesleft == NULL)
-    {
-	return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
-    }
-
-    /* Keep going even when we encounter invalid or unrepresentable
-     * characters (this assumes UTF-8 as the input code set */
-    count = 0;
-    while (*inbytesleft && *outbytesleft)
-    {
-	size_t n;
-
-	/* Try to convert the sequence */
-	if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
-	{
-	    switch (errno)
-	    {
-		case E2BIG:
-		{
-		    return count;
-		}
-
-		case EILSEQ:
-		{
-		    errno = 0;
-
-		    /* Dump the illegal character */
-		    (*inbuf)++;
-		    (*inbytesleft)--;
-
-		    /* Insert the default character */
-		    if (self -> dimension == 1)
-		    {
-			*(*outbuf)++ = self -> font -> default_char;
-			(*outbytesleft)--;
-		    } else
-		    {
-			*(*outbuf)++ = self -> font -> default_char >> 8;
-			*(*outbuf)++ = self -> font -> default_char & 0xFF;
-			(*outbytesleft) += 2;
-		    }
-
-		    count++;
-
-		    /* Reset the conversion descriptor */
-		    iconv(self -> cd, NULL, NULL, NULL, NULL);
-		    break;
-		}
-
-		default:
-		{
-		    perror("iconv() failed");
-		    return (size_t)-1;
-		}
-	    }
-	}
-	else
-	{
-	    count += n;
-	}
-    }
-
-    return count;
-}
-
-/* Measures all of the characters in a string */
-static void measure_string(
-    code_set_info_t self,
-    char *string,
-    string_sizes_t sizes)
-{
-    char buffer[BUFFER_SIZE];
-    XCharStruct *info;
-    long lbearing = 0;
-    long rbearing = 0;
-    long width = 0;
-    char *out_point;
-    size_t in_length;
-    size_t out_length;
-    int is_first;
-
-    /* Count the number of bytes in the string */
-    in_length = strlen(string);
-
-    /* Keep going until we get the whole string */
-    is_first = True;
-    while (in_length != 0)
-    {
-	/* Convert the string into the display code set */
-	out_length = BUFFER_SIZE;
-	out_point = buffer;
-	if (code_set_info_iconv(
-		self,
-		&string, &in_length,
-		&out_point, &out_length) == (size_t)-1 &&
-	    errno != E2BIG)
-	{
-	    /* This shouldn't fail */
-	    abort();
-	}
-
-	/* Measure the characters */
-	if (self -> dimension == 1)
-	{
-	    unsigned char *point = (unsigned char *)buffer;
-
-	    /* Set the initial measurements */
-	    if (is_first)
-	    {
-		is_first = False;
-		info = per_char(self -> font, 0, *point);
-		lbearing = info -> lbearing;
-		rbearing = info -> rbearing;
-		width = info -> width;
-		point++;
-	    }
-
-	    /* Adjust for the rest of the string */
-	    while (point < (unsigned char *)out_point)
-	    {
-		info = per_char(self -> font, 0, *point);
-		lbearing = MIN(lbearing, width + (long)info -> lbearing);
-		rbearing = MAX(rbearing, width + (long)info -> rbearing);
-		width += (long)info -> width;
-		point++;
-	    }
-	}
-	else
-	{
-	    XChar2b *point = (XChar2b *)buffer;
-
-	    /* Set the initial measurements */
-	    if (is_first)
-	    {
-		is_first = False;
-		info = per_char(self -> font, point -> byte1, point -> byte2);
-		lbearing = info -> lbearing;
-		rbearing = info -> rbearing;
-		width = info -> width;
-		point++;
-	    }
-
-	    /* Adjust for the rest of the string */
-	    while (point < (XChar2b *)out_point)
-	    {
-		info = per_char(self -> font, point -> byte1, point -> byte2);
-		lbearing = MIN(lbearing, width + (long)info -> lbearing);
-		rbearing = MAX(rbearing, width + (long)info -> rbearing);
-		width += (long)info -> width;
-		point++;
-	    }
-	}
-    }
-
-    /* Record our findings */
-    sizes -> lbearing = lbearing;
-    sizes -> rbearing = rbearing;
-    sizes -> width = width;
-    sizes -> ascent = self -> font -> ascent;
-    sizes -> descent = self -> font -> descent;
-}
-
 
 /* Returns the number of bytes required to encode a single character
  * in the output encoding */
@@ -371,14 +182,14 @@ static int cd_dimension(iconv_t cd)
  * be displayed in a given font from a given code set.  If tocode is
  * non-NULL then it will be used, otherwise an attempt will be made to
  * guess the font's encoding */
-code_set_info_t code_set_info_alloc(
+utf8_renderer_t utf8_renderer_alloc(
     Display *display,
     XFontStruct *font,
     const char *tocode)
 {
     static Atom registry = None;
     static Atom encoding = None;
-    code_set_info_t self;
+    utf8_renderer_t self;
     iconv_t cd;
     int dimension;
     Atom atoms[2];
@@ -387,8 +198,8 @@ code_set_info_t code_set_info_alloc(
     size_t length;
     unsigned long value;
 
-    /* Allocate room for the new code_set_info */
-    if ((self = (code_set_info_t)malloc(sizeof(struct code_set_info))) == NULL)
+    /* Allocate room for the new utf8_renderer */
+    if ((self = (utf8_renderer_t)malloc(sizeof(struct utf8_renderer))) == NULL)
     {
 	return NULL;
     }
@@ -514,14 +325,202 @@ code_set_info_t code_set_info_alloc(
     return self;
 }
 
+/* Wrapper around iconv() to catch most of the nasty gotchas */
+static size_t utf8_renderer_iconv(
+    utf8_renderer_t self,
+    char **inbuf, size_t *inbytesleft,
+    char **outbuf, size_t *outbytesleft)
+{
+    size_t length;
+    size_t count;
+
+    /* An invalid conversion descriptor becomes memcpy */
+    if (self -> cd == (iconv_t)-1)
+    {
+	if (inbytesleft == NULL || outbytesleft == NULL)
+	{
+	    return 0;
+	}
+
+	length =  MIN(*inbytesleft, *outbytesleft);
+	memcpy(*outbuf, *inbuf, length);
+	*inbuf += length;
+	*inbytesleft -= length;
+	*outbuf += length;
+	*outbytesleft -= length;
+	return 0;
+    }
+
+    /* Watch for a NULL transformation */
+    if (inbytesleft == NULL || outbytesleft == NULL)
+    {
+	return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
+    }
+
+    /* Keep going even when we encounter invalid or unrepresentable
+     * characters (this assumes UTF-8 as the input code set */
+    count = 0;
+    while (*inbytesleft && *outbytesleft)
+    {
+	size_t n;
+
+	/* Try to convert the sequence */
+	if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
+	{
+	    switch (errno)
+	    {
+		case E2BIG:
+		{
+		    return count;
+		}
+
+		case EILSEQ:
+		{
+		    errno = 0;
+
+		    /* Dump the illegal character */
+		    (*inbuf)++;
+		    (*inbytesleft)--;
+
+		    /* Insert the default character */
+		    if (self -> dimension == 1)
+		    {
+			*(*outbuf)++ = self -> font -> default_char;
+			(*outbytesleft)--;
+		    } else
+		    {
+			*(*outbuf)++ = self -> font -> default_char >> 8;
+			*(*outbuf)++ = self -> font -> default_char & 0xFF;
+			(*outbytesleft) += 2;
+		    }
+
+		    count++;
+
+		    /* Reset the conversion descriptor */
+		    iconv(self -> cd, NULL, NULL, NULL, NULL);
+		    break;
+		}
+
+		default:
+		{
+		    perror("iconv() failed");
+		    return (size_t)-1;
+		}
+	    }
+	}
+	else
+	{
+	    count += n;
+	}
+    }
+
+    return count;
+}
+
+/* Measures all of the characters in a string */
+static void utf8_renderer_measure_string(
+    utf8_renderer_t self,
+    char *string,
+    string_sizes_t sizes)
+{
+    char buffer[BUFFER_SIZE];
+    XCharStruct *info;
+    long lbearing = 0;
+    long rbearing = 0;
+    long width = 0;
+    char *out_point;
+    size_t in_length;
+    size_t out_length;
+    int is_first;
+
+    /* Count the number of bytes in the string */
+    in_length = strlen(string);
+
+    /* Keep going until we get the whole string */
+    is_first = True;
+    while (in_length != 0)
+    {
+	/* Convert the string into the display code set */
+	out_length = BUFFER_SIZE;
+	out_point = buffer;
+	if (utf8_renderer_iconv(
+		self,
+		&string, &in_length,
+		&out_point, &out_length) == (size_t)-1 &&
+	    errno != E2BIG)
+	{
+	    /* This shouldn't fail */
+	    abort();
+	}
+
+	/* Measure the characters */
+	if (self -> dimension == 1)
+	{
+	    unsigned char *point = (unsigned char *)buffer;
+
+	    /* Set the initial measurements */
+	    if (is_first)
+	    {
+		is_first = False;
+		info = per_char(self -> font, 0, *point);
+		lbearing = info -> lbearing;
+		rbearing = info -> rbearing;
+		width = info -> width;
+		point++;
+	    }
+
+	    /* Adjust for the rest of the string */
+	    while (point < (unsigned char *)out_point)
+	    {
+		info = per_char(self -> font, 0, *point);
+		lbearing = MIN(lbearing, width + (long)info -> lbearing);
+		rbearing = MAX(rbearing, width + (long)info -> rbearing);
+		width += (long)info -> width;
+		point++;
+	    }
+	}
+	else
+	{
+	    XChar2b *point = (XChar2b *)buffer;
+
+	    /* Set the initial measurements */
+	    if (is_first)
+	    {
+		is_first = False;
+		info = per_char(self -> font, point -> byte1, point -> byte2);
+		lbearing = info -> lbearing;
+		rbearing = info -> rbearing;
+		width = info -> width;
+		point++;
+	    }
+
+	    /* Adjust for the rest of the string */
+	    while (point < (XChar2b *)out_point)
+	    {
+		info = per_char(self -> font, point -> byte1, point -> byte2);
+		lbearing = MIN(lbearing, width + (long)info -> lbearing);
+		rbearing = MAX(rbearing, width + (long)info -> rbearing);
+		width += (long)info -> width;
+		point++;
+	    }
+	}
+    }
+
+    /* Record our findings */
+    sizes -> lbearing = lbearing;
+    sizes -> rbearing = rbearing;
+    sizes -> width = width;
+    sizes -> ascent = self -> font -> ascent;
+    sizes -> descent = self -> font -> descent;
+}
 
 /* Draw a string within the bounding box, measuring the characters so
  * as to minimize bandwidth requirements */
-static void draw_string(
+static void utf8_renderer_draw_string(
     Display *display,
     Drawable drawable,
     GC gc,
-    code_set_info_t cs_info,
+    utf8_renderer_t cs_info,
     int x, int y,
     XRectangle *bbox,
     char *string)
@@ -543,7 +542,7 @@ static void draw_string(
 	/* Convert the string into the font's code set */
 	out_length = BUFFER_SIZE;
 	out_point = buffer;
-	if (code_set_info_iconv(
+	if (utf8_renderer_iconv(
 		cs_info,
 		&string, &in_length,
 		&out_point, &out_length) == (size_t)-1 &&
@@ -588,7 +587,7 @@ static void draw_string(
 			else
 			{
 			    /* Reset the conversion descriptor */
-			    if (code_set_info_iconv(
+			    if (utf8_renderer_iconv(
 				    cs_info,
 				    NULL, NULL,
 				    NULL, NULL) == (size_t)-1)
@@ -641,7 +640,7 @@ static void draw_string(
 			else
 			{
 			    /* Reset the conversion descriptor */
-			    if (code_set_info_iconv(
+			    if (utf8_renderer_iconv(
 				    cs_info,
 				    NULL, NULL,
 				    NULL, NULL) == (size_t)-1)
@@ -678,7 +677,7 @@ struct message_view
     long indent_width;
 
     /* Code set information */
-    code_set_info_t cs_info;
+    utf8_renderer_t cs_info;
 
     /* Should the message be underlined? */
     Bool has_underline;
@@ -735,7 +734,7 @@ static void paint_string(
     long x, long y,
     XRectangle *bbox,
     string_sizes_t sizes,
-    code_set_info_t cs_info,
+    utf8_renderer_t cs_info,
     char *string,
     Bool has_underline)
 {
@@ -753,7 +752,7 @@ static void paint_string(
 	XChangeGC(display, gc, GCForeground, &values);
 
 	/* Draw the string */
-	draw_string(display, drawable, gc, cs_info, x, y, bbox, string);
+	utf8_renderer_draw_string(display, drawable, gc, cs_info, x, y, bbox, string);
     }
 
     /* Bail out if we're not underlining */
@@ -790,7 +789,7 @@ static void paint_string(
 message_view_t message_view_alloc(
     message_t message,
     long indent,
-    code_set_info_t cs_info)
+    utf8_renderer_t cs_info)
 {
     message_view_t self;
     struct tm *timestamp;
@@ -835,7 +834,7 @@ message_view_t message_view_alloc(
 	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
 
     /* Measure the width of the string to use for noon */
-    measure_string(cs_info, NOON_TIMESTAMP, &sizes);
+    utf8_renderer_measure_string(cs_info, NOON_TIMESTAMP, &sizes);
     self -> noon_width = sizes.width;
 
     /* Figure out how much to indent the message */
@@ -843,11 +842,11 @@ message_view_t message_view_alloc(
     self -> indent_width = info -> width * 2;
 
     /* Measure the message's strings */
-    measure_string(cs_info, self -> timestamp, &self -> timestamp_sizes);
-    measure_string(cs_info, message_get_group(message), &self -> group_sizes);
-    measure_string(cs_info, message_get_user(message), &self -> user_sizes);
-    measure_string(cs_info, message_get_string(message), &self -> message_sizes);
-    measure_string(cs_info, SEPARATOR, &self -> separator_sizes);
+    utf8_renderer_measure_string(cs_info, self -> timestamp, &self -> timestamp_sizes);
+    utf8_renderer_measure_string(cs_info, message_get_group(message), &self -> group_sizes);
+    utf8_renderer_measure_string(cs_info, message_get_user(message), &self -> user_sizes);
+    utf8_renderer_measure_string(cs_info, message_get_string(message), &self -> message_sizes);
+    utf8_renderer_measure_string(cs_info, SEPARATOR, &self -> separator_sizes);
     return self;
 }
 

@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.25 2003/01/10 11:57:23 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.26 2003/01/14 12:52:48 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -126,7 +126,7 @@ typedef struct
     GC gc;
 
     /* The code set info used to display UTF-8 strings */
-    code_set_info_t cs_info;
+    utf8_renderer_t renderer;
 
     /* The vertical scrollbar */
     Widget vscrollbar;

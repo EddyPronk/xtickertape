@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.138 2003/01/10 11:57:23 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.139 2003/01/14 12:52:48 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -336,7 +336,7 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
     /* Allocate a message view for display */
     if ((self -> message_view = message_view_alloc(
 	     message, 0,
-	     widget -> scroller.cs_info)) == NULL)
+	     widget -> scroller.renderer)) == NULL)
     {
 	glyph_free(self);
 	return NULL;
@@ -938,7 +938,7 @@ static void initialize(
     }
 
     /* Try to allocate a conversion descriptor */
-    if ((self -> scroller.cs_info = code_set_info_alloc(
+    if ((self -> scroller.renderer = utf8_renderer_alloc(
 	     XtDisplay(widget),
 	     self -> scroller.font,
 	     self -> scroller.code_set)) == NULL)

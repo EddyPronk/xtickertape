@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.46 2003/01/10 11:57:24 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.47 2003/01/14 12:52:49 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -82,7 +82,7 @@ typedef struct
     /* Private state */
 
     /* The code set info used to display UTF-8 strings */
-    code_set_info_t cs_info;
+    utf8_renderer_t renderer;
 
     /* The timer used to do the scrolling */
     XtIntervalId timer;
