@@ -89,7 +89,7 @@ fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/time.h unistd.h)
+AC_CHECK_HEADERS(arpa/inet.h fcntl.h getopt.h libintl.h netdb.h netinet/in.h sys/socket.h sys/time.h unistd.h)
 
 # See if we can track down Motif/LessTif
 AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
@@ -132,10 +132,20 @@ AC_HEADER_STDC
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
+AC_C_CONST
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_FUNC_STAT
+AC_FUNC_STRTOD
+AC_HEADER_SYS_WAIT
+AC_STRUCT_TM
+AC_TYPE_PID_T
+AC_TYPE_SIGNAL
+AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
 dnl =============================
-AC_CHECK_FUNCS(strdup)
+AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memmove memset mkdir setlocale socket strcasecmp strchr strdup strerror strrchr uname])
 
 
 
