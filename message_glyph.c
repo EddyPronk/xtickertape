@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.12 1999/09/08 04:19:11 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.13 1999/09/09 07:41:34 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -227,7 +227,7 @@ static unsigned int measure_string(XFontStruct *font, char *string)
 	width += char_info -> width;
     }
 
-    return result;
+    return result < width ? width : result;
 }
 
 /* Draws a String with an optional underline */
@@ -250,13 +250,13 @@ static void paint_string(
     /* If the glyph is off to the right of the rectangle then quit */
     first = (unsigned char *)string;
     char_info = per_char(font, *first);
-    if ((x + width < left - char_info -> lbearing) && (x + width < left))
+    if (x + width < left + char_info -> lbearing)
     {
 	return;
     }
 
     /* Find the first visible character in the string */
-    while ((left + char_info -> rbearing < x) && (left + char_info -> width < x))
+    while (left + char_info -> rbearing < x)
     {
 	left += char_info -> width;
 	first++;
@@ -266,7 +266,7 @@ static void paint_string(
     /* Find the character *after* the last visible character */
     last = first;
     right = left;
-    while (((right - char_info -> lbearing < x + width) || (right < x + width)) && (*last != '\0'))
+    while ((right + char_info -> lbearing < x + width) && (*last != '\0'))
     {
 	right += char_info -> width;
 	last++;
