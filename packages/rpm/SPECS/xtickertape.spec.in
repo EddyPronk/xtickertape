@@ -57,8 +57,8 @@ also from other tickertapes.
 
 # Build the thing
 %build
-./configure --prefix=%{prefix}
-make CFLAGS="$RPM_OPT_FLAGS"
+./configure CFLAGS="$RPM_OPT_FLAGS" --prefix=%{prefix}
+make 
 
 # Install it
 %install
