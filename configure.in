@@ -12,6 +12,8 @@ dnl Checks for libraries.
 dnl =====================
 
 AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(socket, connect)
+AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(vin, elvin_connect)
 AC_CHECK_LIB(X11, XOpenDisplay)
 AC_CHECK_LIB(Xext, XShapeCombineMask)
