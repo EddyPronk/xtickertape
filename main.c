@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.80 2000/04/28 03:38:17 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.81 2000/05/01 09:04:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -192,7 +192,7 @@ static void parse_args(
 	    /* --elvin= or -e */
 	    case 'e':
 	    {
-		if (elvin_hdl_insert_server(handle, -1, optarg, error) == 0)
+		if (elvin_handle_insert_server(handle, -1, optarg, error) == 0)
 		{
 		    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
 		    exit(1);
@@ -274,7 +274,7 @@ static void parse_args(
     /* If the ELVIN_URL environment variable is set then add it to the list */
     if ((url = getenv("ELVIN_URL")) != NULL && *url != '\0')
     {
-	if (elvin_hdl_insert_server(handle, 0, url, error) == 0)
+	if (elvin_handle_insert_server(handle, 0, url, error) == 0)
 	{
 	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", url);
 	    exit(1);
@@ -394,9 +394,9 @@ int main(int argc, char *argv[])
     }
 
     /* Create a new elvin connection handle */
-    if ((handle = elvin_hdl_alloc(error)) == NULL)
+    if ((handle = elvin_handle_alloc(error)) == NULL)
     {
-	fprintf(stderr, "*** elvin_hdl_alloc(): failed\n");
+	fprintf(stderr, "*** elvin_handle_alloc(): failed\n");
 	abort();
     }
 
