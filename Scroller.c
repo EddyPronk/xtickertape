@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.48 1999/07/30 05:57:50 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.49 1999/07/30 06:00:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1010,6 +1010,7 @@ static void Resize(Widget widget)
     /* Nothing to do if we're not yet realized or if the width hasn't changed */
     if (! XtIsRealized(widget))
     {
+	self -> scroller.left_holder -> width = self -> core.width;
 	return;
     }
 
