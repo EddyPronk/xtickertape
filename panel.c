@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.43 2001/02/22 06:14:23 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.44 2001/04/17 12:24:02 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -242,7 +242,7 @@ static char *get_mime_type(control_panel_t self);
 static char *get_mime_args(control_panel_t self);
 
 static char *create_uuid(control_panel_t self);
-message_t contruct_message(control_panel_t self);
+message_t construct_message(control_panel_t self);
 
 static void action_send(Widget button, control_panel_t self, XtPointer ignored);
 static void action_clear(Widget button, control_panel_t self, XtPointer ignored);
@@ -1333,7 +1333,7 @@ char *create_uuid(control_panel_t self)
 
 
 /* Answers a message based on the receiver's current state */
-message_t contruct_message(control_panel_t self)
+message_t construct_message(control_panel_t self)
 {
     char *user;
     char *text;
@@ -1389,7 +1389,7 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
     /* Make sure a group is selected */
     if (self -> selection != NULL)
     {
-	message_t message = contruct_message(self);
+	message_t message = construct_message(self);
 	self -> selection -> callback(self -> selection -> rock, message);
 	message_free(message);
     }
