@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.18 1999/06/15 07:54:37 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.19 1999/06/16 01:12:23 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -255,6 +255,7 @@ static view_holder_t view_holder_alloc(MessageView view, unsigned int width)
 
     self -> next = NULL;
     self -> width = width;
+    self -> previous_width = 0;
 
     if (view != NULL)
     {
@@ -771,7 +772,22 @@ static void Rotate(ScrollerWidget self)
     /* If no messages around then stop spinning */
     if ((self -> scroller.realCount == 0) && List_isEmpty(self -> scroller.messages))
     {
+	view_holder_t holder;
 	StopClock(self);
+
+	/* Remove all of the blank view_holders */
+	while ((holder = DequeueViewHolder(self)) != NULL)
+	{
+	    view_holder_free(holder);
+	}
+
+	/* Insert a new blank one */
+	holder = view_holder_alloc(NULL, self -> core.width);
+	EnqueueViewHolder(self, holder);
+	self -> scroller.spacer = holder;
+	
+	/* Reset the offset to 0, in case we're suffering from round-off error */
+	self -> scroller.offset = 0;
 	return;
     }
 
@@ -857,6 +873,7 @@ static void Resize(Widget widget)
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
 
+    /* If we haven't had a chance to realize the widget yet, then just replace the spacer */
     if (! XtIsRealized(widget))
     {
 	/* Throw away our original spacer and replace it with a new one */
