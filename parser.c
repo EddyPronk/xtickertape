@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.23 2000/11/04 03:26:18 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.24 2000/11/05 08:42:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1258,7 +1258,6 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error)
 static atom_t make_list(parser_t self, elvin_error_t error)
 {
     atom_t nil;
-    atom_t list;
 
     /* Allocate a nil for the end of the list */
     if ((nil = nil_alloc(error)) == NULL)
@@ -1266,17 +1265,13 @@ static atom_t make_list(parser_t self, elvin_error_t error)
 	return NULL;
     }
 
-    list = cons_reverse(self -> value_top[1], nil);
-    return list;
+    return cons_reverse(self -> value_top[1], nil, error);
 }
 
 /* Make a list out of cons cells by reversing them */
 static atom_t make_dot_list(parser_t self, elvin_error_t error)
 {
-    atom_t list;
-
-    list = cons_reverse(self -> value_top[1], self -> value_top[3]);
-    return list;
+    return cons_reverse(self -> value_top[1], self -> value_top[3], error);
 }
 
 /* `LPAREN RPAREN' reduces to `nil' */
