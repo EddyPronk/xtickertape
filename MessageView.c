@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.38 1999/05/17 12:42:03 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.39 1999/05/18 00:11:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -229,6 +229,10 @@ static void Tick(MessageView self, XtIntervalId *ignored)
 #ifdef DEBUG    
 	printf(":"); fflush(stdout);
 #endif /* DEBUG */
+    }
+    else
+    {
+	self -> isExpired = 1;
     }
 }
 
