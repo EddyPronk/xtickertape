@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.21 2001/07/20 01:43:32 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.22 2001/07/20 04:20:51 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -312,8 +312,8 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
 	item = malloc(sizeof(struct delta_queue));
 	item -> next = self -> history.dqueue;
 	item -> request_id = NextRequest(display);
-	item -> dx = self -> history.x - x;
-	item -> dy = self -> history.y - y;
+	item -> dx = x - self -> history.x;
+	item -> dy = y - self -> history.y;
 	self -> history.dqueue = item;
 
 	/* Remove our clip mask */
@@ -323,7 +323,7 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
 	/* Copy to the new location */
 	XCopyArea(
 	    display, window, window, gc,
-	    -item -> dx, -item -> dy,
+	    item -> dx, item -> dy,
 	    self -> core.width, self -> core.height,
 	    0, 0);
     }
@@ -672,8 +672,8 @@ static void compensate_bbox(
 	else
 	{
 	    /* No.  Translate the bounding box accordingly. */
-	    bbox -> x += item -> dx;
-	    bbox -> y += item -> dy;
+	    bbox -> x -= item -> dx;
+	    bbox -> y -= item -> dy;
 	    previous = item;
 	    item = item -> next;
 	}
@@ -929,6 +929,13 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	message_view_get_sizes(self -> history.message_views[i], &sizes);
 	width = MAX(width, sizes.width);
 	height += self -> history.line_height;
+    }
+
+    /* Update the selection index */
+    if (self -> history.selection_index != (unsigned int)-1 &&
+	! (index < self -> history.selection_index))
+    {
+	self -> history.selection_index--;
     }
 
     /* Update the widget's dimensions */
