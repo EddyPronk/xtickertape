@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.14 2000/07/11 01:57:55 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.15 2000/07/11 02:28:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -483,8 +483,41 @@ static ast_t make_eq(parser_t self, elvin_error_t error)
 /* <term> ::= <term> NEQ <value> */
 static ast_t make_neq(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_neq(): not yet implemented\n");
-    return NULL;
+    ast_t lvalue, rvalue, eq, result;
+
+    /* Look up the halves of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Make an equality node */
+    if (! (eq = ast_binary_alloc(AST_EQ, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Wrap it in a not node */
+    if (! (result = ast_unary_alloc(AST_NOT, eq, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(eq, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> LT <value> */
@@ -519,8 +552,41 @@ static ast_t make_lt(parser_t self, elvin_error_t error)
 /* <term> ::= <term> LE <value> */
 static ast_t make_le(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_le(): not yet implemented\n");
-    return NULL;
+    ast_t lvalue, rvalue, gt, result;
+
+    /* Look up the children of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Construct the comparison node */
+    if (! (gt = ast_binary_alloc(AST_GT, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Wrap it in a negation node */
+    if (! (result = ast_unary_alloc(AST_NOT, gt, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(gt, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <term> ::= <term> GT <value> */
@@ -555,8 +621,41 @@ static ast_t make_gt(parser_t self, elvin_error_t error)
 /* <term> ::= <term> GE <value> */
 static ast_t make_ge(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_ge(): not yet implemented\n");
-    return NULL;
+    ast_t lvalue, rvalue, lt, result;
+
+    /* Look up the children of the comparison */
+    lvalue = self -> value_top[0];
+    rvalue = self -> value_top[2];
+
+    /* Construct the comparison node */
+    if (! (lt = ast_binary_alloc(AST_LT, lvalue, rvalue, error)))
+    {
+	return NULL;
+    }
+
+    /* Wrap it in a not node */
+    if (! (result = ast_unary_alloc(AST_NOT, lt, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(lvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(rvalue, error))
+    {
+	return NULL;
+    }
+
+    if (! ast_free(lt, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <value> ::= BANG <value> */
