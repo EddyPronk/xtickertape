@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.70 1999/09/14 13:47:17 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.71 1999/09/15 06:41:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -484,7 +484,12 @@ static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width
     }
     else
     {
-	XRectangle rectangle = { 0, 0, width, y + height };
+	XRectangle rectangle;
+
+	rectangle.x = 0;
+	rectangle.y = 0;
+	rectangle.width = width;
+	rectangle.height = y + height;
 
 	/* Set up the clip mask */
 	XSetClipRectangles(XtDisplay(self), self -> scroller.gc, x, 0, &rectangle, 1, Unsorted);
