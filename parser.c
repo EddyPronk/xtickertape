@@ -28,13 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.12 2000/07/10 11:21:08 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.13 2000/07/10 13:44:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
@@ -687,6 +686,35 @@ static ast_t make_block(parser_t self, elvin_error_t error)
 }
 
 
+/* <config-file> ::= <subscription-list> */
+static int do_accept(parser_t self, elvin_error_t error)
+{
+    uint32_t count;
+    subscription_t *subs;
+
+    /* Evaluate the subscription list to get a list of subscriptions */
+    if (! ast_eval_sub_list(self -> value_stack[0], NULL, &count, &subs, error))
+    {
+	return 0;
+    }
+
+    /* Clean up the stack */
+    if (! ast_free(self -> value_stack[0], error))
+    {
+	return 0;
+    }
+
+    /* Call the callback with the subscriptions */
+    if (self -> callback)
+    {
+	if (! self -> callback(self -> rock, count, subs, error))
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
+}
 
 /* Accepts another token and performs as many parser transitions as
  * possible with the data it has seen so far */
@@ -731,8 +759,7 @@ static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_e
     /* See if we can accept */
     if (IS_ACCEPT(action))
     {
-	printf("accept!\n");
-	return 1;
+	return do_accept(self, error);
     }
 
     /* Everything else is an error */
@@ -1916,7 +1943,10 @@ static int lex_id_esc(parser_t self, int ch, elvin_error_t error)
 
 
 /* Allocate space for a parser and initialize its contents */
-parser_t parser_alloc(elvin_error_t error)
+parser_t parser_alloc(
+    parser_callback_t callback,
+    void *rock,
+    elvin_error_t error)
 {
     parser_t self;
 
@@ -1954,6 +1984,9 @@ parser_t parser_alloc(elvin_error_t error)
     }
 
     /* Initialize the rest of the values */
+    self -> callback = callback;
+    self -> rock = rock;
+
     self -> state_end = self -> state_stack + INITIAL_STACK_DEPTH;
     self -> state_top = self -> state_stack;
     *(self -> state_top) = 0;
@@ -2038,50 +2071,3 @@ int parser_parse(parser_t self, char *buffer, size_t length, elvin_error_t error
     return 1;
 }
 
-
-/* For testing purposes */
-int main(int argc, char *argv[])
-{
-    elvin_error_t error = NULL;
-    parser_t parser;
-    char buffer[2048];
-    size_t length;
-    int fd;
-
-    if ((parser = parser_alloc(error)) == NULL)
-    {
-	fprintf(stderr, "parser_alloc(): failed\n");
-	abort();
-    }
-
-    /* Read stdin and put it through the parser */
-    fd = STDIN_FILENO;
-    while (1)
-    {
-	if ((length = read(fd, buffer, 2048)) < 0)
-	{
-	    perror("read(): failed");
-	    exit(1);
-	}
-
-	if (! parser_parse(parser, buffer, length, error))
-	{
-	    exit(1);
-	}
-
-	if (length < 1)
-	{
-	    printf("-- end of input --\n");
-
-	    /* Clean up */
-	    if (! parser_free(parser, error))
-	    {
-		fprintf(stderr, "parser_free(): failed\n");
-		exit(1);
-	    }
-	    
-	    elvin_memory_report();
-	    exit(0);
-	}
-    }
-}
