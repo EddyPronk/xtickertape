@@ -5,13 +5,25 @@
 #include <alloca.h>
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
-#include "List.h"
 #include "sanity.h"
 
 #ifdef SANITY
 static char *sanity_value = "UsenetSubscription";
 static char *sanity_freed = "Freed UsenetSubscription";
 #endif /* SANITY */
+
+typedef enum
+{
+    Error = -1,
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanEquals,
+    GreaterThan,
+    GreaterThanEquals,
+    Matches,
+    NotMatches
+} Operation;
 
 
 /* The UsenetSubscription data type */
@@ -45,10 +57,11 @@ struct UsenetSubscription_t
  *
  */
 static char *TranslateField(char *field);
+static Operation TranslateOperation(char *operation);
 static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer);
 static void GetFromUsenetFileLine(
     char *token, FileStreamTokenizer tokenizer, StringBuffer buffer, int *isFirst);
-static int GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p);
+static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p);
 static void HandleNotify(UsenetSubscription self, en_notify_t notification);
 
 /*
@@ -60,6 +73,13 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification);
 /* Answers the Elvin field which matches the field from the usenet file */
 static char *TranslateField(char *field)
 {
+    /* Bail if no field provided */
+    if (field == NULL)
+    {
+	return NULL;
+    }
+
+    /* Use first character of field for quick lookup */
     switch (*field)
     {
 	/* email */
@@ -70,7 +90,7 @@ static char *TranslateField(char *field)
 		return "FROM_EMAIL";
 	    }
 
-	    return NULL;
+	    break;
 	}
 
 	/* from */
@@ -81,7 +101,7 @@ static char *TranslateField(char *field)
 		return "FROM_NAME";
 	    }
 
-	    return NULL;
+	    break;
 	}
 
 	/* keywords */
@@ -92,7 +112,7 @@ static char *TranslateField(char *field)
 		return "KEYWORDS";
 	    }
 
-	    return NULL;
+	    break;
 	}
 
 	/* newsgroups */
@@ -103,7 +123,7 @@ static char *TranslateField(char *field)
 		return "NEWSGROUPS";
 	    }
 
-	    return NULL;
+	    break;
 	}
 
 	/* subject */
@@ -114,7 +134,7 @@ static char *TranslateField(char *field)
 		return "SUBJECT";
 	    }
 
-	    return NULL;
+	    break;
 	}
 
 	/* x-posts */
@@ -125,104 +145,32 @@ static char *TranslateField(char *field)
 		return "CROSSPOSTS";
 	    }
 
-	    return NULL;
-	}
-
-	/* No match */
-	default:
-	{
-	    return NULL;
+	    break;
 	}
     }
+
+    return NULL;
 }
 
-/* Reads the next tuple from the FileStreamTokenizer into the StringBuffer */
-static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer)
+
+/* Answers the operation (index) corresponding to the given operation, or -1 if none */
+static Operation TranslateOperation(char *operation)
 {
-    char *field;
-    char *operation;
-    char *pattern;
-    char *elvinField;
-
-    /* Read the field */
-    field = FileStreamTokenizer_next(tokenizer);
-    if ((field == NULL) || (*field == '/') || (*field == '\n'))
+    /* Bail if no operation provided */
+    if (operation == NULL)
     {
-	return;
+	return Error;
     }
 
-    if ((elvinField = TranslateField(field)) == NULL)
-    {
-	fprintf(stderr, "*** Unrecognized field \"%s\"\n", field);
-	exit(1);
-    }
-    free(field);
-
-    /* Read the operation */
-    operation = FileStreamTokenizer_next(tokenizer);
-    if ((operation == NULL) || (*operation == '/') || (*field == '\n'))
-    {
-	return;
-    }
-
-    /* Read the pattern */
-    pattern = FileStreamTokenizer_next(tokenizer);
-    if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
-    {
-	return;
-    }
-
+    /* Use first character of operation for quick lookup */
     switch (*operation)
     {
-	/* matches */
-	case 'm':
-	{
-	    if (strcmp(operation, "matches") == 0)
-	    {
-		/* Construct our portion of the subscription */
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " matches(\"");
-		StringBuffer_append(buffer, pattern);
-		StringBuffer_append(buffer, "\")");
-		return;
-	    }
-
-	    break;
-	}
-
-	/* not */
-	case 'n':
-	{
-	    if (strcmp(operation, "not") == 0)
-	    {
-		/* Construct our portion of the subscription */
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " !matches(\"");
-		StringBuffer_append(buffer, pattern);
-		StringBuffer_append(buffer, "\")");
-		free(operation);
-		free(pattern);
-		return;
-	    }
-
-	    break;
-	}
-
 	/* = */
 	case '=':
 	{
 	    if (strcmp(operation, "=") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " == \"");
-		StringBuffer_append(buffer, pattern);
-		StringBuffer_append(buffer, "\"");
-		free(operation);
-		free(pattern);
-		return;
+		return Equals;
 	    }
 
 	    break;
@@ -233,14 +181,7 @@ static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer bu
 	{
 	    if (strcmp(operation, "!=") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " != \"");
-		StringBuffer_append(buffer, pattern);
-		StringBuffer_append(buffer, "\"");
-		free(operation);
-		free(pattern);
-		return;
+		return NotEquals;
 	    }
 
 	    break;
@@ -251,24 +192,12 @@ static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer bu
 	{
 	    if (strcmp(operation, "<") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " < ");
-		StringBuffer_append(buffer, pattern);
-		free(operation);
-		free(pattern);
-		return;
+		return LessThan;
 	    }
 
 	    if (strcmp(operation, "<=") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " <= ");
-		StringBuffer_append(buffer, pattern);
-		free(operation);
-		free(pattern);
-		return;
+		return LessThanEquals;
 	    }
 
 	    break;
@@ -279,34 +208,148 @@ static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer bu
 	{
 	    if (strcmp(operation, ">") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " > ");
-		StringBuffer_append(buffer, pattern);
-		free(operation);
-		free(pattern);
-		return;
+		return GreaterThan;
 	    }
 
 	    if (strcmp(operation, ">=") == 0)
 	    {
-		StringBuffer_append(buffer, " && ");
-		StringBuffer_append(buffer, elvinField);
-		StringBuffer_append(buffer, " >= ");
-		StringBuffer_append(buffer, pattern);
-		free(operation);
-		free(pattern);
-		return;
+		return GreaterThanEquals;
+	    }
+
+	    break;
+	}
+
+	/* matches */
+	case 'm':
+	{
+	    if (strcmp(operation, "matches") == 0)
+	    {
+		return Matches;
+	    }
+
+	    break;
+	}
+
+	/* not */
+	case 'n':
+	{
+	    if (strcmp(operation, "not") == 0)
+	    {
+		return NotMatches;
 	    }
 
 	    break;
 	}
     }
 
-    /* If we get here, then we have a bad operation */
-    fprintf(stderr, "*** don't understand operation \"%s\"\n", operation);
-    free(operation);
-    free(pattern);
+    return Error;
+}
+
+/* Reads the next tuple from the FileStreamTokenizer into the StringBuffer */
+static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer)
+{
+    char *token;
+    char *field;
+    Operation operation;
+    char *pattern;
+
+    /* Read the field */
+    token = FileStreamTokenizer_next(tokenizer);
+    if ((field = TranslateField(token)) == NULL)
+    {
+	fprintf(stderr, "*** Unrecognized field \"%s\"\n", token);
+	exit(1);
+    }
+
+    /* Read the operation */
+    token = FileStreamTokenizer_next(tokenizer);
+    if ((operation = TranslateOperation(token)) == Error)
+    {
+	fprintf(stderr, "** Unrecognized operation \"%s\"\n", token);
+	return;
+    }
+
+    /* Read the pattern */
+    pattern = FileStreamTokenizer_next(tokenizer);
+    if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
+    {
+	fprintf(stderr, "*** Unexpected end of usenet file line\n");
+	return;
+    }
+
+    /* Construct our portion of the subscription */
+    StringBuffer_append(buffer, " && ");
+    StringBuffer_append(buffer, field);
+
+    switch (operation)
+    {
+	case Matches:
+	{
+	    /* Construct our portion of the subscription */
+	    StringBuffer_append(buffer, " matches(\"");
+	    StringBuffer_append(buffer, pattern);
+	    StringBuffer_append(buffer, "\")");
+	    return;
+	}
+
+	case NotMatches:
+	{
+	    StringBuffer_append(buffer, " !matches(\"");
+	    StringBuffer_append(buffer, pattern);
+	    StringBuffer_append(buffer, "\")");
+	    return;
+	}
+
+	case Equals:
+	{
+	    StringBuffer_append(buffer, " == \"");
+	    StringBuffer_append(buffer, pattern);
+	    StringBuffer_append(buffer, "\"");
+	    return;
+	}
+
+	case NotEquals:
+	{
+	    StringBuffer_append(buffer, " != \"");
+	    StringBuffer_append(buffer, pattern);
+	    StringBuffer_append(buffer, "\"");
+	    return;
+	}
+
+	case LessThan:
+	{
+	    StringBuffer_append(buffer, " < ");
+	    StringBuffer_append(buffer, pattern);
+	    return;
+	}
+
+	case LessThanEquals:
+	{
+	    StringBuffer_append(buffer, " <= ");
+	    StringBuffer_append(buffer, pattern);
+	    return;
+	}
+
+	case GreaterThan:
+	{
+	    StringBuffer_append(buffer, " > ");
+	    StringBuffer_append(buffer, pattern);
+	    return;
+	}
+
+	case GreaterThanEquals:
+	{
+	    StringBuffer_append(buffer, " >= ");
+	    StringBuffer_append(buffer, pattern);
+	    return;
+	}
+
+	/* This should never get called */
+	case Error:
+	{
+	    return;
+	}
+    }
 }
 
 
@@ -361,30 +404,22 @@ static void GetFromUsenetFileLine(
     /* Read tuples */
     while (1)
     {
-	char *tok = FileStreamTokenizer_next(tokenizer);
+	token = FileStreamTokenizer_next(tokenizer);
 
-	/* End of file? */
-	if (tok == NULL)
+	/* End of file or line? */
+	if ((token == NULL) || (*token == '\n'))
 	{
 	    break;
 	}
 
-	/* End of line? */
-	if (*tok == '\n')
+	/* Look for our tuple separator */
+	if (*token == '/')
 	{
-	    free(tok);
-	    break;
-	}
-
-	if (*tok == '/')
-	{
-	    free(tok);
-	    
 	    GetTupleFromTokenizer(tokenizer, buffer);
 	}
 	else
 	{
-	    fprintf(stderr, "*** Invalid usenet line for group %s\n", token);
+	    fprintf(stderr, "*** Invalid usenet file (%s)\n", token);
 	    exit(1);
 	}
     }
@@ -395,9 +430,9 @@ static void GetFromUsenetFileLine(
 /* Scans the next line of the usenet file and answers a malloc'ed
  * string corresponding to that line's part of the subscription
  * expression */
-static int GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
+static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
 {
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, "/\n");
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, " \t", "/\n");
     char *token;
 
     /* Locate a non-empty line which doesn't begin with a '#' */
@@ -406,27 +441,17 @@ static int GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
 	/* Comment line */
 	if (*token == '#')
 	{
-	    free(token);
 	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
 	}
-	/* Empty line? */
-	else if (*token == '\n')
-	{
-	    free(token);
-	}
-	/* Useful line */
-	else
+	/* Useful line? */
+	else if (*token != '\n')
 	{
 	    GetFromUsenetFileLine(token, tokenizer, buffer, isFirst_p);
-	    free(token);
-	    return 1;
 	}
     }
 
     FileStreamTokenizer_free(tokenizer);
     fclose(file);
-
-    return 0;
 }
 
 
@@ -554,12 +579,14 @@ UsenetSubscription UsenetSubscription_readFromUsenetFile(
     StringBuffer buffer = StringBuffer_alloc();
     int isFirst = 1;
 
+    /* Write the beginning of our expression */
     StringBuffer_append(buffer, "ELVIN_CLASS == \"NEWSWATCHER\" && ");
     StringBuffer_append(buffer, "ELVIN_SUBCLASS == \"MONITOR\" && ( ");
 
     /* Get the subscription expressions for each individual line */
-    while (GetFromUsenetFile(usenet, buffer, &isFirst) != 0);
+    GetFromUsenetFile(usenet, buffer, &isFirst);
 
+    /* Close off our subscription expression */
     StringBuffer_append(buffer, " )");
     subscription = UsenetSubscription_alloc(StringBuffer_getBuffer(buffer), callback, context);
     StringBuffer_free(buffer);
