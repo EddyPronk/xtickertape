@@ -69,7 +69,9 @@ expire notifications before they timeout by clicking on them with the
 right mouse button (or by placing the pointer on them and pressing
 the `d' key), causing them to quickly fade out.  If you wish for a
 message to go away instantly, you can delete it by pressing the `x'
-key.
+key.  If you find that this isn't vindictive enough, you may kill the
+the message with the 'k' key.  This not only deletes the message but
+also all present and future replies to it.
 .PP
 In addition to these four attributes, notifications may also include
 MIME attachment (typically a URL).  If they do, they will be
@@ -172,6 +174,10 @@ Deletes the notification under the pointer by quickly fading it away.
 .TP
 .B delete()
 Deletes a message from the scroller instantly.
+.TP
+.B kill()
+Deletes a message and all of its responses from the scroller
+instantly.
 .TP
 .B faster()
 Increases the step size of the scroller, making messages scroll more

@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-1.6.0
 
+* Added the ability to kill a conversation thread.  Messages will
+  still appear in the history but they won't scroll across the tickertape.
+
 * The `Message-Id' and `In-Reply-To' fields are now strings instead of 
   integers.  This matches the updated specification and allows
   messages to really have unique ids instead of merely hoping that the
