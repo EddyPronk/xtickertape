@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.5 1999/10/04 07:04:41 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.6 1999/10/04 10:54:01 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -651,6 +651,26 @@ static int lex_op(usenet_parser_t self, int ch)
 	    return -1;
 	}
 
+	/* Make sure there's agreement between the field and the operator */
+	if (self -> field == F_XPOSTS)
+	{
+	    if ((self -> operator == O_MATCHES) || (self -> operator == O_NOT))
+	    {
+		parse_error(self, "illegal field/operator combination");
+		return -1;
+	    }
+	}
+	else
+	{
+	    if ((self -> operator == O_LT) || (self -> operator == O_GT) ||
+		(self -> operator == O_LE) || (self -> operator == O_GE))
+	    {
+		parse_error(self, "illegal field/operator combination");
+		return -1;
+	    }
+	}
+
+	/* Get ready to read the pattern */
 	self -> token_pointer = self -> token;
 	self -> state = lex_pattern_start;
 	return 0;
