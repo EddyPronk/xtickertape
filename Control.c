@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.41 1999/08/17 17:51:03 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.42 1999/08/19 04:39:09 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -101,6 +101,9 @@ struct ControlPanel_t
     char *sanity_check;
 #endif /* SANITY */
 
+    /* The receiver's tickertape */
+    tickertape_t tickertape;
+
     /* The receiver's top-level widget */
     Widget top;
 
@@ -149,23 +152,8 @@ struct ControlPanel_t
     /* The list of timeouts to appear in the timeout menu */
     char **timeouts;
 
-    /* The default user name */
-    char *username;
-
     /* The message to which we are replying (0 if none) */
     unsigned long messageId;
-
-    /* The receiver's groups reload callback */
-    ReloadCallback groupsCallback;
-
-    /* The receiver's groups reload callback context */
-    void *groupsContext;
-
-    /* The receiver's usenet reload callback */
-    ReloadCallback usenetCallback;
-
-    /* The receiver's usenet reload callback context */
-    void *usenetContext;
 };
 
 
@@ -209,27 +197,20 @@ static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored);
 /* This gets called when the user selects the "reloadGroups" menu item */
 static void FileGroups(Widget widget, ControlPanel self, XtPointer unused)
 {
-    if (self -> groupsCallback != NULL)
-    {
-	(*self -> groupsCallback)(self -> groupsContext);
-    }
+    tickertape_reload_groups(self -> tickertape);
 }
 
 /* This gets called when the user selects the "reloadUsenet" menu item */
 static void FileUsenet(Widget widget, ControlPanel self, XtPointer unused)
 {
-    if (self -> usenetCallback != NULL)
-    {
-	(*self -> usenetCallback)(self -> usenetContext);
-    }
+    tickertape_reload_usenet(self -> tickertape);
 }
 
 
 /* This gets called when the user selects the "exit" menu item from the file menu */
 static void FileExit(Widget widget, ControlPanel self, XtPointer unused)
 {
-    /* Simply exit */
-    exit(0);
+    tickertape_quit(self -> tickertape);
 }
 
 /* Construct the File menu widget */
@@ -1011,7 +992,7 @@ static void ActionClear(Widget button, ControlPanel self, XtPointer ignored)
 {
     SANITY_CHECK(self);
 
-    SetUser(self, self -> username);
+    SetUser(self, tickertape_user_name(self -> tickertape));
     SetText(self, "");
     SetMimeArgs(self, "");
     ResetTimeout(self);
@@ -1056,10 +1037,7 @@ static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored)
  */
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(
-    Widget parent, char *user, history_t history,
-    ReloadCallback groupsCallback, void *groupsContext,
-    ReloadCallback usenetCallback, void *usenetContext)
+ControlPanel ControlPanel_alloc(tickertape_t tickertape, Widget parent)
 {
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
 
@@ -1068,6 +1046,7 @@ ControlPanel ControlPanel_alloc(
 #endif /* SANITY */
 
     /* Set the receiver's contents to something sane */
+    self -> tickertape = tickertape;
     self -> top = NULL;
     self -> user = NULL;
     self -> group = NULL;
@@ -1083,18 +1062,13 @@ ControlPanel ControlPanel_alloc(
     self -> selection = NULL;
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
-    self -> username = strdup(user);
     self -> messageId = 0;
-    self -> groupsCallback = groupsCallback;
-    self -> groupsContext = groupsContext;
-    self -> usenetCallback = usenetCallback;
-    self -> usenetContext = usenetContext;
 
     /* Initialize the UI */
     InitializeUserInterface(self, parent);
 
     /* Tell the history_t about our List */
-    history_set_list(history, self -> history);
+/*    history_set_list(history, self -> history);*/
 
     /* Set the various fields to their default values */
     ActionClear(self -> top, self, NULL);

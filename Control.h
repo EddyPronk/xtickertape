@@ -31,7 +31,7 @@
 #define CONTROLPANEL_H
 
 #ifndef lint
-static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.12 1999/08/17 17:51:03 phelps Exp $";
+static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.13 1999/08/19 04:39:09 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -43,6 +43,7 @@ static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.12 1999/08/17 17:51
 typedef struct ControlPanel_t *ControlPanel;
 
 #include "Message.h"
+#include "tickertape.h"
 #include "history.h"
 
 /* The ControlPanelCallback type */
@@ -52,10 +53,7 @@ typedef void (*ControlPanelCallback)(void *context, Message message);
 typedef void (*ReloadCallback)(void *context);
 
 /* Constructs the Tickertape Control Panel */
-ControlPanel ControlPanel_alloc(
-    Widget parent, char *user, history_t history,
-    ReloadCallback groupsCallback, void *groupsContext,
-    ReloadCallback usenetCallback, void *usenetContext);
+ControlPanel ControlPanel_alloc(tickertape_t tickertape, Widget parent);
 
 /* Releases the resources used by the receiver */
 void ControlPanel_free(ControlPanel self);
