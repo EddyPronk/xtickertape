@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.111 2004/02/02 22:01:19 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.112 2004/08/02 16:52:00 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -760,7 +760,7 @@ static int parse_keys_file(tickertape_t self)
     }
 }
 
-/* Returns the index of the group with the given expression (-1 it none) */
+/* Returns the index of the group with the given expression (-1 if none) */
 static int find_group(group_sub_t *groups, int count, char *expression)
 {
     group_sub_t *pointer;
@@ -776,8 +776,11 @@ static int find_group(group_sub_t *groups, int count, char *expression)
     return -1;
 }
 
-/* Request from the control panel to reload groups file */
-void tickertape_reload_groups(tickertape_t self)
+/* Reload the groups, possibly with a change of keys */
+static void reload_groups(
+    tickertape_t self,
+    key_table_t old_keys,
+    key_table_t new_keys)
 {
     group_sub_t *old_groups = self -> groups;
     int old_count = self -> groups_count;
@@ -821,7 +824,7 @@ void tickertape_reload_groups(tickertape_t self)
 	{
 	    group_sub_t old_group = old_groups[old_index];
 
-	    group_sub_update_from_sub(old_group, group);
+	    group_sub_update_from_sub(old_group, group, old_keys, new_keys);
 	    group_sub_free(group);
 	    self -> groups[index] = old_group;
 	    old_groups[old_index] = NULL;
@@ -855,6 +858,12 @@ void tickertape_reload_groups(tickertape_t self)
     }
 }
 
+/* Request from the control panel to reload groups file */
+void tickertape_reload_groups(tickertape_t self)
+{
+    reload_groups(self, self -> keys, self -> keys);
+}
+
 /* Request from the control panel to reload usenet file */
 void tickertape_reload_usenet(tickertape_t self)
 {
@@ -879,18 +888,32 @@ void tickertape_reload_usenet(tickertape_t self)
 /* Request from the control panel to reload the keys file */
 void tickertape_reload_keys(tickertape_t self)
 {
-    /* Release the old keys table */
-    if (self -> keys != NULL)
-    {
-	key_table_free(self -> keys);
-	self -> keys = NULL;
-    }
+    key_table_t old_keys;
+    int index;
+
+    /* Hang on to the old keys table */
+    old_keys = self -> keys;
+    self -> keys = NULL;
 
     /* Try to read in the new one */
     if (parse_keys_file(self) < 0)
     {
-	/* FIX THIS: do something? */
-	return;
+        fprintf(stderr, PACKAGE ": errors in keys file; not reloading\n");
+        return;
+    }
+
+    /* Update all of the group subs */
+    for (index = 0; index < self -> groups_count; index++)
+    {
+        group_sub_update_from_sub(
+            self -> groups[index], self -> groups[index],
+            old_keys, self -> keys);
+    }
+
+    /* Release the old keys table */
+    if (old_keys != NULL)
+    {
+	key_table_free(old_keys);
     }
 }
 
