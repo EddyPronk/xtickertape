@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.28 2000/11/17 13:17:49 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.29 2000/11/17 15:41:01 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -173,6 +173,7 @@ static int make_nil(parser_t self, elvin_error_t error);
 static int make_quote(parser_t self, elvin_error_t error);
 static int identity(parser_t self, elvin_error_t error);
 static int extend_cons(parser_t self, elvin_error_t error);
+static int make_cons(parser_t self, elvin_error_t error);
 
 #include "grammar.h"
 
@@ -1189,31 +1190,14 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error)
 static int make_list(parser_t self, elvin_error_t error)
 {
     /* Push nil (for the end of the list) onto the stack */
-    if (! vm_push_nil(self -> vm, error))
-    {
-	return 0;
-    }
-
-    /* And treat it as the end of a dotted list (foo . nil) => (foo) */
-    return make_dot_list(self, error);
+    return vm_push_nil(self -> vm, error) && vm_unwind_list(self -> vm, error);
 }
 
 /* Make a list out of cons cells by reversing them */
 static int make_dot_list(parser_t self, elvin_error_t error)
 {
-    /* Make a cons cell out of the top of the stack */
-    if (! vm_make_cons(self -> vm, error))
-    {
-	return 0;
-    }
-
     /* Unwind the result to get our proper list */
-    if (! vm_unwind_list(self -> vm, error))
-    {
-	return 0;
-    }
-
-    return 1;
+    return vm_unwind_list(self -> vm, error);
 }
 
 /* `LPAREN RPAREN' reduces to `nil' */
@@ -1247,6 +1231,15 @@ static int extend_cons(parser_t self, elvin_error_t error)
 {
     /* <expression-list> ::= <expression-list> <expression> */
     return vm_make_cons(self -> vm, error);
+}
+
+/* Create an initial cons cell */
+static int make_cons(parser_t self, elvin_error_t error)
+{
+    return 
+	vm_push_nil(self -> vm, error) &&
+	vm_swap(self -> vm, error) &&
+	vm_make_cons(self -> vm, error);
 }
 
 

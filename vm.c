@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.2 2000/11/17 13:17:49 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.3 2000/11/17 15:41:01 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -169,24 +169,29 @@ static object_type_t object_type(object_t object)
 }
 
 /* Returns the object on the top of the stack */
-object_t vm_top(vm_t self, elvin_error_t error)
+int vm_top(vm_t self, object_t *result, elvin_error_t error)
 {
     if (self -> top < 1)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!\n");
-	return NULL;
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	return 0;
     }
 
-    return self -> stack[self -> top - 1];
+    *result = self -> stack[self -> top - 1];
+    return 1;
 }
 
-
-
-/* Swaps the top two elements on the stack */
-int vm_swap(vm_t self, elvin_error_t error)
+/* Pops and returns the top of the stack */
+int vm_pop(vm_t self, object_t *result, elvin_error_t error)
 {
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "vm_swap");
-    return 0;
+    if (self -> top < 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	return 0;
+    }
+
+    *result = self -> stack[--self -> top];
+    return 1;
 }
 
 /* Pushes an object onto the vm's stack */
@@ -196,6 +201,24 @@ int vm_push(vm_t self, object_t object, elvin_error_t error)
     self -> stack[self -> top++] = object;
     return 1;
 }
+
+/* Swaps the top two elements on the stack */
+int vm_swap(vm_t self, elvin_error_t error)
+{
+    object_t swap;
+
+    if (self -> top < 2)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	return 0;
+    }
+
+    swap = self -> stack[self -> top - 1];
+    self -> stack[self -> top - 1] = self -> stack[self -> top - 2];
+    self -> stack[self -> top - 2] = swap;
+    return 1;
+}
+
 
 /* Creates a new object in the heap and pushes it onto the stack */
 int vm_new(
@@ -267,7 +290,7 @@ int vm_push_string(vm_t self, char *value, elvin_error_t error)
     }
 
     /* Grab the object off of the top of the stack */
-    if (! (object = vm_top(self, error)))
+    if (! vm_top(self, &object, error))
     {
 	return 0;
     }
@@ -292,7 +315,7 @@ int vm_make_symbol(vm_t self, elvin_error_t error)
     uint32_t header;
 
     /* Grab that string from the top of the stack */
-    if (! (string = vm_top(self, error)))
+    if (! vm_top(self, &string, error))
     {
 	return 0;
     }
@@ -328,21 +351,72 @@ int vm_make_symbol(vm_t self, elvin_error_t error)
 /* Creates a cons cell out of the top two elements on the stack */
 int vm_make_cons(vm_t self, elvin_error_t error)
 {
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "vm_make_cons");
-    return 0;
+    object_t cons;
+
+    /* Make a new cons cell */
+    if (! vm_new(self, 2, SEXP_CONS, 0, error))
+    {
+	return 0;
+    }
+
+    /* Pop it into our cons cell */
+    if (! vm_pop(self, &cons, error))
+    {
+	return 0;
+    }
+
+    /* Pop its cdr */
+    if (! vm_pop(self, (object_t *)(cons + 2), error))
+    {
+	return 0;
+    }
+
+    /* And its car */
+    if (! vm_pop(self, (object_t *)(cons + 1), error))
+    {
+	return 0;
+    }
+    
+    /* Push the cons cell back onto the stack */
+    return vm_push(self, cons, error);
 }
 
 /* Reverses the pointers in a list that was constructed upside-down */
 int vm_unwind_list(vm_t self, elvin_error_t error)
 {
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "vm_unwind_list");
-    return 0;
+    object_t cons, car, cdr;
+
+    /* Pop end of the list off the top of the stack */
+    if (! vm_pop(self, &cdr, error))
+    {
+	return 0;
+    }
+
+    /* Pop the rest of the list */
+    if (! vm_pop(self, &cons, error))
+    {
+	return 0;
+    }
+
+    /* Repeat until we hit the initial nil */
+    while (cons != NULL)
+    {
+	car = (object_t)cons[1];
+	cons[1] = cons[2];
+	cons[2] = cdr;
+
+	cdr = cons;
+	cons = car;
+    }
+
+    /* Push the final cons cell back onto the stack */
+    return vm_push(self, cdr, error);
 }
 
 
 
 /* Prints a single object */
-void do_print(object_t object)
+static void do_print(object_t object)
 {
     switch (object_type(object))
     {
@@ -384,13 +458,30 @@ void do_print(object_t object)
 
 	case SEXP_SYMBOL:
 	{
-	    printf("%s [%p]\n", (char *)(object + 1), object);
+	    printf("%s", (char *)(object + 1));
 	    break;
 	}
 
 	case SEXP_CONS:
 	{
-	    printf("<cons>");
+	    printf("(");
+	    do_print((object_t)object[1]);
+
+	    object = (object_t)object[2];
+	    while (object_type(object) == SEXP_CONS)
+	    {
+		printf(" ");
+		do_print((object_t)object[1]);
+		object = (object_t)object[2];
+	    }
+
+	    /* Watch for a dotted list */
+	    if (object != NULL)
+	    {
+		printf(" . ");
+		do_print(object);
+	    }
+	    printf(")");
 	    break;
 	}
 
