@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.15 1999/05/18 00:12:52 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.16 1999/06/15 01:53:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -788,6 +788,16 @@ static void Paint(ScrollerWidget self)
 	    MessageView_redisplay(holder -> view, self -> scroller.pixmap, x, 0);
 	}
 
+/* HACKERY *//*
+	if (self -> scroller.separatorPixels != NULL)
+	{
+	    ScGCForSeparator(self, 0);
+	}
+
+	XDrawRectangle(
+	    XtDisplay(widget), self -> scroller.pixmap, self -> scroller.gc,
+	    x, 0, holder -> width - 1, self -> core.height - 1);
+*//* END HACKERY */
 	x += holder -> width;
     }
 }
@@ -823,6 +833,15 @@ static void Resize(Widget widget)
 #if DEBUG
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
+
+    if (! XtIsRealized(widget))
+    {
+	/* Throw away our original spacer and replace it with a new one */
+	view_holder_free(DequeueViewHolder(self));
+	EnqueueViewHolder(self, view_holder_alloc(NULL, self -> core.width));
+	self -> scroller.spacer = self -> scroller.last_holder;
+	return;
+    }
 
     /* Resize our offscreen pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
