@@ -15,6 +15,9 @@
 /* Parser callback */
 int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
 {
+    printf("eval: ");
+    atom_print(sexp, error);
+    printf("\n");
     atom_print(atom_eval(sexp, error));
     printf("\n");
     return 1;
