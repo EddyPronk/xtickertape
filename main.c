@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.54 1999/08/19 04:38:18 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.55 1999/08/29 15:11:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -58,8 +58,8 @@ static struct option long_options[] =
     { "host", required_argument, NULL, 'h' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
-    { "groups", required_argument, NULL, 'g' },
-    { "news", required_argument, NULL, 'n' },
+    { "groups", required_argument, NULL, 'f' },
+    { "news", required_argument, NULL, 's' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'z' },
     { NULL, no_argument, NULL, '\0' }
@@ -100,8 +100,8 @@ static void Usage(int argc, char *argv[])
     fprintf(stderr, "  -h host,     --host=host\n");
     fprintf(stderr, "  -p port,     --port=port\n");
     fprintf(stderr, "  -u username, --user=username\n");
-    fprintf(stderr, "  -g filename, --groups=filename\n");
-    fprintf(stderr, "  -n filename, --news=filename\n");
+    fprintf(stderr, "  -f filename, --groups=filename\n");
+    fprintf(stderr, "  -s filename, --news=filename\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
 }
@@ -124,7 +124,7 @@ static void ParseArgs(
     *port_return = PORT;
 
     /* Read each argument using getopt */
-    while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) > 0)
+    while ((choice = getopt_long(argc, argv, "h:p:u:f:s:v", long_options, NULL)) > 0)
     {
 	switch (choice)
 	{
@@ -149,15 +149,15 @@ static void ParseArgs(
 		break;
 	    }
 
-	    /* --groups= or -g */
-	    case 'g':
+	    /* --groups= or -f */
+	    case 'f':
 	    {
 		*groupsFile_return = optarg;
 		break;
 	    }
 
-	    /* --news= or -n */
-	    case 'n':
+	    /* --news= or -s */
+	    case 's':
 	    {
 		*usenetFile_return = optarg;
 		break;
