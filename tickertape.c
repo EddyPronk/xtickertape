@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.68 2000/10/31 04:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.69 2000/12/08 04:09:27 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -43,17 +43,17 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.68 2000/10/31 04:48:59 phelps
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
+#include <elvin/error.h>
+#include "errors.h"
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
 #include "Scroller.h"
 #include "panel.h"
-#if 0
-#include "def-config.h"
-#include "ast.h"
-#include "subscription.h"
+
+#include "vm.h"
 #include "parser.h"
-#endif
+
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -92,6 +92,12 @@ struct tickertape
 
     /* The elvin connection handle */
     elvin_handle_t handle;
+
+    /* The interpreter's virtual machine */
+    vm_t vm;
+
+    /* The interpreter's parser */
+    parser_t parser;
 
     /* The user's name */
     char *user;
@@ -1045,6 +1051,125 @@ static void status_cb(
     }
 }
 
+
+/* The callback from the parser */
+static int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
+{
+    /* Try to evaluate what we've just parsed */
+    if (! vm_eval(vm, error) || ! vm_print(vm, error))
+    {
+	elvin_error_fprintf(stderr, error);
+	elvin_error_clear(error);
+
+	/* Clean up the vm */
+	if (! vm_gc(vm, error))
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
+/* The function to call when the control panel sends a message to the
+ * scheme interpreter group */
+static void interp_cb(void *rock, message_t message)
+{
+    tickertape_t self = (tickertape_t)rock;
+    char *string = message_get_string(message);
+
+    printf("interp_cb: %s\n", string);
+    if (parser_read_buffer(self -> parser, string, strlen(string), self -> error) == 0 ||
+	parser_read_buffer(self -> parser, NULL, 0, self -> error) == 0)
+    {
+	elvin_error_fprintf(stderr, self -> error);
+	return;
+    }
+}
+
+
+/* The `quote' special form */
+static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "quote", argc);
+	return 0;
+    }
+
+    /* Our result is what's already on the stack */
+    return 1;
+}
+
+/* The `setq' special form */
+static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* FIX THIS: setq should allow any even number of args */
+    if (argc != 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "setq", argc);
+	return 0;
+    }
+
+    /* Evaluate the top of the stack and perform assignment */
+    return vm_eval(vm, error) && vm_assign(vm, error);
+}
+
+
+/* Defines a special form */
+static int define_special(vm_t vm, char *name, prim_t func, elvin_error_t error)
+{
+    return
+	vm_push_string(vm, name, error) &&
+	vm_make_symbol(vm, error) &&
+	vm_push_special_form(vm, func, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error);
+}
+
+/* Populates the root environment */
+static int populate_env(tickertape_t self, elvin_error_t error)
+{
+    vm_t vm = self -> vm;
+
+    /* Populate the root environment */
+    return 
+	vm_push_string(vm, "nil", error) &&
+	vm_make_symbol(vm, error) &&
+	vm_push_nil(vm, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error) &&
+
+	vm_push_string(vm, "t", error) &&
+	vm_make_symbol(vm, error) &&
+	vm_dup(vm, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error) &&
+
+#if 0
+	define_special(vm, "and", prim_and, error) &&
+	define_subr(vm, "car", prim_car, error) &&
+	define_special(vm, "catch", prim_catch, error) &&
+	define_subr(vm, "cdr", prim_cdr, error) &&
+	define_subr(vm, "cons", prim_cons, error) &&
+	define_subr(vm, "eq", prim_eq, error) &&
+	define_special(vm, "if", prim_if, error) &&
+	define_subr(vm, "format", prim_format, error) &&
+	define_subr(vm, "gc", prim_gc, error) &&
+	define_special(vm, "lambda", prim_lambda, error) &&
+	define_special(vm, "or", prim_or, error) &&
+	define_subr(vm, "+", prim_plus, error) &&
+	define_special(vm, "progn", prim_progn, error) &&
+#endif
+	define_special(vm, "quote", prim_quote, error) &&
+	define_special(vm, "setq", prim_setq, error) &&
+#if 0
+	define_special(vm, "print-state", prim_print_state, error);
+#endif
+    1;
+}
+
+
 /*
  *
  * Exported function definitions 
@@ -1089,15 +1214,6 @@ tickertape_t tickertape_alloc(
     self -> scroller = NULL;
     self -> history = history_alloc();
 
-#if 0
-    /* Read the config file */
-    if (! read_config_file(self, error))
-    {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-#endif
-
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)
     {
@@ -1116,6 +1232,35 @@ tickertape_t tickertape_alloc(
     /* Draw the user interface */
     init_ui(self);
 
+    /* Initialize the scheme virtual machine */
+    if ((self -> vm = vm_alloc(error)) == NULL)
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Populate its root environment */
+    if (populate_env(self, error) == 0)
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Allocate a new parser */
+    if ((self -> parser = parser_alloc(self -> vm, parsed, self, error)) == NULL)
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Add a special interpreter group to the control panel */
+    if (control_panel_add_subscription(
+	    self -> control_panel, "interp", "interp",
+	    interp_cb, self) == NULL)
+    {
+	exit(1);
+    }
+
     /* Set the handle's status callback */
     handle -> status_cb = status_cb;
     handle -> status_closure = self;
@@ -1123,7 +1268,7 @@ tickertape_t tickertape_alloc(
     /* Connect to the elvin server */
     if (elvin_xt_connect(handle, connect_cb, self, self -> error) == 0)
     {
-	fprintf(stderr, "%s: elvin_xt_connect(): failed\n", PACKAGE);
+	fprintf(stderr, PACKAGE ": elvin_xt_connect(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
@@ -1416,11 +1561,11 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     /* Did it exit badly? */
     if (WIFEXITED(status))
     {
-	fprintf(stderr, "%s exit status: %d\n", METAMAIL, WEXITSTATUS(status));
+	fprintf(stderr, METAMAIL " exit status: %d\n", WEXITSTATUS(status));
 	return -1;
     }
 
-    fprintf(stderr, "%s died badly\n", METAMAIL);
+    fprintf(stderr, METAMAIL " died badly\n");
 #endif
 #endif /* METAMAIL */
 
