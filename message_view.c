@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.25 2003/01/14 17:01:33 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.26 2003/01/15 22:58:26 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -222,7 +222,7 @@ message_view_t message_view_alloc(
 
     /* Figure out how much to indent the message */
     utf8_renderer_measure_string(renderer, INDENT, &sizes);
-    self -> indent_width = sizes.width * 2;
+    self -> indent_width = sizes.width;
 
     /* Measure the message's strings */
     utf8_renderer_measure_string(
