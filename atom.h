@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.2 2000/11/04 03:25:39 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.3 2000/11/05 04:25:22 phelps Exp $";
 #endif /* lint */
 
 /* The types of atoms */
@@ -49,6 +49,9 @@ typedef enum
 
 /* An atom_t is a an opaque struct */
 typedef struct atom *atom_t;
+
+/* Initializes the Lisp evaluation engine */
+int atom_init(elvin_error_t error);
 
 
 /* Answers the unique nil instance */

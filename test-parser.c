@@ -67,6 +67,13 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    /* Initialize the Lisp engine */
+    if (atom_alloc(error) == 0)
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
     /* Allocate a new parser */
     if ((parser = parser_alloc(parsed, NULL, error)) == NULL)
     {

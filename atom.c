@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.3 2000/11/04 03:25:39 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.4 2000/11/05 04:25:22 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -85,6 +85,45 @@ static struct atom numbers[] =
     { ATOM_INT32, 1, { 8 } },
     { ATOM_INT32, 1, { 9 } }
 };
+
+/* The root environment */
+static elvin_hashtable_t root_env;
+
+
+/* Grabs a reference to an atom */
+static int hashcopy(elvin_hashtable_t table,
+		    elvin_hashdata_t *copy_out,
+		    elvin_hashdata_t data,
+		    elvin_error_t error)
+{
+    atom_t atom = (atom_t)data;
+    atom -> ref_count++;
+    *copy_out = data;
+    return 1;
+}
+
+/* Frees a reference to an atom */
+static int hashfree(elvin_hashdata_t data, elvin_error_t error)
+{
+    return atom_free((atom_t)data, error);
+}
+
+
+/* Initializes the Lisp evaluation engine */
+int atom_init(elvin_error_t error)
+{
+    /* Initialize the root environment */
+    if ((root_env = elvin_string_hash_create(40, hashcopy, hashfree, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* FIX THIS: construct all of the character atoms here */
+    /* FIX THIS: define some built-in functions */
+    return 1;
+}
+
+
 
 
 /* Answers the unique nil instance */
