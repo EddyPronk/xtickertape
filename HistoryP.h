@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.19 2002/04/03 23:06:50 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.20 2002/04/04 12:45:28 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -142,6 +142,9 @@ typedef struct
 
     /* The queue of outstanding movements */
     delta_queue_t dqueue;
+
+    /* Non-zero if the history should display threads */
+    Boolean is_threaded;
 
     /* The history as both tree and list */
     node_t nodes;

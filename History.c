@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.43 2002/04/04 12:32:15 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.44 2002/04/04 12:45:28 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1117,6 +1117,9 @@ static void insert_message(HistoryWidget self,
     }
     else
     {
+	/* Discard the first message view */
+	message_view_free(self -> history.message_views[0]);
+
 	/* Measure the nodes before the index, moving them up to make
 	 * room for the new message. */
 	for (i = 1; i < index; i++)
@@ -1846,14 +1849,26 @@ static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal 
 /* Set the widget's display to be threaded or not */
 void HistorySetThreaded(Widget widget, Boolean is_threaded)
 {
+    HistoryWidget self = (HistoryWidget)widget;
+
+    /* Don't do anything if there's no change */
+    if (self -> history.is_threaded == is_threaded)
+    {
+	return;
+    }
+
+    /* Change threaded status */
+    self -> history.is_threaded = is_threaded;
+
+    /* FIX THIS: rebuild the list */
     dprintf(("HistorySetThreaded(): not yet implemented\n"));
 }
 
 /* Returns whether or not the history is threaded */
 Boolean HistoryIsThreaded(Widget widget)
 {
-    dprintf(("HistoryIsThreaded(): not yet implemented\n"));
-    return False;
+    HistoryWidget self = (HistoryWidget)widget;
+    return self -> history.is_threaded;
 }
 
 /* Set the widget's display to show timestamps or not */
@@ -1911,7 +1926,6 @@ Boolean HistoryIsShowingTimestamps(Widget widget)
 void HistoryAddMessage(Widget widget, message_t message)
 {
     HistoryWidget self = (HistoryWidget)widget;
-#ifdef DEBUG
     node_t node;
     int index;
     int depth;
@@ -1922,6 +1936,7 @@ void HistoryAddMessage(Widget widget, message_t message)
 	return;
     }
 
+    /* Add the node to the threaded history tree */
     node_add(&self -> history.nodes,
 	     message_get_reply_id(message),
 	     node,
@@ -1929,13 +1944,15 @@ void HistoryAddMessage(Widget widget, message_t message)
 	     &index,
 	     &depth);
 
-    printf("added node; index=%d, depth=%d\n", index, depth);
-    node_dump(self -> history.nodes, 0);
-    insert_message(self, index, depth, message);
-#else
-    /* For now just insert at the end */
-    insert_message(self, self -> history.message_count, 0, message);
-#endif
+    /* Add the node according to our threadedness */
+    if (HistoryIsThreaded(widget))
+    {
+	insert_message(self, index, depth, message);
+    }
+    else
+    {
+	insert_message(self, self -> history.message_count, 0, message);
+    }
 }
 
 /* Kills the thread of the given message */
