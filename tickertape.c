@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.31 1999/10/05 06:02:21 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.32 1999/10/05 08:16:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -660,13 +660,19 @@ static void init_ui(tickertape_t self)
 {
     int index;
 
-    self -> control_panel = control_panel_alloc(self, self -> top);
+    /* Allocate the control panel */
+    if ((self -> control_panel = control_panel_alloc(self, self -> top)) == NULL)
+    {
+	return;
+    }
 
+    /* Tell our group subscriptions about the control panel */
     for (index = 0; index < self -> groups_count; index++)
     {
 	group_sub_set_control_panel(self -> groups[index], self -> control_panel);
     }
 
+    /* Create the scroller widget */
     self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
 	"scroller", scrollerWidgetClass, self -> top,
 	NULL);
@@ -1019,17 +1025,22 @@ void tickertape_free(tickertape_t self)
 
     /* How do we free a Widget? */
 
-    if (self -> user)
+    if (self -> user != NULL)
     {
 	free(self -> user);
     }
 
-    if (self -> domain)
+    if (self -> domain != NULL)
     {
 	free(self -> domain);
     }
 
-    if (self -> groups_file)
+    if (self -> ticker_dir != NULL)
+    {
+	free(self -> ticker_dir);
+    }
+
+    if (self -> groups_file != NULL)
     {
 	free(self -> groups_file);
     }
@@ -1040,10 +1051,16 @@ void tickertape_free(tickertape_t self)
 	group_sub_free(self -> groups[index]);
     }
 
-    free(self -> groups);
+    if (self -> groups != NULL)
+    {
+	free(self -> groups);
+    }
 
-    usenet_sub_set_connection(self -> usenet_sub, NULL);
-    usenet_sub_free(self -> usenet_sub);
+    if (self -> usenet_sub != NULL)
+    {
+	usenet_sub_set_connection(self -> usenet_sub, NULL);
+	usenet_sub_free(self -> usenet_sub);
+    }
 
 #ifdef ORBIT
     for (index = 0; index < self -> orbit_sub_count; index++)
@@ -1068,6 +1085,12 @@ void tickertape_free(tickertape_t self)
     }
 
     /* How do we free a ScrollerWidget? */
+
+    if (self -> history != NULL)
+    {
+	history_free(self -> history);
+    }
+
     free(self);
 }
 
@@ -1114,6 +1137,8 @@ void tickertape_quit(tickertape_t self)
 /* Answers the receiver's ticker_dir filename */
 static char *tickertape_ticker_dir(tickertape_t self)
 {
+    char *dir;
+
     /* See if we've already looked it up */
     if (self -> ticker_dir != NULL)
     {
@@ -1121,21 +1146,21 @@ static char *tickertape_ticker_dir(tickertape_t self)
     }
 
     /* Use the TICKERDIR environment variable if it is set */
-    if ((self -> ticker_dir = getenv("TICKERDIR")) == NULL)
+    if ((dir = getenv("TICKERDIR")) != NULL)
     {
-	char *home;
-
-	/* Else look up the user's home directory (default to '/' if not set) */
-	if ((home = getenv("HOME")) == NULL)
+	self -> ticker_dir = strdup(dir);
+    }
+    else
+    {
+	/* Otherwise grab the user's home directory */
+	if ((dir = getenv("HOME")) == NULL)
 	{
-	    home = "/";
+	    dir = "/";
 	}
 
-	/* And append /.ticker to it to construct the directory name */
-	self -> ticker_dir = (char *)malloc(strlen(home) + sizeof(DEFAULT_TICKERDIR) + 1);
-	strcpy(self -> ticker_dir, home);
-	strcat(self -> ticker_dir, "/");
-	strcat(self -> ticker_dir, DEFAULT_TICKERDIR);
+	/* And append /.ticker to the end of it */
+	self -> ticker_dir = (char *)malloc(strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2);
+	sprintf(self -> ticker_dir, "%s/%s", dir, DEFAULT_TICKERDIR);
     }
 
     /* Make sure the TICKERDIR exists 
