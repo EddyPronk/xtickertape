@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.22 2001/07/20 04:20:51 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.23 2001/07/20 07:44:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -690,23 +690,34 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     long ymargin = (long)self -> history.margin_height;
     message_view_t view;
     XGCValues values;
-    unsigned int i;
+    unsigned int index;
     long x, y;
 
     /* Set that as our bounding box */
     XSetClipRectangles(display, gc, 0, 0, bbox, 1, YXSorted);
 
-    /* Start here at the top margin offset by how far into the first
-     * line we've scrolled */
+    /* Compute our X coordinate */
     x = xmargin - self -> history.x;
-    y = ymargin - self -> history.y % self -> history.line_height;
 
+    /* Is the top margin visible? */
+    if (self -> history.y < self -> history.margin_height)
+    {
+	/* Yes.  Start drawing at index 0 */
+	index = 0;
+	y = ymargin - self -> history.y;
+    }
+    else
+    {
+	/* No.  Compute the first visible index */
+	index = (self -> history.y - self -> history.margin_height) / self -> history.line_height;
+	y = (ymargin - self -> history.y) % self -> history.line_height;
+    }
 
     /* Draw all visible message views */
-    for (i = self -> history.y / self->history.line_height; i < self->history.message_count; i++)
+    while (index < self -> history.message_count)
     {
 	/* Skip NULL message views */
-	if ((view = self -> history.message_views[i]) == NULL)
+	if ((view = self -> history.message_views[index++]) == NULL)
 	{
 	    return;
 	}
