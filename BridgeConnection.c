@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.3 1997/02/14 10:52:28 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.4 1997/02/14 16:33:13 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -183,13 +183,13 @@ int BridgeConnection_getFD(BridgeConnection self)
 /* Sends a Message to the bridge */
 void BridgeConnection_send(BridgeConnection self, Message message)
 {
-    fprintf(stderr, "* TICKERTAPE|%s|USER|%s|TICKERTEXT|%s|TIMEOUT|%ld%c",
+    fprintf(self -> out, "* TICKERTAPE|%s|USER|%s|TICKERTEXT|%s|TIMEOUT|%ld%c",
 	    Message_getGroup(message),
 	    Message_getUser(message),
 	    Message_getString(message),
-	    Message_getTimeout(message),
+	    Message_getTimeout(message) / 60,
 	    EOL);
-    fflush(stderr);
+    fflush(self -> out);
 }
 
 /* Call this when the connection has data available */

@@ -3,14 +3,11 @@
 #
 
 TICKERTAPE = tickertape
-BRIDGE = bridge
 
 ALL = $(TICKERTAPE) 
 
-#OBJS = Scroller.o MessageView.o FontInfo.o Graphics.o Message.o Hash.o List.o main.o
-TOBJS = BridgeConnection.o Control.o Tickertape.o \
-	MessageView.o Message.o List.o tickertape.o
-BOBJS = ElvinConnection.o List.o Message.o bridge.o
+OBJS = BridgeConnection.o Control.o Tickertape.o \
+	MessageView.o Message.o List.o main.o
 
 CDEBUGFLAGS =
 #CDEBUGFLAGS = -g
@@ -24,11 +21,10 @@ LIBS = -lXaw3d -lXt -lX11
 
 all: $(ALL)
 
-$(TICKERTAPE): $(TOBJS)
-	$(CC) -o $@ $(TOBJS) $(LIBDIRS) $(LIBS) $(EXTRALIBS)
-
-$(BRIDGE): $(BOBJS)
-	$(CC) -o $@ $(BOBJS) $(LIBDIRS) $(LIBS) $(EXTRALIBS)
+$(TICKERTAPE): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBDIRS) $(LIBS) $(EXTRALIBS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)
+
+

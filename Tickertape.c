@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.11 1997/02/14 10:52:34 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.12 1997/02/14 16:33:15 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +54,16 @@ static XtResource resources[] =
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
 	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
+    },
+    /* Dimension frequency (in Hz) */
+    {
+	XtNfrequency, XtCFrequency, XtRDimension, sizeof(Dimension),
+	offset(tickertape.frequency), XtRImmediate, (XtPointer)24
+    },
+    /* Dimension stepSize (in pixels) */
+    {
+	XtNstepSize, XtCStepSize, XtRDimension, sizeof(Dimension),
+	offset(tickertape.step), XtRImmediate, (XtPointer)1
     }
 };
 #undef offset
@@ -293,7 +303,7 @@ static void SetClock(TickertapeWidget self)
 {
     if (! self -> tickertape.isStopped)
     {
-	TtStartTimer(self, 41, Tick, (XtPointer) self);
+	TtStartTimer(self, 1000 / self -> tickertape.frequency, Tick, (XtPointer) self);
     }
 }
 
@@ -585,7 +595,7 @@ static void InWithTheNew(TickertapeWidget self)
 /* Move the messages along */
 static void Rotate(TickertapeWidget self)
 {
-    self -> tickertape.offset++;
+    self -> tickertape.offset += self -> tickertape.step;
 
     OutWithTheOld(self);
     InWithTheNew(self);

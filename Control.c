@@ -1,9 +1,16 @@
-/* $Id: Control.c,v 1.1 1997/02/14 10:52:30 phelps Exp $ */
+/* $Id: Control.c,v 1.2 1997/02/14 16:33:14 phelps Exp $ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pwd.h>
 
 #include "Control.h"
+
 #include <X11/Shell.h>
 #include <X11/Xaw/Box.h>
 #include <X11/Xaw/Paned.h>
+#include <X11/Xaw/Form.h>
 #include <X11/Xaw/Label.h>
 #include <X11/Xaw/Command.h>
 #include <X11/Xaw/SimpleMenu.h>
@@ -15,7 +22,6 @@ char *groups[] =
 {
     "Chat",
     "level7",
-    "phelps",
     NULL
 };
 
@@ -29,6 +35,13 @@ char *timeouts[] =
 };
 
 
+/*
+ * Prototypes for actions
+ */
+static void ActionOK(Widget button, XtPointer context, XtPointer ignored);
+static void ActionClear(Widget button, XtPointer context, XtPointer ignored);
+static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
+
 
 struct ControlPanel_t
 {
@@ -41,37 +54,19 @@ struct ControlPanel_t
     Widget text;
     char **groups;
     char **timeouts;
+    char *userName;
 };
 
 
-/*
- * Actions
- */
-static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
+/* Determines the user's login name */
+static char *getUserName()
 {
-    ControlPanel self = (ControlPanel) context;
-    if (self -> callback)
-    {
-	Message message = ControlPanel_createMessage(self);
-	(*self -> callback)(message, self -> context);
-    }
-    XtPopdown(self -> top);
-}
-
-static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
-{
-    printf("clear!?\n");
-}
-
-static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
-{
-    ControlPanel self = (ControlPanel) context;
-    XtPopdown(self -> top);
+    struct passwd *password = getpwuid(getuid());
+    return password -> pw_name;
 }
 
 
-
-/* Sets the label of a Widget */
+/* Sets the value of a Widget's "label" resource */
 static void setLabel(Widget widget, char *label)
 {
     Arg arg;
@@ -81,7 +76,7 @@ static void setLabel(Widget widget, char *label)
     XtSetValues(widget, &arg, 1);
 }
 
-/* Answers the label of a Widget */
+/* Answers the value of a Widget's "label" resource */
 static char *getLabel(Widget widget)
 {
     Arg arg;
@@ -93,7 +88,7 @@ static char *getLabel(Widget widget)
     return label;
 }
 
-/*
+/* Sets the value of a Widget's "string" resource */
 static void setString(Widget widget, char *string)
 {
     Arg arg;
@@ -102,8 +97,8 @@ static void setString(Widget widget, char *string)
     arg.value = (XtArgVal)string;
     XtSetValues(widget, &arg, 1);
 }
-*/
 
+/* Answers the value of a Widget's "string" resource */
 static char *getString(Widget widget)
 {
     Arg arg;
@@ -115,7 +110,7 @@ static char *getString(Widget widget)
     return string;
 }
 
-
+/* Sets the label of a MenuButton to the label of a Menu Object */
 static void setMBValue(Widget item, XtPointer context, XtPointer ignored)
 {
     setLabel((Widget)context, getLabel(item));
@@ -123,62 +118,106 @@ static void setMBValue(Widget item, XtPointer context, XtPointer ignored)
 
 
 /* Constructs the User label box */
-static void createUserBox(ControlPanel self, Widget parent)
+static Widget createUserBox(ControlPanel self, Widget parent)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"userBox", boxWidgetClass, parent,
+    Widget form, label;
+    form = XtVaCreateManagedWidget(
+	"userForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
 	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawRubber,
 	NULL);
-    XtVaCreateManagedWidget(
-	"userLabel", labelWidgetClass, box,
+    label = XtVaCreateManagedWidget(
+	"userLabel", labelWidgetClass, form,
 	XtNlabel, "User",
 	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
 	NULL);
     self -> user = XtVaCreateManagedWidget(
-	"user", asciiTextWidgetClass, box,
+	"user", asciiTextWidgetClass, form,
 	XtNeditType, XawtextEdit,
-	XtNstring, "phelps",
+	XtNstring, self -> userName,
+	XtNfromHoriz, label,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainRight,
 	NULL);
+    return form;
 }
 
-static void createGroupMenu(ControlPanel self, Widget parent)
+/* Construct the menu for the Group list */
+static Widget createGroupMenu(ControlPanel self, Widget parent)
 {
     char **group;
+    Widget item;
     Widget menu = XtVaCreatePopupShell(
 	"groupMenu", simpleMenuWidgetClass, parent,
 	NULL);
     
     for (group = self -> groups; *group != NULL; group++)
     {
-	Widget item = XtVaCreateManagedWidget(
+	item = XtVaCreateManagedWidget(
 	    *group, smeBSBObjectClass, menu,
 	    NULL);
 	XtAddCallback(item, XtNcallback, setMBValue, parent);
     }
+
+    item = XtVaCreateManagedWidget(
+	self -> userName, smeBSBObjectClass, menu,
+	NULL);
+    XtAddCallback(item, XtNcallback, setMBValue, parent);
+    return menu;
 }
 
-static void createGroupBox(ControlPanel self, Widget parent)
+/* Create the Group box */
+static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"groupBox", boxWidgetClass, parent,
+    Widget form, label;
+
+    form = XtVaCreateManagedWidget(
+	"groupForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
 	XtNborderWidth, 0,
+	XtNfromHoriz, left,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawRubber,
+	XtNright, XawRubber,
 	NULL);
-    XtVaCreateManagedWidget(
-	"groupLabel", labelWidgetClass, box,
-	XtNlabel, "group",
+    label = XtVaCreateManagedWidget(
+	"groupLabel", labelWidgetClass, form,
+	XtNlabel, "Group",
 	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
 	NULL);
     self -> group = XtVaCreateManagedWidget(
-	"groupMenu", menuButtonWidgetClass, box,
+	"groupMenu", menuButtonWidgetClass, form,
 	XtNlabel, self -> groups[0],
 	XtNmenuName, "groupMenu",
+	XtNwidth, 60,
+	XtNfromHoriz, label,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainRight,
 	NULL);
     createGroupMenu(self, self -> group);
+    return form;
 }
 
-static void createTimeoutMenu(ControlPanel self, Widget parent)
+
+/* Creates the popup menu for timeout selection */
+static Widget createTimeoutMenu(ControlPanel self, Widget parent)
 {
     char **timeout;
     Widget menu = XtVaCreatePopupShell(
@@ -192,100 +231,156 @@ static void createTimeoutMenu(ControlPanel self, Widget parent)
 	    NULL);
 	XtAddCallback(item, XtNcallback, setMBValue, parent);
     }
+
+    return menu;
 }
 
-static void createTimeoutBox(ControlPanel self, Widget parent)
+/* Creates the timeout box */
+static Widget createTimeoutBox(ControlPanel self, Widget parent, Widget left)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"timeoutBox", boxWidgetClass, parent,
+    Widget form, label;
+
+    form = XtVaCreateManagedWidget(
+	"timeoutForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
 	XtNborderWidth, 0,
+	XtNfromHoriz, left,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawRubber,
+	XtNright, XawChainRight,
 	NULL);
-    XtVaCreateManagedWidget(
-	"timeoutLabel", labelWidgetClass, box,
-	XtNlabel, "timeout",
+    label = XtVaCreateManagedWidget(
+	"timeoutLabel", labelWidgetClass, form,
+	XtNlabel, "Timeout",
 	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
 	NULL);
     self -> timeout = XtVaCreateManagedWidget(
-	"timeout", menuButtonWidgetClass, box,
+	"timeout", menuButtonWidgetClass, form,
 	XtNlabel, self -> timeouts[0],
 	XtNmenuName, "timeoutMenu",
+	XtNwidth, 80,
+	XtNfromHoriz, label,
+	XtNtop, XawChainTop,
+	XtNbottom, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainRight,
 	NULL);
     createTimeoutMenu(self, self -> timeout);
+    return form;
 }
 
 /* Constructs the top box of the Control Panel */
-static void createTopBox(ControlPanel self, Widget parent)
+static Widget createTopBox(ControlPanel self, Widget parent)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"topBox", boxWidgetClass, parent,
+    Widget form, widget;
+
+    form = XtVaCreateManagedWidget(
+	"topForm", formWidgetClass, parent,
 	XtNorientation, XtorientHorizontal,
 	XtNborderWidth, 0,
 	XtNshowGrip, False,
 	NULL);
-    createUserBox(self, box);
-    createGroupBox(self, box);
-    createTimeoutBox(self, box);
+    widget = createUserBox(self, form);
+    widget = createGroupBox(self, form, widget);
+    createTimeoutBox(self, form, widget);
+    return form;
 }
 
 
 /* Constructs the Text box */
-static void createTextBox(ControlPanel self, Widget parent)
+static Widget createTextBox(ControlPanel self, Widget parent)
 {
-    Widget box = XtVaCreateManagedWidget(
-	"textBox", boxWidgetClass, parent,
-	XtNorientation, XtorientHorizontal,
+    Widget form, label;
+    form = XtVaCreateManagedWidget(
+	"textForm", formWidgetClass, parent,
 	XtNborderWidth, 0,
 	XtNshowGrip, False,
 	NULL);
-    XtVaCreateManagedWidget(
-	"textLabel", labelWidgetClass, box,
+    label = XtVaCreateManagedWidget(
+	"textLabel", labelWidgetClass, form,
 	XtNlabel, "text",
 	XtNborderWidth, 0,
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainLeft,
+	XtNresizable, False,
 	NULL);
     self -> text = XtVaCreateManagedWidget(
-	"text", asciiTextWidgetClass, box,
+	"text", asciiTextWidgetClass, form,
 	XtNeditType, XawtextEdit,
+	XtNfromHoriz, label,
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNright, XawChainRight,
 	NULL);
+    return form;
 }
 
-
-static void createBottomBox(ControlPanel self, Widget parent)
+/* Creates the bottom box (where the buttons live) */
+static Widget createBottomBox(ControlPanel self, Widget parent)
 {
-    Widget box, button;
+    Widget form, button;
 
-    box = XtVaCreateManagedWidget(
-	"bottomBox", boxWidgetClass, parent,
-	XtNorientation, XtorientHorizontal,
+    form = XtVaCreateManagedWidget(
+	"bottomForm", formWidgetClass, parent,
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNbottom, XawChainTop,
+	XtNright, XawChainRight,
 	XtNborderWidth, 0,
 	NULL);
     button = XtVaCreateManagedWidget(
-	"ok", commandWidgetClass, box,
+	"ok", commandWidgetClass, form,
 	XtNlabel, "OK",
+	XtNwidth, 50, /* force buttons to be equal width */
+	XtNtop, XawChainTop,
+	XtNleft, XawChainLeft,
+	XtNbottom, XawChainTop,
+	XtNright, XawRubber,
 	NULL);
     XtAddCallback(button, XtNcallback, ActionOK, self);
 
     button = XtVaCreateManagedWidget(
-	"clear", commandWidgetClass, box,
+	"clear", commandWidgetClass, form,
 	XtNlabel, "Clear",
+	XtNwidth, 50,
+	XtNtop, XawChainTop,
+	XtNleft, XawRubber,
+	XtNbottom, XawChainTop,
+	XtNright, XawRubber,
+	XtNfromHoriz, button,
 	NULL);
     XtAddCallback(button, XtNcallback, ActionClear, self);
 
     button = XtVaCreateManagedWidget(
-	"cancel", commandWidgetClass, box,
+	"cancel", commandWidgetClass, form,
 	XtNlabel, "Cancel",
+	XtNwidth, 50,
+	XtNtop, XawChainTop,
+	XtNleft, XawRubber,
+	XtNbottom, XawChainTop,
+	XtNright, XawChainRight,
+	XtNfromHoriz, button,
 	NULL);
     XtAddCallback(button, XtNcallback, ActionCancel, self);
+    return form;
 }
 
-static void createControlPanelPopup(ControlPanel self, Widget parent)
+/* Constructs the entire control panel */
+static Widget createControlPanelPopup(ControlPanel self, Widget parent)
 {
     Widget box = XtVaCreateManagedWidget(
-	"pane", panedWidgetClass, parent,
+	"paned", panedWidgetClass, parent,
 	NULL);
     createTopBox(self, box);
     createTextBox(self, box);
     createBottomBox(self, box);
+    return box;
 }
 
 /* Answers the receiver's group */
@@ -294,16 +389,35 @@ char *getGroup(ControlPanel self)
     return getLabel(self -> group);
 }
 
+/* Sets the receiver's group */
+void setGroup(ControlPanel self, char *group)
+{
+    setLabel(self -> group, group);
+}
+
 /* Answers the receiver's user */
 char *getUser(ControlPanel self)
 {
     return getString(self -> user);
 }
 
+/* Sets the receiver's user */
+void setUser(ControlPanel self, char *user)
+{
+    setString(self -> user, user);
+}
+
+
 /* Answers the receiver's text */
 char *getText(ControlPanel self)
 {
     return getString(self -> text);
+}
+
+/* Sets the receiver's text */
+void setText(ControlPanel self, char *text)
+{
+    setString(self -> text, text);
 }
 
 /* Answers the receiver's timeout */
@@ -312,22 +426,73 @@ int getTimeout(ControlPanel self)
     return atoi(getLabel(self -> timeout));
 }
 
+/* Sets the receiver's timeout */
+void setTimeout(ControlPanel self, int timeout)
+{
+    char buffer[80];
+
+    sprintf(buffer, "%d", timeout);
+    setLabel(self -> timeout, buffer);
+}
+
+/*
+ * Actions
+ */
+
+/* Callback for OK button */
+static void ActionOK(Widget button, XtPointer context, XtPointer ignored)
+{
+    ControlPanel self = (ControlPanel) context;
+    if (self -> callback)
+    {
+	Message message = ControlPanel_createMessage(self);
+	(*self -> callback)(message, self -> context);
+    }
+    XtPopdown(self -> top);
+}
+
+/* Callback for Clear button */
+static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
+{
+    ControlPanel self = (ControlPanel) context;
+    setGroup(self, self -> groups[0]);
+    setUser(self, self -> userName);
+    setText(self, "");
+    setTimeout(self, 10);
+}
+
+/* Callback for Cancel button */
+static void ActionCancel(Widget button, XtPointer context, XtPointer ignored)
+{
+    ControlPanel self = (ControlPanel) context;
+    XtPopdown(self -> top);
+}
+
+
 
 /* Constructs the Tickertape Control Panel */
 ControlPanel ControlPanel_alloc(Widget parent, ControlPanelCallback callback, void *context)
 {
     ControlPanel self = (ControlPanel) malloc(sizeof(struct ControlPanel_t));
+    Atom deleteAtom;
 
     self -> callback = callback;
     self -> context = context;
+    self -> userName = getUserName();
     self -> top = XtVaCreatePopupShell(
-	"controlPanel", transientShellWidgetClass,
-	parent, NULL);
+	"controlPanel", transientShellWidgetClass, parent,
+	XtNtitle, "Tickertape Control Panel",
+	NULL);
     self -> groups = groups;
     self -> timeouts = timeouts;
+
     createControlPanelPopup(self, self -> top);
-    
+    XtOverrideTranslations(
+	self -> top,
+	XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));
     XtRealizeWidget(self -> top);
+    deleteAtom = XInternAtom(XtDisplay(self -> top), "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(XtDisplay(self -> top), XtWindow(self -> top), &deleteAtom, 1);
     return self;
 }
 
@@ -348,7 +513,7 @@ void ControlPanel_show(ControlPanel self)
 /* Answers the receiver's values as a Message */
 Message ControlPanel_createMessage(ControlPanel self)
 {
-    return Message_alloc(getGroup(self), getUser(self), getText(self), getTimeout(self));
+    return Message_alloc(getGroup(self), getUser(self), getText(self), 60 * getTimeout(self));
 }
 
 

@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.7 1997/02/13 15:08:24 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.8 1997/02/14 16:33:16 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -38,6 +38,8 @@ typedef struct
     Pixel stringPixel;
     Pixel separatorPixel;
     Dimension fadeLevels;
+    Dimension frequency;
+    Dimension step;
 
     /* Private state */
     int isStopped;

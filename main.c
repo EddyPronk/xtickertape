@@ -1,4 +1,4 @@
-/* $Id: tickertape.c,v 1.3 1997/02/14 10:52:35 phelps Exp $ */
+/* $Id: main.c,v 1.11 1997/02/14 16:33:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +24,9 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 /* The ControlPanel popup */
 static ControlPanel controlPanel;
 
+/* The main window widget */
+Widget top;
+
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
@@ -31,11 +34,20 @@ static XtActionsRec actions[] =
 };
 
 
-/* Shuts everything down and go away */
+/* Callback for when the Window Manager wants to close a window */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams)
 {
-    printf("QuitAction\n");
-    exit(0);
+    /* if main window then quit */
+    if (widget == top)
+    {
+	XtDestroyApplicationContext(XtWidgetToApplicationContext(widget));
+	exit(0);
+    }
+    /* otherwise just hide the popup */
+    else
+    {
+	XtPopdown(widget);
+    }
 }
 
 /* Callback for buttonpress in tickertape window */
@@ -60,7 +72,6 @@ int main(int argc, char *argv[])
 {
     BridgeConnection connection;
     List subscriptions;
-    Widget top;
     TickertapeWidget tickertape;
     XtAppContext context;
     Atom deleteAtom;
@@ -80,20 +91,22 @@ int main(int argc, char *argv[])
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
 	&context, "Tickertape",
-	NULL, 0, &argc, argv,
-	NULL, NULL);
+	NULL, 0, &argc, argv, NULL,
+	XtNtitle, "Tickertape",
+	XtNborderWidth, 0,
+	NULL);
 
     /* Add a calback for when it gets destroyed (?) */
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Create the tickertape widget */
     tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
-	"ticker", tickertapeWidgetClass, top,
+	"scroller", tickertapeWidgetClass, top,
 	NULL);
     XtAddCallback((Widget)tickertape, XtNcallback, Click, NULL);
 
     /* listen for messages from the bridge */
-    connection = BridgeConnection_alloc(tickertape, "fatcat", 8800, subscriptions);
+    connection = BridgeConnection_alloc(tickertape, HOSTNAME, PORT, subscriptions);
     XtAppAddInput(
 	context,
 	BridgeConnection_getFD(connection),
