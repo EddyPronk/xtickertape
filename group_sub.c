@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.49 2003/04/02 10:21:06 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.50 2003/04/07 14:52:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -298,7 +298,7 @@ static void notify_cb(
     /* Get the `Attachment' field from the notification */
     if (elvin_notification_get(notification, F3_MIME_ATTACHMENT, &type, &value, error))
     {
-	else if (type == ELVIN_STRING)
+	if (type == ELVIN_STRING)
 	{
 	    attachment = value.s;
 	    length = strlen(value.s);
