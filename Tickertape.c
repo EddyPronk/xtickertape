@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.9 1997/02/12 13:53:18 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.10 1997/02/13 15:08:23 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,15 +19,16 @@
 #define offset(field) XtOffsetOf(TickertapeRec, field)
 static XtResource resources[] =
 {
+    /* XtCallbackProc callback */
+    {
+	XtNcallback, XtCCallback, XtRCallback, sizeof(XtPointer),
+	offset(tickertape.callbacks), XtRCallback, (XtPointer)NULL
+    },
+
     /* XFontStruct *font */
     {
-	XtNfont, /* String resource_name */
-	XtCFont, /* String resource_class */
-	XtRFontStruct, /*String resource_type */
-	sizeof(XFontStruct *), /* Cardinal resource_size */
-	offset(tickertape.font), /* Cardinal resource_offset */
-	XtRString, /* String default_type */
-	XtDefaultFont /* XtPointer default_address */
+	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
+	offset(tickertape.font), XtRString, XtDefaultFont
     },
     /* Pixel groupPixel */
     {
@@ -648,13 +649,10 @@ static XtGeometryResult QueryGeometry(
  */
 
 /* Called when the button is pressed */
-/* FIX THIS: should call a callback instead */
 void Click(Widget widget, XEvent event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
-
-    fprintf(stderr, "Click 0x%p\n", self);
-    TtAddMessage(self, Message_alloc("tickertape", "internal", "buttonpress ignored", 30));
+    XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer)NULL);
 }
 
 /*

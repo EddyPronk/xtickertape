@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.6 1997/02/12 13:53:19 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.7 1997/02/13 15:08:24 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -31,6 +31,7 @@ typedef struct _TickertapeClassRec
 typedef struct
 {
     /* Resources */
+    XtCallbackList callbacks;
     XFontStruct *font;
     Pixel groupPixel;
     Pixel userPixel;

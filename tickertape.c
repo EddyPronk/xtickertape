@@ -1,4 +1,4 @@
-/* $Id: tickertape.c,v 1.1 1997/02/13 08:13:46 phelps Exp $ */
+/* $Id: tickertape.c,v 1.2 1997/02/13 15:08:25 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,15 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
     exit(0);
 }
 
+/* Callback for buttonpress in tickertape window */
+static void Click(Widget widget, XtPointer context, XtPointer ignored)
+{
+    printf("Hello sailor!\n");
+}
 
+
+
+/* Parse args and go */
 int main(int argc, char *argv[])
 {
     BridgeConnection connection;
@@ -69,6 +77,7 @@ int main(int argc, char *argv[])
     tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
 	"ticker", tickertapeWidgetClass, top,
 	NULL, 0);
+    XtAddCallback(tickertape, XtNcallback, Click, NULL);
 
     /* listen for messages from the bridge */
     connection = BridgeConnection_alloc(tickertape, "fatcat", 8800, subscriptions);
