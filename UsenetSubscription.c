@@ -1,4 +1,4 @@
-/* $Id */
+/* $Id: UsenetSubscription.c,v 1.8 1998/10/30 08:14:05 phelps Exp $ */
 
 #include "UsenetSubscription.h"
 #include <stdlib.h>
@@ -592,7 +592,14 @@ UsenetSubscription UsenetSubscription_alloc(
     UsenetSubscriptionCallback callback,
     void *context)
 {
-    UsenetSubscription self = (UsenetSubscription) malloc(sizeof(struct UsenetSubscription_t));
+    UsenetSubscription self;
+
+    /* Allocate memory for the receiver */
+    if ((self = (UsenetSubscription)malloc(sizeof(struct UsenetSubscription_t))) == NULL)
+    {
+	fprintf(stderr, "*** Out of memory\n");
+	exit(1);
+    }
 
 #ifdef SANITY
     self -> sanity_check = sanity_value;
