@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.23 1998/05/09 06:20:36 phelps Exp $ */
+/* $Id: main.c,v 1.24 1998/08/26 06:02:53 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,9 +83,9 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 }
 
 /* Callback for buttonpress in tickertape window */
-static void Click(Widget widget, XtPointer context, XtPointer ignored)
+static void Click(Widget widget, XtPointer ignored, XtPointer context)
 {
-    ControlPanel_show(controlPanel);
+    ControlPanel_show(controlPanel, (Message) context);
 }
 
 /* Callback for message to send from control panel */
