@@ -5,6 +5,8 @@ Overview of changes in xtickertape-2.0
   the XTickertape.history.messageCapacity X resource.  See the man
   page for additional History widget resources.
 
+* Replaced tool-tips with a status bar.
+
 * Changed the application class from `Tickertape' to `XTickertape'.
 
 * No longer redirecting the output of `metamail' to /dev/null, and
