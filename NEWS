@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-1.6.0
 
+* The new action drag() can be used to drag the tickertape's scroller
+  around.  Not necessarily useful, but quite cute.
+
 * delete() is now called expire().  The new delete() function
   removes a message from the scroller instantly.  expire() quickly
   fades a message to the background color and makes it go away once it 
