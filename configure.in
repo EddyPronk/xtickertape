@@ -12,10 +12,6 @@ AC_PATH_PROG(MCGEN, mcgen, false)
 
 dnl Checks for libraries.
 
-# See if we need -lm for fmod()
-# FIX THIS: this should go in elvin-config somehow
-#AC_SEARCH_LIBS(fmod, m)
-
 # Figure out where X11 lives.
 AC_PATH_XTRA
 if test "$no_x" = yes ; then
