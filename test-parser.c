@@ -9,29 +9,29 @@
 #include <elvin/memory.h>
 #include <elvin/errors/elvin.h>
 #include "errors.h"
-#include "atom.h"
+#include "sexp.h"
 #include "parser.h"
 
 env_t root_env = NULL;
 
 
 /* Parser callback */
-int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
+int parsed(void *rock, parser_t parser, sexp_t sexp, elvin_error_t error)
 {
-    atom_t result;
+    sexp_t result;
 
     /* Evaluate the s-expression */
-    if (atom_eval(sexp, root_env, &result, error) == 0)
+    if (sexp_eval(sexp, root_env, &result, error) == 0)
     {
 	elvin_error_fprintf(stderr, error);
     }
     else
     {
 	/* Print it */
-	atom_print(result); printf("\n");
+	sexp_print(result); printf("\n");
 
 	/* Free it */
-	if (atom_free(result, error) == 0)
+	if (sexp_free(result, error) == 0)
 	{
 	    return 0;
 	}
@@ -73,13 +73,13 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 
 
 /* The `lambda' primitive function */
-static int prim_lambda(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
-    atom_t arg_list;
-    atom_t body;
+    sexp_t arg_list;
+    sexp_t body;
 
     /* Make sure we have at least one arg */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -98,7 +98,7 @@ static int prim_lambda(env_t env, atom_t args, atom_t *result, elvin_error_t err
     }
 
     /* Make sure that we have a valid body */
-    if (atom_get_type(body) != ATOM_NIL && atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(body) != SEXP_NIL && sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad thingo");
 	return 0;
@@ -114,10 +114,10 @@ static int prim_lambda(env_t env, atom_t args, atom_t *result, elvin_error_t err
 }
 
 /* The `quote' primitive function */
-static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+static int prim_quote(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     /* Make sure we have at least one arg */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -136,23 +136,23 @@ static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t erro
     }
 
     /* Make sure that there are no more */
-    if (atom_get_type(args) != ATOM_NIL)
+    if (sexp_get_type(args) != SEXP_NIL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
     /* Increase the reference count */
-    return atom_alloc_ref(*result, error);
+    return sexp_alloc_ref(*result, error);
 }
 
 /* The `car' primitive function */
-static int prim_car(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
-    atom_t cons, value;
+    sexp_t cons, value;
 
     /* Make sure we have at least one arg */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -171,20 +171,20 @@ static int prim_car(env_t env, atom_t args, atom_t *result, elvin_error_t error)
     }
 
     /* Make sure there are no more ags */
-    if (atom_get_type(args) != ATOM_NIL)
+    if (sexp_get_type(args) != SEXP_NIL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
     /* Evaluate the arg */
-    if (atom_eval(cons, env, &value, error) == 0)
+    if (sexp_eval(cons, env, &value, error) == 0)
     {
 	return 0;
     }
 
     /* Make sure the cons really is a cons cell */
-    if (atom_get_type(value) != ATOM_CONS)
+    if (sexp_get_type(value) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
 	return 0;
@@ -197,22 +197,22 @@ static int prim_car(env_t env, atom_t args, atom_t *result, elvin_error_t error)
     }
 
     /* Free our reference to the cons cell */
-    if (atom_free(value, error) == 0)
+    if (sexp_free(value, error) == 0)
     {
 	return 0;
     }
 
     /* Grab a reference to it */
-    return atom_alloc_ref(*result, error);
+    return sexp_alloc_ref(*result, error);
 }
 
 /* The `car' primitive function */
-static int prim_cdr(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
-    atom_t cons, value;
+    sexp_t cons, value;
 
     /* Make sure we have at least one arg */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -231,20 +231,20 @@ static int prim_cdr(env_t env, atom_t args, atom_t *result, elvin_error_t error)
     }
 
     /* Make sure there are no more ags */
-    if (atom_get_type(args) != ATOM_NIL)
+    if (sexp_get_type(args) != SEXP_NIL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
     /* Evaluate the arg */
-    if (atom_eval(cons, env, &value, error) == 0)
+    if (sexp_eval(cons, env, &value, error) == 0)
     {
 	return 0;
     }
 
     /* Make sure the cons really is a cons cell */
-    if (atom_get_type(value) != ATOM_CONS)
+    if (sexp_get_type(value) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
 	return 0;
@@ -257,23 +257,23 @@ static int prim_cdr(env_t env, atom_t args, atom_t *result, elvin_error_t error)
     }
 
     /* Free our reference to the cons cell */
-    if (atom_free(value, error) == 0)
+    if (sexp_free(value, error) == 0)
     {
 	return 0;
     }
 
     /* Grab a reference to it */
-    return atom_alloc_ref(*result, error);
+    return sexp_alloc_ref(*result, error);
 }
 
 /* The `setq' primitive function */
-static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
-    atom_t symbol;
-    atom_t value;
+    sexp_t symbol;
+    sexp_t value;
 
     /* Make sure we have at least one arg */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -286,7 +286,7 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     }
 
     /* Make sure it's a symbol */
-    if (atom_get_type(symbol) != ATOM_SYMBOL)
+    if (sexp_get_type(symbol) != SEXP_SYMBOL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad symbol");
 	return 0;
@@ -299,7 +299,7 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     }
 
     /* Make sure we have at least one more arg left */
-    if (atom_get_type(args) != ATOM_CONS)
+    if (sexp_get_type(args) != SEXP_CONS)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	return 0;
@@ -318,14 +318,14 @@ static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error
     }
 
     /* Make sure we're now out of args */
-    if (atom_get_type(args) != ATOM_NIL)
+    if (sexp_get_type(args) != SEXP_NIL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
     /* Evaluate the value */
-    if (! atom_eval(value, env, result, error))
+    if (! sexp_eval(value, env, result, error))
     {
 	return 0;
     }

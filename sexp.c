@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.1 2000/11/09 01:09:28 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.2 2000/11/09 01:28:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,22 +40,22 @@ static const char cvsid[] = "$Id: sexp.c,v 2.1 2000/11/09 01:09:28 phelps Exp $"
 #include <elvin/error.h>
 #include <elvin/errors/elvin.h>
 #include "errors.h"
-#include "atom.h"
+#include "sexp.h"
 
 /* A cons cell has two values */
 struct cons
 {
-    atom_t car;
-    atom_t cdr;
+    sexp_t car;
+    sexp_t cdr;
 };
 
-/* An atom can be many things */
-struct atom
+/* An sexp can be many things */
+struct sexp
 {
     /* The type determines all */
-    atom_type_t type;
+    sexp_type_t type;
 
-    /* The number of references to this atom */
+    /* The number of references to this sexp */
     uint32_t ref_count;
 
     /* Everything else is part of the big union */
@@ -81,70 +81,70 @@ struct env
 };
 
 
-/* Some predefined atoms */
-static struct atom nil = { ATOM_NIL, 1, { 0 } };
-static struct atom minus_one = { ATOM_INT32, 1, { -1 } };
-static struct atom numbers[] =
+/* Some predefined sexps */
+static struct sexp nil = { SEXP_NIL, 1, { 0 } };
+static struct sexp minus_one = { SEXP_INT32, 1, { -1 } };
+static struct sexp numbers[] =
 {
-    { ATOM_INT32, 1, { 0 } },
-    { ATOM_INT32, 1, { 1 } },
-    { ATOM_INT32, 1, { 2 } },
-    { ATOM_INT32, 1, { 3 } },
-    { ATOM_INT32, 1, { 4 } },
-    { ATOM_INT32, 1, { 5 } },
-    { ATOM_INT32, 1, { 6 } },
-    { ATOM_INT32, 1, { 7 } },
-    { ATOM_INT32, 1, { 8 } },
-    { ATOM_INT32, 1, { 9 } }
+    { SEXP_INT32, 1, { 0 } },
+    { SEXP_INT32, 1, { 1 } },
+    { SEXP_INT32, 1, { 2 } },
+    { SEXP_INT32, 1, { 3 } },
+    { SEXP_INT32, 1, { 4 } },
+    { SEXP_INT32, 1, { 5 } },
+    { SEXP_INT32, 1, { 6 } },
+    { SEXP_INT32, 1, { 7 } },
+    { SEXP_INT32, 1, { 8 } },
+    { SEXP_INT32, 1, { 9 } }
 };
 
-/* Grabs a reference to an atom */
+/* Grabs a reference to an sexp */
 static int hashcopy(elvin_hashtable_t table,
 		    elvin_hashdata_t *copy_out,
 		    elvin_hashdata_t data,
 		    elvin_error_t error)
 {
-    atom_t atom = (atom_t)data;
-    atom -> ref_count++;
+    sexp_t sexp = (sexp_t)data;
+    sexp -> ref_count++;
     *copy_out = data;
     return 1;
 }
 
-/* Frees a reference to an atom */
+/* Frees a reference to an sexp */
 static int hashfree(elvin_hashdata_t data, elvin_error_t error)
 {
-    return atom_free((atom_t)data, error);
+    return sexp_free((sexp_t)data, error);
 }
 
 
 /* Answers the unique nil instance */
-atom_t nil_alloc(elvin_error_t error)
+sexp_t nil_alloc(elvin_error_t error)
 {
     nil.ref_count++;
     return &nil;
 }
 
 
-/* Allocates a new atom */
-atom_t atom_alloc(atom_type_t type, elvin_error_t error)
+/* Allocates a new sexp */
+sexp_t sexp_alloc(sexp_type_t type, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate some memory for the new atom */
-    if ((atom = (atom_t)ELVIN_MALLOC(sizeof(struct atom), error)) == NULL)
+    /* Allocate some memory for the new sexp */
+    if ((sexp = (sexp_t)ELVIN_MALLOC(sizeof(struct sexp), error)) == NULL)
     {
 	return NULL;
     }
 
-    atom -> ref_count = 1;
-    atom -> type = type;
-    return atom;
+    sexp -> ref_count = 1;
+    sexp -> type = type;
+    return sexp;
 }
 
-/* Allocates and initializes a new 32-bit integer atom */
-atom_t int32_alloc(int32_t value, elvin_error_t error)
+/* Allocates and initializes a new 32-bit integer sexp */
+sexp_t int32_alloc(int32_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
     /* See if we already have the value cached */
     if (0 <= value && value < 10)
@@ -160,366 +160,366 @@ atom_t int32_alloc(int32_t value, elvin_error_t error)
 	return &minus_one;
     }
 
-    /* Allocate a new atom */
-    if ((atom = atom_alloc(ATOM_INT32, error)) == NULL)
+    /* Allocate a new sexp */
+    if ((sexp = sexp_alloc(SEXP_INT32, error)) == NULL)
     {
 	return NULL;
     }
 
-    atom -> value.i = value;
-    return atom;
+    sexp -> value.i = value;
+    return sexp;
 }
 
 /* Answers the integer's value */
-int32_t int32_value(atom_t atom, elvin_error_t error)
+int32_t int32_value(sexp_t sexp, elvin_error_t error)
 {
-    return atom -> value.i;
+    return sexp -> value.i;
 }
 
-/* Allocates and initializes a new 64-bit integer atom */
-atom_t int64_alloc(int64_t value, elvin_error_t error)
+/* Allocates and initializes a new 64-bit integer sexp */
+sexp_t int64_alloc(int64_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_INT64, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_INT64, error)) == NULL)
     {
 	return NULL;
     }
 
-    atom -> value.h = value;
-    return atom;
+    sexp -> value.h = value;
+    return sexp;
 }
 
 /* Answers the integer's value */
-int64_t int64_value(atom_t atom, elvin_error_t error)
+int64_t int64_value(sexp_t sexp, elvin_error_t error)
 {
-    return atom -> value.h;
+    return sexp -> value.h;
 }
 
-/* Allocates and initializes a new float atom */
-atom_t float_alloc(double value, elvin_error_t error)
+/* Allocates and initializes a new float sexp */
+sexp_t float_alloc(double value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_FLOAT, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_FLOAT, error)) == NULL)
     {
 	return NULL;
     }
 
-    atom -> value.d = value;
-    return atom;
+    sexp -> value.d = value;
+    return sexp;
 }
 
 
-/* Allocates and initializes a new string atom */
-atom_t string_alloc(char *value, elvin_error_t error)
+/* Allocates and initializes a new string sexp */
+sexp_t string_alloc(char *value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_STRING, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_STRING, error)) == NULL)
     {
 	return NULL;
     }
 
     /* Duplicate the value */
-    if ((atom -> value.s = ELVIN_STRDUP(value, error)) == NULL)
+    if ((sexp -> value.s = ELVIN_STRDUP(value, error)) == NULL)
     {
-	ELVIN_FREE(atom, NULL);
+	ELVIN_FREE(sexp, NULL);
 	return NULL;
     }
 
-    return atom;
+    return sexp;
 }
 
 /* Answers the string's characters */
-char *string_value(atom_t atom, elvin_error_t error)
+char *string_value(sexp_t sexp, elvin_error_t error)
 {
-    return atom -> value.s;
+    return sexp -> value.s;
 }
 
-/* Allocates and initializes a new char atom */
-atom_t char_alloc(char ch, elvin_error_t error)
+/* Allocates and initializes a new char sexp */
+sexp_t char_alloc(char ch, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_CHAR, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_CHAR, error)) == NULL)
     {
 	return NULL;
     }
 
-    atom -> value.i = (int32_t)ch;
-    return atom;
+    sexp -> value.i = (int32_t)ch;
+    return sexp;
 }
 
 /* Answers the char's char */
-char char_value(atom_t atom, elvin_error_t error)
+char char_value(sexp_t sexp, elvin_error_t error)
 {
-    return (char)atom->value.i;
+    return (char)sexp->value.i;
 }
 
 
-/* Allocates and initializes a new symbol atom */
-atom_t symbol_alloc(char *name, elvin_error_t error)
+/* Allocates and initializes a new symbol sexp */
+sexp_t symbol_alloc(char *name, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_SYMBOL, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_SYMBOL, error)) == NULL)
     {
 	return NULL;
     }
 
     /* Duplicate the value */
-    if ((atom -> value.s = ELVIN_STRDUP(name, error)) == NULL)
+    if ((sexp -> value.s = ELVIN_STRDUP(name, error)) == NULL)
     {
-	ELVIN_FREE(atom, NULL);
+	ELVIN_FREE(sexp, NULL);
 	return NULL;
     }
 
-    return atom;
+    return sexp;
 }
 
 /* Answers the symbol's name */
-char *symbol_name(atom_t atom, elvin_error_t error)
+char *symbol_name(sexp_t sexp, elvin_error_t error)
 {
-    /* FIX THIS: complain if the atom is not a symbol */
-    return atom -> value.s;
+    /* FIX THIS: complain if the sexp is not a symbol */
+    return sexp -> value.s;
 }
 
-/* Allocates and initializes a new cons atom */
-atom_t cons_alloc(atom_t car, atom_t cdr, elvin_error_t error)
+/* Allocates and initializes a new cons sexp */
+sexp_t cons_alloc(sexp_t car, sexp_t cdr, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_CONS, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_CONS, error)) == NULL)
     {
 	return NULL;
     }
 
     /* Copy the car and cdr into place */
-    atom -> value.c.car = car;
-    atom -> value.c.cdr = cdr;
-    return atom;
+    sexp -> value.c.car = car;
+    sexp -> value.c.cdr = cdr;
+    return sexp;
 }
 
-/* Answers the car of a cons atom */
-atom_t cons_car(atom_t atom, elvin_error_t error)
+/* Answers the car of a cons sexp */
+sexp_t cons_car(sexp_t sexp, elvin_error_t error)
 {
-    return atom -> value.c.car;
+    return sexp -> value.c.car;
 }
 
-/* Answers the cdr of a cons atom */
-atom_t cons_cdr(atom_t atom, elvin_error_t error)
+/* Answers the cdr of a cons sexp */
+sexp_t cons_cdr(sexp_t sexp, elvin_error_t error)
 {
-    return atom -> value.c.cdr;
+    return sexp -> value.c.cdr;
 }
 
 /* Reverses a collection of cons cells */
-atom_t cons_reverse(atom_t atom, atom_t end, elvin_error_t error)
+sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error)
 {
-    atom_t cdr = end;
+    sexp_t cdr = end;
 
     /* Keep going until the entire list is reversed */
     while (1)
     {
-	atom_t car = atom -> value.c.car;
+	sexp_t car = sexp -> value.c.car;
 
 	/* Rotate the cdr into the car and end into the cdr */
-	atom -> value.c.car = atom -> value.c.cdr;
-	atom -> value.c.cdr = cdr;
+	sexp -> value.c.car = sexp -> value.c.cdr;
+	sexp -> value.c.cdr = cdr;
 
 	/* See if we're done */
-	if (car -> type == ATOM_NIL)
+	if (car -> type == SEXP_NIL)
 	{
-	    return atom;
+	    return sexp;
 	}
 
-	cdr = atom;
-	atom = car;
+	cdr = sexp;
+	sexp = car;
     }
 }
 
-/* Allocates and initializes a new built-in atom */
-atom_t builtin_alloc(builtin_t value, elvin_error_t error)
+/* Allocates and initializes a new built-in sexp */
+sexp_t builtin_alloc(builtin_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_BUILTIN, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_BUILTIN, error)) == NULL)
     {
 	return NULL;
     }
 
     /* Record the function */
-    atom -> value.b = value;
-    return atom;
+    sexp -> value.b = value;
+    return sexp;
 }
 
-/* Allocates and initializes a new lambda atom */
-atom_t lambda_alloc(atom_t arg_list, atom_t body, elvin_error_t error)
+/* Allocates and initializes a new lambda sexp */
+sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
 
-    /* Allocate an atom */
-    if ((atom = atom_alloc(ATOM_LAMBDA, error)) == NULL)
+    /* Allocate an sexp */
+    if ((sexp = sexp_alloc(SEXP_LAMBDA, error)) == NULL)
     {
 	return NULL;
     }
 
     /* Record the arg list and body in a cons cell */
-    atom -> value.c.car = arg_list;
-    atom -> value.c.cdr = body;
-    return atom;
+    sexp -> value.c.car = arg_list;
+    sexp -> value.c.cdr = body;
+    return sexp;
 }
 
 
-/* Returns an atom's type */
-atom_type_t atom_get_type(atom_t atom)
+/* Returns an sexp's type */
+sexp_type_t sexp_get_type(sexp_t sexp)
 {
-    return atom -> type;
+    return sexp -> type;
 }
 
-/* Allocates another reference to an atom */
-int atom_alloc_ref(atom_t atom, elvin_error_t error)
+/* Allocates another reference to an sexp */
+int sexp_alloc_ref(sexp_t sexp, elvin_error_t error)
 {
-    atom -> ref_count++;
+    sexp -> ref_count++;
     return 1;
 }
 
-/* Frees an atom */
-int atom_free(atom_t atom, elvin_error_t error)
+/* Frees an sexp */
+int sexp_free(sexp_t sexp, elvin_error_t error)
 {
-    /* Delete a reference to the atom */
-    if (--atom -> ref_count > 0)
+    /* Delete a reference to the sexp */
+    if (--sexp -> ref_count > 0)
     {
 	return 1;
     }
 
-    /* Then free the atom */
-    switch (atom -> type)
+    /* Then free the sexp */
+    switch (sexp -> type)
     {
-	case ATOM_NIL:
+	case SEXP_NIL:
 	{
 	    fprintf(stderr, PACKAGE ": attempted to free `nil'\n");
 	    abort();
 	}
 
-	case ATOM_STRING:
-	case ATOM_SYMBOL:
+	case SEXP_STRING:
+	case SEXP_SYMBOL:
 	{
 	    int result;
 
-	    result = ELVIN_FREE(atom -> value.s, error);
-	    return ELVIN_FREE(atom, result ? error : NULL) && result;
+	    result = ELVIN_FREE(sexp -> value.s, error);
+	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
 	}
 
-	case ATOM_CONS:
-	case ATOM_LAMBDA:
+	case SEXP_CONS:
+	case SEXP_LAMBDA:
 	{
 	    int result;
 
-	    result = atom_free(atom -> value.c.car, error);
-	    result = atom_free(atom -> value.c.cdr, result ? error : NULL) && result;
-	    return ELVIN_FREE(atom, error);
+	    result = sexp_free(sexp -> value.c.car, error);
+	    result = sexp_free(sexp -> value.c.cdr, result ? error : NULL) && result;
+	    return ELVIN_FREE(sexp, error);
 	}
 
 	default:
 	{
-	    return ELVIN_FREE(atom, error);
+	    return ELVIN_FREE(sexp, error);
 	}
     }
 }
 
 /* Prints the body of a list */
-static void print_cdrs(atom_t atom)
+static void print_cdrs(sexp_t sexp)
 {
-    while (atom -> type == ATOM_CONS)
+    while (sexp -> type == SEXP_CONS)
     {
 	/* Print the car */
 	fputc(' ', stdout);
-	atom_print(atom -> value.c.car);
-	atom = atom -> value.c.cdr;
+	sexp_print(sexp -> value.c.car);
+	sexp = sexp -> value.c.cdr;
     }
 
     /* Watch for dotted lists */
-    if (atom -> type != ATOM_NIL)
+    if (sexp -> type != SEXP_NIL)
     {
 	fputs(" . ", stdout);
-	atom_print(atom);
+	sexp_print(sexp);
     }
 }
 
-/* Prints an atom to stdout */
-int atom_print(atom_t atom)
+/* Prints an sexp to stdout */
+int sexp_print(sexp_t sexp)
 {
-    switch (atom -> type)
+    switch (sexp -> type)
     {
-	case ATOM_NIL:
+	case SEXP_NIL:
 	{
 	    printf("nil");
 	    return 1;
 	}
 
-	case ATOM_INT32:
+	case SEXP_INT32:
 	{
-	    printf("%d", atom -> value.i);
+	    printf("%d", sexp -> value.i);
 	    return 1;
 	}
 
-	case ATOM_INT64:
+	case SEXP_INT64:
 	{
-	    printf("%" INT64_PRINT, atom -> value.h);
+	    printf("%" INT64_PRINT, sexp -> value.h);
 	    return 1;
 	}
 
-	case ATOM_FLOAT:
+	case SEXP_FLOAT:
 	{
-	    printf("%f", atom -> value.d);
+	    printf("%f", sexp -> value.d);
 	    return 1;
 	}
 
-	case ATOM_STRING:
+	case SEXP_STRING:
 	{
-	    printf("\"%s\"", atom -> value.s);
+	    printf("\"%s\"", sexp -> value.s);
 	    return 1;
 	}
 
-	case ATOM_CHAR:
+	case SEXP_CHAR:
 	{
-	    printf("?%c", atom -> value.i);
+	    printf("?%c", sexp -> value.i);
 	    return 1;
 	}
 
-	case ATOM_SYMBOL:
+	case SEXP_SYMBOL:
 	{
-	    printf("%s", atom -> value.s);
+	    printf("%s", sexp -> value.s);
 	    return 1;
 	}
 
-	case ATOM_CONS:
+	case SEXP_CONS:
 	{
 	    fputc('(', stdout);
-	    atom_print(atom -> value.c.car);
-	    print_cdrs(atom -> value.c.cdr);
+	    sexp_print(sexp -> value.c.car);
+	    print_cdrs(sexp -> value.c.cdr);
 	    fputc(')', stdout);
 	    return 1;
 	}
 
-	case ATOM_LAMBDA:
+	case SEXP_LAMBDA:
 	{
 	    printf("(lambda ");
-	    atom_print(atom -> value.c.car);
-	    print_cdrs(atom -> value.c.cdr);
+	    sexp_print(sexp -> value.c.car);
+	    print_cdrs(sexp -> value.c.cdr);
 	    fputc(')', stdout);
 	    return 1;
 	}
 
-	case ATOM_BUILTIN:
+	case SEXP_BUILTIN:
 	{
 	    printf("<builtin>");
 	    return 1;
@@ -527,7 +527,7 @@ int atom_print(atom_t atom)
 
 	default:
 	{
-	    fprintf(stderr, "unknown atom type: %d\n", atom -> type);
+	    fprintf(stderr, "unknown sexp type: %d\n", sexp -> type);
 	    return 0;
 	}
     }
@@ -535,18 +535,18 @@ int atom_print(atom_t atom)
 
 
 /* Evaluates a function */
-int funcall(atom_t function, env_t env, atom_t args, atom_t *result, elvin_error_t error)
+int funcall(sexp_t function, env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     /* What we do depends on the type */
     switch (function->type)
     {
-	case ATOM_BUILTIN:
+	case SEXP_BUILTIN:
 	{
 	    /* Call the built-in with the cdr as args */
 	    return function->value.b(env, args, result, error);
 	}
 
-	case ATOM_LAMBDA:
+	case SEXP_LAMBDA:
 	{
 	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_eval");
 	    return 0;
@@ -560,31 +560,31 @@ int funcall(atom_t function, env_t env, atom_t args, atom_t *result, elvin_error
     }
 }
 
-/* Evaluates an atom */
-int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
+/* Evaluates an sexp */
+int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
 {
-    switch (atom -> type)
+    switch (sexp -> type)
     {
 	/* Most things evaluate to themselves */
-	case ATOM_NIL:
-	case ATOM_INT32:
-	case ATOM_INT64:
-	case ATOM_FLOAT:
-	case ATOM_STRING:
-	case ATOM_CHAR:
-	case ATOM_BUILTIN:
-	case ATOM_LAMBDA:
+	case SEXP_NIL:
+	case SEXP_INT32:
+	case SEXP_INT64:
+	case SEXP_FLOAT:
+	case SEXP_STRING:
+	case SEXP_CHAR:
+	case SEXP_BUILTIN:
+	case SEXP_LAMBDA:
 	{
-	    atom->ref_count++;
-	    *result = atom;
+	    sexp->ref_count++;
+	    *result = sexp;
 	    return 1;
 	}
 
 	/* Symbols get extracted from the environment */
-	case ATOM_SYMBOL:
+	case SEXP_SYMBOL:
 	{
 	    /* Look up the symbol's value in the environment */
-	    if (env_get(env, atom, result, error) == 0)
+	    if (env_get(env, sexp, result, error) == 0)
 	    {
 		return 0;
 	    }
@@ -594,22 +594,22 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 	    return 1;
 	}
 
-	case ATOM_CONS:
+	case SEXP_CONS:
 	{
-	    atom_t function;
+	    sexp_t function;
 	    int r;
 
 	    /* First we evaluate the car to get the function */
-	    if (atom_eval(cons_car(atom, error), env, &function, error) == 0)
+	    if (sexp_eval(cons_car(sexp, error), env, &function, error) == 0)
 	    {
 		return 0;
 	    }
 
 	    /* Then we call the function with the args */
-	    r = funcall(function, env, cons_cdr(atom, error), result, error);
+	    r = funcall(function, env, cons_cdr(sexp, error), result, error);
 
 	    /* Free our reference to the function */
-	    if (atom_free(function, error) == 0)
+	    if (sexp_free(function, error) == 0)
 	    {
 		return 0;
 	    }
@@ -620,7 +620,7 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 	default:
 	{
 	    /* FIX THIS: set a better error */
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "atom_eval");
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "sexp_eval");
 	    return 0;
 	}
     }
@@ -665,11 +665,11 @@ int env_free(env_t env, elvin_error_t error)
 }
 
 /* Looks up a symbol's value in the environment */
-int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
+int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 {
     char *name;
 
-    /* Bail if the atom isn't a symbol */
+    /* Bail if the sexp isn't a symbol */
     if ((name = symbol_name(symbol, error)) == NULL)
     {
 	return 0;
@@ -679,7 +679,7 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
     while (env != NULL)
     {
 	/* Look up the value in the environment */
-	if ((*result = (atom_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
+	if ((*result = (sexp_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
 	{
 	    /* Found it! */
 	    return 1;
@@ -693,7 +693,7 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 }
 
 /* Sets a symbol's value in the environment */
-int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
+int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
     char *name;
 
@@ -720,9 +720,9 @@ int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value */
-int env_set_value(env_t env, char *name, atom_t value, elvin_error_t error)
+int env_set_value(env_t env, char *name, sexp_t value, elvin_error_t error)
 {
-    atom_t symbol;
+    sexp_t symbol;
     int result;
 
     /* Locate the symbol */
@@ -735,102 +735,102 @@ int env_set_value(env_t env, char *name, atom_t value, elvin_error_t error)
     result = env_set(env, symbol, value, error);
 
     /* Lose our reference to the symbol */
-    return atom_free(symbol, result ? error : NULL) && result;
+    return sexp_free(symbol, result ? error : NULL) && result;
 }
 
 /* Sets the named symbol's value to the int32 value in env */
 int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
     int result;
 
-    /* Create an int32 atom */
-    if ((atom = int32_alloc(value, error)) == NULL)
+    /* Create an int32 sexp */
+    if ((sexp = int32_alloc(value, error)) == NULL)
     {
 	return 0;
     }
 
     /* Register it */
-    result = env_set_value(env, name, atom, error);
+    result = env_set_value(env, name, sexp, error);
 
     /* Lose our reference to it */
-    return atom_free(atom, result ? error : NULL) && result;
+    return sexp_free(sexp, result ? error : NULL) && result;
 }
 
 
 /* Sets the named symbol's value to the int64 value in env */
 int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
     int result;
 
-    /* Create an int64 atom */
-    if ((atom = int64_alloc(value, error)) == NULL)
+    /* Create an int64 sexp */
+    if ((sexp = int64_alloc(value, error)) == NULL)
     {
 	return 0;
     }
 
     /* Register it */
-    result = env_set_value(env, name, atom, error);
+    result = env_set_value(env, name, sexp, error);
 
     /* Lose our reference to it */
-    return atom_free(atom, result ? error : NULL) && result;
+    return sexp_free(sexp, result ? error : NULL) && result;
 }
 
 /* Sets the named symbol's value to the float value in env */
 int env_set_float(env_t env, char *name, double value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
     int result;
 
-    /* Create a float atom */
-    if ((atom = float_alloc(value, error)) == NULL)
+    /* Create a float sexp */
+    if ((sexp = float_alloc(value, error)) == NULL)
     {
 	return 0;
     }
 
     /* Register it */
-    result = env_set_value(env, name, atom, error);
+    result = env_set_value(env, name, sexp, error);
 
     /* Lose our reference to it */
-    return atom_free(atom, result ? error : NULL) && result;
+    return sexp_free(sexp, result ? error : NULL) && result;
 }
 
 
 /* Sets the named symbol's value in the environment */
 int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
     int result;
 
     /* Create a string */
-    if ((atom = string_alloc(value, error)) == NULL)
+    if ((sexp = string_alloc(value, error)) == NULL)
     {
 	return 0;
     }
 
     /* Register it */
-    result = env_set_value(env, name, atom, error);
+    result = env_set_value(env, name, sexp, error);
 
     /* Lose our reference to it */
-    return atom_free(atom, result ? error : NULL) && result;
+    return sexp_free(sexp, result ? error : NULL) && result;
 }
 
 /* Sets the named symbol's value to the built-in function in env */
 int env_set_builtin(env_t env, char *name, builtin_t value, elvin_error_t error)
 {
-    atom_t atom;
+    sexp_t sexp;
     int result;
 
     /* Create a built-in */
-    if ((atom = builtin_alloc(value, error)) == NULL)
+    if ((sexp = builtin_alloc(value, error)) == NULL)
     {
 	return 0;
     }
 
     /* Register it */
-    result = env_set_value(env, name, atom, error);
+    result = env_set_value(env, name, sexp, error);
 
     /* Lose our reference to it */
-    return atom_free(atom, result ? error : NULL) && result;
+    return sexp_free(sexp, result ? error : NULL) && result;
 }

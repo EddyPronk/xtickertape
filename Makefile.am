@@ -28,7 +28,7 @@ xtickertape_SOURCES = \
 #	def-config.h parser.h parser.c \
 
 test_parser_SOURCES = \
-	atom.h atom.c \
+	sexp.h sexp.c \
 	grammar.h parser.h parser.c \
 	test-parser.c
 

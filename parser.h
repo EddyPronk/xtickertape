@@ -31,14 +31,14 @@
 #define PARSER_H
 
 #ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.5 2000/11/01 02:07:58 phelps Exp $";
+static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.6 2000/11/09 01:28:06 phelps Exp $";
 #endif /* lint */
 
 typedef struct parser *parser_t;
 
 
 /* The format of a parser callback function. */
-typedef int (*parser_callback_t)(void *rock, parser_t parser, atom_t sexp, elvin_error_t error);
+typedef int (*parser_callback_t)(void *rock, parser_t parser, sexp_t sexp, elvin_error_t error);
 
 
 /*
