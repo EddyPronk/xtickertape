@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.60 2002/04/09 17:20:58 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.61 2002/04/09 22:32:23 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1395,7 +1395,7 @@ static message_t construct_message(control_panel_t self)
     uuid = create_uuid(self);
 
     /* Construct an RFC2045-compliant MIME message */
-    if (mime_type != NULL || mime_args != NULL)
+    if (mime_type != NULL && mime_args != NULL)
     {
 	/* Measure how long the attachment will need to be */
 	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
