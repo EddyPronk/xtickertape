@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.2 1999/11/29 03:59:06 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.3 1999/12/06 13:09:40 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -53,7 +53,7 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent);
 void control_panel_free(control_panel_t self);
 
 /* This is called when the elvin connection status changes */
-control_panel_t control_panel_set_connected(
+void control_panel_set_connected(
     control_panel_t self,
     int is_connected);
 
