@@ -1,5 +1,12 @@
 Things that would be nice to have in future versions of xtickertape:
 
+Misc
+
+- Avoid adding the same status message to the scroller over and over
+  again.  Perhaps use the tag to just replace the existing status
+  message?  What about the history?
+
+
 Configuration
 
 - It should be possible to specify the location of `metamail' at
@@ -65,5 +72,5 @@ Scheme Interpreter:
 - This needs to be connected to everything so that we can do
   amusing things.
 
-- It should be possible to load and evaulate from a file.
+- It should be possible to evaluate the contents of the file.
 
