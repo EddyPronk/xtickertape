@@ -38,7 +38,7 @@
 typedef struct history *history_t;
 
 /* Allocates and initializes a new empty history */
-history_t history_alloc();
+history_t history_alloc(tickertape_t tickertape);
 
 /* Frees the history */
 void history_free(history_t self);

@@ -28,13 +28,14 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.2 1999/08/17 17:53:14 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.3 1999/08/19 04:41:42 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <Xm/XmAll.h>
 #include "Message.h"
+#include "tickertape.h"
 #include "history.h"
 
 /* The structure of a node in a message history */
@@ -186,19 +187,19 @@ static void history_node_print_threaded(history_node_t self, int indent, FILE *o
 /* The structure of a threaded (or not) message history */
 struct history
 {
+    /* The history's tickertape */
+    tickertape_t tickertape;
+
     /* The number of nodes in the history */
     int count;
 
     /* The last node in the history (in receipt order) */
     history_node_t last;
-
-    /* The receiver's Motif List widget */
-    Widget list;
 };
 
 
 /* Allocates and initializes a new empty history */
-history_t history_alloc()
+history_t history_alloc(tickertape_t tickertape)
 {
     history_t self;
 
@@ -209,9 +210,10 @@ history_t history_alloc()
     }
 
     /* Initialize the fields to sane values */
+    self -> tickertape = tickertape;
     self -> count = 0;
     self -> last = NULL;
-    self -> list = NULL;
+
     return self;
 }
 
@@ -230,12 +232,6 @@ void history_free(history_t self)
     }
 
     free(self);
-}
-
-/* Sets the receiver's Motif List widget */
-void history_set_list(history_t self, Widget list)
-{
-    self -> list = list;
 }
 
 /* Finds the node whose Message has the given id */
@@ -284,6 +280,7 @@ static void history_thread_node(history_t self, history_node_t node)
 /* Updates the history's list widget after a message was added */
 static void history_update_list(history_t self, history_node_t node)
 {
+#if 0
     XmString string;
 
     /* Make sure the list doesn't grow without bound */
@@ -296,6 +293,7 @@ static void history_update_list(history_t self, history_node_t node)
     string = history_node_get_string(node);
     XmListAddItem(self -> list, string, 0);
     XmStringFree(string);
+#endif /* 0 */
 }
 
 
