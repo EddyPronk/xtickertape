@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.55 2004/08/02 20:54:07 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.56 2004/08/02 20:59:35 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -66,7 +66,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.55 2004/08/02 20:54:07 phelps 
 #define F3_MESSAGE_ID "Message-Id"
 #define F3_IN_REPLY_TO "In-Reply-To"
 #define F3_THREAD_ID "Thread-Id"
-#define F3_MIME_ATTACHMENT "MIME-Attachment"
+#define F3_ATTACHMENT "Attachment"
 #define F2_MIME_ARGS "MIME_ARGS"
 #define F2_MIME_TYPE "MIME_TYPE"
 
@@ -352,7 +352,7 @@ static void notify_cb(
     }
 
     /* Get the `Attachment' field from the notification */
-    if (elvin_notification_get(notification, F3_MIME_ATTACHMENT, &type, &value, error))
+    if (elvin_notification_get(notification, F3_ATTACHMENT, &type, &value, error))
     {
 	if (type == ELVIN_STRING)
 	{
@@ -677,7 +677,7 @@ static int notify_cb(
     /* Get the `Attachment' field from the notification */
     if (! elvin_notification_get_opaque(
 	    notification,
-	    F3_MIME_ATTACHMENT,
+	    F3_ATTACHMENT,
 	    &found,
 	    &attachment,
 	    &length,
@@ -955,7 +955,7 @@ static void send_message(group_sub_t self, message_t message)
     {
 	if (elvin_notification_add_opaque(
 		notification,
-		F3_MIME_ATTACHMENT,
+		F3_ATTACHMENT,
 		attachment,
 		length,
 		self -> error) == 0)
