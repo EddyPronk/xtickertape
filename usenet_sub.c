@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.4 1999/10/05 05:39:22 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.5 1999/10/06 01:48:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -164,14 +164,16 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
 	if ((buffer = (char *)malloc(
 	    strlen(NEWS_URL) + strlen(newshost) + strlen(mime_args) - 3)) == NULL)
 	{
-	    free(newsgroups);
-	    return;
+	    mime_type = NULL;
+	    mime_args = NULL;
 	}
+	else
+	{
+	    sprintf(buffer, NEWS_URL, newshost, mime_args);
 
-	sprintf(buffer, NEWS_URL, newshost, mime_args);
-
-	mime_args = buffer;
-	mime_type = NEWS_MIME_TYPE;
+	    mime_args = buffer;
+	    mime_type = NEWS_MIME_TYPE;
+	}
     }
     /* No Message-Id field provided either */
     else
@@ -181,25 +183,25 @@ static void handle_notify(usenet_sub_t self, en_notify_t notification)
     }
 
     /* Construct a message out of all of that */
-    message = message_alloc(
+    if ((message = message_alloc(
 	NULL,
 	newsgroups, name,
 	subject, 60,
 	mime_type, mime_args,
-	0, 0);
-
-    /* Deliver the message */
-    (*self -> callback)(self -> rock, message);
+	0, 0)) != NULL)
+    {
+	/* Deliver the message */
+	(*self -> callback)(self -> rock, message);
+	message_free(message);
+    }
 
     /* Clean up */
+    en_free(notification);
     free(newsgroups);
     if (buffer != NULL)
     {
 	free(buffer);
     }
-
-    message_free(message);
-    en_free(notification);
 }
 
 /* Construct a portion of the subscription expression */
