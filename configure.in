@@ -66,9 +66,11 @@ if test "$ok" = "no" ; then
 fi
 
 dnl Check to see if we need -lnsl -lsocket to use sockets
+dnl and if we need -lcrypt for crypt.
 dnl (If we can't find them then we don't need them)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(crypt, crypt)
 
 dnl Make sure that the elvin headers can be found
 CPPFLAGS="-I$DSTCDIR/include $CPPFLAGS"
