@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.6 1999/06/20 12:39:18 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.7 1999/08/29 14:19:50 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -75,7 +75,7 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.6 1999/06/20 12:39:18 
 
  */
 
-
+#define XtNactionCallback "actionCallback"
 #define XtNgroupPixel "groupPixel"
 #define XtCGroupPixel "GroupPixel"
 #define XtNuserPixel "userPixel"

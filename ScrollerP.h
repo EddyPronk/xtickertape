@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.20 1999/08/19 11:18:48 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.21 1999/08/29 14:20:22 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -66,6 +66,7 @@ typedef struct
 {
     /* Resources */
     XtCallbackList callbacks;
+    XtCallbackList action_callbacks;
     XFontStruct *font;
     Pixel groupPixel;
     Pixel userPixel;
