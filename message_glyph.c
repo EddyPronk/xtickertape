@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.1 1999/06/20 12:36:01 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.2 1999/06/21 04:44:54 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -185,8 +185,11 @@ static int get_is_expired(message_glyph_t self)
 /* Expires the receiver now */
 static void do_expire(message_glyph_t self)
 {
-    printf("expire!\n");
-    self -> has_expired = True;
+    if (! self -> has_expired)
+    {
+	self -> has_expired = True;
+	ScGlyphExpired(self -> widget, (glyph_t) self);
+    }
 }
 
 
