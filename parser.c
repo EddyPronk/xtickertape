@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.5 2000/07/06 09:24:08 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.6 2000/07/06 13:59:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -39,6 +39,8 @@ static const char cvsid[] = "$Id: parser.c,v 2.5 2000/07/06 09:24:08 phelps Exp 
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include <elvin/convert.h>
+#include "ast.h"
+#include "parser.h"
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
 #define INITIAL_STACK_DEPTH 16
@@ -64,10 +66,6 @@ static int is_id_char(int ch)
 }
 
 
-/* FIX THIS: this goes in parser.h */
-/* The parser type */
-typedef struct parser *parser_t;
-
 /* The lexer_state_t type */
 typedef int (*lexer_state_t)(parser_t parser, int ch, elvin_error_t error);
 
@@ -90,10 +88,10 @@ struct parser
     int *state_end;
 
     /* The value stack */
-    void **value_stack;
+    ast_t *value_stack;
 
     /* The top of the value stack */
-    void **value_top;
+    ast_t *value_top;
 
     /* The current lexical state */
     lexer_state_t state;
@@ -107,10 +105,8 @@ struct parser
     /* The end of the token buffer */
     char *token_end;
 
-
     /* The callback for when we've completed a subscription entry */
-/*    parser_callback_t callback;*/
-    void *callback;
+    parser_callback_t callback;
     
     /* The client-supplied arg for the callback */
     void *rock;
@@ -119,18 +115,13 @@ struct parser
 
 
 /* Reduction function declarations */
-typedef struct ast *ast_t;
 typedef ast_t (*reduction_t)(parser_t self, elvin_error_t error);
 static ast_t identity(parser_t self, elvin_error_t error);
 static ast_t identity2(parser_t self, elvin_error_t error);
-static ast_t extend_sub_list(parser_t self, elvin_error_t error);
-static ast_t make_sub_list(parser_t self, elvin_error_t error);
+static ast_t append(parser_t self, elvin_error_t error);
 static ast_t make_sub(parser_t self, elvin_error_t error);
 static ast_t make_default_sub(parser_t self, elvin_error_t error);
-static ast_t make_tag(parser_t self, elvin_error_t error);
-static ast_t extend_statements(parser_t self, elvin_error_t error);
-static ast_t make_statements(parser_t self, elvin_error_t error);
-static ast_t make_statement(parser_t self, elvin_error_t error);
+static ast_t make_assignment(parser_t self, elvin_error_t error);
 static ast_t extend_disjunction(parser_t self, elvin_error_t error);
 static ast_t extend_conjunction(parser_t self, elvin_error_t error);
 static ast_t make_eq(parser_t self, elvin_error_t error);
@@ -141,7 +132,6 @@ static ast_t make_gt(parser_t self, elvin_error_t error);
 static ast_t make_ge(parser_t self, elvin_error_t error);
 static ast_t make_not(parser_t self, elvin_error_t error);
 static ast_t extend_values(parser_t self, elvin_error_t error);
-static ast_t make_values(parser_t self, elvin_error_t error);
 static ast_t make_list(parser_t self, elvin_error_t error);
 static ast_t make_empty_list(parser_t self, elvin_error_t error);
 static ast_t make_function(parser_t self, elvin_error_t error);
@@ -177,7 +167,7 @@ static int grow_stack(parser_t self, elvin_error_t error)
 }
 
 /* Pushes a state and value onto the stack */
-static int push(parser_t self, int state, void *value, elvin_error_t error)
+static int push(parser_t self, int state, ast_t value, elvin_error_t error)
 {
     /* Make sure there's enough room on the stack */
     if (! (self -> state_top + 1 < self -> state_end))
@@ -229,8 +219,20 @@ static int top(parser_t self)
 /* Frees everything on the stack */
 static void clean_stack(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "clean_stack: not yet implemented\n");
-    abort();
+    ast_t *pointer;
+
+    /* Free everything on the stack */
+    for (pointer = self -> value_stack; pointer < self -> value_top; pointer++)
+    {
+	if (*pointer != NULL)
+	{
+	    ast_free(*pointer, error);
+	}
+    }
+
+    /* Reset the stack pointers */
+    self -> state_top = self -> state_stack;
+    self -> value_top = self -> value_stack;
 }
 
 /* Returns the first value */
@@ -245,83 +247,63 @@ static ast_t identity2(parser_t self, elvin_error_t error)
     return self -> value_top[1];
 }
 
-
-/* <subscription-list> ::= <subscription-list> <subscription> */
-static ast_t extend_sub_list(parser_t self, elvin_error_t error)
+/* Appends a node to the end of an AST list */
+static ast_t append(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "extend_sub_list(): not yet implemented\n");
-    return NULL;
+    return ast_append(self -> value_top[0], self -> value_top[1], error);
 }
 
-/* <subscription-list> ::= <subscription> */
-static ast_t make_sub_list(parser_t self, elvin_error_t error)
-{
-    fprintf(stderr, "make_sub_list(): not yet implemented\n");
-    return NULL;
-}
 
 /* <subscription> ::= <tag> LBRACE <statements> RBRACE SEMI */
 static ast_t make_sub(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_sub(): not yet implemented\n");
-    return NULL;
+    return ast_sub_alloc(self -> value_top[0], self -> value_top[2], error);
 }
 
 /* <subscription> ::= <tag> LBRACE RBRACE SEMI */
 static ast_t make_default_sub(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_default_sub(): not yet implemented\n");
-    return NULL;
-}
-
-/* <tag> ::= ID COLON */
-static ast_t make_tag(parser_t self, elvin_error_t error)
-{
-    printf("[make_tag: `%s']\n", (char *)self -> value_top[0]);
-    return (void *)-1;
-}
-
-/* <statements> ::= <statements> <statement> */
-static ast_t extend_statements(parser_t self, elvin_error_t error)
-{
-    fprintf(stderr, "extend_statements(): not yet implemented\n");
-    return NULL;
-}
-
-/* <statements> ::= <statement> */
-static ast_t make_statements(parser_t self, elvin_error_t error)
-{
-    fprintf(stderr, "make_statements(): not yet implemented\n");
-    return NULL;
+    return ast_sub_alloc(self -> value_top[0], NULL, error);
 }
 
 /* <statement> ::= ID ASSIGN <disjunction> SEMI */
-static ast_t make_statement(parser_t self, elvin_error_t error)
+static ast_t make_assignment(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_statement(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_ASSIGN,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
-
 
 /* <disjunction> ::= <disjunction> OR <conjunction> */
 static ast_t extend_disjunction(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "extend_disjunction(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_OR,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
 
 /* <conjunction> ::= <conjunction> AND <term> */
 static ast_t extend_conjunction(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "extend_conjunction(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_AND,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
 
 /* <term> ::= <term> EQ <value> */
 static ast_t make_eq(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_eq(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_EQ,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
 
 /* <term> ::= <term> NEQ <value> */
@@ -334,8 +316,11 @@ static ast_t make_neq(parser_t self, elvin_error_t error)
 /* <term> ::= <term> LT <value> */
 static ast_t make_lt(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_lt(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_LT,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
 
 /* <term> ::= <term> LE <value> */
@@ -348,8 +333,11 @@ static ast_t make_le(parser_t self, elvin_error_t error)
 /* <term> ::= <term> GT <value> */
 static ast_t make_gt(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_gt(): not yet implemented\n");
-    return NULL;
+    return ast_binop_alloc(
+	AST_GT,
+	self -> value_top[0],
+	self -> value_top[2],
+	error);
 }
 
 /* <term> ::= <term> GE <value> */
@@ -370,38 +358,26 @@ static ast_t make_not(parser_t self, elvin_error_t error)
 /* <values> ::= <values> COMMA <value> */
 static ast_t extend_values(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "extend_values(): not yet implemented\n");
-    return NULL;
+    return ast_append(self -> value_top[0], self -> value_top[2], error);
 }
-
-/* <values> ::= <value> */
-static ast_t make_values(parser_t self, elvin_error_t error)
-{
-    fprintf(stderr, "make_values(): not yet implemented\n");
-    return NULL;
-}
-
 
 /* <value> ::= LBRACKET <values> RBRACKET */
 static ast_t make_list(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_list(): not yet implemented\n");
-    return NULL;
+    return ast_list_alloc(self -> value_top[1], error);
 }
 
 /* <value> ::= LBRACKET RBRACKET */
 static ast_t make_empty_list(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_empty_list(): not yet implemented\n");
-    return NULL;
+    return ast_list_alloc(NULL, error);
 }
 
 
 /* <value> ::= ID LPAREN <values> RPAREN */
 static ast_t make_function(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_function(): not yet implemented\n");
-    return NULL;
+    return ast_function_alloc(self -> value_top[0], self -> value_top[2], error);
 }
 
 /* <value> ::= ID LPAREN RPAREN */
@@ -414,12 +390,12 @@ static ast_t make_noarg_function(parser_t self, elvin_error_t error)
 
 /* Accepts another token and performs as many parser transitions as
  * possible with the data it has seen so far */
-static int shift_reduce(parser_t self, terminal_t terminal, void *value, elvin_error_t error)
+static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_error_t error)
 {
     int action;
     struct production *production;
     int reduction;
-    void *result;
+    ast_t result;
 
     /* Reduce as many times as possible */
     while (IS_REDUCE(action = sr_table[top(self)][terminal]))
@@ -478,22 +454,29 @@ static int accept_token(parser_t self, terminal_t terminal, elvin_error_t error)
 /* Accepts an ID token */
 static int accept_id(parser_t self, char *name, elvin_error_t error)
 {
-    char *copy;
+    ast_t node;
 
-    /* Make a copy of the id string */
-    if (! (copy = ELVIN_STRDUP(name, error)))
+    /* Make an AST node out of the identifier */
+    if (! (node = ast_id_alloc(name, error)))
     {
 	return 0;
     }
 
-    return shift_reduce(self, TT_ID, copy, error);
+    return shift_reduce(self, TT_ID, node, error);
 }
 
 /* Accepts an INT32 token */
 static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
 {
-    printf("INT32: %d\n", value);
-    return shift_reduce(self, TT_INT32, NULL, error);
+    ast_t node;
+
+    /* Make an AST node out of the int32 */
+    if (! (node = ast_int32_alloc(value, error)))
+    {
+	return 0;
+    }
+
+    return shift_reduce(self, TT_INT32, node, error);
 }
 
 /* Accepts a string as an int32 token */
@@ -512,8 +495,15 @@ static int accept_int32_string(parser_t self, char *string, elvin_error_t error)
 /* Accepts an INT64 token */
 static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
 {
-    printf("INT64: %" INT64_PRINT "\n", value);
-    return shift_reduce(self, TT_INT64, NULL, error);
+    ast_t node;
+
+    /* Make an AST out of the int64 */
+    if (! (node = ast_int64_alloc(value, error)))
+    {
+	return 0;
+    }
+
+    return shift_reduce(self, TT_INT64, node, error);
 }
 
 /* Accepts a string as an int64 token */
@@ -532,15 +522,15 @@ static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
 /* Accepts an STRING token */
 static int accept_string(parser_t self, char *string, elvin_error_t error)
 {
-    char *copy;
+    ast_t node;
 
-    /* Make a copy of the string */
-    if (! (copy = ELVIN_STRDUP(string, error)))
+    /* Make an AST out of the string */
+    if (! (node = ast_string_alloc(string, error)))
     {
 	return 0;
     }
 
-    return shift_reduce(self, TT_STRING, copy, error);
+    return shift_reduce(self, TT_STRING, node, error);
 }
 
 
@@ -1230,7 +1220,7 @@ static int lex_id_esc(parser_t self, int ch, elvin_error_t error)
     abort();
 }
 
-void parser_free(parser_t self, elvin_error_t error);
+
 
 /* Allocate space for a parser and initialize its contents */
 parser_t parser_alloc(elvin_error_t error)
@@ -1254,7 +1244,10 @@ parser_t parser_alloc(elvin_error_t error)
     }
 
     /* Allocate room for the value stack */
-    if (! (self -> value_stack = (void *)ELVIN_CALLOC(INITIAL_STACK_DEPTH, sizeof(void *), error)))
+    if (! (self -> value_stack = (ast_t *)ELVIN_CALLOC(
+	INITIAL_STACK_DEPTH,
+	sizeof(ast_t),
+	error)))
     {
 	parser_free(self, error);
 	return NULL;
@@ -1280,15 +1273,37 @@ parser_t parser_alloc(elvin_error_t error)
 }
 
 /* Frees the resources consumed by the parser */
-void parser_free(parser_t self, elvin_error_t error)
+int parser_free(parser_t self, elvin_error_t error)
 {
+    /* Free the state stack */
+    if (self -> state_stack)
+    {
+	if (! ELVIN_FREE(self -> state_stack, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Free the value stack */
+    if (self -> value_stack)
+    {
+	if (! ELVIN_FREE(self -> value_stack, error))
+	{
+	    return 0;
+	}
+    }
+
     /* Free the token buffer */
     if (self -> token)
     {
-	free(self -> token);
+	if (! ELVIN_FREE(self -> token, error))
+	{
+	    return 0;
+	}
     }
 
-    free(self);
+    /* Free the parser itself */
+    return ELVIN_FREE(self, error);
 }
 
 
