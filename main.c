@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.96 2001/10/10 12:57:14 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.97 2002/02/14 18:29:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -423,6 +423,23 @@ int main(int argc, char *argv[])
     /* Add a calback for when it gets destroyed */
     XtAppAddActions(context, actions, XtNumber(actions));
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+    /* Initialize the elvin client library */
+    if ((error = elvin_xt_init(context)) == NULL)
+    {
+	fprintf(stderr, "*** elvin_xt_init(): failed\n");
+	exit(1);
+    }
+
+    /* Double-check that the initialization worked */
+    if (elvin_error_is_error(error))
+    {
+	fprintf(stderr, "*** elvin_xt_init(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     /* Allocate an error context */
     if (! (error = elvin_error_alloc(NULL))) {
 	fprintf(stderr, PACKAGE ": elvin_error_alloc(): failed\n");
@@ -436,6 +453,7 @@ int main(int argc, char *argv[])
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
+#endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Create a new elvin connection handle */
     if ((handle = elvin_handle_alloc(error)) == NULL)

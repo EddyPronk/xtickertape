@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.29 2001/10/10 12:56:04 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.30 2002/02/14 18:29:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -114,6 +114,183 @@ struct group_sub
  */
 
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)    
+/* Delivers a notification which matches the receiver's subscription expression */
+static void notify_cb(
+    elvin_handle_t handle,
+    elvin_subscription_t subscription,
+    elvin_notification_t notification,
+    int is_secure,
+    void *rock,
+    elvin_error_t error)
+{
+    group_sub_t self = (group_sub_t)rock;
+    message_t message;
+    elvin_basetypes_t type;
+    elvin_value_t value;
+    char *user;
+    char *text;
+    int timeout;
+    char *mime_type;
+    elvin_opaque_t mime_args;
+    char *tag;
+    char *message_id;
+    char *reply_id;
+
+    /* If we don't have a callback then just quit now */
+    if (self -> callback == NULL)
+    {
+	return;
+    }
+    
+    /* Get the user from the notification (if provided) */
+    if (elvin_notification_get(notification, F_USER, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	user = (char *)value.s;
+    }
+    else
+    {
+	user = "anonymous";
+    }
+
+    /* Get the text of the notification (if provided) */
+    if (elvin_notification_get(notification, F_TICKERTEXT, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	text = (char *)value.s;
+    }
+    else
+    {
+	text = "";
+    }
+
+    /* Get the timeout for the notification (if provided) */
+    timeout = 0;
+    if (elvin_notification_get(notification, F_TIMEOUT, &type, &value, error))
+    {
+	switch (type)
+	{
+	    case ELVIN_INT32:
+	    {
+		timeout = value.i;
+		break;
+	    }
+
+	    case ELVIN_INT64:
+	    {
+		timeout = (int)value.h;
+		break;
+	    }
+
+	    case ELVIN_REAL64:
+	    {
+		timeout = (int)(0.5 + value.d);
+		break;
+	    }
+
+	    case ELVIN_STRING:
+	    {
+		timeout = atoi((char *)value.s);
+		break;
+	    }
+
+	    default:
+	    {
+		break;
+	    }
+	}
+    }
+
+    /* If the timeout was illegible, then set it to 10 minutes */
+    timeout = (timeout == 0) ? 10 : timeout;
+
+    /* Make sure the timeout conforms */
+    if (timeout < self -> min_time)
+    {
+	timeout = self -> min_time;
+    }
+    else if (timeout > self -> max_time)
+    {
+	timeout = self -> max_time;
+    }
+
+    /* Get the MIME type (if provided) */
+    if (elvin_notification_get(notification, F_MIME_TYPE, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	mime_type = (char *)value.s;
+    }
+    else
+    {
+	mime_type = NULL;
+    }
+
+    /* Get the MIME args (if provided) */
+    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	mime_args.data = value.s;
+	mime_args.length = strlen(value.s);
+    }
+    else if (type == ELVIN_OPAQUE)
+    {
+	mime_args.data = value.o.data;
+	mime_args.length = value.o.length;
+    }
+    else
+    {
+	mime_args.data = NULL;
+	mime_args.length = 0;
+    }
+
+    /* Get the replacement tag (if provided) */
+    if (elvin_notification_get(notification, F_REPLACEMENT, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	tag = (char *)value.s;
+    }
+    else
+    {
+	tag = NULL;
+    }
+
+    /* Get the message id (if provided) */
+    if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	message_id = (char *)value.s;
+    }
+    else 
+    {
+	message_id = NULL;
+    }
+
+    /* Get the reply id (if provided) */
+    if (elvin_notification_get(notification, F_IN_REPLY_TO, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	reply_id = (char *)value.s;
+    }
+    else
+    {
+	reply_id = NULL;
+    }
+
+    /* Construct a message */
+    message = message_alloc(
+	self -> name,
+	self -> name, user, text, (unsigned long) timeout,
+	mime_type, mime_args.data, mime_args.length,
+	tag, message_id, reply_id);
+
+    /* Deliver the message */
+    (*self -> callback)(self -> rock, message, self -> has_nazi);
+
+    /* Clean up */
+    message_free(message);
+}
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
@@ -142,7 +319,7 @@ static void notify_cb(
     {
 	return;
     }
-    
+
     /* Get the user from the notification (if provided) */
     if (! elvin_notification_get(
 	    notification,
@@ -366,6 +543,7 @@ static void notify_cb(
     /* Clean up */
     message_free(message);
 }
+#endif /* ELVIN_VERSION_AT_LEAST */
 
 /* Sends a message_t using the receiver's information */
 static void send_message(group_sub_t self, message_t message)
@@ -448,13 +626,13 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add mime information if both mime_args and mime_type are provided */
-    if ((mime_length != 0) && (mime_type != NULL))
+    if ((mime_args != NULL) && (mime_type != NULL))
     {
 	if (elvin_notification_add_string(
-		notification,
-		F_MIME_ARGS,
-		mime_args,
-		self -> error) == 0)
+	    notification,
+	    F_MIME_ARGS,
+	    mime_args,
+	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    abort();
@@ -508,7 +686,6 @@ static void send_message(group_sub_t self, message_t message)
     /* And clean up */
     elvin_notification_free(notification, self -> error);
 }
-
 
 /*
  *

@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.25 2001/10/10 12:56:04 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.26 2002/02/14 18:29:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -74,6 +74,7 @@ struct mail_sub
 };
 
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
 /* Delivers a notification which matches the receiver's e-mail subscription */
 static void notify_cb(
     elvin_handle_t handle,
@@ -94,7 +95,95 @@ static void notify_cb(
     int found;
 
     /* Get the name from the `From' field */
-    if (! elvin_notification_get(
+    if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	from = value.s;
+
+	/* Split the user name from the address. */
+	if ((mbox_parser_parse(self -> parser, from)) == 0)
+	{
+	    from = mbox_parser_get_name(self -> parser);
+	    if (*from == '\0')
+	    {
+		/* Otherwise resort to the e-mail address */
+		from = mbox_parser_get_email(self -> parser);
+	    }
+	}
+    }
+    else
+    {
+	from = "anonymous";
+    }
+
+    /* Get the folder field */
+    if (elvin_notification_get(notification, F_FOLDER, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	folder = value.s;
+
+	/* Format the folder name to use as the group */
+	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
+	{
+	    sprintf(buffer, FOLDER_FMT, folder);
+	    folder = buffer;
+	}
+    }
+    else
+    {
+	folder = "mail";
+    }
+
+    /* Get the subject field */
+    if (elvin_notification_get(notification, F_SUBJECT, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	subject = value.s;
+    }
+    else
+    {
+	subject = "No subject";
+    }
+
+    /* Construct a message_t out of all of that */
+    message = message_alloc(
+	NULL, folder, from, subject, 60,
+	NULL, NULL, 0,
+	NULL, NULL, NULL);
+
+    (*self -> callback)(self -> rock, message, False);
+
+    /* Clean up */
+    message_free(message);
+
+    /* Free the folder name */
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+}
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+/* Delivers a notification which matches the receiver's e-mail subscription */
+static void notify_cb(
+    elvin_handle_t handle,
+    elvin_subscription_t subscription,
+    elvin_notification_t notification,
+    int is_secure,
+    void *rock,
+    elvin_error_t error)
+{
+    mail_sub_t self = (mail_sub_t)rock;
+    message_t message;
+    elvin_basetypes_t type;
+    elvin_value_t value;
+    char *from;
+    char *folder;
+    char *subject;
+    char *buffer = NULL;
+    int found;
+
+    /* Get the name from the `From' field */
+    if (elvin_notification_get(
 	    notification,
 	    F_FROM,
 	    &found, &type, &value,
@@ -188,6 +277,7 @@ static void notify_cb(
 	free(buffer);
     }
 }
+#endif /* ELVIN_VERSION_AT_LEAST */
 
 /*
  *

@@ -405,12 +405,20 @@ int main(int argc, char *argv[])
     vm_t vm;
     int i;
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+    if (! (error = elvin_error_alloc()))
+    {
+	fprintf(stderr, "elvin_error_alloc(): failed\n");
+	exit(1);
+    }
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     /* Grab an error context */
     if (! (error = elvin_error_alloc(NULL)))
     {
 	fprintf(stderr, "elvin_error_alloc(): failed\n");
 	exit(1);
     }
+#endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Initialize the virtual machine */
     if (! (vm = vm_alloc(error)))
@@ -519,12 +527,16 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
     /* We don't need our error anymore */
+    elvin_error_free(error);
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     if (! elvin_error_free(error, NULL))
     {
 	fprintf(stderr, "elvin_error_free(): failed\n");
 	exit(1);
     }
+#endif
 
     /* Report on memory usage */
     elvin_memory_report();

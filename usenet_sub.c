@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.26 2001/10/10 12:56:04 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.27 2002/02/14 18:29:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -103,7 +103,171 @@ struct usenet_sub
     int is_pending;
 };
 
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+/* Delivers a notification which matches the receiver's subscription expression */
+static void notify_cb(
+    elvin_handle_t handle,
+    elvin_subscription_t subscription,
+    elvin_notification_t notification,
+    int is_secure,
+    void *rock,
+    elvin_error_t error)
+{
+    usenet_sub_t self = (usenet_sub_t)rock;
+    message_t message;
+    elvin_basetypes_t type;
+    elvin_value_t value;
+    char *string;
+    char *newsgroups;
+    char *name;
+    char *subject;
+    char *mime_type;
+    char *mime_args;
+    char *buffer = NULL;
 
+    /* If we don't have a callback than bail out now */
+    if (self -> callback == NULL)
+    {
+	return;
+    }
+
+    /* Get the newsgroups to which the message was posted */
+    if (elvin_notification_get(notification, NEWSGROUPS, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	string = value.s;
+    }
+    else
+    {
+	string = "news";
+    }
+
+    /* Prepend `usenet:' to the beginning of the group field */
+    if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
+    {
+	return;
+    }
+
+    sprintf(newsgroups, USENET_PREFIX, string);
+
+    /* Get the name from the FROM_NAME field (if provided) */
+    if (elvin_notification_get(notification, FROM_NAME, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	name = value.s;
+    }
+    else
+    {
+	/* If no FROM_NAME field then try FROM_EMAIL */
+	if (elvin_notification_get(notification, FROM_EMAIL, &type, &value, error) &&
+	    type == ELVIN_STRING)
+	{
+	    name = value.s;
+	}
+	else
+	{
+	    /* If no FROM_EMAIL then try FROM */
+	    if (elvin_notification_get(notification, FROM, &type, &value, error) &&
+		type == ELVIN_STRING)
+	    {
+		name = value.s;
+	    }
+	    else
+	    {
+		name = "anonymous";
+	    }
+	}
+    }
+
+    /* Get the SUBJECT field (if provided) */
+    if (elvin_notification_get(notification, SUBJECT, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	subject = value.s;
+    }
+    else
+    {
+	subject = "[no subject]";
+    }
+
+    /* Get the MIME_ARGS field (if provided) */
+    if (elvin_notification_get(notification, MIME_ARGS, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	mime_args = value.s;
+
+	/* Get the MIME_TYPE field (if provided) */
+	if (elvin_notification_get(notification, MIME_TYPE, &type, &value, error) &&
+	    type == ELVIN_STRING)
+	{
+	    mime_type = value.s;
+	}
+	else
+	{
+	    mime_type = URL_MIME_TYPE;
+	}
+    }
+    /* No MIME_ARGS provided.  Construct one using the Message-ID field */
+    else
+    {
+	if (elvin_notification_get(notification, MESSAGE_ID, &type, &value, error) &&
+	    type == ELVIN_STRING)
+	{
+	    char *message_id = value.s;
+	    char *news_host;
+
+	    if (elvin_notification_get(notification, X_NNTP_HOST, &type, &value, error)
+		&& type == ELVIN_STRING)
+	    {
+		news_host = value.s;
+	    }
+	    else
+	    {
+		news_host = "news";
+	    }
+
+	    if ((buffer = (char *)malloc(
+		sizeof(NEWS_URL) +
+		strlen(news_host) +
+		strlen(message_id) - 4)) == NULL)
+	    {
+		mime_type = NULL;
+		mime_args = NULL;
+	    }
+	    else
+	    {
+		sprintf(buffer, NEWS_URL, news_host, message_id);
+		mime_args = buffer;
+		mime_type = NEWS_MIME_TYPE;
+	    }
+	}
+	else
+	{
+	    mime_type = NULL;
+	    mime_args = NULL;
+	}
+    }
+
+
+    /* Construct a message out of all of that */
+    if ((message = message_alloc(
+	NULL, newsgroups, name, subject, 60,
+	mime_type, mime_args, strlen(mime_args),
+ 	NULL, NULL, NULL)) != NULL)
+    {
+	/* Deliver the message */
+	(*self -> callback)(self -> rock, message, False);
+	message_free(message);
+    }
+
+    /* Clean up */
+    free(newsgroups);
+    if (buffer != NULL)
+    {
+	free(buffer);
+    }
+}
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
@@ -349,6 +513,7 @@ static void notify_cb(
 	free(buffer);
     }
 }
+#endif
 
 /* Construct a portion of the subscription expression */
 static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)

@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.54 2001/10/16 16:18:18 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.55 2002/02/14 18:29:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -46,6 +46,11 @@ static const char cvsid[] = "$Id: panel.c,v 1.54 2001/10/16 16:18:18 phelps Exp 
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
 #include "History.h"
+
+/* Make sure ELVIN_SHA1DIGESTLEN is defined */
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+#define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
+#endif
 
 
 /*
@@ -1328,10 +1333,17 @@ char *create_uuid(control_panel_t self)
 
     /* Construct a SHA1 digest of the UUID, which should be just as
      * unique but should make it much harder to track down the sender */
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+    if (! elvin_sha1digest(buffer, 31, digest))
+    {
+	abort();
+    }
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     if (! elvin_sha1digest(buffer, 31, digest, NULL))
     {
 	return NULL;
     }
+#endif
 
     /* Convert those digits into bytes */
     for (index = 0; index < ELVIN_SHA1DIGESTLEN; index++)

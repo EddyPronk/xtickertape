@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2002.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.81 2001/10/16 16:19:24 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.82 2002/02/14 18:29:37 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -994,6 +994,8 @@ static void status_cb(
 	    break;
 	}
 
+#if defined(ELVIN_VERSION_AT_LEAST)
+#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 	/* Connection warnings go to the status line */
 	case ELVIN_STATUS_CONNECTION_WARN:
 	{
@@ -1014,6 +1016,8 @@ static void status_cb(
 	    free(buffer);
 	    return;
 	}
+#endif /* ELVIN_VERSION_AT_LEAST(4, 1, -1) */
+#endif /* ELVIN_VERSION_AT_LEAST */
 
 	case ELVIN_STATUS_DROP_WARN:
 	{
