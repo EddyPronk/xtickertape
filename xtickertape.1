@@ -9,6 +9,7 @@ xtickertape \- scrolling text chat tool
 xtickertape [-e elvin-url] [--elvin=elvin-url]
             [-S scope] [--scope=scope]
             [-H http-proxy] [--proxy=http-proxy]
+            [-I idle-period] [--idle=idle-period]
             [-u user] [--user=user]
             [-D domain] [--domain=domain]
             [-G groups-file] [--groups=groups-file]
@@ -39,6 +40,14 @@ Connect via the proxy server \fIhttp-proxy\fP, which should be of the
 form http://\fBhost\fR:\fBport\fR, or
 http://\fBuser\fR:\fBpassword\fR@\fBhost\fR:\fBport\fR if the proxy
 server requires a password.
+.TP
+.B -I \fIidle-period\fP
+.TP
+.BI --idle= idle-period
+Ensure that the connection hasn't silently disappeared by sending a
+packet if there has been no traffic for \fIidle-period\fP seconds.
+The default value is zero, which disables this feature.  Any other
+value less than 30 seconds is not permitted.
 .TP
 .B -u \fIuser\fP
 .TP

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.107 2002/04/23 22:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.108 2002/05/29 10:19:49 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -84,6 +84,7 @@ static struct option long_options[] =
     { "elvin", required_argument, NULL, 'e' },
     { "scope", required_argument, NULL, 'S' },
     { "proxy", required_argument, NULL, 'H' },
+    { "idle", required_argument, NULL, 'I' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
 #if defined(ENABLE_LISP_INTERPRETER)
@@ -127,6 +128,7 @@ static void usage(int argc, char *argv[])
 	"  -e elvin-url,   --elvin=elvin-url\n"
 	"  -S scope,       --scope=scope\n"
 	"  -H http-proxy,  --proxy=http-proxy\n"
+	"  -I idle-period, --idle=idle-period\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
 #if defined(ENABLE_LISP_INTERPRETER)
@@ -148,6 +150,7 @@ static void usage(int argc, char *argv[])
 	"  -e elvin-url\n"
 	"  -S scope\n"
 	"  -H http-proxy\n"
+	"  -I idle-period\n"
 	"  -u user\n"
 	"  -D domain\n"
 #if defined(ENABLE_LISP_INTERPRETER)
@@ -241,9 +244,9 @@ static char *get_domain()
 }
 
 #if defined(ENABLE_LISP_INTERPRETER)
-#define OPTIONS "e:c:D:G:H:hK:S:u:U:v"
+#define OPTIONS "e:c:D:G:H:hI:K:S:u:U:v"
 #else
-#define OPTIONS "e:D:G:H:hK:S:u:U:v"
+#define OPTIONS "e:D:G:H:hI:K:S:u:U:v"
 #endif
 
 /* Parses arguments and sets stuff up */
@@ -318,6 +321,19 @@ static void parse_args(
 	    case 'H':
 	    {
 		http_proxy = optarg;
+		break;
+	    }
+
+	    /* --idle= or -I */
+	    case 'I':
+	    {
+		if (! elvin_handle_set_idle_period(handle, atoi(optarg), error))
+		{
+		    fprintf(stderr, PACKAGE ": unable to set idle period to %d\n", atoi(optarg));
+		    elvin_error_fprintf(stderr, error);
+		    exit(1);
+		}
+
 		break;
 	    }
 
