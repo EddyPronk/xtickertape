@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.114 2001/05/07 06:46:05 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.115 2001/05/07 13:16:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -282,6 +282,108 @@ ScrollerClassRec scrollerClassRec =
 WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
 
 
+
+/* Returns true if the queue contains no unexpired messages */
+static int queue_is_empty(glyph_t head)
+{
+    glyph_t glyph = head -> next;
+
+    while (glyph != head)
+    {
+	if (glyph -> is_expired(glyph))
+	{
+	    return 0;
+	}
+
+	glyph = glyph -> next;
+    }
+
+    return 1;
+}
+
+/* Adds an item to a circular queue of glyphs */
+static void queue_add(glyph_t tail, glyph_t glyph)
+{
+    glyph -> previous = tail;
+    glyph -> next = tail -> next;
+
+    tail -> next -> previous = glyph;
+    tail -> next = glyph;
+}
+
+/* Locates the item in the queue with the given tag */
+static glyph_t queue_find(glyph_t head, char *tag)
+{
+    glyph_t probe;
+
+    /* Bail out now if there is no tag */
+    if (tag == NULL)
+    {
+	return NULL;
+    }
+
+    /* Look for the tag in the queue */
+    for (probe = head -> next; probe != head; probe = probe -> next)
+    {
+	message_t message;
+	char *probe_tag;
+
+	/* Check for a match */
+	if ((message = probe -> get_message(probe)) != NULL &&
+	    (probe_tag = message_get_tag(message)) != NULL &&
+	    strcmp(tag, probe_tag) == 0)
+	{
+	    return probe;
+	}
+    }
+
+    /* Not found */
+    return NULL;
+}
+
+/* Replace an existing queue item with a new one with the same tag */
+static void queue_replace(glyph_t old_glyph, glyph_t new_glyph)
+{
+    glyph_t previous = old_glyph -> previous;
+    glyph_t next = old_glyph -> next;
+
+    /* Swap the message into place */
+    new_glyph -> previous = previous;
+    previous -> next = new_glyph;
+    old_glyph -> previous = NULL;
+
+    new_glyph -> next = next;
+    next -> previous = new_glyph;
+    old_glyph -> next = NULL;
+
+    old_glyph -> set_replacement(old_glyph, new_glyph);
+
+    /* Clean up */
+    old_glyph -> free(old_glyph);
+}
+
+/* Removes an item from a circular queue of glyphs */
+static void queue_remove(glyph_t glyph)
+{
+    /* Don't dequeue if the glyph isn't queued */
+    if (glyph -> next == NULL)
+    {
+	return;
+    }
+
+    /* Remove it from the list */
+    glyph -> previous -> next = glyph -> next;
+    glyph -> next -> previous = glyph -> previous;
+
+    glyph -> previous = NULL;
+    glyph -> next = NULL;
+
+    /* Lose our reference to the glyph */
+    glyph -> free(glyph);
+}
+
+
+
 /* The glyph_holders are used to maintain a doubly-linked list of the
  * glyphs which are currently visible in the scroller window.  The
  * width is also recorded because under certain circumstances a single
@@ -318,16 +420,22 @@ static glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> next = NULL;
     self -> width = width;
     self -> glyph = glyph -> alloc(glyph);
+    self -> glyph -> visible_count++;
     return self;
 }
 
 /* Frees the resources consumed by the receiver */
 static void glyph_holder_free(glyph_holder_t self)
 {
-    self -> previous = NULL;
-    self -> next = NULL;
-    self -> glyph -> free(self -> glyph);
-    self -> glyph = NULL;
+    glyph_t glyph = self -> glyph;
+
+    /* Unqueue the glyph if it's expired and invisible */
+    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
+    {
+	queue_remove(glyph);
+    }
+
+    glyph -> free(glyph);
     free(self);
 }
 
@@ -476,106 +584,6 @@ static int gap_width(ScrollerWidget self, int last_width)
 {
     return MAX(self -> core.width - last_width, self -> scroller.min_gap_width);
 }
-
-/* Returns true if the queue contains no unexpired messages */
-static int queue_is_empty(glyph_t head)
-{
-    glyph_t glyph = head -> next;
-
-    while (glyph != head)
-    {
-	if (glyph -> is_expired(glyph))
-	{
-	    return 0;
-	}
-
-	glyph = glyph -> next;
-    }
-
-    return 1;
-}
-
-/* Adds an item to a circular queue of glyphs */
-static void queue_add(glyph_t tail, glyph_t glyph)
-{
-    glyph -> previous = tail;
-    glyph -> next = tail -> next;
-
-    tail -> next -> previous = glyph;
-    tail -> next = glyph;
-}
-
-/* Locates the item in the queue with the given tag */
-static glyph_t queue_find(glyph_t head, char *tag)
-{
-    glyph_t probe;
-
-    /* Bail out now if there is no tag */
-    if (tag == NULL)
-    {
-	return NULL;
-    }
-
-    /* Look for the tag in the queue */
-    for (probe = head -> next; probe != head; probe = probe -> next)
-    {
-	message_t message;
-	char *probe_tag;
-
-	/* Check for a match */
-	if ((message = probe -> get_message(probe)) != NULL &&
-	    (probe_tag = message_get_tag(message)) != NULL &&
-	    strcmp(tag, probe_tag) == 0)
-	{
-	    return probe;
-	}
-    }
-
-    /* Not found */
-    return NULL;
-}
-
-/* Replace an existing queue item with a new one with the same tag */
-static void queue_replace(glyph_t old_glyph, glyph_t new_glyph)
-{
-    glyph_t previous = old_glyph -> previous;
-    glyph_t next = old_glyph -> next;
-
-    /* Swap the message into place */
-    new_glyph -> previous = previous;
-    previous -> next = new_glyph;
-    old_glyph -> previous = NULL;
-
-    new_glyph -> next = next;
-    next -> previous = new_glyph;
-    old_glyph -> next = NULL;
-
-    old_glyph -> set_replacement(old_glyph, new_glyph);
-
-    /* Clean up */
-    old_glyph -> free(old_glyph);
-}
-
-/* Removes an item from a circular queue of glyphs */
-static void queue_remove(glyph_t glyph)
-{
-    /* Don't dequeue if the glyph isn't queued */
-    if (glyph -> next == NULL)
-    {
-	return;
-    }
-
-    /* Remove it from the list */
-    glyph -> previous -> next = glyph -> next;
-    glyph -> next -> previous = glyph -> previous;
-
-    glyph -> previous = NULL;
-    glyph -> next = NULL;
-
-    /* Lose our reference to the glyph */
-    glyph -> free(glyph);
-}
-
 
 /*
  * Semi-private methods
@@ -904,7 +912,6 @@ static void add_left_holder(ScrollerWidget self)
     }
     else
     {
-	glyph -> visible_count++;
 	width = glyph -> get_width(glyph);
     }
 
@@ -948,7 +955,6 @@ static void add_right_holder(ScrollerWidget self)
     }
     else
     {
-	glyph -> visible_count++;
 	width = glyph -> get_width(glyph);
     }
 
@@ -965,38 +971,24 @@ static void add_right_holder(ScrollerWidget self)
 static void remove_left_holder(ScrollerWidget self)
 {
     glyph_holder_t holder = self -> scroller.left_holder;
-    glyph_t glyph = holder -> glyph;
 
     /* Clean up the linked list */
     self -> scroller.left_holder = holder -> next;
     self -> scroller.left_holder -> previous = NULL;
     self -> scroller.left_offset -= holder -> width;
     glyph_holder_free(holder);
-
-    /* Excise the glyph if it's no longer visible and viable */
-    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
-    {
-	queue_remove(glyph);
-    }
 }
 
 /* Remove the glyph_holder at the right edge of the scroller */
 static void remove_right_holder(ScrollerWidget self)
 {
     glyph_holder_t holder = self -> scroller.right_holder;
-    glyph_t glyph = holder -> glyph;
 
     /* Clean up the linked list */
     self -> scroller.right_holder = holder -> previous;
     self -> scroller.right_holder -> next = NULL;
     self -> scroller.right_offset -= holder -> width;
     glyph_holder_free(holder);
-
-    /* Excise the glyph if it's no longer visible and viable */
-    if (--glyph -> visible_count == 0 && glyph -> is_expired(glyph))
-    {
-	queue_remove(glyph);
-    }
 }
 
 /* Remove glyph_holders from the left edge if appropriate */
