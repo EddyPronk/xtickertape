@@ -28,8 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.53 1999/10/02 06:56:19 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.54 1999/10/02 08:06:19 phelps Exp $";
 #endif /* lint */
+
+/* These must be defined for us to have access to crypt() and
+ * gethostid() simultaneously */
+#define _XOPEN_SOURCE
+#define _BSD_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1096,7 +1101,6 @@ static char *crypt_id(time_t now)
 	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
     char hostid[9];
     char salt[3];
-    char *result;
 
     /* Construct a salt out of the current time */
     salt[0] = chars[now & 0x3f];
