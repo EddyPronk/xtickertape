@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.4 2000/11/09 03:04:54 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.5 2000/11/09 05:30:34 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -174,15 +174,14 @@ static int sexp_hashfree(elvin_hashdata_t data, elvin_error_t error)
 }
 
 
-
 /* Initialize the interpreter */
 int interp_init(elvin_error_t error)
 {
     /* No, so create one */
     if ((symbol_table = elvin_string_hash_create(
 	     INIT_SYMBOL_TABLE_SIZE,
-	     sexp_hashcopy,
-	     sexp_hashfree,
+	     NULL,
+	     NULL,
 	     error)) == NULL)
     {
 	return 0;
@@ -526,9 +525,16 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	case SEXP_SYMBOL:
 	{
 	    int result;
+	    char *name;
+
+	    /* Get the symbol's name */
+	    if ((name = symbol_name(sexp, error)) == NULL)
+	    {
+		return 0;
+	    } 
 
 	    /* Remove the symbol from the symbol table */
-	    result = elvin_hash_delete(symbol_table, (elvin_hashdata_t)sexp, error);
+	    result = elvin_hash_delete(symbol_table, (elvin_hashdata_t)name, error);
 	    result = ELVIN_FREE(sexp -> value.s, result ? error : NULL) && result;
 	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
 	}
@@ -797,28 +803,22 @@ int env_free(env_t env, elvin_error_t error)
 /* Looks up a symbol's value in the environment */
 int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 {
-    char *name;
-
-    /* Bail if the sexp isn't a symbol */
-    if ((name = symbol_name(symbol, error)) == NULL)
-    {
-	return 0;
-    }
-
     /* Keep checking until we run out of parent environments */
     while (env != NULL)
     {
 	/* Look up the value in the environment */
-	if ((*result = (sexp_t)elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
+	if ((*result = (sexp_t)elvin_hash_get(
+		 env -> map,
+		 (elvin_hashkey_t)symbol,
+		 error)) != NULL)
 	{
-	    /* Found it! */
 	    return 1;
 	}
 
 	env = env -> parent;
     }
 
-    ELVIN_ERROR_LISP_SYM_UNDEF(error, name);
+    ELVIN_ERROR_LISP_SYM_UNDEF(error, symbol_name(symbol, error));
     return 0;
 }
 
@@ -827,19 +827,13 @@ int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
     char *name;
 
-    /* Look up the symbol's name */
-    if ((name = symbol_name(symbol, error)) == NULL)
-    {
-	return 0;
-    }
-
     /* Make sure it isn't in the hashtable */
-    elvin_hash_delete(env -> map, (elvin_hashkey_t)name, error);
+    elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error);
 
     /* Use it to register the value in the map (automatically increases the ref_count) */
     if (elvin_hash_add(
 	    env -> map,
-	    (elvin_hashkey_t)name,
+	    (elvin_hashkey_t)symbol,
 	    (elvin_hashdata_t)value,
 	    error) == 0)
     {
