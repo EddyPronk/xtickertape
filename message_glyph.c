@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.17 1999/09/13 03:52:45 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.18 1999/09/13 07:04:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -295,34 +295,13 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
 static void paint_string(
     message_glyph_t self,
     Display *display, Drawable drawable, GC gc, XFontStruct *font,
-    int offset, int lbearing, int rbearing, int baseline,
-    int string_width, char *string, int do_underline,
+    int offset, int string_width, int baseline, char *string, int do_underline,
     int x, int y, int width, int height)
 {
     XCharStruct *char_info;
     unsigned char *first;
     unsigned char *last;
     int left, right;
-
-    /* If the glyph is off to the left of the rectangle then quit */
-    if (offset + rbearing < x)
-    {
-	return;
-    }
-
-    /* If the glyph is off to the right of the rectangle then quit */
-    if (x + width < offset + lbearing)
-    {
-	return;
-    }
-
-#ifdef DEBUG_GLYPH
-    {
-	XGCValues values;
-	values.foreground = random();
-	XChangeGC(display, gc, GCForeground, &values);
-    }
-#endif /* DEBUG */
 
     /* Find the first visible character in the string */
     left = offset;
@@ -348,6 +327,14 @@ static void paint_string(
     }
 
 
+#ifdef DEBUG_GLYPH
+    {
+	XGCValues values;
+	values.foreground = random();
+	XChangeGC(display, gc, GCForeground, &values);
+    }
+#endif /* DEBUG */
+
     /* Draw all of the characters of the string */
     XDrawString(display, drawable, gc, left, baseline, first, last - first);
 
@@ -369,58 +356,70 @@ static void do_paint(
     int do_underline = message_has_attachment(self -> message);
     int level = self -> fade_level;
     int baseline = y + self -> ascent;
-    int left;
-    int right;
+    int left = offset;
 
-    /* Draw the group string */
-    left = offset;
-    right = left + self -> group_width;
-    paint_string(
-	self, display, drawable, ScGCForGroup(self -> widget, level),
-	ScFontForGroup(self -> widget),
-	left, self -> group_lbearing, self -> group_rbearing, baseline,
-	self -> group_width, message_get_group(self -> message), do_underline,
-	x, y, width, height);
+    /* Draw the group string if appropriate */
+    if ((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width))
+    {
+	paint_string(
+	    self, display, drawable, ScGCForGroup(self -> widget, level),
+	    ScFontForGroup(self -> widget),
+	    left, self -> group_width, baseline,
+	    message_get_group(self -> message), do_underline,
+	    x, y, width, height);
+    }
 
-    /* Draw the separator */
-    left = right;
-    right = left + self -> separator_width;
-    paint_string(
-	self, display, drawable, ScGCForSeparator(self -> widget, level),
-	ScFontForSeparator(self -> widget),
-	left, self -> separator_lbearing, self -> separator_rbearing, baseline,
-	self -> separator_width, SEPARATOR, do_underline,
-	x, y, width, height);
+    left += self -> group_width;
+
+    /* Draw the separator if appropriate*/
+    if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
+    {
+	paint_string(
+	    self, display, drawable, ScGCForSeparator(self -> widget, level),
+	    ScFontForSeparator(self -> widget),
+	    left, self -> separator_width, baseline,
+	    SEPARATOR, do_underline,
+	    x, y, width, height);
+    }
+
+    left += self -> separator_width;
 
     /* Draw the user string */
-    left = right;
-    right = left + self -> user_width;
-    paint_string(
-	self, display, drawable, ScGCForUser(self -> widget, level),
-	ScFontForUser(self -> widget),
-	left, self -> user_lbearing, self -> user_rbearing, baseline,
-	self -> user_width, message_get_user(self -> message), do_underline,
-	x, y, width, height);
+    if ((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width))
+    {
+	paint_string(
+	    self, display, drawable, ScGCForUser(self -> widget, level),
+	    ScFontForUser(self -> widget),
+	    left, self -> user_width, baseline,
+	    message_get_user(self -> message), do_underline,
+	    x, y, width, height);
+    }
+
+    left += self -> user_width;
 
     /* Draw the separator */
-    left = right;
-    right = left + self -> separator_width;
-    paint_string(
-	self, display, drawable, ScGCForSeparator(self -> widget, level),
-	ScFontForSeparator(self -> widget),
-	left, self -> separator_lbearing, self -> separator_rbearing, baseline,
-	self -> separator_width, SEPARATOR, do_underline,
-	x, y, width, height);
+    if ((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width))
+    {
+	paint_string(
+	    self, display, drawable, ScGCForSeparator(self -> widget, level),
+	    ScFontForSeparator(self -> widget),
+	    left, self -> separator_width, baseline,
+	    SEPARATOR, do_underline,
+	    x, y, width, height);
+    }
+
+    left += self -> separator_width;
 
     /* Draw the message */
-    left = right;
-    right = left + self -> string_width;
-    paint_string(
-	self, display, drawable, ScGCForString(self -> widget, level),
-	ScFontForString(self -> widget),
-	left, self -> string_lbearing, self -> string_rbearing, baseline,
-	self -> string_width, message_get_string(self -> message), do_underline,
-	x, y, width, height);
+    if ((x <= left + self -> string_rbearing) && (left + self -> separator_lbearing <= x + width))
+    {
+	paint_string(
+	    self, display, drawable, ScGCForString(self -> widget, level),
+	    ScFontForString(self -> widget),
+	    left, self -> string_width, baseline,
+	    message_get_string(self -> message), do_underline,
+	    x, y, width, height);
+    }
 }
 
 /* Answers True if the receiver has [been] expired */
