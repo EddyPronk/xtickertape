@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.44 2001/04/17 12:24:02 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.45 2001/05/01 11:23:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -149,6 +149,9 @@ struct control_panel
     /* The receiver's history list widget */
     Widget history;
 
+    /* The frame for the status line widget */
+    Widget status_frame;
+
     /* The status line widget */
     Widget status_line;
 
@@ -242,7 +245,7 @@ static char *get_mime_type(control_panel_t self);
 static char *get_mime_args(control_panel_t self);
 
 static char *create_uuid(control_panel_t self);
-message_t construct_message(control_panel_t self);
+static message_t construct_message(control_panel_t self);
 
 static void action_send(Widget button, control_panel_t self, XtPointer ignored);
 static void action_clear(Widget button, control_panel_t self, XtPointer ignored);
@@ -726,7 +729,7 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
     XtSetArg(args[2], XmNtopAttachment, XmATTACH_FORM);
     XtSetArg(args[3], XmNbottomAttachment, XmATTACH_WIDGET);
-    XtSetArg(args[4], XmNbottomWidget, self -> status_line);
+    XtSetArg(args[4], XmNbottomWidget, self -> status_frame);
     XtSetArg(args[5], XmNselectionPolicy, XmBROWSE_SELECT);
     XtSetArg(args[6], XmNitemCount, 0);
     XtSetArg(args[7], XmNvisibleItemCount, 3);
@@ -758,11 +761,10 @@ static void create_history_box(control_panel_t self, Widget parent)
 /* Constructs the status line */
 static void create_status_line(control_panel_t self, Widget parent)
 {
-    Widget frame;
     XmString string;
 
     /* Create a frame for the status line */
-    frame = XtVaCreateManagedWidget(
+    self -> status_frame = XtVaCreateManagedWidget(
 	"statusFrame", xmFrameWidgetClass, parent,
 	XmNshadowType, XmSHADOW_IN,
 	XmNleftAttachment, XmATTACH_FORM,
@@ -773,7 +775,7 @@ static void create_status_line(control_panel_t self, Widget parent)
     /* Create an empty string for the status line */
     string = XmStringCreateSimple(PACKAGE " version " VERSION);
     self -> status_line = XtVaCreateManagedWidget(
-	"statusLabel", xmLabelWidgetClass, frame,
+	"statusLabel", xmLabelWidgetClass, self -> status_frame,
 	XmNalignment, XmALIGNMENT_BEGINNING,
 	XmNlabelString, string,
 	NULL);
@@ -1333,7 +1335,7 @@ char *create_uuid(control_panel_t self)
 
 
 /* Answers a message based on the receiver's current state */
-message_t construct_message(control_panel_t self)
+static message_t construct_message(control_panel_t self)
 {
     char *user;
     char *text;
