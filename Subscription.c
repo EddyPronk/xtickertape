@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.14 1998/10/22 07:06:27 phelps Exp $ */
+/* $Id: Subscription.c,v 1.15 1998/10/23 17:01:44 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,9 +6,8 @@
 #include <alloca.h>
 #include "sanity.h"
 #include "Subscription.h"
-
-#define BUFFERSIZE 8192
-#define SEPARATORS ":\n"
+#include "FileStreamTokenizer.h"
+#include "StringBuffer.h"
 
 /* Sanity checking strings */
 #ifdef SANITY
@@ -65,9 +64,11 @@ struct Subscription_t
  * Static function headers
  *
  */
-static Subscription GetFromGroupFileLine(
-    char *line, SubscriptionCallback callback, void *context);
-static Subscription GetFromGroupFile(
+static void GetFromGroupFileLine(
+    List list,
+    FileStreamTokenizer tokenizer, char *firstToken,
+    SubscriptionCallback callback, void *context);
+static List GetFromGroupFile(
     FILE *file, SubscriptionCallback callback, void *context);
 static void HandleNotify(Subscription self, en_notify_t notification);
 static void SendMessage(Subscription self, Message message);
@@ -79,102 +80,196 @@ static void SendMessage(Subscription self, Message message);
  *
  */
 
-/* Create a subscription from a line of the group file */
-static Subscription GetFromGroupFileLine(
-    char *line, SubscriptionCallback callback, void *context)
+/* Translate the 'menu' or 'no menu' token into non-zero or zero*/
+static int TranslateMenu(char *token)
 {
-    char *group = strtok(line, SEPARATORS);
-    char *pointer = strtok(NULL, SEPARATORS);
-    char *expression;
+    if (token == NULL)
+    {
+	fprintf(stderr, "*** Unexpected end of groups file\n");
+	exit(1);
+    }
+
+    switch (*token)
+    {
+	/* menu */
+	case 'm':
+	{
+	    if (strcmp(token, "menu") == 0)
+	    {
+		return 1;
+	    }
+	    
+	    break;
+	}
+
+	/* no menu */
+	case 'n':
+	{
+	    if (strcmp(token, "no menu") == 0)
+	    {
+		return 0;
+	    }
+
+	    break;
+	}
+    }
+
+    /* Invalid token */
+    fprintf(stderr, "*** Expected \"menu\" or \"no menu\", got \"%s\"\n", token);
+    exit(1);
+}
+
+/* Translate the 'manual' or 'auto' token into zero or non-zero */
+static int TranslateMime(char *token)
+{
+    if (token == NULL)
+    {
+	fprintf(stderr, "*** Unexpected end of groups file\n");
+	exit(1);
+    }
+
+    switch (*token)
+    {
+	/* auto */
+	case 'a':
+	{
+	    if (strcmp(token, "auto") == 0)
+	    {
+		return 1;
+	    }
+
+	    break;
+	}
+
+	/* manual */
+	case 'm':
+	{
+	    if (strcmp(token, "manual") == 0)
+	    {
+		return 0;
+	    }
+
+	    break;
+	}
+    }
+
+    fprintf(stderr, "*** Expected \"manual\" or \"auto\", got \"%s\"\n", token);
+    exit(1);
+}
+
+
+/* Translate a positive, integral token into an integer */
+static int TranslateTime(char *token)
+{
+    char *pointer;
+    int value = 0;
+
+    for (pointer = token; *pointer != '\0'; pointer++)
+    {
+	int digit = *pointer - '0';
+
+	if ((digit < 0) || (digit > 9))
+	{
+	    fprintf(stderr, "*** Expected numerical argument, got \"%s\"\n", token);
+	    exit(1);
+	}
+
+	value = (value * 10) + digit;
+    }
+
+    return value;
+}
+
+/* Create a subscription from a line of the group file */
+static void GetFromGroupFileLine(
+    List list,
+    FileStreamTokenizer tokenizer, char *firstToken,
+    SubscriptionCallback callback, void *context)
+{
+    char *token;
+    char *group;
     int inMenu, hasNazi, minTime, maxTime;
+    Subscription subscription;
 
-    if (strcasecmp(pointer, "no menu") == 0)
+    /* Copy the group token */
+    group = (char *)alloca(strlen(firstToken) + 1);
+    strcpy(group, firstToken);
+
+    /* 'menu' or 'no menu' */
+    token = FileStreamTokenizer_next(tokenizer);
+    inMenu = TranslateMenu(token);
+
+    /* 'manual' or 'auto' mime */
+    token = FileStreamTokenizer_next(tokenizer);
+    hasNazi = TranslateMime(token);
+
+    /* minimum time */
+    token = FileStreamTokenizer_next(tokenizer);
+    minTime = TranslateTime(token);
+
+    /* maximum time */
+    token = FileStreamTokenizer_next(tokenizer);
+    maxTime = TranslateTime(token);
+
+    /* optional subscription expression */
+    FileStreamTokenizer_setWhitespace(tokenizer, "");
+    token = FileStreamTokenizer_next(tokenizer);
+    FileStreamTokenizer_setWhitespace(tokenizer, ":");
+
+    if ((token == NULL) || (*token == '\n'))
     {
-	inMenu = 0;
-    }
-    else if (strcasecmp(pointer, "menu") == 0)
-    {
-	inMenu = 1;
+	StringBuffer buffer = StringBuffer_alloc();
+	StringBuffer_append(buffer, "TICKERTAPE == \"");
+	StringBuffer_append(buffer, group);
+	StringBuffer_append(buffer, "\"");
+
+	subscription = Subscription_alloc(
+	    group, StringBuffer_getBuffer(buffer),
+	    inMenu, hasNazi,
+	    minTime, maxTime,
+	    callback, context);
+	StringBuffer_free(buffer);
     }
     else
     {
-	printf("unrecognized menu designation \"%s\" ignored\n", pointer);
-	inMenu = 0;
+	subscription = Subscription_alloc(
+	    group, token,
+	    inMenu, hasNazi,
+	    minTime, maxTime,
+	    callback, context);
+	FileStreamTokenizer_skipToEndOfLine(tokenizer);
     }
 
-    pointer = strtok(NULL, SEPARATORS);
-    if (strcasecmp(pointer, "auto") == 0)
-    {
-	hasNazi = 1;
-    }
-    else if (strcasecmp(pointer, "manual") == 0)
-    {
-	hasNazi = 0;
-    }
-    else
-    {
-	printf("unrecognized auto/manual designation \"%s\" ignored\n", pointer);
-	hasNazi = 0;
-    }
-
-    pointer = strtok(NULL, SEPARATORS);
-    minTime = atoi(pointer);
-    if (minTime == 0)
-    {
-	printf("invalid minimum time: \"%s\"\n", pointer);
-	minTime = 1;
-    }
-
-    pointer = strtok(NULL, SEPARATORS);
-    maxTime = atoi(pointer);
-    if (maxTime == 0)
-    {
-	printf("invalid maximum time: \"%s\"\n", pointer);
-	maxTime = 60;
-    }
-
-    expression = strtok(NULL, "\n");
-    if (expression == NULL)
-    {
-	char *buffer = (char *)alloca(strlen(group) + sizeof("TICKERTAPE == \"\""));
-
-	sprintf(buffer, "TICKERTAPE == \"%s\"", group);
-	return Subscription_alloc(
-	    group, buffer, inMenu, hasNazi, minTime, maxTime, callback, context);
-    }
-
-    return Subscription_alloc(
-	group, expression,
-	inMenu, hasNazi,
-	minTime, maxTime,
-	callback, context);
+    List_addLast(list, subscription);
 }
 
 
 /* Read the next subscription from file (answers NULL if EOF) */
-static Subscription GetFromGroupFile(
-    FILE *file, SubscriptionCallback callback, void *context)
+static List GetFromGroupFile(
+    FILE *file,
+    SubscriptionCallback callback, void *context)
 {
-    char buffer[BUFFERSIZE];
-    char *pointer;
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, ":", "\n");
+    List list = List_alloc();
+    char *token;
 
-    /* find a non-empty line that doesn't begin with a '#' */
-    while ((pointer = fgets(buffer, BUFFERSIZE, file)) != NULL)
+    /* Locate a non-empty line that doesn't begin with a '#' */
+    while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
     {
-	/* skip whitespace */
-	while ((*pointer == ' ') || (*pointer == '\t'))
+	/* Comment line? */
+	if (*token == '#')
 	{
-	    pointer++;
+	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
 	}
-
-	/* check for empty line or comment */
-	if ((*pointer != '\0') && (*pointer != '\n') && (*pointer != '#'))
+	/* Useful line? */
+	else if (*token != '\n')
 	{
-	    return GetFromGroupFileLine(pointer, callback, context);
+	    GetFromGroupFileLine(list, tokenizer, token, callback, context);
 	}
     }
 
-    return NULL;
+    FileStreamTokenizer_free(tokenizer);
+    return list;
 }
 
 
@@ -329,16 +424,7 @@ static void SendMessage(Subscription self, Message message)
 List Subscription_readFromGroupFile(
     FILE *groups, SubscriptionCallback callback, void *context)
 {
-    List list = List_alloc();
-    Subscription subscription;
-
-    while ((subscription = GetFromGroupFile(
-	groups, callback, context)) != NULL)
-    {
-	List_addLast(list, subscription);
-    }
-
-    return list;
+    return GetFromGroupFile(groups, callback, context);
 }
 
 
