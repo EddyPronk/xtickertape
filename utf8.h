@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -33,7 +33,7 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.2 2003/01/14 17:01:34 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.3 2003/01/22 13:35:40 phelps Exp $";
 #endif /* lint */
 
 /* String measurements */
