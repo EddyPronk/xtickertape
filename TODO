@@ -49,8 +49,9 @@ History Widget
 
 - It should be possible to scroll horizontally from the keyboard.
 
-- It should be able to perform Motif-style keyboard focus changes via
-  the tab key.
+- The highlight around the selection which indicates that the widget
+  has focus should acknowledget the highlight_thickness resource,
+  which should affect the spacing between lines.
 
 - Dragging should not occur until a threshold has been crossed.  This
   should make it less annoying to deselect an item as dragging
