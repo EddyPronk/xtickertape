@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.20 1999/09/01 15:29:40 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.21 1999/09/01 15:51:06 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -302,7 +302,7 @@ static history_node_t find_by_id(history_node_t self, char *id)
 	}
 
 	/* Check the children */
-	if ((probe = find_by_id(self -> last_response, id)) != NULL)
+	if ((probe = find_by_id(node -> last_response, id)) != NULL)
 	{
 	    return probe;
 	}
@@ -620,7 +620,7 @@ static void history_remove_old(history_t self)
     history_node_t previous;
 
     /* Make sure we've got a full list first */
-    if (self -> threaded_count < MAX_LIST_COUNT)
+    if (self -> threaded_count <= MAX_LIST_COUNT)
     {
 	return;
     }
@@ -645,16 +645,13 @@ static void history_remove_old(history_t self)
     history_node_free(previous);
 
     /* Free references to the former first item on the threaded list */
-    history_unthread_node(self, history_get_node_threaded(self, 1));
+    history_unthread_node(self, history_get_node_threaded(self, 0));
 }
 
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message)
 {
     history_node_t node;
-
-    /* Make sure the list doesn't get too big */
-    history_remove_old(self);
 
     /* Allocate a node to hold the message */
     if ((node = history_node_alloc(message)) == NULL)
@@ -668,6 +665,9 @@ int history_add(history_t self, Message message)
     /* Append the node to the end of the history */
     node -> previous = self -> last;
     self -> last = node;
+
+    /* Make sure the list doesn't get too big */
+    history_remove_old(self);
 
     /* Update the List widget */
     if (self -> list != NULL)
