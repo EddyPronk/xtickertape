@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.93 2000/04/28 06:44:15 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.94 2000/04/28 07:26:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -344,7 +344,7 @@ static void EnableClock(ScrollerWidget self);
 static void DisableClock(ScrollerWidget self);
 static void SetClock(ScrollerWidget self);
 static void Tick(XtPointer widget, XtIntervalId *interval);
-
+static void drag_to(ScrollerWidget self, int x);
 
 
 /* Answers a GC with the right background color and font */
@@ -431,8 +431,6 @@ static void SetClock(ScrollerWidget self)
 static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
-
-    printf("."); fflush(stdout);
 
     /* If we haven't yet finished our last scroll then arrange to call
      * Tick again once it has finished */
@@ -1246,6 +1244,24 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
     }
 }
 
+
+/* Processes events that were postponed until the GraphicsExpose (or
+ * NoExpose) events were received */
+static void overflow_recover(ScrollerWidget self)
+{
+    printf("overflow recovery\n");
+
+    /* If we were dragging then update the position now */
+    if (self -> scroller.is_dragging)
+    {
+	drag_to(self, self -> scroller.overflow_x);
+    }
+
+    Tick((Widget)self, NULL);
+}
+
+
+
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 {
@@ -1269,15 +1285,7 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	/* Do we need to recover from an overflow? */
 	if (old_state == SS_OVERFLOW)
 	{
-	    if (self -> scroller.is_dragging)
-	    {
-		printf("drag overflow!\n");
-		abort();
-	    }
-	    else
-	    {
-		Tick(widget, NULL);
-	    }
+	    overflow_recover(self);
 	}
 
 	return;
@@ -1326,15 +1334,7 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	    /* Do we need to restart the timer? */
 	    if (old_state == SS_OVERFLOW)
 	    {
-		if (self -> scroller.is_dragging)
-		{
-		    printf("drag overflow!\n");
-		    abort();
-		}
-		else
-		{
-		    Tick(widget, NULL);
-		}
+		overflow_recover(self);
 	    }
 
 	    return;
@@ -2018,6 +2018,35 @@ static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *n
     self -> scroller.last_x = button_event -> x;
 }
 
+
+/* Drag to the given x position */
+static void drag_to(ScrollerWidget self, int x)
+{
+    /* Don't bother if there's no change */
+    if (self -> scroller.last_x == x)
+    {
+	return;
+    }
+
+    /* If we're in overflow mode then just record x for future use */
+    if (self -> scroller.state == SS_PENDING || self -> scroller.state == SS_OVERFLOW)
+    {
+	self -> scroller.state = SS_OVERFLOW;
+	self -> scroller.overflow_x = x;
+	return;
+    }
+
+    /* Scroll to the x position */
+    scroll(self, self -> scroller.last_x - x);
+    self -> scroller.last_x = x;
+
+    /* Repaint the pixmap if appropriate */
+    if (self -> scroller.use_pixmap)
+    {
+	Redisplay((Widget)self, NULL, 0);
+    }
+}
+
 /* Someone is dragging the mouse */
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
@@ -2047,22 +2076,8 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	DisableClock(self);
     }
 
-    /* Don't try to scroll by zero pixels or we'll generate a NoExpose
-     * event and get confused */
-    if (self -> scroller.last_x - motion_event -> x == 0)
-    {
-	return;
-    }
-
-    /* Scroll by the difference */
-    scroll(self, self -> scroller.last_x - motion_event -> x);
-    self -> scroller.last_x = motion_event -> x;
-
-    if (self -> scroller.use_pixmap)
-    {
-	/* Repaint the widget */
-	Redisplay(widget, NULL, 0);
-    }
+    /* Do the drag thing */
+    drag_to(self, motion_event -> x);
 }
 
 

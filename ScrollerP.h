@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.33 2000/04/28 06:44:19 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.34 2000/04/28 07:26:24 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -143,6 +143,9 @@ typedef struct
 
     /* The position of the pointer the last time we noticed a drag */
     int last_x;
+
+    /* The position of the mouse during the last overflowed drag request */
+    int overflow_x;
 
     /* The width of the clip mask */
     int clip_width;
