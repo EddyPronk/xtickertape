@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.11 2000/11/08 11:18:51 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.12 2000/11/08 12:38:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -367,6 +367,13 @@ atom_type_t atom_get_type(atom_t atom)
     return atom -> type;
 }
 
+/* Allocates another reference to an atom */
+int atom_alloc_ref(atom_t atom, elvin_error_t error)
+{
+    atom -> ref_count++;
+    return 1;
+}
+
 /* Frees an atom */
 int atom_free(atom_t atom, elvin_error_t error)
 {
@@ -401,12 +408,6 @@ int atom_free(atom_t atom, elvin_error_t error)
 	    result = atom_free(atom -> value.c.car, error);
 	    result = atom_free(atom -> value.c.cdr, result ? error : NULL) && result;
 	    return ELVIN_FREE(atom, error);
-	}
-
-	case ATOM_BUILTIN:
-	{
-	    fprintf(stderr, PACKAGE ": attempted to free a built-in function!\n");
-	    abort();
 	}
 
 	case ATOM_LAMBDA:
@@ -512,6 +513,32 @@ int atom_print(atom_t atom)
 }
 
 
+/* Evaluates a function */
+int funcall(atom_t function, env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    /* What we do depends on the type */
+    switch (function->type)
+    {
+	case ATOM_BUILTIN:
+	{
+	    /* Call the built-in with the cdr as args */
+	    return function->value.b(env, args, result, error);
+	}
+
+	case ATOM_LAMBDA:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_eval");
+	    return 0;
+	}
+
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "foo");
+	    return 0;
+	}
+    }
+}
+
 /* Evaluates an atom */
 int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 {
@@ -549,6 +576,7 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 	case ATOM_CONS:
 	{
 	    atom_t function;
+	    int r;
 
 	    /* First we evaluate the car to get the function */
 	    if (atom_eval(cons_car(atom, error), env, &function, error) == 0)
@@ -556,27 +584,16 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 		return 0;
 	    }
 
-	    /* What we do depends on the type */
-	    switch (function->type)
+	    /* Then we call the function with the args */
+	    r = funcall(function, env, cons_cdr(atom, error), result, error);
+
+	    /* Free our reference to the function */
+	    if (atom_free(function, error) == 0)
 	    {
-		case ATOM_BUILTIN:
-		{
-		    /* Call the built-in with the cdr as args */
-		    return function->value.b(env, cons_cdr(atom, error), result, error);
-		}
-
-		case ATOM_LAMBDA:
-		{
-		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_eval");
-		    return 0;
-		}
-
-		default:
-		{
-		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "foo");
-		    return 0;
-		}
+		return 0;
 	    }
+
+	    return r;
 	}
 
 	default:
@@ -658,7 +675,6 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
 {
     char *name;
-    atom_t old_value;
 
     /* Look up the symbol's name */
     if ((name = symbol_name(symbol, error)) == NULL)
@@ -666,15 +682,8 @@ int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
 	return 0;
     }
 
-    /* Check for an old value */
-    if ((old_value = elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
-    {
-	/* Free our reference to it */
-	if (atom_free(old_value, error) == 0)
-	{
-	    return 0;
-	}
-    }
+    /* Make sure it isn't in the hashtable */
+    elvin_hash_delete(env -> map, (elvin_hashkey_t)name, error);
 
     /* Use it to register the value in the map (automatically increases the ref_count) */
     if (elvin_hash_add(
