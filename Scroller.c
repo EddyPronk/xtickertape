@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.105 2001/05/02 00:30:26 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.106 2001/05/02 01:55:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -147,7 +147,7 @@ static void show_menu(Widget widget, XEvent *event, String *params, Cardinal *np
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void expire(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void delete(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void kill(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void faster(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void slower(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams);
@@ -163,7 +163,7 @@ static XtActionsRec actions[] =
     { "show-attachment", show_attachment },
     { "expire", expire },
     { "delete", delete },
-    { "kill", kill },
+    { "kill", do_kill },
     { "faster", faster },
     { "slower", slower },
     { "set-speed", set_speed }
@@ -395,10 +395,6 @@ static Pixel *CreateFadedColors(
 
     return result;
 }
-
-
-
-
 
 /* Re-enables the timer */
 static void EnableClock(ScrollerWidget self)
@@ -1263,7 +1259,6 @@ static void do_expose(Widget widget, XEvent *event, Region region)
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 {
-    XEvent event_holder;
     XGraphicsExposeEvent *g_event;
     ScrollerWidget self = (ScrollerWidget)widget;
 
@@ -1849,7 +1844,7 @@ static void delete(Widget widget, XEvent *event, String *params, Cardinal *npara
 }
 
 /* Kill a message and any replies */
-static void kill(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
