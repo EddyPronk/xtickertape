@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.53 1999/08/11 06:12:39 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.54 1999/08/13 13:26:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -115,9 +115,10 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
+static void draginit(Widget widget, XEvent *event);
+static void drag(Widget widget, XEvent *event);
 static void menu(Widget widget, XEvent *event);
 static void decode_mime(Widget widget, XEvent *event);
-static void drag(Widget widget, XEvent *event);
 static void expire(Widget widget, XEvent *event);
 static void delete(Widget widget, XEvent *event);
 static void faster(Widget widget, XEvent *event);
@@ -128,9 +129,10 @@ static void slower(Widget widget, XEvent *event);
  */
 static XtActionsRec actions[] =
 {
+    { "draginit", (XtActionProc)draginit },
+    { "drag", (XtActionProc)drag },
     { "menu", (XtActionProc)menu },
     { "decodeMime", (XtActionProc)decode_mime },
-    { "drag", (XtActionProc)drag },
     { "expire", (XtActionProc)expire },
     { "delete", (XtActionProc)delete },
     { "faster", (XtActionProc)faster },
@@ -143,10 +145,11 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
+    "<Btn1Down>: draginit()\n"
+    "<Btn1Motion>: drag()\n"
     "<Btn1Up>: menu()\n"
     "<Btn2Down>: decodeMime()\n"
     "<Btn3Down>: expire()\n"
-    "<Btn1Motion>: drag()\n"
     "<Key>d: expire()\n"
     "<Key>x: delete()\n"
     "<Key>q: quit()\n"
@@ -1611,6 +1614,21 @@ static void slower(Widget widget, XEvent *event)
     self -> scroller.step--;
 }
 
+/* Someone has pressed a mouse button */
+static void draginit(Widget widget, XEvent *event)
+{
+    ScrollerWidget self = (ScrollerWidget) widget;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* Record the postion of the click for future reference */
+    self -> scroller.last_x = ((XButtonEvent *) event) -> x;
+}
+
 /* Someone is dragging the mouse */
 static void drag(Widget widget, XEvent *ev)
 {
@@ -1623,13 +1641,8 @@ static void drag(Widget widget, XEvent *ev)
 	return;
     }
 
-    /* First event of a drag? */
-    if (! self -> scroller.is_dragging)
-    {
-	self -> scroller.is_dragging = True;
-	self -> scroller.last_x = event -> x;
-	return;
-    }
+    /* Note that we're dragging */
+    self -> scroller.is_dragging = True;
 
     /* If the scroller is stopped then do nothing */
     if (self -> scroller.is_stopped)
