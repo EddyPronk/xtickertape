@@ -119,6 +119,7 @@ Tickertape.scroller.translations: #override \n\
 	<Btn3Down>: expire() \n\
 	<Key>d: expire()\n\
 	<Key>x: delete()\n\
+	<Key>k: kill()\n\
 	<Key>-: slower() \n\
 	<Key>=: faster() \n\
 	Meta<Key>q: quit()\n
