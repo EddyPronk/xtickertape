@@ -26,7 +26,7 @@
   the use or performance of this software.
 
    Description: 
-             A Widget which scrolls MessageViews
+             A Widget which scrolls glyphs
 
 ****************************************************************/
 
@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.8 1999/08/30 03:47:51 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.9 1999/09/09 14:29:48 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -102,10 +102,10 @@ extern WidgetClass scrollerWidgetClass;
  *Public methods
  */
 
-#include "Message.h"
+#include "message.h"
 
 /* Adds a Message to the receiver */
-void ScAddMessage(ScrollerWidget self, Message message);
+void ScAddMessage(ScrollerWidget self, message_t message);
 
 
 #endif /* SCROLLER_H */

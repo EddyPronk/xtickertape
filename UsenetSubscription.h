@@ -35,17 +35,17 @@
 #define USENET_SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_USENET_SUBSCRIPTION_H[] = "$Id: UsenetSubscription.h,v 1.4 1999/05/22 08:35:15 phelps Exp $";
+static const char cvs_USENET_SUBSCRIPTION_H[] = "$Id: UsenetSubscription.h,v 1.5 1999/09/09 14:29:49 phelps Exp $";
 #endif /* lint */
 
 /* The UsenetSubscription data type */
 typedef struct UsenetSubscription_t *UsenetSubscription;
 
 #include <stdio.h>
-#include "Message.h"
+#include "message.h"
 #include "ElvinConnection.h"
 
-typedef void (*UsenetSubscriptionCallback)(void *context, Message message);
+typedef void (*UsenetSubscriptionCallback)(void *context, message_t message);
 
 /* Write a default `usenet' file onto the output stream */
 int UsenetSubscription_writeDefaultUsenetFile(FILE *out);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.66 1999/09/09 13:27:52 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.67 1999/09/09 14:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -561,7 +561,7 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer)
      XtRemoveTimeOut(timer);
 }
 
-/* Repaints the given MessageView (if visible) */
+/* Repaints the given glyph (if visible) */
 void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 {
     Display *display = XtDisplay((Widget) self);
@@ -1308,7 +1308,7 @@ void show_menu(Widget widget, XEvent *event)
     XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph -> get_message(glyph));
 }
 
-/* Spawn metamail to decode the Message's MIME attachment */
+/* Spawn metamail to decode the message's attachment */
 static void show_attachment(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
@@ -1328,7 +1328,7 @@ static void show_attachment(Widget widget, XEvent *event)
 }
 
 
-/* Expires a Message in short order */
+/* Expires a message in short order */
 static void expire(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
@@ -1582,7 +1582,7 @@ static void delete(Widget widget, XEvent *event)
     delete_glyph(self, glyph);
 }
 
-/* Kill a Message and any replies */
+/* Kill a message and any replies */
 static void kill(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
@@ -1693,8 +1693,8 @@ static void drag(Widget widget, XEvent *event)
  *Public methods
  */
 
-/* Adds a Message to the receiver */
-void ScAddMessage(ScrollerWidget self, Message message)
+/* Adds a message to the receiver */
+void ScAddMessage(ScrollerWidget self, message_t message)
 {
     glyph_t glyph;
     glyph_holder_t holder;
@@ -1747,8 +1747,8 @@ int ScGapWidth(ScrollerWidget self)
     return gap_width(self, self -> scroller.last_width);
 }
 
-/* Delete a Message from the receiver */
-void ScDeleteMessage(ScrollerWidget self, Message message)
+/* Delete a message from the receiver */
+void ScDeleteMessage(ScrollerWidget self, message_t message)
 {
     glyph_t glyph;
 
@@ -1758,7 +1758,7 @@ void ScDeleteMessage(ScrollerWidget self, Message message)
 	return;
     }
 
-    /* Locate the Message's glyph and delete it */
+    /* Locate the message's glyph and delete it */
     for (glyph = self -> scroller.gap -> next; glyph != self -> scroller.gap; glyph = glyph -> next)
     {
 	if (glyph -> get_message(glyph) == message)

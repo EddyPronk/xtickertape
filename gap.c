@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.5 1999/09/07 14:02:41 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.6 1999/09/09 14:29:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -59,8 +59,8 @@ static void do_free(gap_t self)
     return;
 }
 
-/* The receiver will never contain a Message */
-static Message get_message(gap_t self)
+/* The receiver will never contain a message */
+static message_t get_message(gap_t self)
 {
     return NULL;
 }

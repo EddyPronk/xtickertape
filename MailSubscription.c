@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MailSubscription.c,v 1.7 1999/08/19 05:04:57 phelps Exp $";
+static const char cvsid[] = "$Id: MailSubscription.c,v 1.8 1999/09/09 14:29:46 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -152,10 +152,10 @@ static void GetNameFromEmail(StringBuffer buffer, char *email)
 }
 
 
-/* Transforms an e-mail notification into a Message and delivers it */
+/* Transforms an e-mail notification into a message_t and delivers it */
 static void HandleNotify(MailSubscription self, en_notify_t notification)
 {
-    Message message;
+    message_t message;
     StringBuffer buffer;
     en_type_t type;
     char *from;
@@ -218,10 +218,10 @@ static void HandleNotify(MailSubscription self, en_notify_t notification)
 	folder = "mail";
     }
 
-    /* Construct a Message and deliver it */
-    message = Message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
+    /* Construct a message_t and deliver it */
+    message = message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
     (*self -> callback)(self -> context, message);
-    Message_free(message);
+    message_free(message);
 
 #ifndef HAVE_ALLOCA
     free(from);

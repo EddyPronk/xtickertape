@@ -34,17 +34,17 @@
 #define ORBIT_SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_ORBIT_SUBSCRIPTION_H[] = "$Id: OrbitSubscription.h,v 1.3 1998/12/24 05:48:29 phelps Exp $";
+static const char cvs_ORBIT_SUBSCRIPTION_H[] = "$Id: OrbitSubscription.h,v 1.4 1999/09/09 14:29:48 phelps Exp $";
 #endif /* lint */
 
 /* The OrbitSubscription data type */
 typedef struct OrbitSubscription_t *OrbitSubscription;
 
-#include "Message.h"
+#include "message.h"
 #include "ElvinConnection.h"
 #include "Control.h"
 
-typedef void (*OrbitSubscriptionCallback)(void *context, Message message);
+typedef void (*OrbitSubscriptionCallback)(void *context, message_t message);
 
 
 

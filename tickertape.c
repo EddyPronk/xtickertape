@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.13 1999/08/30 03:49:20 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.14 1999/09/09 14:29:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,7 +40,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.13 1999/08/30 03:49:20 phelps
 #include <errno.h>
 #include <X11/Intrinsic.h>
 #include "sanity.h"
-#include "Message.h"
+#include "message.h"
 #include "history.h"
 #include "tickertape.h"
 #include "Hash.h"
@@ -120,8 +120,8 @@ struct tickertape
  */
 static int mkdirhier(char *dirname);
 static void publish_startup_notification(tickertape_t self);
-static void menu_callback(Widget widget, tickertape_t self, Message message);
-static void receive_callback(tickertape_t self, Message message);
+static void menu_callback(Widget widget, tickertape_t self, message_t message);
+static void receive_callback(tickertape_t self, message_t message);
 static List read_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
 static void disconnect_callback(tickertape_t self, ElvinConnection connection);
@@ -214,7 +214,7 @@ static void publish_startup_notification(tickertape_t self)
 }
 
 /* Callback for a menu() action in the Scroller */
-static void menu_callback(Widget widget, tickertape_t self, Message message)
+static void menu_callback(Widget widget, tickertape_t self, message_t message)
 {
     SANITY_CHECK(self);
     ControlPanel_select(self -> control_panel, message);
@@ -222,7 +222,7 @@ static void menu_callback(Widget widget, tickertape_t self, Message message)
 }
 
 /* Callback for an action() action in the Scroller */
-static void mime_callback(Widget widget, tickertape_t self, Message message)
+static void mime_callback(Widget widget, tickertape_t self, message_t message)
 {
     SANITY_CHECK(self);
 
@@ -237,7 +237,7 @@ static void mime_callback(Widget widget, tickertape_t self, Message message)
 }
 
 /* Callback for a kill() action in the Scroller */
-static void kill_callback(Widget widget, tickertape_t self, Message message)
+static void kill_callback(Widget widget, tickertape_t self, message_t message)
 {
     SANITY_CHECK(self);
 
@@ -249,8 +249,8 @@ static void kill_callback(Widget widget, tickertape_t self, Message message)
     history_kill_thread(self -> history, self -> scroller, message);
 }
 
-/* Receive a Message matched by Subscription */
-static void receive_callback(tickertape_t self, Message message)
+/* Receive a message_t matched by Subscription */
+static void receive_callback(tickertape_t self, message_t message)
 {
     SANITY_CHECK(self);
 
@@ -436,7 +436,7 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
     char *host;
     int port;
     char *buffer;
-    Message message;
+    message_t message;
     SANITY_CHECK(self);
 
     /* Construct a reconnect message */
@@ -446,9 +446,9 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
     sprintf(buffer, "Connected to elvin server at %s:%d.", host, port);
 
     /* Display the message on the scroller */
-    message = Message_alloc(NULL, "internal", "tickertape", buffer, 30, NULL, NULL, 0, 0);
+    message = message_alloc(NULL, "internal", "tickertape", buffer, 30, NULL, NULL, 0, 0);
     receive_callback(self, message);
-    Message_free(message);
+    message_free(message);
 
     /* Release our connect message */
     free(buffer);
@@ -461,7 +461,7 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
 static void disconnect_callback(tickertape_t self, ElvinConnection connection)
 {
     StringBuffer buffer;
-    Message message;
+    message_t message;
     SANITY_CHECK(self);
 
     /* Construct a disconnect message */
@@ -493,14 +493,14 @@ static void disconnect_callback(tickertape_t self, ElvinConnection connection)
     }
 
     /* Display the message on the scroller */
-    message = Message_alloc(
+    message = message_alloc(
 	NULL,
 	"internal", "tickertape",
 	StringBuffer_getBuffer(buffer), 10,
 	NULL, NULL,
 	0, 0);
     receive_callback(self, message);
-    Message_free(message);
+    message_free(message);
 
     StringBuffer_free(buffer);
 }
@@ -900,8 +900,8 @@ static FILE *tickertape_usenet_file(tickertape_t self)
     return fopen(filename, "r");
 }
 
-/* Displays a Message's MIME attachment */
-int tickertape_show_attachment(tickertape_t self, Message message)
+/* Displays a message's MIME attachment */
+int tickertape_show_attachment(tickertape_t self, message_t message)
 {
 #ifdef METAMAIL
     char *mime_type;
@@ -911,8 +911,8 @@ int tickertape_show_attachment(tickertape_t self, Message message)
     FILE *file;
 
     /* If the message has no attachment then we're done */
-    if (((mime_type = Message_getMimeType(message)) == NULL) ||
-	((mime_args = Message_getMimeArgs(message)) == NULL))
+    if (((mime_type = message_get_mime_type(message)) == NULL) ||
+	((mime_args = message_get_mime_args(message)) == NULL))
     {
 #ifdef DEBUG
 	printf("no attachment\n");

@@ -31,13 +31,13 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.3 1999/08/17 17:59:49 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.4 1999/09/09 14:29:49 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
 
 #include "Scroller.h"
-#include "Message.h"
+#include "message.h"
 
 /*
  * The signature of the function which allocates another reference to
@@ -52,10 +52,10 @@ typedef glyph_t (*alloc_method_t)(glyph_t glyph);
 typedef void (*free_method_t)(glyph_t glyph);
 
 /*
- * The signature of a function which returns the Message represented
+ * The signature of a function which returns the message_t represented
  * by the glyph.
  */
-typedef Message (*message_method_t)(glyph_t glyph);
+typedef message_t (*message_method_t)(glyph_t glyph);
 
 /*
  * The signature of a function which computes and returns the glyph's
@@ -110,6 +110,6 @@ struct glyph
 glyph_t gap_alloc(ScrollerWidget widget);
 
 /* Allocates and initializes a new message_view glyph */
-glyph_t message_glyph_alloc(ScrollerWidget widget, Message message);
+glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message);
 
 #endif /* GLYPH_H */

@@ -11,7 +11,7 @@ xtickertape_SOURCES = \
 	Control.h Control.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	ElvinConnection.h ElvinConnection.c \
-	Message.h Message.c \
+	message.h message.c \
 	groups.h Subscription.h Subscription.c \
 	usenet.h UsenetSubscription.h UsenetSubscription.c \
 	MailSubscription.h MailSubscription.c \

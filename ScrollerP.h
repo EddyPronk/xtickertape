@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.23 1999/09/09 13:28:11 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.24 1999/09/09 14:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -131,19 +131,19 @@ typedef struct
     GC gc;
 
     /* The array of Pixels used to display the separator portion of a
-     * Message at varying degrees of fading */
+     * message at varying degrees of fading */
     Pixel *separatorPixels;
 
     /* The array of Pixels used to display the group portion of a
-     * Message at varying degrees of fading */
+     * message at varying degrees of fading */
     Pixel *groupPixels;
 
     /* The array of Pixels used to display the user portion of a
-     * Message at varying degrees of fading */
+     * message at varying degrees of fading */
     Pixel *userPixels;
 
     /* The array of Pixels used to display the string portion of a
-     * Message at varying degrees of fading */
+     * message at varying degrees of fading */
     Pixel *stringPixels;
 
 } ScrollerPart;
@@ -207,7 +207,7 @@ void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
 /* Answers the width of the gap glyph */
 int ScGapWidth(ScrollerWidget self);
 
-/* Delete a Message from the receiver */
-void ScDeleteMessage(ScrollerWidget self, Message message);
+/* Delete a message from the receiver */
+void ScDeleteMessage(ScrollerWidget self, message_t message);
 
 #endif /* SCROLLERP_H */

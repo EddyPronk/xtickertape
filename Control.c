@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.49 1999/08/29 14:16:28 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.50 1999/09/09 14:29:45 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -125,10 +125,10 @@ struct ControlPanel_t
     Widget defaultTimeout;
 
     /* The receiver's mime menu button */
-    Widget mimeType;
+    Widget mime_type;
 
     /* The receiver's mime args text widget */
-    Widget mimeArgs;
+    Widget mime_args;
 
     /* The receiver's text text widget */
     Widget text;
@@ -155,7 +155,7 @@ struct ControlPanel_t
     char **timeouts;
 
     /* The message to which we are replying (0 if none) */
-    char *messageId;
+    char *message_id;
 };
 
 
@@ -189,13 +189,13 @@ static int GetTimeout(ControlPanel self);
 static void SetMimeArgs(ControlPanel self, char *args);
 static char *GetMimeArgs(ControlPanel self);
 static char *GetMimeType(ControlPanel self);
-Message ConstructMessage(ControlPanel self);
+message_t ConstructMessage(ControlPanel self);
 static void ActionSend(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionClear(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruct *cbs);
 static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored);
-static void prepare_reply(ControlPanel self, Message message);
+static void prepare_reply(ControlPanel self, message_t message);
 
 
 /* This gets called when the user selects the "reloadGroups" menu item */
@@ -504,7 +504,7 @@ static Widget CreateTimeoutMenu(ControlPanel self, Widget parent)
 /* This is called when an item in the history list is selected */
 void history_selection_callback(Widget widget, ControlPanel self, XmListCallbackStruct *info)
 {
-    Message message;
+    message_t message;
 
     /* Reconfigure to reply to the selected message (or lack thereof) */
     message = history_get(tickertape_history(self -> tickertape), info -> item_position);
@@ -514,7 +514,7 @@ void history_selection_callback(Widget widget, ControlPanel self, XmListCallback
 /* This is called when an item in the history is double-clicked */
 void history_action_callback(Widget widget, ControlPanel self, XmListCallbackStruct *info)
 {
-    Message message;
+    message_t message;
 
     /* Figure out which message was selected */
     if ((message = history_get(tickertape_history(self -> tickertape), info -> item_position)) == NULL)
@@ -653,7 +653,7 @@ static Widget CreateMimeTypeMenu(ControlPanel self, Widget parent)
     /* Create an Option menu button with the above menu */
     XtSetArg(args[0], XmNsubMenuId, pulldown);
     XtSetArg(args[1], XmNtraversalOn, False);
-    widget = XmCreateOptionMenu(parent, "mimeType", args, 2);
+    widget = XmCreateOptionMenu(parent, "mime_type", args, 2);
 
     /* Add the old URL mime type to it */
     XtVaCreateManagedWidget(
@@ -675,26 +675,26 @@ static void CreateMimeBox(ControlPanel self, Widget parent)
 {
     SANITY_CHECK(self);
 
-    self -> mimeType = CreateMimeTypeMenu(self, parent);
+    self -> mime_type = CreateMimeTypeMenu(self, parent);
     XtVaSetValues(
-	self -> mimeType,
+	self -> mime_type,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_FORM,
 	XmNbottomAttachment, XmATTACH_FORM,
 	NULL);
 
-    self -> mimeArgs = XtVaCreateManagedWidget(
-	"mimeArgs", xmTextFieldWidgetClass, parent,
+    self -> mime_args = XtVaCreateManagedWidget(
+	"mime_args", xmTextFieldWidgetClass, parent,
 	XmNtraversalOn, True,
 	XmNleftAttachment, XmATTACH_WIDGET,
 	XmNrightAttachment, XmATTACH_FORM,
-	XmNleftWidget, self -> mimeType,
+	XmNleftWidget, self -> mime_type,
 	NULL);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
     XtAddCallback(
-	self -> mimeArgs, XmNactivateCallback,
+	self -> mime_args, XmNactivateCallback,
 	(XtCallbackProc)ActionReturn, (XtPointer)self);
 }
 
@@ -890,10 +890,10 @@ static void SelectGroup(Widget widget, MenuItemTuple tuple, XtPointer ignored)
     }
 
     /* Changing the group prevents a reply */
-    if (self -> messageId != NULL)
+    if (self -> message_id != NULL)
     {
-	free(self -> messageId);
-	self -> messageId = NULL;
+	free(self -> message_id);
+	self -> message_id = NULL;
     }
 }
 
@@ -987,7 +987,7 @@ static void SetMimeArgs(ControlPanel self, char *args)
 {
     SANITY_CHECK(self);
 
-    XmTextSetString(self -> mimeArgs, args);
+    XmTextSetString(self -> mime_args, args);
 }
 
 /* Answers the receiver's MIME args */
@@ -996,7 +996,7 @@ static char *GetMimeArgs(ControlPanel self)
     char *args;
     SANITY_CHECK(self);
 
-    XtVaGetValues(self -> mimeArgs, XmNvalue, &args, NULL);
+    XtVaGetValues(self -> mime_args, XmNvalue, &args, NULL);
 
     if (*args != '\0')
     {
@@ -1012,14 +1012,14 @@ static char *GetMimeArgs(ControlPanel self)
 static char *GetMimeType(ControlPanel self)
 {
     XmString string;
-    char *mimeType;
+    char *mime_type;
     SANITY_CHECK(self);
 
-    XtVaGetValues(XmOptionButtonGadget(self -> mimeType), XmNlabelString, &string, NULL);
-    XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &mimeType);
+    XtVaGetValues(XmOptionButtonGadget(self -> mime_type), XmNlabelString, &string, NULL);
+    XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &mime_type);
     XmStringFree(string);
 
-    return mimeType;
+    return mime_type;
 }
 
 
@@ -1053,34 +1053,34 @@ char *GenerateUUID(ControlPanel self)
 }
 
 /* Answers a message based on the receiver's current state */
-Message ConstructMessage(ControlPanel self)
+message_t ConstructMessage(ControlPanel self)
 {
-    char *mimeType;
-    char *mimeArgs;
+    char *mime_type;
+    char *mime_args;
     char *uuid;
-    Message message;
+    message_t message;
     SANITY_CHECK(self);
 
     /* Determine our MIME args */
-    mimeType = GetMimeType(self);
-    mimeArgs = GetMimeArgs(self);
+    mime_type = GetMimeType(self);
+    mime_args = GetMimeArgs(self);
     uuid = GenerateUUID(self);
 
     /* Construct a message */
-    message = Message_alloc(
+    message = message_alloc(
 	self -> selection,
 	self -> selection -> title,
 	GetUser(self),
 	GetText(self),
 	GetTimeout(self),
-	(mimeArgs == NULL) ? NULL : mimeType,
-	mimeArgs,
+	(mime_args == NULL) ? NULL : mime_type,
+	mime_args,
 	uuid,
-	self -> messageId);
+	self -> message_id);
 
-    if (mimeType != NULL)
+    if (mime_type != NULL)
     {
-	XtFree(mimeType);
+	XtFree(mime_type);
     }
 
     free(uuid);
@@ -1100,9 +1100,9 @@ static void ActionSend(Widget button, ControlPanel self, XtPointer ignored)
 
     if (self -> selection != NULL)
     {
-	Message message = ConstructMessage(self);
+	message_t message = ConstructMessage(self);
 	(*self -> selection -> callback)(self -> selection -> context, message);
-	Message_free(message);
+	message_free(message);
     }
 
     XtPopdown(self -> top);
@@ -1128,7 +1128,7 @@ static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored)
 }
 
 
-/* Call back for the Return key in the text and mimeArgs fields */
+/* Call back for the Return key in the text and mime_args fields */
 static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruct *cbs)
 {
     SANITY_CHECK(self);
@@ -1174,8 +1174,8 @@ ControlPanel ControlPanel_alloc(tickertape_t tickertape, Widget parent)
     self -> groupMenu = NULL;
     self -> timeout = NULL;
     self -> defaultTimeout = NULL;
-    self -> mimeType = NULL;
-    self -> mimeArgs = NULL;
+    self -> mime_type = NULL;
+    self -> mime_args = NULL;
     self -> text = NULL;
     self -> send = NULL;
     self -> history = NULL;
@@ -1183,7 +1183,7 @@ ControlPanel ControlPanel_alloc(tickertape_t tickertape, Widget parent)
     self -> selection = NULL;
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
-    self -> messageId = NULL;
+    self -> message_id = NULL;
 
     /* Initialize the UI */
     InitializeUserInterface(self, parent);
@@ -1360,31 +1360,31 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
 }
 
 /* Sets up the receiver to reply to the given message */
-static void prepare_reply(ControlPanel self, Message message)
+static void prepare_reply(ControlPanel self, message_t message)
 {
     MenuItemTuple tuple;
     SANITY_CHECK(self);
 
     /* Free the old message id */
-    free(self -> messageId);
-    self -> messageId = NULL;
+    free(self -> message_id);
+    self -> message_id = NULL;
 
-    /* If a Message was provided that is in the menu, then select it
-     * and set the messageId so that we can do threading */
+    /* If a message_t was provided that is in the menu, then select it
+     * and set the message_id so that we can do threading */
     if (message != NULL)
     {
 	char *id;
 
-	if ((tuple = (MenuItemTuple) Message_getInfo(message)) != NULL)
+	if ((tuple = (MenuItemTuple) message_get_info(message)) != NULL)
 	{
 	    self -> selection = tuple;
 	    SetGroupSelection(self, tuple);
 	}
 
-	id = Message_getId(message);
+	id = message_get_id(message);
 	if (id != NULL)
 	{
-	    self -> messageId = strdup(id);
+	    self -> message_id = strdup(id);
 	}
     }
 }
@@ -1418,7 +1418,7 @@ static void make_index_visible(Widget list, int index)
 }
 
 /* Makes the ControlPanel window visible */
-void ControlPanel_select(ControlPanel self, Message message)
+void ControlPanel_select(ControlPanel self, message_t message)
 {
     int index;
 

@@ -31,7 +31,7 @@
 #define CONTROLPANEL_H
 
 #ifndef lint
-static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.14 1999/08/19 07:29:29 phelps Exp $";
+static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.15 1999/09/09 14:29:46 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -42,11 +42,11 @@ static const char cvs_CONTROLPANEL_H[] = "$Id: Control.h,v 1.14 1999/08/19 07:29
 /* The ControlPanel datatype */
 typedef struct ControlPanel_t *ControlPanel;
 
-#include "Message.h"
+#include "message.h"
 #include "tickertape.h"
 
 /* The ControlPanelCallback type */
-typedef void (*ControlPanelCallback)(void *context, Message message);
+typedef void (*ControlPanelCallback)(void *context, message_t message);
 
 /* The ReloadCallback type */
 typedef void (*ReloadCallback)(void *context);
@@ -72,7 +72,7 @@ void ControlPanel_setSubscriptionIndex(ControlPanel self, void *info, int index)
 void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title);
 
 /* Makes the ControlPanel window visible */
-void ControlPanel_select(ControlPanel self, Message message);
+void ControlPanel_select(ControlPanel self, message_t message);
 
 /* Makes the ControlPanel window visible */
 void ControlPanel_show(ControlPanel self);

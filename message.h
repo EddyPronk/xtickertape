@@ -35,65 +35,65 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: Message.h,v 1.14 1999/08/22 06:22:40 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.1 1999/09/09 14:29:50 phelps Exp $";
 #endif /* lint */
 
-/* The Message pointer type */
-typedef struct Message_t *Message;
+/* The message_t type */
+typedef struct message *message_t;
 
 /* Creates and returns a new message */
-Message Message_alloc(
+message_t message_alloc(
     void *info,
     char *group,
     char *user,
     char *string,
     unsigned int timeout,
-    char *mimeType,
-    char *mimeArgs,
+    char *mime_type,
+    char *mime_args,
     char *id,
-    char *replyId);
+    char *reply_id);
 
-/* Allocates another reference to the Message */
-Message Message_allocReference(Message self);
+/* Allocates another reference to the message_t */
+message_t message_alloc_reference(message_t self);
 
 /* Frees the memory used by the receiver */
-void Message_free(Message self);
+void message_free(message_t self);
 
 /* Prints debugging information */
-void Message_debug(Message self);
+void message_debug(message_t self);
 
 
 /* Answers the Subscription info for the receiver's subscription */
-void *Message_getInfo(Message self);
+void *message_get_info(message_t self);
 
 /* Answers the receiver's group */
-char *Message_getGroup(Message self);
+char *message_get_group(message_t self);
 
 /* Answers the receiver's user */
-char *Message_getUser(Message self);
+char *message_get_user(message_t self);
 
 /* Answers the receiver's string */
-char *Message_getString(Message self);
+char *message_get_string(message_t self);
 
 /* Answers the receiver's timout in minutes */
-unsigned long Message_getTimeout(Message self);
+unsigned long message_get_timeout(message_t self);
 
 /* Sets the receiver's timeout in minutes*/
-void Message_setTimeout(Message self, unsigned long timeout);
+void message_set_timeout(message_t self, unsigned long timeout);
 
 /* Answers non-zero if the receiver has a MIME attachment */
-int Message_hasAttachment(Message self);
+int message_has_attachment(message_t self);
 
 /* Answers the receiver's MIME-type string */
-char *Message_getMimeType(Message self);
+char *message_get_mime_type(message_t self);
 
 /* Answers the receiver's MIME arguments */
-char *Message_getMimeArgs(Message self);
+char *message_get_mime_args(message_t self);
 
 /* Answers the receiver's id */
-char *Message_getId(Message self);
+char *message_get_id(message_t self);
 
 /* Answers the id of the message for which this is a reply */
-char *Message_getReplyId(Message self);
+char *message_get_reply_id(message_t self);
 
 #endif /* MESSAGE_H */

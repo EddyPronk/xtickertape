@@ -39,7 +39,7 @@ typedef struct history *history_t;
 
 #include <Xm/Xm.h>
 #include <Scroller.h>
-#include "Message.h"
+#include "message.h"
 
 /* Allocates and initializes a new empty history */
 history_t history_alloc();
@@ -55,15 +55,15 @@ void history_set_threaded(history_t self, int is_threaded);
 
 
 /* Adds a message to the end of the history */
-int history_add(history_t self, Message message);
+int history_add(history_t self, message_t message);
 
-/* Answers the Message at the given index */
-Message history_get(history_t self, int index);
+/* Answers the message at the given index */
+message_t history_get(history_t self, int index);
 
-/* Answers the index of given Message in the history */
-int history_index(history_t self, Message message);
+/* Answers the index of given message in the history */
+int history_index(history_t self, message_t message);
 
 /* Kill off a thread */
-void history_kill_thread(history_t self, ScrollerWidget scroller, Message message);
+void history_kill_thread(history_t self, ScrollerWidget scroller, message_t message);
 
 #endif /* HISTORY_H */

@@ -28,31 +28,21 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.22 1999/08/27 08:30:34 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.1 1999/09/09 14:29:50 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sanity.h"
-#include "Message.h"
+#include "message.h"
 
-
-#ifdef SANITY
-static char *sanity_value = "Message";
-static char *sanity_freed = "Freed Message";
-#endif /* SANITY */
 
 #ifdef DEBUG
 static long message_count;
 #endif /* DEBUG */
 
-struct Message_t
+struct message
 {
-#ifdef SANITY
-    char *sanity_check;
-#endif /* SANITY */
-
     /* The receiver's reference count */
     int ref_count;
 
@@ -69,10 +59,10 @@ struct Message_t
     char *string;
 
     /* The receiver's MIME type information */
-    char *mimeType;
+    char *mime_type;
 
     /* The receiver's MIME arg */
-    char *mimeArgs;
+    char *mime_args;
 
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
@@ -81,27 +71,24 @@ struct Message_t
     char *id;
 
     /* The identifier for the message for which this is a reply */
-    char *replyId;
+    char *reply_id;
 };
 
 
 /* Creates and returns a new message */
-Message Message_alloc(
+message_t message_alloc(
     void *info,
     char *group,
     char *user,
     char *string,
     unsigned int timeout,
-    char *mimeType,
-    char *mimeArgs,
+    char *mime_type,
+    char *mime_args,
     char *id,
-    char *replyId)
+    char *reply_id)
 {
-    Message self = (Message) malloc(sizeof(struct Message_t));
+    message_t self = (message_t) malloc(sizeof(struct message));
 
-#ifdef SANITY
-    self -> sanity_check = sanity_value;
-#endif /* SANITY */
     self -> ref_count = 1;
     self -> info = info;
     self -> group = strdup(group);
@@ -109,25 +96,25 @@ Message Message_alloc(
     self -> string = strdup(string);
 
 #ifdef DEBUG
-    printf("allocated Message %p (%ld)\n", self, ++message_count);
+    printf("allocated message_t %p (%ld)\n", self, ++message_count);
 #endif /* DEBUG */
 
-    if (mimeType == NULL)
+    if (mime_type == NULL)
     {
-	self -> mimeType = NULL;
+	self -> mime_type = NULL;
     }
     else
     {
-	self -> mimeType = strdup(mimeType);
+	self -> mime_type = strdup(mime_type);
     }
 
-    if (mimeArgs == NULL)
+    if (mime_args == NULL)
     {
-	self -> mimeArgs = NULL;
+	self -> mime_args = NULL;
     }
     else
     {
-	self -> mimeArgs = strdup(mimeArgs);
+	self -> mime_args = strdup(mime_args);
     }
 
     self -> timeout = timeout;
@@ -141,30 +128,28 @@ Message Message_alloc(
 	self -> id = NULL;
     }
 
-    if (replyId != NULL)
+    if (reply_id != NULL)
     {
-	self -> replyId = strdup(replyId);
+	self -> reply_id = strdup(reply_id);
     }
     else
     {
-	self -> replyId = NULL;
+	self -> reply_id = NULL;
     }
 
     return self;
 }
 
-/* Allocates another reference to the Message */
-Message Message_allocReference(Message self)
+/* Allocates another reference to the message_t */
+message_t message_alloc_reference(message_t self)
 {
     self -> ref_count++;
     return self;
 }
 
 /* Frees the memory used by the receiver */
-void Message_free(Message self)
+void message_free(message_t self)
 {
-    SANITY_CHECK(self);
-
     /* Decrement the reference count */
     if (--self -> ref_count > 0)
     {
@@ -172,8 +157,8 @@ void Message_free(Message self)
     }
 
 #ifdef DEBUG
-    printf("freeing Message %p (%ld):\n", self, --message_count);
-    Message_debug(self);
+    printf("freeing message_t %p (%ld):\n", self, --message_count);
+    message_debug(self);
 #endif /* DEBUG */
 
     /* Out of references -- release the hounds! */
@@ -195,16 +180,16 @@ void Message_free(Message self)
 	self -> string = NULL;
     }
 
-    if (self -> mimeType != NULL)
+    if (self -> mime_type != NULL)
     {
-	free(self -> mimeType);
-	self -> mimeType = NULL;
+	free(self -> mime_type);
+	self -> mime_type = NULL;
     }
 
-    if (self -> mimeArgs != NULL)
+    if (self -> mime_args != NULL)
     {
-	free(self -> mimeArgs);
-	self -> mimeArgs = NULL;
+	free(self -> mime_args);
+	self -> mime_args = NULL;
     }
 
     if (self -> id != NULL)
@@ -213,116 +198,97 @@ void Message_free(Message self)
 	self -> id = NULL;
     }
 
-    if (self -> replyId != NULL)
+    if (self -> reply_id != NULL)
     {
-	free(self -> replyId);
-	self -> replyId = NULL;
+	free(self -> reply_id);
+	self -> reply_id = NULL;
     }
 
-#ifdef SANITY
-    self -> sanity_check = sanity_freed;
-#else /* SANITY */
     free(self);
-#endif /* SANITY */
 }
 
 
 /* Prints debugging information */
-void Message_debug(Message self)
+void message_debug(message_t self)
 {
-    SANITY_CHECK(self);
-
-    printf("Message (%p)\n", self);
-#ifdef SANITY
-    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
-#endif /* SANITY */
+    printf("message_t (%p)\n", self);
     printf("  info = 0x%p\n", self -> info);
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
-    printf("  mimeType = \"%s\"\n", (self -> mimeType == NULL) ? "<null>" : self -> mimeType);
-    printf("  mimeArgs = \"%s\"\n", (self -> mimeArgs == NULL) ? "<null>" : self -> mimeArgs);
+    printf("  mime_type = \"%s\"\n", (self -> mime_type == NULL) ? "<null>" : self -> mime_type);
+    printf("  mime_args = \"%s\"\n", (self -> mime_args == NULL) ? "<null>" : self -> mime_args);
     printf("  timeout = %ld\n", self -> timeout);
     printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
-    printf("  replyId = \"%s\"\n", (self -> replyId == NULL) ? "<null>" : self -> replyId);
+    printf("  reply_id = \"%s\"\n", (self -> reply_id == NULL) ? "<null>" : self -> reply_id);
 }
 
 
 
 /* Answers the Subscription matched to generate the receiver */
-void *Message_getInfo(Message self)
+void *message_get_info(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> info;
 }
 
 /* Answers the receiver's group */
-char *Message_getGroup(Message self)
+char *message_get_group(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> group;
 }
 
 /* Answers the receiver's user */
-char *Message_getUser(Message self)
+char *message_get_user(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> user;
 }
 
 
 /* Answers the receiver's string */
-char *Message_getString(Message self)
+char *message_get_string(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> string;
 }
 
 /* Answers the receiver's timout */
-unsigned long Message_getTimeout(Message self)
+unsigned long message_get_timeout(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> timeout;
 }
 
 /* Sets the receiver's timeout */
-void Message_setTimeout(Message self, unsigned long timeout)
+void message_set_timeout(message_t self, unsigned long timeout)
 {
-    SANITY_CHECK(self);
     self -> timeout = timeout;
 }
 
 /* Answers non-zero if the receiver has a MIME attachment */
-int Message_hasAttachment(Message self)
+int message_has_attachment(message_t self)
 {
-    return (self -> mimeArgs != NULL);
+    return (self -> mime_args != NULL);
 }
 
 /* Answers the receiver's MIME-type string */
-char *Message_getMimeType(Message self)
+char *message_get_mime_type(message_t self)
 {
-    SANITY_CHECK(self);
-    return self -> mimeType;
+    return self -> mime_type;
 }
 
 /* Answers the receiver's MIME arguments */
-char *Message_getMimeArgs(Message self)
+char *message_get_mime_args(message_t self)
 {
-    SANITY_CHECK(self);
-    return self -> mimeArgs;
+    return self -> mime_args;
 }
 
 /* Answers the receiver's id */
-char *Message_getId(Message self)
+char *message_get_id(message_t self)
 {
-    SANITY_CHECK(self);
     return self -> id;
 }
 
-/* Answers the id of the message for which this is a reply */
-char *Message_getReplyId(Message self)
+/* Answers the id of the message_t for which this is a reply */
+char *message_get_reply_id(message_t self)
 {
-    SANITY_CHECK(self);
-    return self -> replyId;
+    return self -> reply_id;
 }
 

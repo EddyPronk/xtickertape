@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.32 1999/08/22 06:22:42 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.33 1999/09/09 14:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -109,7 +109,7 @@ static Subscription ReadNextSubscription(
     FileStreamTokenizer tokenizer, char *firstToken,
     SubscriptionCallback callback, void *context);
 static void HandleNotify(Subscription self, en_notify_t notification);
-static void SendMessage(Subscription self, Message message);
+static void SendMessage(Subscription self, message_t message);
 
 
 /*
@@ -324,16 +324,16 @@ static Subscription ReadNextSubscription(
 /* Delivers a notification which matches the receiver's subscription expression */
 static void HandleNotify(Subscription self, en_notify_t notification)
 {
-    Message message;
+    message_t message;
     en_type_t type;
     char *user;
     char *text;
     void *value;
     int32 timeout;
-    char *mimeType;
-    char *mimeArgs;
-    char *messageId;
-    char *replyId;
+    char *mime_type;
+    char *mime_args;
+    char *message_id;
+    char *reply_id;
     SANITY_CHECK(self);
 
     /* If we don't have a callback then just quit now */
@@ -409,85 +409,85 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     }
 
     /* Get the MIME type (if provided) */
-    if ((en_search(notification, "MIME_TYPE", &type, (void **)&mimeType) != 0) ||
+    if ((en_search(notification, "MIME_TYPE", &type, (void **)&mime_type) != 0) ||
 	(type != EN_STRING))
     {
-	mimeType = NULL;
+	mime_type = NULL;
     }
 
     /* Get the MIME args (if provided) */
-    if ((en_search(notification, "MIME_ARGS", &type, (void **)&mimeArgs) != 0) ||
+    if ((en_search(notification, "MIME_ARGS", &type, (void **)&mime_args) != 0) ||
 	(type != EN_STRING))
     {
-	mimeArgs = NULL;
+	mime_args = NULL;
     }
 
     /* Get the message id (if provided) */
-    if ((en_search(notification, "Message-Id", &type, (void **)&messageId) != 0) ||
+    if ((en_search(notification, "Message-Id", &type, (void **)&message_id) != 0) ||
 	(type != EN_STRING))
     {
-	messageId = NULL;
+	message_id = NULL;
     }
 
     /* Get the reply id (if provided) */
-    if ((en_search(notification, "In-Reply-To", &type, (void **)&replyId) != 0) ||
+    if ((en_search(notification, "In-Reply-To", &type, (void **)&reply_id) != 0) ||
 	(type != EN_STRING))
     {
-	replyId = NULL;
+	reply_id = NULL;
     }
 
     /* Construct a message */
-    message = Message_alloc(
+    message = message_alloc(
 	self -> controlPanelInfo, self -> group,
 	user, text, (unsigned long) timeout,
-	mimeType, mimeArgs,
-	messageId, replyId);
+	mime_type, mime_args,
+	message_id, reply_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> context, message);
 
     /* Release our reference to the message */
-    Message_free(message);
+    message_free(message);
 }
 
-/* Sends a Message via this Subscription */
-static void SendMessage(Subscription self, Message message)
+/* Sends a message_t via this Subscription */
+static void SendMessage(Subscription self, message_t message)
 {
     en_notify_t notification;
     int32 timeout;
-    char *messageId;
-    char *replyId;
-    char *mimeArgs;
-    char *mimeType;
+    char *message_id;
+    char *reply_id;
+    char *mime_args;
+    char *mime_type;
     
     SANITY_CHECK(self);
 
     /* Pull information out of the message */
-    timeout = Message_getTimeout(message);
-    messageId = Message_getId(message);
-    replyId = Message_getReplyId(message);
-    mimeArgs = Message_getMimeArgs(message);
-    mimeType = Message_getMimeType(message);
+    timeout = message_get_timeout(message);
+    message_id = message_get_id(message);
+    reply_id = message_get_reply_id(message);
+    mime_args = message_get_mime_args(message);
+    mime_type = message_get_mime_type(message);
 
     /* Use it to construct a notification */
     notification = en_new();
     en_add_string(notification, "xtickertape.version", VERSION);
     en_add_string(notification, "TICKERTAPE", self -> group);
-    en_add_string(notification, "USER", Message_getUser(message));
+    en_add_string(notification, "USER", message_get_user(message));
     en_add_int32(notification, "TIMEOUT", timeout);
-    en_add_string(notification, "TICKERTEXT", Message_getString(message));
-    en_add_string(notification, "Message-Id", messageId);
+    en_add_string(notification, "TICKERTEXT", message_get_string(message));
+    en_add_string(notification, "Message-Id", message_id);
 
-    if (replyId != NULL)
+    if (reply_id != NULL)
     {
-	en_add_string(notification, "In-Reply-To", replyId);
+	en_add_string(notification, "In-Reply-To", reply_id);
     }
 
-    /* Add mime information if both mimeArgs and mimeType are provided */
-    if ((mimeArgs != NULL) && (mimeType != NULL))
+    /* Add mime information if both mime_args and mime_type are provided */
+    if ((mime_args != NULL) && (mime_type != NULL))
     {
-	en_add_string(notification, "MIME_ARGS", mimeArgs);
-	en_add_string(notification, "MIME_TYPE", mimeType);
+	en_add_string(notification, "MIME_ARGS", mime_args);
+	en_add_string(notification, "MIME_TYPE", mime_type);
     }
 
     ElvinConnection_send(self -> connection, notification);

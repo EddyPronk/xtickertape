@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.21 1999/08/19 05:04:58 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.22 1999/09/09 14:29:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -566,17 +566,17 @@ static void ReadUsenetFile(FILE *file, StringBuffer buffer)
 }
 
 
-/* Transforms a usenet notification into a Message and delivers it */
+/* Transforms a usenet notification into a message and delivers it */
 static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 {
-    Message message;
+    message_t message;
     en_type_t type;
     char *string;
     char *newsgroups;
     char *name;
     char *subject;
-    char *mimeType;
-    char *mimeArgs;
+    char *mime_type;
+    char *mime_args;
 
     /* Get the newsgroups to which the message was posted */
     if ((en_search(notification, NEWSGROUPS, &type, (void **)&string) != 0) ||
@@ -618,18 +618,18 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
     /* Construct the mime attachment information (if provided) */
 
     /* Get the MIME_ARGS field to use as the mime args (if provided) */
-    if ((en_search(notification, MIME_ARGS, &type, (void **)&mimeArgs) == 0) &&
+    if ((en_search(notification, MIME_ARGS, &type, (void **)&mime_args) == 0) &&
 	(type == EN_STRING))
     {
 	/* Get the MIME_TYPE field (if provided) */
-	if ((en_search(notification, MIME_TYPE, &type, (void **)&mimeType) != 0) ||
+	if ((en_search(notification, MIME_TYPE, &type, (void **)&mime_type) != 0) ||
 	    (type != EN_STRING))
 	{
-	    mimeType = URL_MIME_TYPE;
+	    mime_type = URL_MIME_TYPE;
 	}
     }
     /* No MIME_ARGS provided.  Construct one using the Message-Id field */
-    else if ((en_search(notification, MESSAGE_ID, &type, (void **)&mimeArgs) == 0) &&
+    else if ((en_search(notification, MESSAGE_ID, &type, (void **)&mime_args) == 0) &&
 	    (type == EN_STRING))
     {
 	char *newshost;
@@ -641,31 +641,31 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 	    newshost = "news";
 	}
 
-	buffer = (char *) alloca(sizeof("news://") + strlen(newshost) + strlen(mimeArgs) + 1);
-	sprintf(buffer, "news://%s/%s", newshost, mimeArgs);
-	mimeArgs = buffer;
-	mimeType = NEWS_MIME_TYPE;
+	buffer = (char *) alloca(sizeof("news://") + strlen(newshost) + strlen(mime_args) + 1);
+	sprintf(buffer, "news://%s/%s", newshost, mime_args);
+	mime_args = buffer;
+	mime_type = NEWS_MIME_TYPE;
     }
     /* No Message-Id field provied either */
     else
     {
-	mimeType = NULL;
-	mimeArgs = NULL;
+	mime_type = NULL;
+	mime_args = NULL;
     }
 
-    /* Construct a Message out of all of that */
-    message = Message_alloc(
+    /* Construct a message out of all of that */
+    message = message_alloc(
 	NULL,
 	newsgroups, name,
 	subject, 60,
-	mimeType, mimeArgs,
+	mime_type, mime_args,
 	0, 0);
 
-    /* Deliver the Message */
+    /* Deliver the message */
     (*self -> callback)(self -> context, message);
 
     /* Release our reference to the message */
-    Message_free(message);
+    message_free(message);
 }
 
 

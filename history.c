@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.21 1999/09/01 15:51:06 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.22 1999/09/09 14:29:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -60,7 +60,7 @@ struct history_node
     int is_killed;
 
     /* The node's message */
-    Message message;
+    message_t message;
 
     /* The previous node (by order of receipt) */
     history_node_t previous;
@@ -80,7 +80,7 @@ struct history_node
 
 
 /* Allocates and initializes a new history_node_t */
-static history_node_t history_node_alloc(Message message)
+static history_node_t history_node_alloc(message_t message)
 {
     history_node_t self;
 
@@ -93,7 +93,7 @@ static history_node_t history_node_alloc(Message message)
     /* Initialize the fields to sane values */
     self -> ref_count = 1;
     self -> is_killed = False;
-    self -> message = Message_allocReference(message);
+    self -> message = message_alloc_reference(message);
     self -> previous = NULL;
     self -> parent = NULL;
     self -> previous_response = NULL;
@@ -119,8 +119,8 @@ static void history_node_free(history_node_t self)
 	return;
     }
 
-    /* Release our reference to the Message */
-    Message_free(self -> message);
+    /* Release our reference to the message */
+    message_free(self -> message);
     free(self);
 }
 
@@ -143,9 +143,9 @@ static int history_node_indent(history_node_t self)
 /* Constructs a Motif string representation of the receiver's message */
 static XmString history_node_string(history_node_t self, int is_threaded)
 {
-    char *group = Message_getGroup(self -> message);
-    char *user = Message_getUser(self -> message);
-    char *string = Message_getString(self -> message);
+    char *group = message_get_group(self -> message);
+    char *user = message_get_user(self -> message);
+    char *string = message_get_string(self -> message);
     int spaces = is_threaded ? (history_node_indent(self) * 2) : 0;
     char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string) + spaces + 3);
     char *pointer = buffer;
@@ -161,7 +161,7 @@ static XmString history_node_string(history_node_t self, int is_threaded)
 
     /* Print the message */
     sprintf(pointer, "%s:%s:%s", group, user, string);
-    tag = Message_hasAttachment(self -> message) ? "MIME" : XmFONTLIST_DEFAULT_TAG;
+    tag = message_has_attachment(self -> message) ? "MIME" : XmFONTLIST_DEFAULT_TAG;
     result = XmStringCreate(buffer, tag);
 
     free(buffer);
@@ -179,9 +179,9 @@ static void history_node_print(history_node_t self, int indent, FILE *out)
     }
 
     fprintf(out, "%s:%s:%s\n",
-	    Message_getGroup(self -> message),
-	    Message_getUser(self -> message),
-	    Message_getString(self -> message));
+	    message_get_group(self -> message),
+	    message_get_user(self -> message),
+	    message_get_string(self -> message));
 }
 
 /* Prints the history list ending with the receiver */
@@ -277,7 +277,7 @@ void history_free(history_t self)
     free(self);
 }
 
-/* Finds the node whose Message has the given id */
+/* Finds the node whose message has the given id */
 static history_node_t find_by_id(history_node_t self, char *id)
 {
     history_node_t node;
@@ -295,7 +295,7 @@ static history_node_t find_by_id(history_node_t self, char *id)
 	history_node_t probe;
 
 	/* Watch for a matching id */
-	if (((node_id = Message_getId(node -> message)) != NULL) &&
+	if (((node_id = message_get_id(node -> message)) != NULL) &&
 	    (strcmp(id, node_id) == 0))
 	{
 	    return node;
@@ -324,7 +324,7 @@ static void history_thread_node(history_t self, history_node_t node)
     /* If the message's parent node isn't in the history then pretend there is no parent */
     if ((parent = find_by_id(
 	self -> last_response,
-	Message_getReplyId(node -> message))) == NULL)
+	message_get_reply_id(node -> message))) == NULL)
     {
 	node -> previous_response = self -> last_response;
 	self -> last_response = node;
@@ -473,7 +473,7 @@ static XmString *history_get_strings(history_t self, int count)
 void history_set_threaded(history_t self, int is_threaded)
 {
     int *selection_positions;
-    Message selection;
+    message_t selection;
     int count;
     XmString *items;
     int index;
@@ -527,7 +527,7 @@ void history_set_threaded(history_t self, int is_threaded)
     XmListSelectPos(self -> list, index, False);
 }
 
-/* Answers the Message at the given index */
+/* Answers the message at the given index */
 static history_node_t history_get_node_threaded(history_t self, int index)
 {
     history_node_t node = self -> last_response;
@@ -559,7 +559,7 @@ static history_node_t history_get_node_threaded(history_t self, int index)
     return NULL;
 }
 
-/* Answers the Message at the given index */
+/* Answers the message at the given index */
 static history_node_t history_get_node_unthreaded(history_t self, int index)
 {
     history_node_t probe;
@@ -599,8 +599,8 @@ history_node_t history_get_node(history_t self, int index)
     }
 }
 
-/* Answers the Message at the given index */
-Message history_get(history_t self, int index)
+/* Answers the message at the given index */
+message_t history_get(history_t self, int index)
 {
     history_node_t node;
 
@@ -649,7 +649,7 @@ static void history_remove_old(history_t self)
 }
 
 /* Adds a message to the end of the history */
-int history_add(history_t self, Message message)
+int history_add(history_t self, message_t message)
 {
     history_node_t node;
 
@@ -682,8 +682,8 @@ int history_add(history_t self, Message message)
 
 
 
-/* Answers the index of given Message in the history */
-static int history_index_unthreaded(history_t self, Message message)
+/* Answers the index of given message in the history */
+static int history_index_unthreaded(history_t self, message_t message)
 {
     history_node_t probe;
     int index;
@@ -725,8 +725,8 @@ static int history_node_index_threaded(history_node_t self, int before_index)
     return count + before_index;
 }
 
-/* Answers the absolute index of the given Message in the history */
-static int history_index_threaded(history_t self, Message message)
+/* Answers the absolute index of the given message in the history */
+static int history_index_threaded(history_t self, message_t message)
 {
     history_node_t node;
 
@@ -744,8 +744,8 @@ static int history_index_threaded(history_t self, Message message)
     return -1;
 }
 
-/* Answers the index of given Message in the history */
-int history_index(history_t self, Message message)
+/* Answers the index of given message in the history */
+int history_index(history_t self, message_t message)
 {
     if (self -> is_threaded)
     {
@@ -779,7 +779,7 @@ void history_node_kill_thread(history_node_t self, ScrollerWidget scroller)
 }
 
 /* Kill off a thread */
-void history_kill_thread(history_t self, ScrollerWidget scroller, Message message)
+void history_kill_thread(history_t self, ScrollerWidget scroller, message_t message)
 {
     history_node_t node;
 

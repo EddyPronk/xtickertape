@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.5 1999/08/29 14:24:54 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.6 1999/09/09 14:29:51 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -74,7 +74,7 @@ void tickertape_reload_usenet(tickertape_t self);
 /* Quit the application */
 void tickertape_quit(tickertape_t self);
 
-/* Displays a Message's MIME attachment */
-int tickertape_show_attachment(tickertape_t self, Message message);
+/* Displays a message's MIME attachment */
+int tickertape_show_attachment(tickertape_t self, message_t message);
 
 #endif /* TICKERTAPE_H */

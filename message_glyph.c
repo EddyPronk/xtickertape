@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.15 1999/09/09 13:30:19 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.16 1999/09/09 14:29:50 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -49,8 +49,8 @@ struct message_glyph
     /* The ScrollerWidget in which the receiver is displayed */
     ScrollerWidget widget;
 
-    /* The Message which the receiver represents */
-    Message message;
+    /* The message which the receiver represents */
+    message_t message;
 
     /* The receiver's reference count */
     int ref_count;
@@ -127,7 +127,7 @@ static void set_clock(message_glyph_t self)
     }
     else
     {
-	duration = 60 * 1000 * Message_getTimeout(self -> message) / 
+	duration = 60 * 1000 * message_get_timeout(self -> message) / 
 	    ScGetFadeLevels(self -> widget);
     }
 
@@ -163,13 +163,13 @@ static void do_free(message_glyph_t self)
     clear_clock(self);
 
     /* Free the message */
-    Message_free(self -> message);
+    message_free(self -> message);
 
     free(self);
 }
 
-/* Answers the receiver's Message */
-static Message get_message(message_glyph_t self)
+/* Answers the receiver's message */
+static message_t get_message(message_glyph_t self)
 {
     return self -> message;
 }
@@ -305,7 +305,7 @@ static void do_paint(
     message_glyph_t self, Display *display, Drawable drawable,
     int offset, int w, int x, int y, int width, int height)
 {
-    int do_underline = Message_hasAttachment(self -> message);
+    int do_underline = message_has_attachment(self -> message);
     int level = self -> fade_level;
     int baseline = y + self -> ascent;
     int left;
@@ -317,7 +317,7 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForGroup(self -> widget, level),
 	ScFontForGroup(self -> widget),
-	left, right, baseline, Message_getGroup(self -> message), do_underline,
+	left, right, baseline, message_get_group(self -> message), do_underline,
 	x, y, width, height);
 
     /* Draw the separator */
@@ -335,7 +335,7 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForUser(self -> widget, level),
 	ScFontForUser(self -> widget),
-	left, right, baseline, Message_getUser(self -> message), do_underline,
+	left, right, baseline, message_get_user(self -> message), do_underline,
 	x, y, width, height);
 
     /* Draw the separator */
@@ -353,7 +353,7 @@ static void do_paint(
     paint_string(
 	self, display, drawable, ScGCForString(self -> widget, level),
 	ScFontForString(self -> widget),
-	left, right, baseline, Message_getString(self -> message), do_underline,
+	left, right, baseline, message_get_string(self -> message), do_underline,
 	x, y, width, height);
 }
 
@@ -380,7 +380,7 @@ static void do_expire(message_glyph_t self)
 
 
 /* Allocates and initializes a new message_glyph glyph */
-glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
+glyph_t message_glyph_alloc(ScrollerWidget widget, message_t message)
 {
     XFontStruct *font;
     message_glyph_t self;
@@ -403,7 +403,7 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     self -> expire = (expire_method_t)do_expire;
 
     self -> widget = widget;
-    self -> message = Message_allocReference(message);
+    self -> message = message_alloc_reference(message);
     self -> ref_count = 1;
     self -> has_expired = False;
     self -> fade_level = 0;
@@ -414,15 +414,15 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     self -> ascent = font -> ascent;
 
     font = ScFontForGroup(self -> widget);
-    self -> group_width = measure_string(font, Message_getGroup(self -> message));
+    self -> group_width = measure_string(font, message_get_group(self -> message));
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
     font = ScFontForString(self -> widget);
-    self -> user_width = measure_string(font, Message_getUser(self -> message));
+    self -> user_width = measure_string(font, message_get_user(self -> message));
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
     font = ScFontForString(self -> widget);
-    self -> string_width = measure_string(font, Message_getString(self -> message));
+    self -> string_width = measure_string(font, message_get_string(self -> message));
     self -> ascent = MAX(self -> ascent, font -> ascent);
 
     self -> spacing = measure_string(font, "n");

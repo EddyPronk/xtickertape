@@ -35,17 +35,17 @@
 #define MAIL_SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_MAIL_SUBSCRIPTION_H[] = "$Id: MailSubscription.h,v 1.2 1998/12/24 05:48:28 phelps Exp $";
+static const char cvs_MAIL_SUBSCRIPTION_H[] = "$Id: MailSubscription.h,v 1.3 1999/09/09 14:29:46 phelps Exp $";
 #endif /* lint */
 
 /* The MailSubscription data type */
 typedef struct MailSubscription_t *MailSubscription;
 
-#include "Message.h"
+#include "message.h"
 #include "ElvinConnection.h"
 
 /* The MailSubscription callback type */
-typedef void (*MailSubscriptionCallback)(void *context, Message message);
+typedef void (*MailSubscriptionCallback)(void *context, message_t message);
 
 
 /* Exported functions */
