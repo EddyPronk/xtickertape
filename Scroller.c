@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.19 1999/06/16 01:12:23 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.20 1999/06/16 04:41:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -356,7 +356,7 @@ static void SetClock(ScrollerWidget self)
 {
     if (! self -> scroller.isStopped)
     {
-	ScStartTimer(self, 1000 / self -> scroller.frequency, Tick, (XtPointer) self);
+	ScStartTimer(self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
     }
 }
 
@@ -583,6 +583,32 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer)
 {
      XtRemoveTimeOut(timer);
 }
+
+/* Repaints the given MessageView (if visible */
+void ScRepaintMessageView(ScrollerWidget self, MessageView view)
+{
+    view_holder_t holder;
+    long offset;
+
+    /* Locate the offset and view_holder of the MessageView */
+    offset = -self -> scroller.offset;
+    for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
+    {
+	/* If we find the chosen one, then repaint it and we're done */
+	if (holder -> view == view)
+	{
+	    MessageView_redisplay(
+		view, self -> scroller.pixmap, offset,
+		0, 0, self -> core.width, self -> core.height);
+
+	    Redisplay((Widget)self, NULL, NULL);
+	    return;
+	}
+
+	offset += holder -> width;
+    }
+}
+
 
 
 /*
