@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.19 1998/10/16 03:46:04 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.20 1998/10/16 04:14:49 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -21,9 +21,9 @@ static char *sanity_freed = "Freed ElvinConnection";
 
 /* Static function headers */
 static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
-static void ReceiveMetaCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
+static void ReceiveOrbitCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
 static void SubscribeToItem(Subscription subscription, ElvinConnection self);
-static void SubscribeToMeta(ElvinConnection self);
+static void SubscribeToOrbit(ElvinConnection self);
 static void ReadInput(ElvinConnection self);
 static void PublishStartupNotification(ElvinConnection self);
 static void Connect(ElvinConnection self);
@@ -139,12 +139,34 @@ static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t 
 }
 
 /* Receive callbacks about the meta subscription */
-static void ReceiveMetaCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification)
+static void ReceiveOrbitCallback(elvin_t elvin, void *object, uint32 ignored, en_notify_t notification)
 {
     ElvinConnection self = (ElvinConnection) object;
-
+    en_type_t type;
+    char *id;
+    char *title;
+    char buffer[BUFFERSIZE];
+    Subscription subscription;
     SANITY_CHECK(self);
-    fprintf(stderr, "whoot!\n");
+
+    /* Get the id of the zone (if provided) */
+    if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
+    {
+	/* Can't subscribe without an id */
+	return;
+    }
+
+    /* Get the title of the zone (if provided) */
+    if ((en_search(notification, "zone.title", &type, (void **)&title) != 0) || (type != EN_STRING))
+    {
+	title = "Untitled Zone";
+    }
+
+    sprintf(buffer, "exists(TICKERTEXT) && zone.id == \"%s\"", id);
+
+    /* FIX THIS: we need a callback function! */
+    subscription = Subscription_alloc(title, buffer, 1, 0, 1, 600, NULL, NULL);
+    Subscription_debug(subscription);
 }
 
 
@@ -165,7 +187,7 @@ static void SubscribeToItem(Subscription subscription, ElvinConnection self)
 }
 
 /* Subscribe to the tickertape metagroup */
-static void SubscribeToMeta(ElvinConnection self)
+static void SubscribeToOrbit(ElvinConnection self)
 {
     char buffer[BUFFERSIZE];
     SANITY_CHECK(self);
@@ -181,7 +203,7 @@ static void SubscribeToMeta(ElvinConnection self)
 	buffer,
 	"exists(orbit.view_update) && exists(tickertape) && user == \"%s\"",
 	self -> user);
-    elvin_add_subscription(self -> elvin, buffer, ReceiveMetaCallback, self, 0);
+    elvin_add_subscription(self -> elvin, buffer, ReceiveOrbitCallback, self, 0);
 }
 
 /* Call this when the connection has data available */
@@ -250,7 +272,7 @@ static void Connect(ElvinConnection self)
 	List_doWith(self -> subscriptions, SubscribeToItem, self);
 
 	/* Subscribe to changes in our subscription information */
-	SubscribeToMeta(self);
+	SubscribeToOrbit(self);
 	PublishStartupNotification(self);
     }
 }
