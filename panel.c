@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.33 2000/06/23 07:36:01 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.34 2000/10/22 09:05:52 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,9 +37,6 @@ static const char cvsid[] = "$Id: panel.c,v 1.33 2000/06/23 07:36:01 phelps Exp 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifdef HAVE_CRYPT_H
-#include <crypt.h>
-#endif /* HAVE_CRYPT_H */
 #include <time.h>
 #include <pwd.h>
 #include <elvin/elvin.h>
@@ -70,15 +67,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.33 2000/06/23 07:36:01 phelps Exp 
 
 
 /* The list of timeouts for the timeout menu */
-char *timeouts[] =
-{
-    "1",
-    "5",
-    "10",
-    "30",
-    "60",
-    NULL
-};
+char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 
 /* The default message timeout */
 #define DEFAULT_TIMEOUT "5"
@@ -104,12 +93,8 @@ static unsigned int button_masks[] =
     Button5Mask ^ AnyButtonMask,
 };
 
-/* The characters to use in the salt when encrypting the host id */
-static char crypt_chars[] =
-	"abcdefghijklmnopqrstuvwxyz"
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"0123456789./";
-
+/* The characters to use when converting a hex digit to ASCII */
+static char hex_chars[] = "0123456789abcdef";
 
 /* Used in callbacks to indicate both a control_panel_t and a callback */
 typedef struct menu_item_tuple *menu_item_tuple_t;
@@ -268,8 +253,7 @@ static void set_mime_args(control_panel_t self, char *args);
 static char *get_mime_type(control_panel_t self);
 static char *get_mime_args(control_panel_t self);
 
-static char *crypt_id(time_t now);
-char *create_uuid(control_panel_t self);
+static char *create_uuid(control_panel_t self);
 message_t contruct_message(control_panel_t self);
 
 static void action_send(Widget button, control_panel_t self, XtPointer ignored);
@@ -1414,56 +1398,53 @@ static char *get_mime_args(control_panel_t self)
     return args;
 }
 
-
-/* Transforms an integer into a digit for use in a crypt salt */
-static char *crypt_id(time_t now)
-{
-    char hostid[9];
-    char salt[3];
-
-    /* Construct a salt out of the current time */
-    salt[0] = crypt_chars[now & 0x3f];
-    salt[1] = crypt_chars[(now >> 6) & 0x3f];
-    salt[2] = '\0';
-
-    /* Print the hostid into a buffer */
-    sprintf(hostid, "%08lx", (long)gethostid());
-
-    /* Return the encrypted result */
-    return crypt(hostid, salt);
-}
-
 /* Generates a universally unique identifier for a message */
 char *create_uuid(control_panel_t self)
 {
-    char *cryptid;
-    char *buffer;
+    char buffer[32];
     time_t now;
     struct tm *tm_gmt;
+    uchar digest[SHA1DIGESTLEN];
+    char result[SHA1DIGESTLEN * 2 + 1];
+    int index;
 
-    /* Get the time -- we'll fix this if time() ever fails */
-    if (time(&now) == (time_t) -1)
+    /* Get the time */
+    if (time(&now) == (time_t)-1)
     {
-	perror("unable to determine current time");
+	perror("unable to determine the current time");
 	exit(1);
     }
 
-    /* Look up what that means in GMT */
+    /* Figure out what that means in GMT */
     tm_gmt = gmtime(&now);
 
-    /* Construct an encrypted hostid using the time as the salt */
-    cryptid = crypt_id(now);
-
     /* Construct the UUID */
-    buffer = (char *)malloc(sizeof("YYYYMMDDHHMMSS--1234-12") + strlen(cryptid));
-    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%s-%04x-%02x",
+    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%08lx-%04x-%02x",
 	    tm_gmt -> tm_year + 1900, tm_gmt -> tm_mon + 1, tm_gmt -> tm_mday,
 	    tm_gmt -> tm_hour, tm_gmt -> tm_min, tm_gmt -> tm_sec,
-	    cryptid, (int)getpid(), self -> uuid_count);
+	    (long)gethostid(), (int)getpid(), self -> uuid_count);
 
+    /* Increment our little counter */
     self -> uuid_count = (self -> uuid_count + 1) % 256;
-    return buffer;
+
+    /* Construct a SHA1 digest of the UUID, which should be just as
+     * unique but should make it much harder to track down the sender */
+    if (! elvin_sha1digest((uchar *)buffer, 31, digest))
+    {
+	return NULL;
+    }
+
+    /* Convert those digits into bytes */
+    for (index = 0; index < SHA1DIGESTLEN; index++)
+    {
+	result[index * 2] = hex_chars[digest[index] >> 4];
+	result[index * 2 + 1] = hex_chars[digest[index] & 0xF];
+    }
+    result[SHA1DIGESTLEN * 2] = '\0';
+
+    return strdup(result);
 }
+
 
 /* Answers a message based on the receiver's current state */
 message_t contruct_message(control_panel_t self)
@@ -1525,6 +1506,10 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 	self -> selection -> callback(self -> selection -> rock, message);
 	message_free(message);
     }
+
+    /* Clear the message field */
+    set_text(self, "");
+    set_mime_args(self, "");
 
     /* Close the box if appropriate */
     if (self -> close_on_send)
