@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.10 1999/10/07 05:49:08 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.11 1999/10/07 06:25:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -619,6 +619,7 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
 static void show_tool_tip(control_panel_t self, Widget widget, char *tip, Position x, Position y)
 {
     Position absolute_x, absolute_y;
+    Position target_x, target_y;
     XmString string;
     int screen_width;
     Dimension width;
@@ -638,38 +639,39 @@ static void show_tool_tip(control_panel_t self, Widget widget, char *tip, Positi
     /* Find a good x position for the tool-tip */
     screen_width = WidthOfScreen(XtScreen(self -> top));
 
-    /* Try to the right of the pointer */
-    if (absolute_x + width + 10 < screen_width)
+    /* Try starting at the pointer */
+    if (absolute_x + width < screen_width)
     {
-	absolute_x += 10;
+	target_x = absolute_x;
     }
-    /* Then try to the right of the pointer */
-    else if (width + 10 < absolute_x)
+    /* No good.  Try ending at the pointer */
+    else if (width < absolute_x)
     {
-	absolute_x -= width + 10;
+	target_x = absolute_x - width;
     }
     /* Then try with the right edge flush with the right edge of the screen */
     else if (width < screen_width)
     {
-	absolute_x = screen_width - width;
+	target_x = screen_width - width;
     }
     /* Otherwise give up an go with 0 */
     else
     {
-	absolute_x = 0;
+	target_x = 0;
     }
 
-    /* Find a convenient y position */
-    if (absolute_y + height + 10 < HeightOfScreen(XtScreen(self -> top)))
+    /* Try putting the tool-tip below the pointer */
+    if (absolute_y + 20 + height < HeightOfScreen(XtScreen(self -> top)))
     {
-	absolute_y += 10;
+	target_y = absolute_y + 20;
     }
+    /* Otherwise put it above */
     else
     {
-	absolute_y -= (10 + height);
+	target_y = absolute_y - 10 - height;
     }
 
-    XtVaSetValues(self -> tool_tip, XmNx, absolute_x, XmNy, absolute_y, NULL);
+    XtVaSetValues(self -> tool_tip, XmNx, target_x, XmNy, target_y, NULL);
 
     /* Show the tool-tip */
     XtPopup(self -> tool_tip, XtGrabNone);
