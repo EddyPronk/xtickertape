@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.19 2003/01/11 11:04:18 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.20 2003/01/14 11:02:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -67,7 +67,7 @@ static const char cvsid[] = "$Id: message_view.c,v 2.19 2003/01/11 11:04:18 phel
 # define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
-#define BUFFER_SIZE 8
+#define BUFFER_SIZE 1024
 #define MAX_CHAR_SIZE 2
 #define CHARSET_REGISTRY "CHARSET_REGISTRY"
 #define CHARSET_ENCODING "CHARSET_ENCODING"
@@ -129,6 +129,98 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
     return &empty_char;
 }
 
+/* Wrapper around iconv() to catch most of the nasty gotchas */
+static size_t code_set_info_iconv(
+    code_set_info_t self,
+    char **inbuf, size_t *inbytesleft,
+    char **outbuf, size_t *outbytesleft)
+{
+    size_t length;
+    size_t count;
+
+    /* An invalid conversion descriptor becomes memcpy */
+    if (self -> cd == (iconv_t)-1)
+    {
+	if (inbytesleft == NULL || outbytesleft == NULL)
+	{
+	    return 0;
+	}
+
+	length =  MIN(*inbytesleft, *outbytesleft);
+	memcpy(*outbuf, *inbuf, length);
+	*inbuf += length;
+	*inbytesleft -= length;
+	*outbuf += length;
+	*outbytesleft -= length;
+	return 0;
+    }
+
+    /* Watch for a NULL transformation */
+    if (inbytesleft == NULL || outbytesleft == NULL)
+    {
+	return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
+    }
+
+    /* Keep going even when we encounter invalid or unrepresentable
+     * characters (this assumes UTF-8 as the input code set */
+    count = 0;
+    while (*inbytesleft && *outbytesleft)
+    {
+	size_t n;
+
+	/* Try to convert the sequence */
+	if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
+	{
+	    switch (errno)
+	    {
+		case E2BIG:
+		{
+		    return count;
+		}
+
+		case EILSEQ:
+		{
+		    errno = 0;
+
+		    /* Dump the illegal character */
+		    (*inbuf)++;
+		    (*inbytesleft)--;
+
+		    /* Insert the default character */
+		    if (self -> dimension == 1)
+		    {
+			*(*outbuf)++ = self -> font -> default_char;
+			(*outbytesleft)--;
+		    } else
+		    {
+			*(*outbuf)++ = self -> font -> default_char >> 8;
+			*(*outbuf)++ = self -> font -> default_char & 0xFF;
+			(*outbytesleft) += 2;
+		    }
+
+		    count++;
+
+		    /* Reset the conversion descriptor */
+		    iconv(self -> cd, NULL, NULL, NULL, NULL);
+		    break;
+		}
+
+		default:
+		{
+		    perror("iconv() failed");
+		    return (size_t)-1;
+		}
+	    }
+	}
+	else
+	{
+	    count += n;
+	}
+    }
+
+    return count;
+}
+
 /* Measures all of the characters in a string */
 static void measure_string(
     code_set_info_t self,
@@ -148,6 +240,12 @@ static void measure_string(
     /* Count the number of bytes in the string */
     in_length = strlen(string);
 
+    /* Reset the iconv() converter */
+    if (code_set_info_iconv(self, NULL, NULL, NULL, NULL) == (size_t)-1)
+    {
+	abort();
+    }
+
     /* Keep going until we get the whole string */
     is_first = True;
     while (in_length != 0)
@@ -155,7 +253,11 @@ static void measure_string(
 	/* Convert the string into the display code set */
 	out_length = BUFFER_SIZE;
 	out_point = buffer;
-	if (iconv(self -> cd, &string, &in_length, &out_point, &out_length) == (size_t)-1 && errno != E2BIG)
+	if (code_set_info_iconv(
+		self,
+		&string, &in_length,
+		&out_point, &out_length) == (size_t)-1 &&
+	    errno != E2BIG)
 	{
 	    /* This shouldn't fail */
 	    abort();
@@ -425,7 +527,11 @@ static void draw_string(
 	/* Convert the string into the font's code set */
 	out_length = BUFFER_SIZE;
 	out_point = buffer;
-	if (iconv(cs_info -> cd, &string, &in_length, &out_point, &out_length) == (size_t)-1 && errno != E2BIG)
+	if (code_set_info_iconv(
+		cs_info,
+		&string, &in_length,
+		&out_point, &out_length) == (size_t)-1 &&
+	    errno != E2BIG)
 	{
 	    /* This shouldn't fail */
 	    abort();
@@ -465,6 +571,15 @@ static void draw_string(
 			}
 			else
 			{
+			    /* Reset the conversion descriptor */
+			    if (code_set_info_iconv(
+				    cs_info,
+				    NULL, NULL,
+				    NULL, NULL) == (size_t)-1)
+			    {
+				abort();
+			    }
+
 			    XDrawString(display, drawable, gc, left, y, first, last - first);
 			    return;
 			}
@@ -509,6 +624,15 @@ static void draw_string(
 			}
 			else
 			{
+			    /* Reset the conversion descriptor */
+			    if (code_set_info_iconv(
+				    cs_info,
+				    NULL, NULL,
+				    NULL, NULL) == (size_t)-1)
+			    {
+				abort();
+			    }
+
 			    XDrawString16(display, drawable, gc, left, y, first, last - first);
 			    return;
 			}
