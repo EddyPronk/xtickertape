@@ -117,7 +117,7 @@ fi
 dnl Check for the metamail program
 AC_PATH_PROG(METAMAIL, metamail, not found, $DSTCDIR/script:$PATH)
 if test "$METAMAIL" = "not found" ; then
-    echo "WARNING: \`metamail\' is missing on your system. Without it,"
+    echo "WARNING: \`metamail' is missing on your system. Without it,"
     echo "          xtickertape will be unable to decode MIME messages"
     echo "          Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
 else
