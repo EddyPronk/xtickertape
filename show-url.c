@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.1 2002/10/04 16:00:42 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.2 2002/10/04 16:43:47 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -56,7 +56,22 @@ static const char cvsid[] = "$Id: show-url.c,v 1.1 2002/10/04 16:00:42 phelps Ex
 #define INIT_CMD_SIZE 128
 
 /* A table converting a number into a hex nibble */
-static char hex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+static char hex[16] =
+{
+    '0', '1', '2', '3', '4', '5', '6', '7', '8',
+    '9', 'a', 'b', 'c', 'd', 'e', 'f'
+};
+
+/* A table of characters which should be escaped */
+static char do_esc[128] =
+{
+    1, 0, 1, 0,  1, 0, 1, 1,  1, 1, 1, 0,  0, 0, 0, 0,  /* 0x20 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1,  1, 0, 1, 0,  /* 0x30 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x40 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  /* 0x50 */
+    1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x60 */
+    0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 1,  /* 0x70 */
+};
 
 /* The buffer used to construct the command */
 static char *cmd_buffer = NULL;
@@ -102,31 +117,28 @@ static void append_url(char *url)
     {
 	int ch = *point;
 
-	switch (ch)
+	/* Watch for the end of line/input */
+	if (ch == '0' || ch == '\n')
 	{
-	    /* End of URL */
-	    case '\0':
-	    case '\n':
-	    {
-		return;
-	    }
+	    return;
+	}
 
-	    /* Escape shell nasties */
-	    case ' ':
-	    case ',':
-	    case ')':
-	    {
-		append_char('%');
-		append_char(hex[(ch >> 4) & 0xf]);
-		append_char(hex[ch & 0xf]);
-		break;
-	    }
-
-	    default:
-	    {
-		append_char(ch);
-		break;
-	    }
+	/* Escape interesting shell characters */
+	if (ch < 32 || ch > 127 || do_esc[ch - 32])
+	{
+	    append_char('\\');
+	    append_char(ch);
+	}
+	/* Escape other stuff that can confuse netscape */
+	else if (ch == ' ' || ch == ')' || ch == ',')
+	{
+	    append_char('%');
+	    append_char(hex[(ch >> 4) & 0xf]);
+	    append_char(hex[ch & 0xf]);
+	}
+	else
+	{
+	    append_char(ch);
 	}
 
 	point++;
