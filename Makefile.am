@@ -52,3 +52,10 @@ errors.h: index en
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(appdefaultsdir)
 	$(INSTALL_DATA) $(srcdir)/XTickertape.ad $(DESTDIR)$(appdefaultsdir)/XTickertape
+
+# Use fake targets for the various packages
+.PSEUDO: rpm
+
+# Build an RPM
+rpm: dist
+	(cd packages/rpm; make rpm)
