@@ -39,6 +39,10 @@ Copyright: Copyright (C) DSTC.  Details at http://elvin.dstc.com/download/licenc
 # FIX THIS: this is wrong, but the script doesn't like the correct URL
 Source: http://elvin.dstc.com/download/@PACKAGE@-@VERSION@.tar.gz
 Group: Applications/Internet
+Icon: xtickertape.gif
+URL: http://elvin.dstc.com/
+Distribution: Red Hat Linux @RPM_RH_VERSION@
+Vendor: The Elvin Krewe <elvin@dstc.com>
 BuildRoot: /var/tmp/%{name}-buildroot
 
 %description
