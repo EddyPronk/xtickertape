@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.17 1998/10/30 08:13:51 phelps Exp $
+ * $Id: Ticker.c,v 1.18 1998/11/05 01:52:55 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -17,7 +17,9 @@
 #include "MailSubscription.h"
 #include "ElvinConnection.h"
 #include "version.h"
-
+#ifdef ORBIT
+#include "OrbitSubscription.h"
+#endif /* ORBIT */
 
 #ifdef SANITY
 static char *sanity_value = "Ticker";
@@ -72,11 +74,13 @@ struct Tickertape_t
  * Static function headers
  *
  */
+static void PublishStartupNotification(Tickertape self);
 static void Click(Widget widget, Tickertape self, Message message);
 static void ReceiveMessage(Tickertape self, Message message);
-static void InitializeUserInterface(Tickertape self);
 static List ReadGroupsFile(Tickertape self);
-static void PublishStartupNotification(Tickertape self);
+static void ReloadGroups(Tickertape self);
+static void ReloadUsenet(Tickertape self);
+static void InitializeUserInterface(Tickertape self);
 static void Disconnect(Tickertape self, ElvinConnection connection);
 static void Reconnect(Tickertape self, ElvinConnection connection);
 #ifdef ORBIT
@@ -91,6 +95,25 @@ static void SubscribeToOrbit(Tickertape self);
  *
  */
 
+/* Publishes a notification indicating that the receiver has started */
+static void PublishStartupNotification(Tickertape self)
+{
+    en_notify_t notification;
+    SANITY_CHECK(self);
+
+    /* If we haven't managed to connect, then don't try sending */
+    if (self -> connection == NULL)
+    {
+	return;
+    }
+
+    notification = en_new();
+    en_add_string(notification, "tickertape.startup", VERSION);
+    en_add_string(notification, "user", self -> user);
+    ElvinConnection_send(self -> connection, notification);
+    en_free(notification);
+}
+
 /* Callback for a mouse click in the tickertape scroller */
 static void Click(Widget widget, Tickertape self, Message message)
 {
@@ -104,24 +127,6 @@ static void ReceiveMessage(Tickertape self, Message message)
     SANITY_CHECK(self);
     TtAddMessage(self -> tickertape, message);
 }
-
-
-/* Initializes the User Interface */
-static void InitializeUserInterface(Tickertape self)
-{
-    self -> controlPanel = ControlPanel_alloc(self -> top, self -> user);
-    List_doWith(
-	self -> subscriptions,
-	Subscription_setControlPanel,
-	self -> controlPanel);
-
-    self -> tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
-	"scroller", tickertapeWidgetClass, self -> top,
-	NULL);
-    XtAddCallback((Widget)self -> tickertape, XtNcallback, (XtCallbackProc)Click, self);
-    XtRealizeWidget(self -> top);
-}
-
 
 /* Read from the Groups file.  Returns a List of subscriptions if
  * successful, NULL otherwise */
@@ -173,24 +178,126 @@ static UsenetSubscription ReadUsenetFile(Tickertape self)
 }
 
 
-/* Publishes a notification indicating that the receiver has started */
-static void PublishStartupNotification(Tickertape self)
+
+
+/* Adds the subscription into the Hashtable using the expression as its key */
+static void MapByExpression(Subscription subscription, Hashtable hashtable)
 {
-    en_notify_t notification;
+    Hashtable_put(hashtable, Subscription_expression(subscription), subscription);
+}
+
+/* Make sure that we're subscribed to the right stuff, but share elvin
+ * subscriptions whenever possible */
+static void UpdateElvin(
+    Subscription subscription,
+    Tickertape self,
+    Hashtable hashtable,
+    List list)
+{
+    Subscription match;
     SANITY_CHECK(self);
 
-    /* If we haven't managed to connect, then don't try sending */
-    if (self -> connection == NULL)
+    /* Is there already a subscription for this? */
+    if ((match = Hashtable_remove(hashtable, Subscription_expression(subscription))) == NULL)
     {
-	return;
+	/* No subscription yet.  Subscribe via elvin */
+	Subscription_setConnection(subscription, self -> connection);
+    }
+    else
+    {
+	/* Subscription found.  Replace the new subscription with the old one */
+	Subscription_updateFromSubscription(match, subscription);
+	List_replaceAll(list, subscription, match);
+	Subscription_free(subscription);
+    }
+}
+
+/* Request from the ControlPanel to reload groups file */
+static void ReloadGroups(Tickertape self)
+{
+    Hashtable hashtable;
+    List newSubscriptions;
+    int index;
+    SANITY_CHECK(self);
+
+    /* Read the new list of subscriptions */
+    newSubscriptions = ReadGroupsFile(self);
+
+    /* Reuse any elvin subscriptions if we can, create new ones we need */
+    hashtable = Hashtable_alloc(37);
+    List_doWith(self -> subscriptions, MapByExpression, hashtable);
+    List_doWithWithWith(newSubscriptions, UpdateElvin, self, hashtable, newSubscriptions);
+
+    /* Delete any elvin subscriptions we're no longer listening to,
+     * remove them from the ControlPanel and free the corresponding
+     * Subscriptions. */
+    Hashtable_doWith(hashtable, Subscription_setConnection, NULL);
+    Hashtable_doWith(hashtable, Subscription_setControlPanel, NULL);
+    Hashtable_do(hashtable, Subscription_free);
+    Hashtable_free(hashtable);
+    List_free(self -> subscriptions);
+
+    /* Set the list of group subscriptions to the new list */
+    self -> subscriptions = newSubscriptions;
+
+    /* Make sure that exactly those Subscriptions which should appear
+     * the in groups menu do, and that they're in the right order */
+    index = 0;
+    List_doWithWith(
+	self -> subscriptions,
+	Subscription_updateControlPanelIndex,
+	self -> controlPanel,
+	&index);
+}
+
+
+/* Request from the ControlPanel to reload usenet file */
+static void ReloadUsenet(Tickertape self)
+{
+    UsenetSubscription subscription;
+    SANITY_CHECK(self);
+
+    /* Read the new usenet subscription */
+    subscription = ReadUsenetFile(self);
+
+    /* Stop listening to old subscription */
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, NULL);
+	UsenetSubscription_free(self -> usenetSubscription);
     }
 
-    notification = en_new();
-    en_add_string(notification, "tickertape.startup", VERSION);
-    en_add_string(notification, "user", self -> user);
-    ElvinConnection_send(self -> connection, notification);
-    en_free(notification);
+    /* Start listening to the new subscription */
+    self -> usenetSubscription = subscription;
+
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
+    }
 }
+
+
+/* Initializes the User Interface */
+static void InitializeUserInterface(Tickertape self)
+{
+    self -> controlPanel = ControlPanel_alloc(
+	self -> top, self -> user,
+	(ReloadCallback)ReloadGroups, self,
+	(ReloadCallback)ReloadUsenet, self);
+
+    List_doWith(
+	self -> subscriptions,
+	Subscription_setControlPanel,
+	self -> controlPanel);
+
+    self -> tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
+	"scroller", tickertapeWidgetClass, self -> top,
+	NULL);
+    XtAddCallback((Widget)self -> tickertape, XtNcallback, (XtCallbackProc)Click, self);
+    XtRealizeWidget(self -> top);
+}
+
+
 
 /* This is called when we get our elvin connection back */
 static void Reconnect(Tickertape self, ElvinConnection connection)
