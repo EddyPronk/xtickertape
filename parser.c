@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.15 2000/07/11 02:28:54 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.16 2000/07/11 03:49:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -270,9 +270,10 @@ static void clean_stack(parser_t self, elvin_error_t error)
 	}
     }
 
-    /* Reset the stack pointers */
+    /* Reset the parser */
     self -> state_top = self -> state_stack;
     self -> value_top = self -> value_stack;
+    self -> state = lex_start;
 }
 
 /* Returns the first value */
@@ -2177,6 +2178,7 @@ static int parse_char(parser_t self, int ch, elvin_error_t error)
 {
     if (! self -> state(self, ch, error))
     {
+	clean_stack(self, NULL);
 	return 0;
     }
 
