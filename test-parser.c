@@ -53,10 +53,17 @@ static elvin_notification_t notification_alloc(elvin_error_t error)
     }
 
     /* Populate it */
-    elvin_notification_add_string(notification, "TICKERTAPE", "Chat", error);
-    elvin_notification_add_string(notification, "USER", "phelps", error);
-    elvin_notification_add_string(notification, "TICKERTEXT", "flonk", error);
-    elvin_notification_add_int32(notification, "TIMEOUT", 10, error);
+    elvin_notification_add_int32(notification, "elvinmail", 2, error);
+    elvin_notification_add_int32(notification, "elvinmail.minor", 0, error);
+    elvin_notification_add_string(notification, "folder", "Inbox", error);
+    elvin_notification_add_string(notification, "from", "phelps@dstc.edu.au Tue Jul 11 17:37:08 2000", error);
+    elvin_notification_add_string(notification, "From", "Ted Phelps <phelps@dstc.edu.au>", error);
+    elvin_notification_add_string(notification, "Received", "from sequoia.dstc.edu.au (sequoia.dstc.edu.au [130.102.176.186]) by piglet.dstc.edu.au (8.10.1/8.10.1) with ESMTP id e6B7b8b08586 for <phelps@piglet.dstc.edu.au>; Tue, 11 Jul 2000 17:37:08 +1000 (EST)", error);
+    elvin_notification_add_string(notification, "user", "phelps", error);
+    elvin_notification_add_string(notification, "Message-Id", "<200007110737.RAA27103@sequoia.dstc.edu.au>", error);
+    elvin_notification_add_string(notification, "Subject", "bite me", error);
+    elvin_notification_add_string(notification, "Content-Type", "text", error);
+    elvin_notification_add_int32(notification, "index", 280, error);
     return notification;
 }
 
