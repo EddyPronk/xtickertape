@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.80 2003/01/27 17:50:43 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.81 2003/01/27 21:15:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1765,7 +1765,8 @@ control_panel_t control_panel_alloc(
 
     /* Allocate the send history buffer */
     self -> send_history_count = MAX(1, send_history_count + 1);
-    if ((self -> send_history = (message_t *)calloc(send_history_count, sizeof(message_t))) == NULL)
+    if ((self -> send_history = (message_t *)calloc(
+	     self -> send_history_count, sizeof(message_t))) == NULL)
     {
 	perror("calloc() failed");
 	exit(1);
