@@ -1,3 +1,21 @@
+Overview of changes in xtickertape-1.6.4
+
+* Now specifying minimum width and height for the control panel and
+  about box based on their initial sizes.  The control panel may be
+  shrunk until the history window disappears but no shorter.
+
+* The uuid generator for message-ids included the host id of the
+  sending machine.  While this is fine under Solaris, on some
+  operating systems (notably Linux) the host id is the machine's
+  IP address which makes anonymous posting substantially less
+  anonymous.  We now run the host id through crypt and throw away the
+  salt used to generate it.
+
+* Really fixed the bug in the measuring of non-printing characters.
+  The trick is to check the font's default_char to see if it is in the 
+  range of glyphs before trying to use its measurements.  If it isn't, 
+  then they all default to zero.  Hopefully.
+
 Overview of changes in xtickertape-1.6.3
 
 * Fixed a bug in the measuring of non-printing characters which
