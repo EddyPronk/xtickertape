@@ -1,5 +1,13 @@
 Overview of changes in xtickertape-1.6.0
 
+* If no `groups' or `usenet' files found in the TICKERDIR, then
+  default ones are created so that new users can get started without
+  having to steal someone else's preferences.
+
+* The scroller now uses a single off-screen pixmap instead of one for
+  each message.  This should reduce the amount of memory that
+  tickertape uses in the X server, especially for *huge* fonts.
+
 * Fixed the way the WM_DELETE_WINDOW protocol is handled so that it
   works properly with both lesstif and Motif.
 
