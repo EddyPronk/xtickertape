@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.103 2003/01/27 00:14:08 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.104 2003/01/27 15:21:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2106,6 +2106,18 @@ char *tickertape_user_name(tickertape_t self)
 char *tickertape_domain_name(tickertape_t self)
 {
     return self -> domain;
+}
+
+/* Show the previous item in the history */
+void tickertape_history_prev(tickertape_t self)
+{
+    control_panel_history_prev(self -> control_panel);
+}
+
+/* Show the next item in the history */
+void tickertape_history_next(tickertape_t self)
+{
+    control_panel_history_next(self -> control_panel);
 }
 
 /* Quit the application */

@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2002.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.114 2002/07/08 05:27:15 croy Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.115 2003/01/27 15:21:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -125,7 +125,13 @@ static XtResource resources[] =
 /* Static function headers */
 static void do_quit(
     Widget widget, XEvent *event,
-    String *params, Cardinal *cparams);
+    String *params, Cardinal *nparams);
+static void do_history_prev(
+    Widget widget, XEvent *event,
+    String *params, Cardinal *nparams);
+static void do_history_next(
+    Widget widget, XEvent *event,
+    String *params, Cardinal *nparams);
 
 /* The Tickertape */
 static tickertape_t tickertape;
@@ -143,13 +149,27 @@ elvin_client_t client = NULL;
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
+    { "history-prev", do_history_prev },
+    { "history-next", do_history_next },
     { "quit", do_quit}
 };
 
 /* Callback for when the Window Manager wants to close a window */
-static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *cparams)
+static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     tickertape_quit(tickertape);
+}
+
+/* Callback for going backwards through the history */
+static void do_history_prev(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    tickertape_history_prev(tickertape);
+}
+
+/* Callback for going forwards through the history */
+static void do_history_next(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    tickertape_history_next(tickertape);
 }
 
 #if defined(HAVE_GETOPT_LONG)
