@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.3 1997/02/14 10:52:32 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.4 1997/02/25 06:41:15 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -21,5 +21,14 @@ ElvinConnection ElvinConnection_alloc(
 
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self);
+
+/* Answers the file descriptor for the elvin connection */
+int ElvinConnection_getFD(ElvinConnection self);
+
+/* Sends a message by posting an Elvin event */
+void ElvinConnection_send(ElvinConnection self, Message message);
+
+/* Call this when the connection has data available */
+void ElvinConnection_read(ElvinConnection self);
 
 #endif /* ELVINCONNECTION_H */

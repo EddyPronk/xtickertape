@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.10 1997/02/25 04:32:30 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.11 1997/02/25 06:41:14 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,7 +107,7 @@ static int readToSeparator(BridgeConnection self, char *buffer)
 
 
 /* Posts a message to the callback */
-void postMessage(BridgeConnection self, Message message)
+static void postMessage(BridgeConnection self, Message message)
 {
     if (self -> callback != NULL)
     {

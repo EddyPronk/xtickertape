@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.16 1997/02/25 04:32:32 phelps Exp $ */
+/* $Id: main.c,v 1.17 1997/02/25 06:41:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +13,11 @@
 #ifdef USE_ELVIN
 # include "ElvinConnection.h"
 # define CONNECTION ElvinConnection
+# define CONNECTION_ALLOC ElvinConnection_alloc
+# define CONNECTION_SEND ElvinConnection_send
+# define CONNECTION_GETFD ElvinConnection_getFD
+# define CONNECTION_READ ElvinConnection_read
+# define PORT 0
 #else /* USE_ELVIN */
 # include "BridgeConnection.h"
 # define CONNECTION BridgeConnection
@@ -20,12 +25,12 @@
 # define CONNECTION_SEND BridgeConnection_send
 # define CONNECTION_GETFD BridgeConnection_getFD
 # define CONNECTION_READ BridgeConnection_read
+# define PORT 8800
 #endif /* USE_ELVIN */
 #include "Control.h"
 #include "Tickertape.h"
 
 #define HOSTNAME "fatcat"
-#define PORT 8800
 #define BUFFERSIZE 8192
 
 /* Notification of something */
@@ -174,7 +179,7 @@ int main(int argc, char *argv[])
 	hostname, port, subscriptions,
 	receiveMessage, tickertape);
 
-    XtAppAddInput(
+      XtAppAddInput(
 	context,
 	CONNECTION_GETFD(connection),
 	(XtPointer) XtInputReadMask,

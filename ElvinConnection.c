@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.5 1997/02/25 04:32:31 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.6 1997/02/25 06:41:15 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -6,24 +6,34 @@
 #include <elvin.h>
 
 #include "ElvinConnection.h"
+#include "Subscription.h"
 
 #define BUFFERSIZE 8192
 
 struct ElvinConnection_t
 {
     elvin_t connection;
-    ElvinConnectionCallback callback;
-    void *context;
+    uint32 subid;
     List subscriptions;
     char buffer[BUFFERSIZE];
     char *bpointer;
+    ElvinConnectionCallback callback;
+    void *context;
 };
 
 
 
-/* Set up callbacks */
+/* Callback for quench expressions */
 static void (*quenchCallback)(elvin_t connection, char *quench) = NULL;
 
+/* Callback for subscription thingo */
+static void receiveCallback(elvin_t connection, uint32 id, en_notify_t notify)
+{
+    printf("receiveCallback\n");
+    exit(0);
+}
+
+/* Callback for elvin errors */
 static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
 {
     fprintf(stderr, "*** Elvin error %d (%s): exiting\n", code, message);
@@ -32,12 +42,12 @@ static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code
 
 
 /* Add the subscription info for an 'group' to the buffer */
-void subscribeToItem(char *item, ElvinConnection self)
+void subscribeToItem(Subscription subscription, ElvinConnection self)
 {
     char *out = self -> bpointer;
     char *in;
 
-    if (List_first(self -> subscriptions) != item)
+    if (List_first(self -> subscriptions) != subscription)
     {
 	in = " || TICKERTAPE == \"";
     }
@@ -50,7 +60,7 @@ void subscribeToItem(char *item, ElvinConnection self)
 	*out++ = *in++;
     }
 
-    in = item;
+    in = Subscription_getGroup(subscription);
     while (*in != '\0')
     {
 	*out++ = *in++;
@@ -66,11 +76,16 @@ void subscribe(ElvinConnection self)
     self -> bpointer = self -> buffer;
     List_doWith(self -> subscriptions, subscribeToItem, self);
     *(self -> bpointer)++ = '\0';
+#ifdef DEBUG
     printf("expression = \"%s\"\n", self -> buffer);
+#endif /* DEBUG */
+    self -> subid = elvin_add_subscription(self -> connection, self -> buffer, receiveCallback, 0);
+    printf("subid = %d\n", self -> subid);
 }
 
+
 /* Posts a message to the callback */
-void postMessage(ElvinConnection self, Message message)
+static void postMessage(ElvinConnection self, Message message)
 {
     if (self -> callback != NULL)
     {
@@ -102,11 +117,6 @@ ElvinConnection ElvinConnection_alloc(
     self -> context = context;
     self -> subscriptions = subscriptions;
     subscribe(self);
-
-    {
-	Message message = Message_alloc("bob", "dave", "susan", 1);
-	postMessage(self, message);
-    }
     return self;
 }
 
@@ -122,6 +132,52 @@ void ElvinConnection_free(ElvinConnection self)
 }
 
 
+/* Answers the file descriptor for the elvin connection */
+int ElvinConnection_getFD(ElvinConnection self)
+{
+    printf("fd = %d\n", elvin_get_socket(self -> connection));
+    return elvin_get_socket(self -> connection);
+}
+
+/* Sends a message by posting an Elvin event */
+void ElvinConnection_send(ElvinConnection self, Message message)
+{
+    int32 timeout = Message_getTimeout(message) / 60;
+    en_notify_t notify = en_new();
+    en_add_string(notify, "TICKERTAPE", Message_getGroup(message));
+    en_add_string(notify, "USER", Message_getUser(message));
+    en_add_int32(notify, "TIMEOUT", timeout);
+    en_add_string(notify, "TICKERTEXT", Message_getString(message));
+
+    printf("sending message\n");
+    if (elvin_notify(self -> connection, notify) < 0)
+    {
+	fprintf(stderr, "*** Unable to send message\n");
+	exit(0);
+    }
+
+    /* FIX THIS: do we need to en_free()? */
+}
 
 
+/* Call this when the connection has data available */
+void ElvinConnection_read(ElvinConnection self)
+{
+    en_notify_t notify;
 
+    if (elvin_poll_notify(self -> connection, self -> subid, &notify) != 0)
+    {
+	printf("foo!\n");
+	exit(1);
+    }
+
+    if (notify == NULL)
+    {
+	printf("notify: empty\n");
+	exit(0);
+    }
+    else
+    {
+	printf("notify\"%s\"\n", en_notify_to_string(notify, " = ", "\n"));
+    }
+}

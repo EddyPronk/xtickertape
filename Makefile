@@ -6,7 +6,9 @@ TICKERTAPE = tickertape
 
 ALL = $(TICKERTAPE) 
 
-OBJS = BridgeConnection.o Control.o Tickertape.o \
+OBJS = BridgeConnection.o \
+	ElvinConnection.o \
+	Control.o Tickertape.o \
 	MessageView.o Message.o Subscription.o List.o main.o
 
 CDEBUGFLAGS =
