@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.63 1999/08/30 03:43:53 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.64 1999/09/07 14:02:06 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -993,15 +993,9 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     /* Draw each visible glyph */
     while (offset < end)
     {
-	int next;
-
-	if (x < (next = offset + glyph_holder_width(holder)))
-	{
-	    glyph_holder_paint(holder, display, self -> scroller.pixmap, offset, x, y, width, height);
-	}
-
+	glyph_holder_paint(holder, display, self -> scroller.pixmap, offset, x, y, width, height);
+	offset += glyph_holder_width(holder);
 	holder = holder -> next;
-	offset = next;
     }
 
     /* If the internal state is inconsistent then let's bail right now */
