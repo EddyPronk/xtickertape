@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.59 2000/06/14 23:26:53 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.60 2000/06/25 02:10:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.59 2000/06/14 23:26:53 phelps
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -62,8 +63,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.59 2000/06/14 23:26:53 phelps
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
 
-#define METAMAIL_OPTIONS "-x -B -q -b -c"
-#define METAMAIL_FORMAT "%s %s %s %s"
+#define METAMAIL_OPTIONS "-x", "-B", "-q", "-b"
 
 /* How long to wait before we tell the user we're having trouble connecting */
 #define BUFFER_SIZE 1024
@@ -1387,13 +1387,13 @@ static char *tickertape_usenet_filename(tickertape_t self)
 int tickertape_show_attachment(tickertape_t self, message_t message)
 {
 #ifdef METAMAIL
-    char filename[L_tmpnam];
     char *mime_type;
     char *mime_args;
     char *pointer;
     char *end;
-    char *buffer;
-    int fd;
+    pid_t pid;
+    int fds[2];
+    int status;
 
     /* If the message has no attachment then we're done */
     if (((mime_type = message_get_mime_type(message)) == NULL) ||
@@ -1409,28 +1409,50 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     printf("attachment: \"%s\" \"%s\"\n", mime_type, mime_args);
 #endif /* DEBUG */
 
-    /* Open up a temp file in which to write the args */
-    fd = -1;
-    while (fd < 0)
+    /* Create a pipe to send the file to metamail */
+    if (pipe(fds) < 0)
     {
-	if (tmpnam(filename) == NULL)
-	{
-	    perror("Unable to construct an unique name for a temporary file");
-	    return -1;
-	}
-
-	if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0600)) < 0)
-	{
-	    /* Did we encounter a real problem? */
-	    if (errno != EEXIST)
-	    {
-		perror("unable to open a temporary file");
-		return -1;
-	    }
-	}
+	perror("pipe(): failed");
+	return -1;
     }
 
-    /* Write the mime args into the temporary file */
+    /* Fork a child process to invoke metamail */
+    if ((pid = fork()) == (pid_t)-1)
+    {
+	perror("fork(): failed");
+	close(fds[0]);
+	close(fds[1]);
+	return -1;
+    }
+
+    /* See if we're the child process */
+    if (pid == 0)
+    {
+	/* Use the pipe as stdin */
+	dup2(fds[0], STDIN_FILENO);
+	close(fds[1]);
+	close(fds[0]);
+
+	/* Invoke metamail */
+	execl(
+	    METAMAIL, METAMAIL,
+	    METAMAIL_OPTIONS,
+	    "-c", mime_type,
+	    NULL);
+
+	/* We'll only get here if exec fails */
+	perror("execl(): failed");
+	exit(1);
+    }
+
+    /* We're the parent process. */
+    if (close(fds[0]) < 0)
+    {
+	perror("close(): failed");
+	return -1;
+    }
+
+    /* Write the mime args into the pipe */
     end = mime_args + strlen(mime_args);
     pointer = mime_args;
     while (pointer < end)
@@ -1438,7 +1460,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 	ssize_t length;
 
 	/* Write as much as we can */
-	if ((length = write(fd, pointer, end - pointer)) < 0)
+	if ((length = write(fds[1], pointer, end - pointer)) < 0)
 	{
 	    perror("unable to write to temporary file");
 	    return -1;
@@ -1448,28 +1470,35 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Make sure it gets written */
-    if (close(fd) < 0)
+    if (close(fds[1]) < 0)
     {
-	perror("unable to close temporary file");
+	perror("close(): failed");
 	return -1;
     }
 
-    /* Invoke metamail to display the attachment */
-    if ((buffer = (char *) malloc(
-	sizeof(METAMAIL_FORMAT) +
-	strlen(METAMAIL) + strlen(METAMAIL_OPTIONS) + 
-	strlen(mime_type) + strlen(filename) - 8)) != NULL)
+    /* Wait for the child process to exit */
+    if (waitpid(pid, &status, 0) == (pid_t)-1)
     {
-	sprintf(buffer, METAMAIL_FORMAT,
-		METAMAIL, METAMAIL_OPTIONS,
-		mime_type, filename);
-	system(buffer);
-	free(buffer);
+	perror("waitpid(): failed");
+	return -1;
     }
 
-    /* Clean up */
-    unlink(filename);
+    /* Did the child process exit nicely? */
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+    {
+	return 0;
+    }
+#ifdef DEBUG
+    /* Did it exit badly? */
+    if (WIFEXITED(status))
+    {
+	fprintf(stderr, "%s exit status: %d\n", METAMAIL, WEXITSTATUS(status));
+	return -1;
+    }
+
+    fprintf(stderr, "%s died badly\n", METAMAIL);
+#endif
 #endif /* METAMAIL */
 
-    return 0;
+    return -1;
 }

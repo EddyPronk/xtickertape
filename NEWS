@@ -6,6 +6,9 @@ Overview of changes in xtickertape-2.0
   using the `-x' option so that it doesn't try to talk to the tty.
   [Thanks David Leonard]
 
+* Also passing the mime args to metamail through a pipe instead of a
+  temporary file.  [Thanks David Leonard]
+
 * Fixed a bug in the way the icon was created.  Now the big `e' will
   be read even on 8-bit displays.
 
