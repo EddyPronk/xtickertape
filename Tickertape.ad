@@ -1,0 +1,75 @@
+!
+! xtickertape
+!
+! A Motif(tm) tickertape application which displays elvin notifications
+!
+
+!
+! Layout
+!
+
+*menuBar.shadowThickness: 1
+*menuBar.marginHeight: 0
+*menuBar.marginWidth: 0
+
+!
+! Color resources
+!
+*foreground: Black
+*background: Gray75
+*XmText.background: White
+*XmTextField.background: White
+*XmList.background: White
+*scroller.background: White
+!*scroller.groupPixel: BlueViolet
+!*scroller.userPixel: ForestGreen
+!*scroller.stringPixel: IndianRed
+
+!
+! Fonts
+!
+*fontList: -*-helvetica-medium-r-*-*-12-*-*-*-*-*-*-*
+*scroller.font: -*-times-medium-r-*-*-18-*-*-*-*-*-*-*
+
+!
+! Labels
+!
+*userLabel.labelString: User
+*group.labelString: Group
+*timeout.labelString: Timeout
+*textLabel.labelString: Text
+*mimeType.labelString: Mime
+*send.labelString: Send
+*clear.labelString: Clear
+*cancel.labelString: Cancel
+
+! file menu labels
+*file.labelString: File
+*file.mnemonic: F
+
+*reloadGroups.labelString: Reload Groups File
+*reloadUsenet.labelString: Reload Usenet File
+*exit.labelString: Exit
+*exit.mnemonic: x
+*exit.accelerator: Alt<Key>Q
+*exit.acceleratorText: Alt+Q
+
+
+!
+! Scrolling parameters
+!
+*scroller.fadeLevels: 5
+*scroller.frequency: 60
+*scroller.stepSize: 2
+
+!
+! Keyboard translations
+! (go for a basic emacs feel)
+!
+*XmTextField.translations: #override \n\
+	~Meta ~Alt Ctrl<Key>a: beginning-of-line() \n\
+	~Meta ~Alt Ctrl<Key>b: backward-character() \n\
+	~Meta ~Alt Ctrl<Key>d: delete-next-character() \n\
+	~Meta ~Alt Ctrl<Key>e: end-of-line() \n\
+	~Meta ~Alt Ctrl<Key>f: forward-character() \n\
+	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line() \n
