@@ -28,28 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: OrbitSubscription.c,v 1.19 1999/09/26 14:05:13 phelps Exp $";
+static const char cvsid[] = "$Id: orbit_sub.c,v 1.1 1999/10/02 09:40:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "OrbitSubscription.h"
-#include "StringBuffer.h"
-#include "sanity.h"
+#include "orbit_sub.h"
 
-#ifdef SANITY
-static char *sanity_value = "OrbitSubscription";
-static char *sanity_freed = "Freed OrbitSubscription";
-#endif /* SANITY */
-
-
-/* The OrbitSubscription data type */
-struct OrbitSubscription_t
+/* The orbit_sub data type */
+struct orbit_sub
 {
-#ifdef SANITY
-    char *sanity_check;
-#endif /* SANITY */
-
     /* The receiver's title */
     char *title;
 
@@ -60,30 +48,20 @@ struct OrbitSubscription_t
     connection_t connection;
 
     /* The receiver's connection information */
-    void *connectionInfo;
+    void *connection_info;
 
     /* The receiver's ControlPanel */
-    ControlPanel controlPanel;
+    ControlPanel control_panel;
 
     /* The receiver's ControlPanel information */
-    void *controlPanelInfo;
+    void *control_panel_info;
 
     /* The receiver's callback function */
-    OrbitSubscriptionCallback callback;
+    orbit_sub_callback_t callback;
 
     /* The receiver's callback context */
-    void *context;
+    void *rock;
 };
-
-
-/*
- *
- * Static function headers
- *
- */
-
-static void HandleNotify(OrbitSubscription self, en_notify_t notification);
-void SendMessage(OrbitSubscription self, message_t message);
 
 
 /*
@@ -93,7 +71,7 @@ void SendMessage(OrbitSubscription self, message_t message);
  */
 
 /* Transforms a notification into a message_t and delivers it */
-static void HandleNotify(OrbitSubscription self, en_notify_t notification)
+static void handle_notify(orbit_sub_t self, en_notify_t notification)
 {
     message_t message;
     en_type_t type;
@@ -105,7 +83,6 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
     char *mime_args;
     char *message_id;
     char *reply_id;
-    SANITY_CHECK(self);
 
     /* If we don't have a callback then just quit now */
     if (self -> callback == NULL)
@@ -175,20 +152,20 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 
     /* Construct the message_t */
     message = message_alloc(
-	self -> controlPanelInfo, self -> title,
+	self -> control_panel_info, self -> title,
 	user, text, *timeout_p,
 	mime_type, mime_args,
 	message_id, reply_id);
 
     /* Deliver the message_t */
-    (*self -> callback)(self -> context, message);
+    (*self -> callback)(self -> rock, message);
 
     /* Release our reference to the message */
     message_free(message);
 }
 
-/* Constructs a notification out of a message_t and delivers it to the ElvinConection */
-void SendMessage(OrbitSubscription self, message_t message)
+/* Constructs a notification out of a message_t and delivers it to the connection_t */
+void send_message(orbit_sub_t self, message_t message)
 {
     en_notify_t notification;
     int32 timeout;
@@ -196,7 +173,6 @@ void SendMessage(OrbitSubscription self, message_t message)
     char *reply_id;
     char *mime_args;
     char *mime_type;
-    SANITY_CHECK(self);
 
     timeout = message_get_timeout(message);
     message_id = message_get_id(message);
@@ -234,35 +210,46 @@ void SendMessage(OrbitSubscription self, message_t message)
  *
  */
 
-/* Answers a new OrbitSubscription */
-OrbitSubscription OrbitSubscription_alloc(
-    char *title,
-    char *id,
-    OrbitSubscriptionCallback callback,
-    void *context)
+/* Allocates and initializes a new orbit_sub_t */
+orbit_sub_t orbit_sub_alloc(char *title, char *id, orbit_sub_callback_t callback, void *rock)
 {
-    OrbitSubscription self = (OrbitSubscription) malloc(sizeof(struct OrbitSubscription_t));
+    orbit_sub_t self;
 
-#ifdef SANITY
-    self -> sanity_check = sanity_value;
-#endif /* SANITY */
-    self -> title = strdup(title);
-    self -> id = strdup(id);
+    /* Allocate space for the new orbit_sub_t */
+    if ((self = (orbit_sub_t)malloc(sizeof(struct orbit_sub))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Copy the title string */
+    if ((self -> title = strdup(title)) == NULL)
+    {
+	free(self);
+	return NULL;
+    }
+
+    /* Copy the id string */
+    if ((self -> id = strdup(id)) == NULL)
+    {
+	free(self -> title);
+	free(self);
+	return NULL;
+    }
+
+    /* Initialize everything else to sane values */
     self -> connection = NULL;
-    self -> connectionInfo = NULL;
-    self -> controlPanel = NULL;
-    self -> controlPanelInfo = NULL;
+    self -> connection_info = NULL;
+    self -> control_panel = NULL;
+    self -> control_panel_info = NULL;
     self -> callback = callback;
-    self -> context = context;
+    self -> rock = rock;
 
     return self;
 }
 
-/* Releases the resouces used by an OrbitSubscription */
-void OrbitSubscription_free(OrbitSubscription self)
+/* Releases resources used by the receiver */
+void orbit_sub_free(orbit_sub_t self)
 {
-    SANITY_CHECK(self);
-
     /* Free the receiver's title if it has one */
     if (self -> title)
     {
@@ -275,38 +262,34 @@ void OrbitSubscription_free(OrbitSubscription self)
 	free(self -> id);
     }
 
-#ifdef SANITY
-    self -> sanity_check = sanity_freed;
-#else /* SANITY */    
     free(self);
-#endif /* SANITY */    
 }
 
-
+#ifdef DEBUG
 /* Prints debugging information */
-void OrbitSubscription_debug(OrbitSubscription self)
+void orbit_sub_debug(orbit_sub_t self)
 {
-    SANITY_CHECK(self);
-
-    printf("OrbitSubscription (%p)\n", self);
-#ifdef SANITY
-    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
-#endif /* SANITY */    
+    printf("orbit_sub_t (%p)\n", self);
     printf("  title = \"%s\"\n", self -> title);
     printf("  id = \"%s\"\n", self -> id);
     printf("  connection = %p\n", self -> connection);
-    printf("  connectionInfo = %p\n", self -> connectionInfo);
-    printf("  controlPanel = %p\n", self -> controlPanel);
-    printf("  controlPanelInfo = %p\n", self -> controlPanelInfo);
-    printf("  callback = %p\n", self -> controlPanel);
-    printf("  context = %p\n", self -> context);
+    printf("  connection_info = %p\n", self -> connection_info);
+    printf("  control_panel = %p\n", self -> control_panel);
+    printf("  control_panel_info = %p\n", self -> control_panel_info);
+    printf("  callback = %p\n", self -> control_panel);
+    printf("  rock = %p\n", self -> rock);
 }
+#endif /* DEBUG */
 
 
 /* Sets the receiver's title */
-void OrbitSubscription_setTitle(OrbitSubscription self, char *title)
+void orbit_sub_set_title(orbit_sub_t self, char *title)
 {
-    SANITY_CHECK(self);
+    /* Check for identical titles and don't let the title be set to NULL */
+    if ((title == NULL) || ((self -> title != NULL) && (strcmp(self -> title, title) == 0)))
+    {
+	return;
+    }
 
     /* Release the old title */
     if (self -> title != NULL)
@@ -317,25 +300,25 @@ void OrbitSubscription_setTitle(OrbitSubscription self, char *title)
     self -> title = strdup(title);
 
     /* Update our menu item */
-    if (self -> controlPanel != NULL)
+    if (self -> control_panel != NULL)
     {
-	ControlPanel_retitleSubscription(self -> controlPanel, self -> controlPanelInfo, self -> title);
+	ControlPanel_retitleSubscription(
+	    self -> control_panel,
+	    self -> control_panel_info,
+	    self -> title);
     }
 }
 
-/* Sets the receiver's title */
-char *OrbitSubscription_getTitle(OrbitSubscription self)
+/* Answers the receiver's title */
+char *orbit_sub_get_title(orbit_sub_t self)
 {
-    SANITY_CHECK(self);
     return self -> title;
 }
 
 
 /* Sets the receiver's connection */
-void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connection)
+void orbit_sub_set_connection(orbit_sub_t self, connection_t connection)
 {
-    SANITY_CHECK(self);
-
     /* Shortcut if we're already subscribed */
     if (self -> connection == connection)
     {
@@ -345,7 +328,7 @@ void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connec
     /* Unsubscribe from old connection */
     if (self -> connection != NULL)
     {
-	connection_unsubscribe(self -> connection, self -> connectionInfo);
+	connection_unsubscribe(self -> connection, self -> connection_info);
     }
 
     self -> connection = connection;
@@ -353,42 +336,40 @@ void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connec
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
-	StringBuffer buffer = StringBuffer_alloc();
-	StringBuffer_append(buffer, "exists(TICKERTEXT) && zone.id == \"");
-	StringBuffer_append(buffer, self -> id);
-	StringBuffer_append(buffer, "\"");
-	self -> connectionInfo = connection_subscribe(
-	    self -> connection, StringBuffer_getBuffer(buffer),
-	    (notify_callback_t)HandleNotify, self);
-	StringBuffer_free(buffer);
+	char *buffer = (char *)malloc(
+	    sizeof("exists(TICKERTEXT) && zone.id == \"\"") + strlen(self -> id));
+
+	sprintf(buffer, "exists(TICKERTEXT) && zone.id == \"%s\"\n", self -> id);
+	self -> connection_info = connection_subscribe(
+	    self -> connection, buffer,
+	    (notify_callback_t)handle_notify, self);
+	free(buffer);
     }
 }
 
 /* Sets the receiver's ControlPanel */
-void OrbitSubscription_setControlPanel(OrbitSubscription self, ControlPanel controlPanel)
+void orbit_sub_set_control_panel(orbit_sub_t self, ControlPanel control_panel)
 {
-    SANITY_CHECK(self);
-
     /* Shortcut if we're with the same ControlPanel */
-    if (self -> controlPanel == controlPanel)
+    if (self -> control_panel == control_panel)
     {
 	return;
     }
 
     /* Unregister with the old ControlPanel */
-    if (self -> controlPanel != NULL)
+    if (self -> control_panel != NULL)
     {
-	ControlPanel_removeSubscription(self -> controlPanel, self -> controlPanelInfo);
+	ControlPanel_removeSubscription(self -> control_panel, self -> control_panel_info);
     }
 
-    self -> controlPanel = controlPanel;
+    self -> control_panel = control_panel;
 
     /* Register with the new ControlPanel */
-    if (self -> controlPanel != NULL)
+    if (self -> control_panel != NULL)
     {
-	self -> controlPanelInfo = ControlPanel_addSubscription(
-	    controlPanel, self -> title,
-	    (ControlPanelCallback)SendMessage, self);
+	self -> control_panel_info = ControlPanel_addSubscription(
+	    control_panel, self -> title,
+	    (ControlPanelCallback)send_message, self);
     }
 }
 

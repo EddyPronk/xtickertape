@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.17 1999/09/26 14:05:14 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.18 1999/10/02 09:40:30 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -52,7 +52,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.17 1999/09/26 14:05:14 phelps
 #include "mail_sub.h"
 #include "connect.h"
 #ifdef ORBIT
-#include "OrbitSubscription.h"
+#include "orbit_sub.h"
 #endif /* ORBIT */
 
 #ifdef SANITY
@@ -541,7 +541,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
     /* See if we're subscribing */
     if (strcasecmp(tickertape, "true") == 0)
     {
-	OrbitSubscription subscription;
+	orbit_sub_t subscription;
 	char *title;
 
 	/* Get the title of the zone (if provided) */
@@ -554,30 +554,30 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	/* If we already have a subscription, then update the title and quit */
 	if ((subscription = Hashtable_get(self -> orbitSubscriptionsById, id)) != NULL)
 	{
-	    OrbitSubscription_setTitle(subscription, title);
+	    orbit_sub_set_title(subscription, title);
 	    en_free(notification);
 	    return;
 	}
 
 	/* Otherwise create a new Subscription and record it in the table */
-	subscription = OrbitSubscription_alloc(
+	subscription = orbit_sub_alloc(
 	    title, id,
-	    (OrbitSubscriptionCallback)receive_callback, self);
+	    (orbit_sub_callback_t)receive_callback, self);
 	Hashtable_put(self -> orbitSubscriptionsById, id, subscription);
 
 	/* Register the subscription with the connection and the ControlPanel */
-	OrbitSubscription_setConnection(subscription, self -> connection);
-	OrbitSubscription_setControlPanel(subscription, self -> control_panel);
+	orbit_sub_set_connection(subscription, self -> connection);
+	orbit_sub_set_control_panel(subscription, self -> control_panel);
     }
 
     /* See if we're unsubscribing */
     if (strcasecmp(tickertape, "false") == 0)
     {
-	OrbitSubscription subscription = Hashtable_remove(self -> orbitSubscriptionsById, id);
+	orbit_sub_t subscription = Hashtable_remove(self -> orbitSubscriptionsById, id);
 	if (subscription != NULL)
 	{
-	    OrbitSubscription_setConnection(subscription, NULL);
-	    OrbitSubscription_setControlPanel(subscription, NULL);
+	    orbit_sub_set_connection(subscription, NULL);
+	    orbit_sub_set_control_panel(subscription, NULL);
 	}
     }
 

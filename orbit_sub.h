@@ -30,45 +30,41 @@
 
 ****************************************************************/
 
-#ifndef ORBIT_SUBSCRIPTION_H
-#define ORBIT_SUBSCRIPTION_H
+#ifndef ORBIT_SUB_H
+#define ORBIT_SUB_H
 
 #ifndef lint
-static const char cvs_ORBIT_SUBSCRIPTION_H[] = "$Id: OrbitSubscription.h,v 1.5 1999/09/26 14:05:13 phelps Exp $";
+static const char cvs_ORBIT_SUB_H[] = "$Id: orbit_sub.h,v 1.1 1999/10/02 09:40:29 phelps Exp $";
 #endif /* lint */
 
-/* The OrbitSubscription data type */
-typedef struct OrbitSubscription_t *OrbitSubscription;
+/* The orbit_sub data type */
+typedef struct orbit_sub *orbit_sub_t;
 
 #include "message.h"
 #include "connect.h"
 #include "Control.h"
 
-typedef void (*OrbitSubscriptionCallback)(void *context, message_t message);
+/* The orbit_sub callbacktype */
+typedef void (*orbit_sub_callback_t)(void *rock, message_t message);
 
 
 
-/* Answers a new OrbitSubscription */
-OrbitSubscription OrbitSubscription_alloc(
-    char *title, char *id,
-    OrbitSubscriptionCallback callback, void *context);
+/* Allocates and initializes a new orbit_sub_t */
+orbit_sub_t orbit_sub_alloc(char *title, char *id, orbit_sub_callback_t callback, void *rock);
 
-/* Releases resources used by an OrbitSubscription */
-void OrbitSubscription_free(OrbitSubscription self);
-
-/* Prints debugging information */
-void OrbitSubscription_debug(OrbitSubscription self);
+/* Releases resources used by the receiver */
+void orbit_sub_free(orbit_sub_t self);
 
 /* Sets the receiver's title */
-void OrbitSubscription_setTitle(OrbitSubscription self, char *title);
+void orbit_sub_set_title(orbit_sub_t self, char *title);
 
-/* Sets the receiver's title */
-char *OrbitSubscription_getTitle(OrbitSubscription self);
+/* Answers the receiver's title */
+char *orbit_sub_get_title(orbit_sub_t self);
 
 /* Sets the receiver's connection */
-void OrbitSubscription_setConnection(OrbitSubscription self, connection_t connection);
+void orbit_sub_set_connection(orbit_sub_t self, connection_t connection);
 
 /* Sets the receiver's ControlPanel */
-void OrbitSubscription_setControlPanel(OrbitSubscription self, ControlPanel controlPanel);
+void orbit_sub_set_control_panel(orbit_sub_t self, ControlPanel controlPanel);
 
 #endif /* ORBIT_SUBSCRIPTION_H */
