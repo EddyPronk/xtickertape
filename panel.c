@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.9 1999/10/07 04:58:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.10 1999/10/07 05:49:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -85,6 +85,20 @@ char *timeouts[] =
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
 
+/* The combination of all button masks */
+#define AnyButtonMask \
+(Button1Mask | Button2Mask | Button3Mask | Button4Mask | Button5Mask)
+
+/* The event masks for any button but the indexed one */
+static unsigned int button_masks[] =
+{
+    AnyButtonMask,
+    Button1Mask ^ AnyButtonMask,
+    Button2Mask ^ AnyButtonMask,
+    Button3Mask ^ AnyButtonMask,
+    Button4Mask ^ AnyButtonMask,
+    Button5Mask ^ AnyButtonMask,
+};
 
 /* Used in callbacks to indicate both a control_panel_t and a callback */
 typedef struct menu_item_tuple *menu_item_tuple_t;
@@ -694,6 +708,29 @@ static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
     show_tool_tip(self, self -> history, mime_args, self -> x, self -> y);
 }
 
+
+/* Set the tool-tip timer */
+static void set_tool_tip_timer(control_panel_t self, int x, int y)
+{
+    /* Create a new timer */
+    self -> timer = XtAppAddTimeOut(
+	XtWidgetToApplicationContext(self -> top),
+	TOOL_TIP_DELAY,
+	(XtTimerCallbackProc)history_timer_callback,
+	(XtPointer)self);
+    self -> x = x;
+    self -> y = y;
+}
+
+/* Cancels a tool-tip timer */
+static void cancel_tool_tip_timer(control_panel_t self)
+{
+    if (self -> timer != 0)
+    {
+	XtRemoveTimeOut(self -> timer);
+	self -> timer = 0;
+    }
+}
     
 /* This is called when the mouse enters or leaves or moves around
  * inside the history widget */
@@ -706,38 +743,42 @@ static void history_motion_callback(
     {
 	case MotionNotify:
 	{
+	    XMotionEvent *motion_event = (XMotionEvent *)event;
+
+	    /* Make sure the tool-tip is not visible */
+	    hide_tool_tip(self);
+
 	    /* If we have a timer then reset it */
 	    if (self -> timer != 0)
 	    {
-		XMotionEvent *motion_event = (XMotionEvent *)event;
+		cancel_tool_tip_timer(self);
+	    }
 
-		XtRemoveTimeOut(self -> timer);
-		self -> timer = XtAppAddTimeOut(
-		    XtWidgetToApplicationContext(widget),
-		    TOOL_TIP_DELAY,
-		    (XtTimerCallbackProc)history_timer_callback,
-		    (XtPointer)self);
-		self -> x = motion_event -> x;
-		self -> y = motion_event -> y;
+	    /* If any mouse button is down then ignore the event */
+	    if ((motion_event -> state & AnyButtonMask) != 0)
+	    {
 		return;
 	    }
 
-	    hide_tool_tip(self);
+	    cancel_tool_tip_timer(self);
+	    set_tool_tip_timer(self, motion_event -> x, motion_event -> y);
+
+	    return;
 	}
 
 	/* When the mouse enters the window we set the timer */
 	case EnterNotify:
 	{
-	    XEnterWindowEvent *enter_event = (XEnterWindowEvent *)event;
+	    XCrossingEvent *crossing_event = (XEnterWindowEvent *)event;
+
+	    /* If any mouse button is down then ignore the event */
+	    if ((crossing_event -> state & AnyButtonMask) != 0)
+	    {
+		return;
+	    }
 
 	    /* Set the timer for a short pause before we show the tool-tip */
-	    self -> timer = XtAppAddTimeOut(
-		XtWidgetToApplicationContext(widget),
-		TOOL_TIP_DELAY,
-		(XtTimerCallbackProc)history_timer_callback,
-		(XtPointer)self);
-	    self -> x = enter_event -> x;
-	    self -> y = enter_event -> y;
+	    set_tool_tip_timer(self, crossing_event -> x, crossing_event -> y);
 	    return;
 	}
 
@@ -746,31 +787,26 @@ static void history_motion_callback(
 	{
 	    XButtonEvent *button_event = (XButtonEvent *)event;
 
-	    /* Set the timer for a short pause before we show the tool-tip */
-	    self -> timer = XtAppAddTimeOut(
-		XtWidgetToApplicationContext(widget),
-		TOOL_TIP_DELAY,
-		(XtTimerCallbackProc)history_timer_callback,
-		(XtPointer)self);
-	    self -> x = button_event -> x;
-	    self -> y = button_event -> y;
-	    return;
-	}
-
-	case ButtonPress:
-	case LeaveNotify:
-	{
-	    /* If we have a timer cancel it.  Otherwise just hide the tool-tip */
-	    if (self -> timer != 0)
+	    /* If other buttons are still pressed then ignore this event */
+	    if ((button_event -> state & button_masks[button_event -> button]) != 0)
 	    {
-		XtRemoveTimeOut(self -> timer);
-		self -> timer = 0;
 		return;
 	    }
 
+	    /* Set the timer for a short pause before we show the tool-tip */
+	    set_tool_tip_timer(self, button_event -> x, button_event -> y);
+	    return;
+	}
+
+	/* Treat ButtonPress and LeaveNotify as identical */
+	case ButtonPress:
+	case LeaveNotify:
+	{
+	    cancel_tool_tip_timer(self);
 	    hide_tool_tip(self);
 	    return;
 	}
+    }
 }
 
 /* Constructs the history list */
@@ -1487,6 +1523,8 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     self -> send = NULL;
     self -> history = NULL;
     self -> timer = 0;
+    self -> tool_tip = NULL;
+    self -> tool_tip_label = NULL;
     self -> x = 0;
     self -> y = 0;
     self -> uuid_count = 0;
