@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.71 2002/10/04 14:06:23 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.72 2003/01/14 15:16:12 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,8 @@ static const char cvsid[] = "$Id: panel.c,v 1.71 2002/10/04 14:06:23 phelps Exp 
 #include <elvin/elvin.h>
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
+#include <iconv.h>
+#include <errno.h>
 #include "globals.h"
 #include "replace.h"
 #include "panel.h"
@@ -76,6 +78,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.71 2002/10/04 14:06:23 phelps Exp 
     "\n" \
     "%s\n"
 
+#define TO_CODE "UTF-8"
 
 /*
  *
@@ -107,6 +110,43 @@ char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 
 /* The characters to use when converting a hex digit to ASCII */
 static char hex_chars[] = "0123456789abcdef";
+
+/* The CHARSET_REGISTRY atom */
+#define CHARSET_REGISTRY "CHARSET_REGISTRY"
+static Atom registry = None;
+
+/* The CHARSET_ENCODING atom */
+#define CHARSET_ENCODING "CHARSET_ENCODING"
+static Atom encoding = None;
+
+
+/* The structure used to hold font code-set information */
+typedef struct
+{
+    /* The widget's font list */
+    XmFontList font_list;
+
+    /* The font's code set */
+    char *code_set;
+} TextWidgetRec;
+
+/* Additional resources for Motif text widgets */
+#define offset(field) XtOffsetOf(TextWidgetRec, field)
+static XtResource resources[] =
+{
+    /* XmFontList font_list */
+    {
+	XmNfontList, XmCFontList, XmRFontList, sizeof(XmFontList),
+	offset(font_list), XmRFontList, (XtPointer)NULL
+    },
+
+    /* char *code_set */
+    {
+	XtNfontCodeSet, XtCString, XtRString, sizeof(char *),
+	offset(code_set), XtRString, (XtPointer)NULL
+    }
+};
+#undef offset
 
 /* Used in callbacks to indicate both a control_panel_t and a callback */
 typedef struct menu_item_tuple *menu_item_tuple_t;
@@ -146,6 +186,9 @@ struct control_panel
     /* The receiver's user text widget */
     Widget user;
 
+    /* The utf8 encoder for the user widget */
+    iconv_t user_encoder;
+
     /* The receiver's group menu button */
     Widget group;
 
@@ -167,8 +210,14 @@ struct control_panel
     /* The receiver's mime args text widget */
     Widget mime_args;
 
+    /* The utf8 encoder for the mime args widget */
+    iconv_t mime_encoder;
+
     /* The receiver's text text widget */
     Widget text;
+
+    /* The utf8 encoder for the text widget */
+    iconv_t text_encoder;
 
     /* The receiver's "Send" button widget */
     Widget send;
@@ -294,6 +343,191 @@ static void action_return(Widget textField, control_panel_t self, XmAnyCallbackS
 static void action_dismiss(Widget button, control_panel_t self, XtPointer ignored);
 
 static void prepare_reply(control_panel_t self, message_t message);
+
+
+
+/* Open a conversion descriptor */
+static iconv_t utf8_encoder_alloc(
+    Display *display,
+    XmFontList font_list,
+    char *code_set)
+{
+    XmFontContext context;
+    XmStringCharSet charset;
+    XFontStruct *font = NULL;
+    Atom atoms[2];
+    char *names[2];
+    char *string;
+    size_t length;
+    iconv_t cd;
+
+    /* If a code set was provided then use it */
+    if (code_set != NULL)
+    {
+	cd = iconv_open(TO_CODE, code_set);
+	if (cd == (iconv_t)-1)
+	{
+	    perror("iconv_open() failed\n");
+	}
+
+	return cd;
+    }
+
+    /* Go through the font list looking for a font */
+    if (! XmFontListInitFontContext(&context, font_list))
+    {
+	perror("XmFontListInitFontContext() failed");
+	return (iconv_t)-1;
+    }
+
+    /* Look for a font */
+    while (1)
+    {
+	if (! XmFontListGetNextFont(context, &charset, &font))
+	{
+	    perror("XmFontListGetNextFont() failed");
+	    XmFontListFreeFontContext(context);
+	    return (iconv_t)-1;
+	}
+
+	/* Look up the CHARSET_REGISTRY atom */
+	if (registry == None)
+	{
+	    registry = XInternAtom(display, CHARSET_REGISTRY, False);
+	}
+
+	/* Look up the font's CHARSET_REGISTRY property */
+	if (! XGetFontProperty(font, registry, &atoms[0]))
+	{
+	    continue;
+	}
+
+	/* Look up the CHARSET_ENCODING atom */
+	if (encoding == None)
+	{
+	    encoding = XInternAtom(display, CHARSET_ENCODING, False);
+	}
+
+	/* Look up the font's CHARSET_ENCODING property */
+	if (! XGetFontProperty(font, encoding, &atoms[1]))
+	{
+	    continue;
+	}
+
+	/* Stringify the names */
+	if (! XGetAtomNames(display, atoms, 2, names))
+	{
+	    continue;
+	}
+
+	/* Allocate some memory to hold the code set name */
+	length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
+	if ((string = malloc(length)) == NULL)
+	{
+	    XFree(names[0]);
+	    XFree(names[1]);
+	    XmFontListFreeFontContext(context);
+	    printf("4\n");
+	    return (iconv_t)-1;
+	}
+
+	/* Construct the code set name */
+	sprintf(string, "%s-%s", names[0], names[1]);
+
+	/* Clean up a bit */
+	XFree(names[0]);
+	XFree(names[1]);
+
+	/* Open a conversion descriptor */
+	cd = iconv_open(TO_CODE, string);
+	free(string);
+
+	XmFontListFreeFontContext(context);
+	return cd;
+    }
+}
+
+/* Encodes a string */
+static char *utf8_encoder_encode(iconv_t cd, char *input)
+{
+    char *buffer;
+    char *output;
+    size_t in_length;
+    size_t out_length;
+    size_t length;
+
+    /* Measure the input string */
+    in_length = strlen(input);
+
+    /* Special case for empty strings */
+    if (in_length == 0)
+    {
+	return strdup("");
+    }
+
+    /* If we have no encoder then try a simple memcpy and hope for the best */
+    if (cd == (iconv_t)-1)
+    {
+	printf("cd=-1\n");
+	if ((output = (char *)malloc(length)) == NULL)
+	{
+	    perror("malloc() failed");
+	    return NULL;
+	}
+
+	memcpy(output, input, in_length);
+	return output;
+    }
+
+    /* Guess twice as much should suffice for the output */
+    length = 2 * in_length + 1;
+    if ((buffer = (char *)malloc(length)) == NULL)
+    {
+	perror("malloc() failed");
+	return NULL;
+    }
+
+    output = buffer;
+    out_length = length;
+
+    /* Otherwise encode away! */
+    while (in_length != 0)
+    {
+	if (iconv(cd, &input, &in_length, &output, &out_length) == (size_t)-1)
+	{
+	    /* If we're out of space then allocate some more */
+	    if (errno == E2BIG)
+	    {
+		char *new_buffer;
+		size_t new_length;
+
+		new_length = (length - 1) * 2 + 1;
+		if ((new_buffer = realloc(buffer, new_length)) == NULL)
+		{
+		    perror("realloc() failed");
+		    free(output);
+		    return strdup("");
+		}
+
+		out_length += new_length - length;
+		output = new_buffer + (output - buffer);
+
+		buffer = new_buffer;
+		length = new_length;
+	    }
+	    else
+	    {
+		perror("iconv() failed");
+		return strdup("");
+	    }
+	}
+
+	*output = '\0';
+    }
+
+    return buffer;
+}
+
 
 /* This gets called when the user selects the "reloadGroups" menu item */
 static void file_groups(Widget widget, control_panel_t self, XtPointer unused)
@@ -763,6 +997,7 @@ static void create_status_line(control_panel_t self, Widget parent)
 static void create_top_box(control_panel_t self, Widget parent)
 {
     Widget form, label;
+    TextWidgetRec rc;
 
     /* Create a layout manager for the User Label and TextField */
     form = XtVaCreateWidget(
@@ -786,6 +1021,13 @@ static void create_top_box(control_panel_t self, Widget parent)
 	XmNleftAttachment, XmATTACH_WIDGET,
 	XmNleftWidget, label,
 	NULL);
+
+    /* Read the resources for the string's text widget */
+    XtGetApplicationResources(
+	self -> user, &rc,
+	resources, XtNumber(resources),
+	NULL, 0);
+    self -> user_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
 
     /* Manage the form widget now that all of its children are created */
     XtManageChild(form);
@@ -847,6 +1089,7 @@ static void text_changed(Widget widget, XtPointer rock, XtPointer unused)
 static void create_text_box(control_panel_t self, Widget parent)
 {
     Widget label;
+    TextWidgetRec rc;
 
     /* Create the label for the text field */
     label = XtVaCreateManagedWidget(
@@ -864,6 +1107,13 @@ static void create_text_box(control_panel_t self, Widget parent)
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNleftWidget, label,
 	NULL);
+
+    /* Read the resources for the string's text widget */
+    XtGetApplicationResources(
+	self -> text, &rc,
+	resources, XtNumber(resources),
+	NULL, 0);
+    self -> text_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
 
     /* Alert us when the message text changes */
     XtAddCallback(
@@ -909,6 +1159,8 @@ static Widget create_mime_type_menu(control_panel_t self, Widget parent)
 /* Constructs the Mime box */
 static void create_mime_box(control_panel_t self, Widget parent)
 {
+    TextWidgetRec rc;
+
     self -> mime_type = create_mime_type_menu(self, parent);
     XtVaSetValues(
 	self -> mime_type,
@@ -924,6 +1176,13 @@ static void create_mime_box(control_panel_t self, Widget parent)
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNleftWidget, self -> mime_type,
 	NULL);
+
+    /* Read the resources for the string's text widget */
+    XtGetApplicationResources(
+	self -> mime_args, &rc,
+	resources, XtNumber(resources),
+	NULL, 0);
+    self -> mime_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
@@ -1184,7 +1443,17 @@ static void set_user(control_panel_t self, char *user)
  * released with XtFree() */
 static char *get_user(control_panel_t self)
 {
-    return XmTextGetString(self -> user);
+    char *raw;
+    char *result;
+
+    /* Get the string from the widget */
+    raw = XmTextGetString(self -> user);
+
+    /* Encode it to UTF-8 */
+    result = utf8_encoder_encode(self -> user_encoder, raw);
+    XtFree(raw);
+
+    return result;
 }
 
 
@@ -1198,7 +1467,17 @@ static void set_text(control_panel_t self, char *text)
  * released with XtFree() */
 static char *get_text(control_panel_t self)
 {
-    return XmTextGetString(self -> text);
+    char *raw;
+    char *result;
+
+    /* Get the string from the widget */
+    raw = XmTextGetString(self -> text);
+
+    /* Encode it in UTF8 */
+    result = utf8_encoder_encode(self -> text_encoder, raw);
+    XtFree(raw);
+
+    return result;
 }
 
 
@@ -1262,15 +1541,25 @@ static void set_mime_args(control_panel_t self, char *args)
  * will need to be released with XtFree() */
 static char *get_mime_args(control_panel_t self)
 {
-    char *args = XmTextGetString(self -> mime_args);
+    char *raw;
+    char *result;
 
-    if (*args == '\0')
+    /* Get the string from the widget */
+    raw = XmTextGetString(self -> mime_args);
+
+    if (*raw == '\0')
     {
-	XtFree(args);
-	return NULL;
+	/* Convert empty strings into NULLs */
+	result = NULL;
+    }
+    else
+    {
+	/* Convert anything else into UTF-8 */
+	result = utf8_encoder_encode(self -> mime_encoder, raw);
     }
 
-    return args;
+    XtFree(raw);
+    return result;
 }
 
 /* Generates a universally unique identifier for a message.  Result
@@ -1373,6 +1662,18 @@ static message_t construct_message(control_panel_t self)
 	self -> selection -> title, user, text, get_timeout(self),
 	attachment, length,
 	NULL, uuid, self -> message_id);
+
+    /* Free the user */
+    if (user != NULL)
+    {
+	XtFree(user);
+    }
+
+    /* Free the text */
+    if (text != NULL)
+    {
+	free(text);
+    }
 
     /* Clean up */
     if (mime_args != NULL)
