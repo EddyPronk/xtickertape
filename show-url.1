@@ -1,0 +1,26 @@
+.TH SHOW-URL 1 "1999 January 8"
+.ds su \fIshow-url\fP
+.ds Su \fIShow-url\fP
+.UC 4
+.SH NAME
+show-url \- show a URL in netscape
+.SH SYNOPSIS
+.nf
+show-url filename | url
+.fi
+.SH OPTIONS
+If the argument to \*(su names a readable file, then the contents
+of that file are used as the URL.  If not, the argument is assumed to
+be the URL itself.
+.SH DESCRIPTION
+\*(Su is meant to be a handler for the x-elvin/url MIME type.  It
+attempts to send a URL to a running netscape, and if there is no such
+netscape it then starts one and points it at the URL.
+.SH BUGS
+E-mail bug reports to
+.BR phelps@pobox.com .
+Be sure to include the word "show-url" somewhere in the "Subject:"
+field.
+.SH AUTHORS
+\*(Su was written by Ted Phelps <phelps@pobox.com>.  Additional help
+was provided by David Arnold <davida@pobox.com>.
