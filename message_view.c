@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.11 2001/08/25 14:04:44 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.12 2001/08/25 14:09:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -371,7 +371,7 @@ message_view_t message_view_alloc(
 
     /* Convert that into a string */
     sprintf(self -> timestamp, TIMESTAMP_FORMAT,
-	    ((timestamp -> tm_hour - 1) % 12) + 1,
+	    ((timestamp -> tm_hour + 11) % 12) + 1,
 	    timestamp -> tm_min,
 	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
 
