@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.44 1999/08/22 06:22:40 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.45 1999/08/22 07:54:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -168,6 +168,7 @@ static void FileUsenet(Widget widget, ControlPanel self, XtPointer unused);
 static void FileExit(Widget widget, ControlPanel self, XtPointer unused);
 static void HelpAbout(Widget widget, ControlPanel self, XtPointer unused);
 static void CreateFileMenu(ControlPanel self, Widget parent);
+static void CreateOptionsMenu(ControlPanel self, Widget parent);
 static Widget CreateAboutBox(ControlPanel self, Widget parent);
 static void CreateHelpMenu(ControlPanel self, Widget parent);
 static Widget CreateGroupMenu(ControlPanel self, Widget parent);
@@ -225,11 +226,11 @@ static void CreateFileMenu(ControlPanel self, Widget parent)
     /* Create the menu itself */
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
 
-    /* Create the "reload groups" menu item */
+    /* Create the `reload groups' menu item */
     item = XtVaCreateManagedWidget("reloadGroups", xmPushButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)FileGroups, (XtPointer)self);
 
-    /* Create the "reload usenet" menu item */
+    /* Create the `reload usenet' menu item */
     item = XtVaCreateManagedWidget("reloadUsenet", xmPushButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)FileUsenet, (XtPointer)self);
 
@@ -246,6 +247,41 @@ static void CreateFileMenu(ControlPanel self, Widget parent)
 	XmNsubMenuId, menu,
 	NULL);
 }
+
+/* This is called when the `threaded' toggle button is selected */
+static void OptionsThreaded(
+    Widget widget,
+    ControlPanel self,
+    XmToggleButtonCallbackStruct *info)
+{
+    printf("threaded (set=%d)!\n", info -> set);
+    history_set_threaded(tickertape_history(self -> tickertape), info -> set);
+}
+
+/* Creates the `Options' menu */
+static void CreateOptionsMenu(ControlPanel self, Widget parent)
+{
+    Widget menu;
+    Widget item;
+    SANITY_CHECK(self);
+
+    /* Create the menu itself */
+    menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
+
+    /* Create the `threaded' menu item */
+    item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass, menu, NULL);
+    XtAddCallback(
+	item, XmNvalueChangedCallback,
+	(XtCallbackProc)OptionsThreaded, (XtPointer)self);
+    history_set_threaded(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
+
+    /* Create the menu's cascade button */
+    XtVaCreateManagedWidget(
+	"optionsMenu", xmCascadeButtonWidgetClass, parent,
+	XmNsubMenuId, menu,
+	NULL);
+}
+
 
 /* Creates the About box */
 static Widget CreateAboutBox(ControlPanel self, Widget parent)
@@ -743,6 +779,9 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
 
     /* Create the `file' menu */
     CreateFileMenu(self, menubar);
+
+    /* Create the `options' menu */
+    CreateOptionsMenu(self, menubar);
 
     /* Create the `help' menu and tell Motif that it's the Help menu */
     CreateHelpMenu(self, menubar);
@@ -1307,23 +1346,27 @@ static void prepare_reply(ControlPanel self, Message message)
     MenuItemTuple tuple;
     SANITY_CHECK(self);
 
+    /* Free the old message id */
+    free(self -> messageId);
+    self -> messageId = NULL;
+
     /* If a Message was provided that is in the menu, then select it
      * and set the messageId so that we can do threading */
     if (message != NULL)
     {
-	tuple = (MenuItemTuple) Message_getInfo(message);
+	char *id;
 
-	if (tuple != NULL)
+	if ((tuple = (MenuItemTuple) Message_getInfo(message)) != NULL)
 	{
 	    self -> selection = tuple;
 	    SetGroupSelection(self, tuple);
 	}
 
-	self -> messageId = strdup(Message_getId(message));
-    }
-    else
-    {
-	self -> messageId = NULL;
+	id = Message_getId(message);
+	if (id != NULL)
+	{
+	    self -> messageId = strdup(id);
+	}
     }
 }
 
