@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.111 2001/05/06 02:04:36 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.112 2001/05/06 02:41:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1677,7 +1677,12 @@ static void delete_left_to_right(ScrollerWidget self, glyph_t glyph)
 		}
 	    }
 
+	    /* Lose the glyph holder */
 	    glyph_holder_free(holder);
+	    if (--glyph -> visible_count == 0)
+	    {
+		queue_remove(glyph);
+	    }
 	}
 	else
 	{
@@ -1765,7 +1770,12 @@ static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 		}
 	    }
 
+	    /* Lose the glyph holder */
 	    glyph_holder_free(holder);
+	    if (--glyph -> visible_count == 0)
+	    {
+		queue_remove(glyph);
+	    }
 	}
 	else
 	{
