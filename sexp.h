@@ -31,11 +31,8 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.8 2000/11/13 13:42:34 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.9 2000/11/13 13:47:54 phelps Exp $";
 #endif /* lint */
-
-/* An env_t is an opaque struct as well */
-typedef struct sexp *env_t;
 
 /* The types of sexps */
 typedef enum
@@ -56,7 +53,7 @@ typedef enum
 typedef struct sexp *sexp_t;
 
 /* The built-in function type */
-typedef int (*builtin_t)(env_t env, sexp_t args, sexp_t *result, elvin_error_t error);
+typedef int (*builtin_t)(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error);
 
 
 /* Initialize the interpreter */
@@ -94,7 +91,7 @@ sexp_t cons_alloc(sexp_t car, sexp_t cdr, elvin_error_t error);
 sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error);
 
 /* Allocates and initializes a new lambda sexp */
-sexp_t lambda_alloc(env_t env, sexp_t arg_list, sexp_t body, elvin_error_t error);
+sexp_t lambda_alloc(sexp_t env, sexp_t arg_list, sexp_t body, elvin_error_t error);
 
 /* Returns the sexp's type */
 sexp_type_t sexp_get_type(sexp_t sexp);
@@ -110,7 +107,7 @@ int sexp_free(sexp_t sexp, elvin_error_t error);
 char *sexp_to_string(sexp_t sexp, elvin_error_t error);
 
 /* Evaluates an sexp */
-int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error);
+int sexp_eval(sexp_t sexp, sexp_t env, sexp_t *result, elvin_error_t error);
 
 /* Returns the symbol's name */
 char *symbol_name(sexp_t sexp, elvin_error_t error);
@@ -141,40 +138,40 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error);
 
 
 /* Allocates and returns an evalutaion environment */
-env_t env_alloc(env_t parent, elvin_error_t error);
+sexp_t env_alloc(sexp_t parent, elvin_error_t error);
 
 /* Allocates another reference to the environment */
-int env_alloc_ref(env_t env, elvin_error_t error);
+int env_alloc_ref(sexp_t env, elvin_error_t error);
 
 /* Frees an environment and all of its references */
-int env_free(env_t env, elvin_error_t error);
+int env_free(sexp_t env, elvin_error_t error);
 
 /* Looks up a symbol's value in the environment */
-int env_get(env_t env, sexp_t sexp, sexp_t *result, elvin_error_t error);
+int env_get(sexp_t env, sexp_t sexp, sexp_t *result, elvin_error_t error);
 
 /* Sets a symbol's value in the environment */
-int env_set(env_t env, sexp_t sexp, sexp_t value, elvin_error_t error);
+int env_set(sexp_t env, sexp_t sexp, sexp_t value, elvin_error_t error);
 
 /* Sets a symbol's value in the appropriate environment */
-int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error);
+int env_assign(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error);
 
 
 /* Sets the named symbol's value to the int32 value in env */
-int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error);
+int env_set_int32(sexp_t env, char *name, int32_t value, elvin_error_t error);
 
 /* Sets the named symbol's value to the int64 value in env */
-int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error);
+int env_set_int64(sexp_t env, char *name, int64_t value, elvin_error_t error);
 
 /* Sets the named symbol's value to the float value in env */
-int env_set_float(env_t env, char *name, double value, elvin_error_t error);
+int env_set_float(sexp_t env, char *name, double value, elvin_error_t error);
 
 /* Sets the named symbol's value to the string value in env */
-int env_set_string(env_t env, char *name, char *value, elvin_error_t error);
+int env_set_string(sexp_t env, char *name, char *value, elvin_error_t error);
 
 /* Sets the named symbol's value to the symbol in env */
-int env_set_symbol(env_t env, char *name, char *value, elvin_error_t error);
+int env_set_symbol(sexp_t env, char *name, char *value, elvin_error_t error);
 
 /* Sets the named symbol's value to the built-in function in env */
-int env_set_builtin(env_t env, char *name, builtin_t function, elvin_error_t error);
+int env_set_builtin(sexp_t env, char *name, builtin_t function, elvin_error_t error);
 
 #endif /* SEXP_H */

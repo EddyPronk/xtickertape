@@ -12,9 +12,9 @@
 #include "sexp.h"
 #include "parser.h"
 
-env_t root_env = NULL;
+sexp_t root_env;
 
-static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error);
+static int prim_lambda(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error);
 
 /* Parser callback */
 int parsed(void *rock, parser_t parser, sexp_t sexp, elvin_error_t error)
@@ -75,7 +75,7 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 
 /* Evaluate a list of args and put the results into an array */
 static int eval_args(
-    env_t env,
+    sexp_t env,
     sexp_t args,
     sexp_t *values,
     uint32_t count,
@@ -134,7 +134,7 @@ static int eval_args(
 
 /* Extract the arguments to a function without evaluating them */
 static int extract_args(
-    env_t env,
+    sexp_t env,
     sexp_t args,
     sexp_t *args_out,
     uint32_t count,
@@ -171,7 +171,7 @@ static int extract_args(
 }
 
 /* The `and' primitive function */
-static int prim_and(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_and(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     /* Assume true */
     *result = symbol_alloc("t", error);
@@ -211,7 +211,7 @@ static int prim_and(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `car' primitive function */
-static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_car(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t value;
 
@@ -245,7 +245,7 @@ static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `car' primitive function */
-static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_cdr(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t value;
 
@@ -279,7 +279,7 @@ static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `cons' primitive function */
-static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_cons(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t values[2];
 
@@ -300,7 +300,7 @@ static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 }
 
 /* The `defun' primitive function */
-static int prim_defun(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_defun(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t symbol;
 
@@ -335,7 +335,7 @@ static int prim_defun(env_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 }
 
 /* The `eq' primitive function */
-static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_eq(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t values[2];
     int match = 0;
@@ -472,7 +472,7 @@ static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `if' primitive function */
-static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_if(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t values[3];
     sexp_t value;
@@ -513,7 +513,7 @@ static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `lambda' primitive function */
-static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_lambda(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t arg_list;
     sexp_t body;
@@ -562,7 +562,7 @@ static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t err
 }
 
 /* The `and' primitive function */
-static int prim_or(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_or(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     /* Assume false */
     *result = nil_alloc(error);
@@ -601,7 +601,7 @@ static int prim_or(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 }
 
 /* The `+' primitive function */
-static int prim_plus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_plus(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t sum;
 
@@ -767,7 +767,7 @@ static int prim_plus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 }
 
 /* The `-' primitive function */
-static int prim_minus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_minus(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t sum;
 
@@ -933,7 +933,7 @@ static int prim_minus(env_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 }
 
 /* The `*' primitive function */
-static int prim_times(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_times(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t product;
 
@@ -1099,7 +1099,7 @@ static int prim_times(env_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 }
 
 /* The `/' primitive function */
-static int prim_div(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_div(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t product;
 
@@ -1276,7 +1276,7 @@ static int prim_div(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 
 
 /* The `quote' primitive function */
-static int prim_quote(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_quote(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     /* Make sure we have at least one arg */
     if (sexp_get_type(args) != SEXP_CONS)
@@ -1310,7 +1310,7 @@ static int prim_quote(env_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 
 
 /* The `setq' primitive function */
-static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+static int prim_setq(sexp_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t symbol;
     sexp_t value;
@@ -1384,9 +1384,9 @@ static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 
 
 /* Initializes the Lisp evaluation engine */
-static env_t root_env_alloc(elvin_error_t error)
+static sexp_t root_env_alloc(elvin_error_t error)
 {
-    env_t env;
+    sexp_t env;
 
     if ((env = env_alloc(nil_alloc(error), error)) == NULL)
     {

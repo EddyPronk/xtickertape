@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.15 2000/11/13 13:42:02 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.16 2000/11/13 13:47:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -64,7 +64,7 @@ struct builtin
 /* A lambda expression */
 struct lambda
 {
-    env_t env;
+    sexp_t env;
     sexp_t arg_list;
     sexp_t body;
 };
@@ -396,7 +396,7 @@ sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error)
 }
 
 /* Allocates and initializes a new lambda sexp */
-sexp_t lambda_alloc(env_t env, sexp_t arg_list, sexp_t body, elvin_error_t error)
+sexp_t lambda_alloc(sexp_t env, sexp_t arg_list, sexp_t body, elvin_error_t error)
 {
     sexp_t sexp;
 
@@ -625,8 +625,8 @@ int sexp_print(sexp_t sexp)
 
 /* Initialize an environment from an arg list and a set of args */
 static int init_env_with_args(
-    env_t env,
-    env_t eval_env,
+    sexp_t env,
+    sexp_t eval_env,
     sexp_t arg_list,
     sexp_t args,
     elvin_error_t error)
@@ -673,7 +673,7 @@ static int init_env_with_args(
 /* Evaluates a function */
 static int funcall(
     sexp_t function,
-    env_t env,
+    sexp_t env,
     sexp_t args,
     sexp_t *result,
     elvin_error_t error)
@@ -690,7 +690,7 @@ static int funcall(
 	/* Lambda expression? */
 	case SEXP_LAMBDA:
 	{
-	    env_t lambda_env;
+	    sexp_t lambda_env;
 	    sexp_t body;
 
 	    /* Create an environment for execution */
@@ -748,7 +748,7 @@ static int funcall(
 }
 
 /* Evaluates an sexp */
-int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
+int sexp_eval(sexp_t sexp, sexp_t env, sexp_t *result, elvin_error_t error)
 {
     switch (sexp_get_type(sexp))
     {
@@ -821,26 +821,26 @@ int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
 }
 
 /* Allocates and initializes an environment */
-env_t env_alloc(env_t parent, elvin_error_t error)
+sexp_t env_alloc(sexp_t parent, elvin_error_t error)
 {
     /* Allocate a cons cell to hold the environment's parent and alist */
     return cons_alloc(parent, nil_alloc(error), error);
 }
 
 /* Allocates another reference to the environment */
-int env_alloc_ref(env_t env, elvin_error_t error)
+int env_alloc_ref(sexp_t env, elvin_error_t error)
 {
     return sexp_alloc_ref(env, error);
 }
 
 /* Frees an environment and all of its references */
-int env_free(env_t env, elvin_error_t error)
+int env_free(sexp_t env, elvin_error_t error)
 {
     return sexp_free(env, error);
 }
 
 /* Looks up a symbol's value in the environment */
-int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
+int env_get(sexp_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 {
     /* Keep checking until we run out of parent environments */
     while (env != &nil)
@@ -867,7 +867,7 @@ int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 }
 
 /* Sets a symbol's value in the environment */
-int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
+int env_set(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
     sexp_t pair;
     sexp_t alist;
@@ -891,7 +891,7 @@ int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 }
 
 /* Sets a symbol's value in the appropriate environment */
-int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
+int env_assign(sexp_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
     sexp_t pair;
 
@@ -922,7 +922,7 @@ int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value */
-int env_set_value(env_t env, char *name, sexp_t value, elvin_error_t error)
+int env_set_value(sexp_t env, char *name, sexp_t value, elvin_error_t error)
 {
     sexp_t symbol;
     int result;
@@ -941,7 +941,7 @@ int env_set_value(env_t env, char *name, sexp_t value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value to the int32 value in env */
-int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error)
+int env_set_int32(sexp_t env, char *name, int32_t value, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
@@ -961,7 +961,7 @@ int env_set_int32(env_t env, char *name, int32_t value, elvin_error_t error)
 
 
 /* Sets the named symbol's value to the int64 value in env */
-int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error)
+int env_set_int64(sexp_t env, char *name, int64_t value, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
@@ -980,7 +980,7 @@ int env_set_int64(env_t env, char *name, int64_t value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value to the float value in env */
-int env_set_float(env_t env, char *name, double value, elvin_error_t error)
+int env_set_float(sexp_t env, char *name, double value, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
@@ -1000,7 +1000,7 @@ int env_set_float(env_t env, char *name, double value, elvin_error_t error)
 
 
 /* Sets the named symbol's value in the environment */
-int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
+int env_set_string(sexp_t env, char *name, char *value, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
@@ -1019,7 +1019,7 @@ int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value to the symbol in env */
-int env_set_symbol(env_t env, char *name, char *value, elvin_error_t error)
+int env_set_symbol(sexp_t env, char *name, char *value, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
@@ -1038,7 +1038,7 @@ int env_set_symbol(env_t env, char *name, char *value, elvin_error_t error)
 }
 
 /* Sets the named symbol's value to the built-in function in env */
-int env_set_builtin(env_t env, char *name, builtin_t function, elvin_error_t error)
+int env_set_builtin(sexp_t env, char *name, builtin_t function, elvin_error_t error)
 {
     sexp_t sexp;
     int result;
