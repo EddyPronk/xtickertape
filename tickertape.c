@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.62 2000/08/28 06:05:10 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.63 2000/09/22 08:03:19 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -80,6 +80,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.62 2000/08/28 06:05:10 phelps
 #define CONN_CLOSED_MSG "Connection closed by server: %s"
 #define PROTOCOL_ERROR_MSG "Protocol error encountered with server: %s"
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
+#define DROP_WARN_MSG "One or more packets were dropped"
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
@@ -1149,6 +1150,12 @@ static void status_cb(
 
 	    sprintf(buffer, CONN_CLOSED_MSG, url);
 	    string = buffer;
+	    break;
+	}
+
+	case ELVIN_STATUS_DROP_WARN:
+	{
+	    string = DROP_WARN_MSG;
 	    break;
 	}
 
