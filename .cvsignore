@@ -8,6 +8,7 @@ Makefile.in
 aclocal.m4
 alpha-dec-osfV3.2
 alpha-dec-osfV4.0
+autom4te.cache
 config.cache
 config.h
 config.h.in
