@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.26 1999/05/17 12:57:25 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.27 1999/05/21 05:30:32 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,6 +38,7 @@ static const char cvsid[] = "$Id: Subscription.c,v 1.26 1999/05/17 12:57:25 phel
 #include <alloca.h>
 #endif /* HAVE_ALLOCA_H */
 #include "sanity.h"
+#include "groups.h"
 #include "Subscription.h"
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
@@ -98,6 +99,7 @@ struct Subscription_t
  *
  */
 
+static int CreateGroupsFile(char *filename, char *username);
 static int TranslateMenu(char *token);
 static int TranslateMime(char *token);
 static int TranslateTime(char *token);
@@ -113,6 +115,45 @@ static void SendMessage(Subscription self, Message message);
  * Static functions
  *
  */
+
+/* Create a default groups file and write it to the named file */
+static int CreateGroupsFile(char *filename, char *username)
+{
+    char *pointer;
+    FILE *file;
+
+    /* Open the file for writing */
+    if ((file = fopen(filename, "w")) == NULL)
+    {
+	perror("unable to create groups file");
+	return -1;
+    }
+
+    /* Copy the string into the file, substituting the username for %u
+     * and x for %x for any other character */
+    for (pointer = defaultGroupsFile; *pointer != '\0'; pointer++)
+    {
+	/* Watch for escape characters */
+	if (*pointer == '%')
+	{
+	    pointer++;
+	    if (*pointer == 'u')
+	    {
+		fputs(username, file);
+	    }
+	    else
+	    {
+		fputc(*pointer, file);
+	    }
+	}
+	else
+	{
+	    fputc(*pointer, file);
+	}
+    }
+
+    fclose(file);
+}
 
 /* Translate the 'menu' or 'no menu' token into non-zero or zero*/
 static int TranslateMenu(char *token)
@@ -403,7 +444,7 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     /* Construct a message */
     message = Message_alloc(
 	self -> controlPanelInfo, self -> group,
-	user, text, timeout,
+	user, text, (unsigned long) timeout,
 	mimeType, mimeArgs,
 	*messageId_p, *replyId_p);
 
@@ -464,11 +505,32 @@ static void SendMessage(Subscription self, Message message)
 
 /* Read Subscriptions from the group file 'groups' and add them to 'list' */
 List Subscription_readFromGroupFile(
-    FILE *groups, SubscriptionCallback callback, void *context)
+    char *filename, char *username,
+    SubscriptionCallback callback, void *context)
 {
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(groups, ":\r", "\n");
     List list = List_alloc();
+    FILE *file;
+    FileStreamTokenizer tokenizer;
     char *token;
+
+    /* Try to open the file */
+    while ((file = fopen(filename, "r")) == NULL)
+    {
+	/* If one doesn't exist, then try to create one */
+	if (errno == ENOENT)
+	{
+	    fprintf(stderr, "Creating a file %s\n", filename);
+	    CreateGroupsFile(filename, username);
+	    return list;
+	}
+
+	/* Otherwise, life is hard */
+	perror("unable to read groups file");
+	return list;
+    }
+
+    /* We've successfully opened the file, so go ahead and allocate stuff */
+    tokenizer = FileStreamTokenizer_alloc(file, ":\r", "\n");
 
     /* Locate a non-empty line that doesn't begin with a '#' */
     while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
@@ -486,6 +548,7 @@ List Subscription_readFromGroupFile(
 	}
     }
 
+    fclose(file);
     FileStreamTokenizer_free(tokenizer);
     return list;
 }
