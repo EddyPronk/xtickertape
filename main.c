@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.57 1999/10/04 05:53:12 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.58 1999/10/04 05:59:54 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -126,7 +126,7 @@ static void parse_args(
     *port_return = PORT;
 
     /* Read each argument using getopt */
-    while ((choice = getopt_long(argc, argv, "h:p:u:f:s:v", long_options, NULL)) > 0)
+    while ((choice = getopt_long(argc, argv, "h:p:u:U:G:v", long_options, NULL)) > 0)
     {
 	switch (choice)
 	{
