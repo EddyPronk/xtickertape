@@ -670,6 +670,515 @@ static int prim_plus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
     return 1;
 }
 
+/* The `-' primitive function */
+static int prim_minus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t sum;
+
+    /* Start with a sum of zero */
+    if ((sum = int32_alloc(0, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Keep going until we run out of args */
+    while (sexp_get_type(args) == SEXP_CONS)
+    {
+	sexp_t value;
+
+	/* Evaluate the car */
+	if (sexp_eval(cons_car(args, error), env, &value, error) == 0)
+	{
+	    sexp_free(value, NULL);
+	    return 0;
+	}
+
+	/* Figure out what to do based on the type of the first arg */
+	switch (sexp_get_type(sum))
+	{
+	    case SEXP_INT32:
+	    {
+		int32_t lhs = int32_value(sum, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int32_alloc(lhs - int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs - int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs - float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_INT64:
+	    {
+		int64_t lhs = int64_value(sum, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int64_alloc(lhs - int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs - int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs - float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_FLOAT:
+	    {
+		double lhs = float_value(sum, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = float_alloc(lhs - int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = float_alloc(lhs - int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs - float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+		*result = NULL;
+		break;
+	    }
+	}
+
+	/* Free the value */
+	if (sexp_free(value, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* Check for an error */
+	if (*result == NULL)
+	{
+	    return 0;
+	}
+
+	/* The result becomes the sum */
+	sum = *result;
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure we end cleanly */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	return 0;
+    }
+
+    *result = sum;
+    return 1;
+}
+
+/* The `*' primitive function */
+static int prim_times(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t product;
+
+    /* Start with a product of one */
+    if ((product = int32_alloc(1, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Keep going until we run out of args */
+    while (sexp_get_type(args) == SEXP_CONS)
+    {
+	sexp_t value;
+
+	/* Evaluate the car */
+	if (sexp_eval(cons_car(args, error), env, &value, error) == 0)
+	{
+	    sexp_free(product, NULL);
+	    return 0;
+	}
+
+	/* Figure out what to do based on the type of the first arg */
+	switch (sexp_get_type(product))
+	{
+	    case SEXP_INT32:
+	    {
+		int32_t lhs = int32_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int32_alloc(lhs * int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs * int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs * float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_INT64:
+	    {
+		int64_t lhs = int64_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int64_alloc(lhs * int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs * int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs * float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_FLOAT:
+	    {
+		double lhs = float_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = float_alloc(lhs * int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = float_alloc(lhs * int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs * float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+		*result = NULL;
+		break;
+	    }
+	}
+
+	/* Free the value */
+	if (sexp_free(value, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* Check for an error */
+	if (*result == NULL)
+	{
+	    return 0;
+	}
+
+	/* The result becomes the product */
+	product = *result;
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure we end cleanly */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	return 0;
+    }
+
+    *result = product;
+    return 1;
+}
+
+/* The `/' primitive function */
+static int prim_div(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t product;
+
+    /* Make sure we have at least one arg */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+	return 0;
+    }
+
+    /* Use the first arg as our divisor */
+    if (sexp_eval(cons_car(args, error), env, &product, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Start with the remaining args */
+    args = cons_cdr(args, error);
+
+    /* Keep going until we run out of args */
+    while (sexp_get_type(args) == SEXP_CONS)
+    {
+	sexp_t value;
+
+	/* Evaluate the car */
+	if (sexp_eval(cons_car(args, error), env, &value, error) == 0)
+	{
+	    sexp_free(value, NULL);
+	    return 0;
+	}
+
+	/* Figure out what to do based on the type of the first arg */
+	switch (sexp_get_type(product))
+	{
+	    case SEXP_INT32:
+	    {
+		int32_t lhs = int32_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int32_alloc(lhs / int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs / int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs / float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_INT64:
+	    {
+		int64_t lhs = int64_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = int64_alloc(lhs / int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = int64_alloc(lhs / int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs / float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_FLOAT:
+	    {
+		double lhs = float_value(product, error);
+
+		switch (sexp_get_type(value))
+		{
+		    case SEXP_INT32:
+		    {
+			*result = float_alloc(lhs / int32_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			*result = float_alloc(lhs / int64_value(value, error), error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			*result = float_alloc(lhs / float_value(value, error), error);
+			break;
+		    }
+
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+			*result = NULL;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad type");
+		*result = NULL;
+		break;
+	    }
+	}
+
+	/* Free the value */
+	if (sexp_free(value, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* Check for an error */
+	if (*result == NULL)
+	{
+	    return 0;
+	}
+
+	/* The result becomes the product */
+	product = *result;
+
+	/* Move on to the next arg */
+	args = cons_cdr(args, error);
+    }
+
+    /* Make sure we end cleanly */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	return 0;
+    }
+
+    *result = product;
+    return 1;
+}
+
+
 /* The `quote' primitive function */
 static int prim_quote(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
@@ -804,6 +1313,9 @@ static env_t root_env_alloc(elvin_error_t error)
 	env_set_builtin(env, "if", prim_if, error) == 0 ||
 	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
 	env_set_builtin(env, "+", prim_plus, error) == 0 ||
+	env_set_builtin(env, "-", prim_minus, error) == 0 ||
+	env_set_builtin(env, "*", prim_times, error) == 0 ||
+	env_set_builtin(env, "/", prim_div, error) == 0 ||
 	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
 	env_set_builtin(env, "setq", prim_setq, error) == 0)
     {
