@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.20 1998/10/21 08:20:41 phelps Exp $ */
+/* $Id: Control.c,v 1.21 1998/10/24 15:33:42 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,8 +91,8 @@ struct ControlPanel_t
     /* The default user name */
     char *username;
 
-    /* The thread id of the message to which we are replying (if any) */
-    unsigned long reply_thread_id;
+    /* The message to which we are replying (0 if none) */
+    unsigned long messageId;
 };
 
 
@@ -549,7 +549,7 @@ static void SetSelection(ControlPanel self, MenuItemTuple tuple)
 	SetLabel(self -> group, tuple -> title);
     }
 
-    self -> reply_thread_id = -1;
+    self -> messageId = 0;
 }
 
 /* Answers the receiver's user */
@@ -623,13 +623,9 @@ static char *GetMimeType(ControlPanel self)
 /* Answers a message based on the receiver's current state */
 Message ConstructMessage(ControlPanel self)
 {
-    unsigned long msg_id;
     char *mimeArgs;
     SANITY_CHECK(self);
     
-    /* Allocate new message identifier */
-    msg_id = random();
-
     /* Determine our MIME args */
     mimeArgs = GetMimeArgs(self);
 
@@ -642,8 +638,8 @@ Message ConstructMessage(ControlPanel self)
 	GetTimeout(self),
 	(mimeArgs == NULL) ? NULL : GetMimeType(self),
 	mimeArgs,
-	msg_id,
-	self -> reply_thread_id == -1 ? 0 : msg_id ^ self -> reply_thread_id);
+	random(),
+	self -> messageId);
 }
 
 /*
@@ -708,7 +704,7 @@ ControlPanel ControlPanel_alloc(Widget parent, char *user)
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
     self -> username = strdup(user);
-    self -> reply_thread_id = -1;
+    self -> messageId = 0;
 
     CreateControlPanelPopup(self, self -> top);
     ActionClear(NULL, self, NULL);
@@ -832,11 +828,11 @@ void ControlPanel_show(ControlPanel self, Message message)
 	    SetSelection(self, tuple);
 	}
 
-	self -> reply_thread_id = Message_getThreadId(message);
+	self -> messageId = Message_getId(message);
     }
     else
     {
-	self -> reply_thread_id = -1;
+	self -> messageId = 0;
     }
 
     XtPopup(self -> top, XtGrabNone);

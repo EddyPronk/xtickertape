@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.8 1998/10/21 05:24:12 phelps Exp $ */
+/* $Id: Message.h,v 1.9 1998/10/24 15:35:05 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -15,11 +15,18 @@ Message Message_alloc(
     unsigned int timeout,
     char *mimeType,
     char *mimeArgs,
-    unsigned long msg_id,
-    unsigned long thread_id);
+    unsigned long id,
+    unsigned long replyId);
 
 /* Frees the memory used by the receiver */
 void Message_free(Message self);
+
+/* Prints debugging information */
+void Message_debug(Message self);
+
+
+/* Answers the Subscription info for the receiver's subscription */
+void *Message_getInfo(Message self);
 
 /* Answers the receiver's group */
 char *Message_getGroup(Message self);
@@ -42,16 +49,10 @@ char *Message_getMimeType(Message self);
 /* Answers the receiver's MIME arguments */
 char *Message_getMimeArgs(Message self);
 
-/* Answers the receiver's message identifier */
+/* Answers the receiver's id */
 unsigned long Message_getId(Message self);
 
-/* Answers the receiver's discussion thread identifier */
-unsigned long Message_getThreadId(Message self);
-
-/* Answers the Subscription info for the receiver's subscription */
-void *Message_getInfo(Message self);
-
-/* Prints debugging information */
-void Message_debug(Message self);
+/* Answers the id of the message for which this is a reply */
+unsigned long Message_getReplyId(Message self);
 
 #endif /* MESSAGE_H */

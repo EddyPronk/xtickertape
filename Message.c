@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.11 1998/10/21 08:19:40 phelps Exp $ */
+/* $Id: Message.c,v 1.12 1998/10/24 15:35:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,10 +41,10 @@ struct Message_t
     unsigned long timeout;
 
     /* The identifier for this message */
-    unsigned long msg_id;
+    unsigned long id;
 
-    /* The identifier for the discussion thread */
-    unsigned long thread_id;
+    /* The identifier for the message for which this is a reply */
+    unsigned long replyId;
 };
 
 
@@ -57,8 +57,8 @@ Message Message_alloc(
     unsigned int timeout,
     char *mimeType,
     char *mimeArgs,
-    unsigned long msg_id,
-    unsigned long thread_id)
+    unsigned long id,
+    unsigned long replyId)
 {
     Message self = (Message) malloc(sizeof(struct Message_t));
 
@@ -89,8 +89,8 @@ Message Message_alloc(
     }
 
     self -> timeout = timeout;
-    self -> msg_id = msg_id;
-    self -> thread_id = thread_id;
+    self -> id = id;
+    self -> replyId = replyId;
 
     return self;
 }
@@ -131,6 +131,29 @@ void Message_free(Message self)
 
     free(self);
 }
+
+
+/* Prints debugging information */
+void Message_debug(Message self)
+{
+    SANITY_CHECK(self);
+
+    printf("Message (%p)\n", self);
+#ifdef SANITY
+    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
+#endif /* SANITY */
+    printf("  info = 0x%p\n", self -> info);
+    printf("  group = \"%s\"\n", self -> group);
+    printf("  user = \"%s\"\n", self -> user);
+    printf("  string = \"%s\"\n", self -> string);
+    printf("  mimeType = \"%s\"\n", (self -> mimeType == NULL) ? "<null>" : self -> mimeType);
+    printf("  mimeArgs = \"%s\"\n", (self -> mimeArgs == NULL) ? "<null>" : self -> mimeArgs);
+    printf("  timeout = %ld\n", self -> timeout);
+    printf("  id = %ld\n", self -> id);
+    printf("  replyId = %ld\n", self -> replyId);
+}
+
+
 
 /* Answers the Subscription matched to generate the receiver */
 void *Message_getInfo(Message self)
@@ -189,38 +212,17 @@ char *Message_getMimeArgs(Message self)
     return self -> mimeArgs;
 }
 
-/* Answers the receiver's message identifier */
+/* Answers the receiver's id */
 unsigned long Message_getId(Message self)
 {
     SANITY_CHECK(self);
-    return self -> msg_id;
+    return self -> id;
 }
 
-/* Answers the receiver's discussion thread identifier */
-unsigned long Message_getThreadId(Message self)
+/* Answers the id of the message for which this is a reply */
+unsigned long Message_getReplyId(Message self)
 {
     SANITY_CHECK(self);
-    return self -> thread_id;
+    return self -> replyId;
 }
-
-/* Prints debugging information */
-void Message_debug(Message self)
-{
-    SANITY_CHECK(self);
-
-    printf("Message (%p)\n", self);
-#ifdef SANITY
-    printf("  sanity_check = \"%s\"\n", self -> sanity_check);
-#endif /* SANITY */
-    printf("  info = 0x%p\n", self -> info);
-    printf("  group = \"%s\"\n", self -> group);
-    printf("  user = \"%s\"\n", self -> user);
-    printf("  string = \"%s\"\n", self -> string);
-    printf("  mimeType = \"%s\"\n", (self -> mimeType == NULL) ? "<null>" : self -> mimeType);
-    printf("  mimeArgs = \"%s\"\n", (self -> mimeArgs == NULL) ? "<null>" : self -> mimeArgs);
-    printf("  timeout = %ld\n", self -> timeout);
-    printf("  msg_id = %ld\n", self -> msg_id);
-    printf("  thread_id = %ld\n", self -> thread_id);
-}
-
 

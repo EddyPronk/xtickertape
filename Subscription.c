@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.17 1998/10/24 04:56:28 phelps Exp $ */
+/* $Id: Subscription.c,v 1.18 1998/10/24 15:35:05 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -252,10 +252,10 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     int32 timeout;
     char *mimeType;
     char *mimeArgs;
-    int32 *msg_id_p;
-    int32 msg_id;
-    int32 *thread_id_p;
-    int32 thread_id;
+    int32 *messageId_p;
+    int32 messageId;
+    int32 *replyId_p;
+    int32 replyId;
     SANITY_CHECK(self);
 
     /* If we don't have a callback then just quit now */
@@ -321,19 +321,19 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     }
 
     /* Get the message id (if provided) */
-    if ((en_search(notification, "message", &type, (void **)&msg_id_p) != 0) ||
+    if ((en_search(notification, "Message-Id", &type, (void **)&messageId_p) != 0) ||
 	(type != EN_INT32))
     {
-	msg_id = 0;
-	msg_id_p = &msg_id;
+	messageId = 0;
+	messageId_p = &messageId;
     }
 
-    /* Get the message id (if provided) */
-    if ((en_search(notification, "thread", &type, (void **)&thread_id_p) != 0) ||
+    /* Get the reply id (if provided) */
+    if ((en_search(notification, "In-Reply-To", &type, (void **)&replyId_p) != 0) ||
 	(type != EN_INT32))
     {
-	thread_id = 0;
-	thread_id_p = &thread_id;
+	replyId = 0;
+	replyId_p = &replyId;
     }
 
     /* Construct a message */
@@ -341,7 +341,7 @@ static void HandleNotify(Subscription self, en_notify_t notification)
 	self -> controlPanelInfo, self -> group,
 	user, text, *timeout_p,
 	mimeType, mimeArgs,
-	*msg_id_p, *thread_id_p);
+	*messageId_p, *replyId_p);
 
     /* Deliver the message */
     (*self -> callback)(self -> context, message);
@@ -351,14 +351,17 @@ static void HandleNotify(Subscription self, en_notify_t notification)
 static void SendMessage(Subscription self, Message message)
 {
     en_notify_t notification;
-    int32 timeout, msg_id, thread_id;
-    char *mimeArgs, *mimeType;
+    int32 timeout;
+    int32 messageId;
+    int32 replyId;
+    char *mimeArgs;
+    char *mimeType;
     
     SANITY_CHECK(self);
 
     timeout = Message_getTimeout(message);
-    msg_id = Message_getId(message);
-    thread_id = Message_getThreadId(message);
+    messageId = Message_getId(message);
+    replyId = Message_getReplyId(message);
     mimeArgs = Message_getMimeArgs(message);
     mimeType = Message_getMimeType(message);
 
@@ -367,8 +370,12 @@ static void SendMessage(Subscription self, Message message)
     en_add_string(notification, "USER", Message_getUser(message));
     en_add_int32(notification, "TIMEOUT", timeout);
     en_add_string(notification, "TICKERTEXT", Message_getString(message));
-    en_add_int32(notification, "message", msg_id);
-    en_add_int32(notification, "thread", thread_id);
+    en_add_int32(notification, "Message-Id", messageId);
+
+    if (replyId != 0)
+    {
+	en_add_int32(notification, "In-Reply-To", replyId);
+    }
 
     /* Add mime information if both mimeArgs and mimeType are provided */
     if ((mimeArgs != NULL) && (mimeType != NULL))
