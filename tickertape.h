@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.11 1999/12/16 07:32:44 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.12 2000/07/28 05:57:01 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -50,7 +50,9 @@ tickertape_t tickertape_alloc(
     elvin_handle_t handle,
     char *user, char *domain,
     char *ticker_dir,
-    char *groupsFile, char *usenetFile,
+    char *config_file,
+    char *groups_file,
+    char *usenet_file,
     Widget top,
     elvin_error_t error);
 

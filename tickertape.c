@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.60 2000/06/25 02:10:35 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.61 2000/07/28 05:57:01 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -48,6 +48,10 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.60 2000/06/25 02:10:35 phelps
 #include "tickertape.h"
 #include "Scroller.h"
 #include "panel.h"
+#include "def-config.h"
+#include "ast.h"
+#include "subscription.h"
+#include "parser.h"
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -60,6 +64,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.60 2000/06/25 02:10:35 phelps
 #endif /* ORBIT */
 
 #define DEFAULT_TICKERDIR ".ticker"
+#define DEFAULT_CONFIG_FILE "xtickertape.conf"
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
 
@@ -97,6 +102,9 @@ struct tickertape
 
     /* The receiver's ticker directory */
     char *ticker_dir;
+
+    /* The config file filename */
+    char *config_file;
 
     /* The group file from which we read our subscriptions */
     char *groups_file;
@@ -158,6 +166,7 @@ static void orbit_callback(tickertape_t self, en_notify_t notification);
 static void subscribe_to_orbit(tickertape_t self);
 #endif /* ORBIT */
 static char *tickertape_ticker_dir(tickertape_t self);
+static char *tickertape_config_filename(tickertape_t self);
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
 
@@ -320,11 +329,12 @@ static int write_default_file(tickertape_t self, FILE *out, char *template)
     return 0;
 }
 
-/* Open a subscriptions file.  If the file doesn't exist, try to
+
+/* Open a configuration file.  If the file doesn't exist, try to
  * create it and fill it with the default groups file information.
- * Returns the file descriptor of the groups file on success,
+ * Returns the file descriptor of the open config file on success,
  * -1 on failure */
-static int open_subscription_file(
+static int open_config_file(
     tickertape_t self,
     char *filename,
     char *template)
@@ -368,6 +378,53 @@ static int open_subscription_file(
 
     /* Success */
     return fd;
+}
+
+/* The callback for the config file parser */
+static int parse_config_callback(
+    void *rock,
+    uint32_t count,
+    subscription_t *subs,
+    elvin_error_t error)
+{
+    printf("parsed!\n");
+    return 1;
+}
+
+/* Reads the configuration file */
+static int read_config_file(tickertape_t self, elvin_error_t error)
+{
+    char *filename = tickertape_config_filename(self);
+    parser_t parser;
+    int fd;
+
+    /* Make sure we can read the config file */
+    if ((fd = open_config_file(self, filename, default_config_file)) < 0)
+    {
+	return 0;
+    }
+
+    /* Allocate a new config file parser */
+    if (! (parser = parser_alloc(parse_config_callback, self, error)))
+    {
+	return 0;
+    }
+
+    /* Use it to read the config file */
+    if (! parser_parse_file(parser, fd, filename, error))
+    {
+	return 0;
+    }
+
+    /* Close the file */
+    if (close(fd) < 0)
+    {
+	perror("close(): failed");
+	exit(1);
+    }
+
+    /* Clean up */
+    return parser_free(parser, error);
 }
 
 
@@ -429,7 +486,7 @@ static int parse_groups_file(tickertape_t self)
     }
 
     /* Make sure we can read the groups file */
-    if ((fd = open_subscription_file(self, filename, default_groups_file)) < 0)
+    if ((fd = open_config_file(self, filename, default_groups_file)) < 0)
     {
 	groups_parser_free(parser);
 	return -1;
@@ -505,7 +562,7 @@ static int parse_usenet_file(tickertape_t self)
     }
 
     /* Make sure we can read the usenet file */
-    if ((fd = open_subscription_file(self, filename, defaultUsenetFile)) < 0)
+    if ((fd = open_config_file(self, filename, defaultUsenetFile)) < 0)
     {
 	usenet_parser_free(parser);
 	return -1;
@@ -1149,7 +1206,9 @@ tickertape_t tickertape_alloc(
     elvin_handle_t handle,
     char *user, char *domain, 
     char *ticker_dir,
-    char *groups_file, char *usenet_file,
+    char *config_file,
+    char *groups_file,
+    char *usenet_file,
     Widget top,
     elvin_error_t error)
 {
@@ -1167,6 +1226,7 @@ tickertape_t tickertape_alloc(
     self -> user = strdup(user);
     self -> domain = strdup(domain);
     self -> ticker_dir = (ticker_dir == NULL) ? NULL : strdup(ticker_dir);
+    self -> config_file = (config_file == NULL) ? NULL : strdup(config_file);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
     self -> top = top;
@@ -1181,6 +1241,13 @@ tickertape_t tickertape_alloc(
     self -> control_panel = NULL;
     self -> scroller = NULL;
     self -> history = history_alloc();
+
+    /* Read the config file */
+    if (! read_config_file(self, error))
+    {
+	elvin_error_fprintf(stderr, "en", error);
+	exit(1);
+    }
 
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)
@@ -1235,6 +1302,11 @@ void tickertape_free(tickertape_t self)
     if (self -> ticker_dir != NULL)
     {
 	free(self -> ticker_dir);
+    }
+
+    if (self -> config_file != NULL)
+    {
+	free(self -> config_file);
     }
 
     if (self -> groups_file != NULL)
@@ -1351,6 +1423,20 @@ static char *tickertape_ticker_dir(tickertape_t self)
 
     return self -> ticker_dir;
 }
+
+/* Answers the receiver's config file filename */
+static char *tickertape_config_filename(tickertape_t self)
+{
+    if (self -> config_file == NULL)
+    {
+	char *dir = tickertape_ticker_dir(self);
+	self -> config_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
+	sprintf(self -> config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
+    }
+
+    return self -> config_file;
+}
+
 
 /* Answers the receiver's groups file filename */
 static char *tickertape_groups_filename(tickertape_t self)

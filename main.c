@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.82 2000/07/06 00:24:48 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.83 2000/07/28 05:57:01 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -66,6 +66,7 @@ static struct option long_options[] =
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
+    { "config", required_argument, NULL, 'c' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "version", no_argument, NULL, 'v' },
@@ -102,6 +103,7 @@ static void usage(int argc, char *argv[])
 	"  -S scope,       --scope=scope\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
+	"  -c config-file, --config=config-file\n"
 	"  -G groups-file, --groups=groups-file\n"
 	"  -U usenet-file, --usenet=usenet-file\n"
 	"  -v,             --version\n"
@@ -169,7 +171,9 @@ static void parse_args(
     elvin_handle_t handle,
     char **user_return, char **domain_return,
     char **ticker_dir_return,
-    char **groups_file_return, char **usenet_file_return,
+    char **config_file_return,
+    char **groups_file_return,
+    char **usenet_file_return,
     elvin_error_t error)
 {
     char *url;
@@ -180,13 +184,14 @@ static void parse_args(
     *user_return = NULL;
     *domain_return = NULL;
     *ticker_dir_return = NULL;
+    *config_file_return = NULL;
     *groups_file_return = NULL;
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:S:u:D:U:G:vh", long_options,
+	"e:S:u:D:c:G:U:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -221,6 +226,13 @@ static void parse_args(
 	    case 'D':
 	    {
 		*domain_return = optarg;
+		break;
+	    }
+
+	    /* --config= or -c */
+	    case 'c':
+	    {
+		*config_file_return = optarg;
 		break;
 	    }
 
@@ -374,6 +386,7 @@ int main(int argc, char *argv[])
     char *user;
     char *domain;
     char *ticker_dir;
+    char *config_file;
     char *groups_file;
     char *usenet_file;
     Widget top;
@@ -403,7 +416,9 @@ int main(int argc, char *argv[])
     }
 
     /* Scan what's left of the arguments */
-    parse_args(argc, argv, handle, &user, &domain, &ticker_dir, &groups_file, &usenet_file, error);
+    parse_args(argc, argv, handle, &user, &domain,
+	       &ticker_dir, &config_file, &groups_file, &usenet_file,
+	       error);
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
@@ -412,7 +427,8 @@ int main(int argc, char *argv[])
     tickertape = tickertape_alloc(
 	handle,
 	user, domain,
-	ticker_dir, groups_file, usenet_file,
+	ticker_dir, config_file,
+	groups_file, usenet_file,
 	top,
 	error);
 
