@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.41 1998/12/23 11:34:59 phelps Exp $ */
+/* $Id: main.c,v 1.42 1998/12/23 11:39:30 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -83,13 +83,22 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 static void Usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
-    fprintf(stderr, "  -h hostname, --host=hostname\n");
+#ifdef HAVE_GETOPT_H
+    fprintf(stderr, "  -h host, --host=host\n");
     fprintf(stderr, "  -p port,     --port=port\n");
     fprintf(stderr, "  -u username, --user=username\n");
-    fprintf(stderr, "  -g filename, --groups=filename\n");
-    fprintf(stderr, "  -n filename, --news=filename\n");
+    fprintf(stderr, "  -g groupsfile, --groups=groupsfile\n");
+    fprintf(stderr, "  -n newsfile, --news=newsfile\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
+#else
+    fprintf(stderr, "  -h host\n");
+    fprintf(stderr, "  -p port\n");
+    fprintf(stderr, "  -u username\n");
+    fprintf(stderr, "  -g groupsfile\n");
+    fprintf(stderr, "  -n newsfile\n");
+    fprintf(stderr, "  -v\n");
+#endif /* HAVE_GETOPT_H */
 }
 
 /* Parses arguments and sets stuff up */
@@ -110,9 +119,9 @@ static void ParseArgs(
 
     /* Read each argument using getopt */
 #ifdef HAVE_GETOPT_H
-    while ((choice = getopt(argc, argv, "h:p:u:g:n:v")) > 0)
-#else
     while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) > 0)
+#else
+    while ((choice = getopt(argc, argv, "h:p:u:g:n:v")) > 0)
 #endif /* HAVE_GETOPT_H */
     {
 	switch (choice)
