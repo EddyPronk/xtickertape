@@ -1,3 +1,12 @@
+Overview of changes in xtickertape-1.6.1
+
+* Fixed a bug in the history stuff which could crash xtickertape when
+  a reply was made to an old thread
+
+* Fixed a gap_width problem which showed up with wide messages
+
+* Better handling of italicized messages
+
 Overview of changes in xtickertape-1.6.0
 
 * Added the ability to kill a conversation thread.  Messages will

@@ -1,3 +1,18 @@
+1999-09-08  Ted Phelps  <phelps@pobox.com>
+
+	* Scroller.c: fixed a bogus unsigned comparison which could result 
+		  in a negative width for the gap
+	* Scroller.c: leaving the decision of whether or not to paint any
+		  portion of a glyph up to the glyph itself
+	* gap.c: no longer drawing the gap since the new scroller code
+		  already erases stuff to the background color
+	* history.h: added some prototypes to keep the compiler happy
+	* message_glyph.c: now taking into account the left/right bearing
+		  of a character as well as its width.  This makes
+		  italicized  look a lot better
+	* message_glyph.c: using unsigned characters to get character
+		  information which works better for things like Æ and é.
+
 1999-09-01  Ted Phelps <phelps@pobox.com>
 
 	* history.c: fixed an obscure threading bug.
