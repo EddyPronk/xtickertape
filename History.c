@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.55 2002/04/10 11:14:21 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.56 2002/04/11 11:34:03 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -680,6 +680,9 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     dprintf(("History.init()\n"));
 
+    /* No GC to start with */
+    self -> history.gc = None;
+
     /* Set the initial width/height if none are supplied */
     self -> core.width = 400;
     self -> core.height = 80;
@@ -693,8 +696,18 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 	(long)self -> history.font -> ascent +
 	(long)self -> history.font -> descent + 1;
 
+    /* Initialize the x and y coordinates of the visible region */
+    self -> history.x = 0;
+    self -> history.y = 0;
+
     /* Start with an empty delta queue */
     self -> history.dqueue = NULL;
+
+    /* Assume we're threaded */
+    self -> history.is_threaded = True;
+
+    /* We don't have any nodes yet */
+    self -> history.nodes = NULL;
 
     /* Allocate enough room for all of our message views */
     self -> history.message_capacity = MAX(self -> history.message_capacity, 1);
