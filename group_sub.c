@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.36 2002/04/10 11:17:09 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.37 2002/04/11 11:53:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -302,7 +302,7 @@ static void notify_cb(
 	found = elvin_notification_get(notification, F2_MIME_ARGS, &type, &value, error);
 	if (mime_type != NULL && found && type == ELVIN_STRING)
 	{
-	    length = header_length = strlen(value.s);
+	    length = header_length + strlen(value.s);
 	    if ((buffer = malloc(length + 1)) == NULL)
 	    {
 		length = 0;
