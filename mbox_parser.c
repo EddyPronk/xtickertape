@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.2 1999/09/12 13:57:21 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.3 1999/09/13 13:45:32 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -513,6 +513,9 @@ int mbox_parser_parse(mbox_parser_t self, char *mailbox)
     {
 	return -1;
     }
+
+    /* Make sure the email address is null-terminated */
+    *self -> email_pointer = '\0';
 
     return 0;
 }
