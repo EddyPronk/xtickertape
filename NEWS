@@ -9,6 +9,12 @@ Overview of changes in xtickertape-2.0
 * Fixed a bug in the way the icon was created.  Now the big `e' will
   be read even on 8-bit displays.
 
+* The scroller can now operate without an offscreen pixmap.  This
+  enables hardware optimizations with some graphics cards, but results 
+  in more traffic between the client and server.  The offscreen pixmap 
+  option can still be enabled by setting the X resource
+  XTickertape.scroller.usePixmap to True.
+
 * Message replacement now works!
 
 * Updated to use the elvin-4 client library instead of the elvin-3
