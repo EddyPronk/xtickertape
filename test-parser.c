@@ -92,6 +92,18 @@ static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_make_cons(vm, error);
 }
 
+/* The `eq' subroutine */
+static int prim_eq(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 2)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_eq(vm, error);
+}
+
 /* The `if' special form */
 static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -125,6 +137,18 @@ static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
     }
 
     return vm_pop(vm, NULL, error) && vm_eval(vm, error);
+}
+
+/* The `gc' subroutine */
+static int prim_gc(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 0)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_gc(vm, error);
 }
 
 /* The `lambda' special form */
@@ -209,8 +233,7 @@ static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 static int define_subr(vm_t vm, char *name, prim_t func, elvin_error_t error)
 {
     return
-	vm_push_string(vm, name, error) &&
-	vm_make_symbol(vm, error) &&
+	vm_push_symbol(vm, name, error) &&
 	vm_push_subr(vm, func, error) &&
 	vm_assign(vm, error) &&
 	vm_pop(vm, NULL, error);
@@ -265,7 +288,9 @@ int main(int argc, char *argv[])
 	! define_subr(vm, "car", prim_car, error) ||
 	! define_subr(vm, "cdr", prim_cdr, error) ||
 	! define_subr(vm, "cons", prim_cons, error) ||
+	! define_subr(vm, "eq", prim_eq, error) ||
 	! define_special(vm, "if", prim_if, error) ||
+	! define_subr(vm, "gc", prim_gc, error) ||
 	! define_special(vm, "lambda", prim_lambda, error) ||
 	! define_special(vm, "quote", prim_quote, error) ||
 	! define_special(vm, "setq", prim_setq, error) ||
