@@ -1,7 +1,11 @@
 Overview of changes in xtickertape-2.0rc1
 
+* Notification format upgraded to conform to version 3.1 of the
+  tickertape chat protocol.
+
 * It's now finally possible to reload a groups file in which the keys
-  for a group have changed (yay!).
+  for a group have changed.  It's also possible to reload the keys
+  file or all config files (with a SIGHUP).
 
 * It is now possible to reply to a message in a 'no menu' group.
 
