@@ -12,6 +12,8 @@ Overview of changes in xtickertape-2.0b2
   corresponding app-default has changed name from [Mm]etamailPath to
   simply [Mm]etamail.
 
+* Binary package support for Redhat, Mandrake and Debian.
+
 Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed
