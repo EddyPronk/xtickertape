@@ -28,13 +28,14 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.4 1999/12/16 07:52:10 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.5 2000/03/16 06:54:38 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "message.h"
 
 
@@ -46,6 +47,9 @@ struct message
 {
     /* The receiver's reference count */
     int ref_count;
+
+    /* The time when the message was created */
+    time_t creation_time;
 
     /* The Subscription which was matched to generate the receiver */
     void *info;
@@ -114,6 +118,12 @@ message_t message_alloc(
     self -> tag = (tag == NULL) ? NULL : strdup(tag);
     self -> id = (id == NULL) ? NULL : strdup(id);
     self -> reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
+
+    /* Record the time of creation */
+    if (time(&self -> creation_time) == (time_t)-1)
+    {
+	perror("time(): failed");
+    }
 
 #ifdef DEBUG
     printf("allocated message_t %p (%ld)\n", self, ++message_count);
@@ -214,6 +224,12 @@ void message_debug(message_t self)
 void *message_get_info(message_t self)
 {
     return self -> info;
+}
+
+/* Answers the receiver's creation time */
+time_t *message_get_creation_time(message_t self)
+{
+    return &self -> creation_time;
 }
 
 /* Answers the receiver's group */
