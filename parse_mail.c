@@ -13,7 +13,7 @@
 #include <netdb.h>
 #include "parse_mail.h"
 
-#define UNOTIFY_PACKET 1
+#define UNOTIFY_PACKET 32
 #define INT32_TYPECODE 1
 #define STRING_TYPECODE 4
 #define PROTO_VERSION_MAJOR 4
@@ -300,7 +300,7 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
     write_int32(self -> count_point, self -> count);
 
     /* We'll happily deliver_insecure */
-    if (append_int32_tuple(self, 1, msg_num) < 0)
+    if (append_int32(self, 1) < 0)
     {
 	return -1;
     }
