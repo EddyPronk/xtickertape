@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.21 1999/09/14 15:06:14 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.22 1999/09/22 02:48:33 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -248,6 +248,8 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
     unsigned char *pointer;
     XCharStruct *char_info;
     unsigned int width;
+    int min;
+    int max;
 
 
     /* Shortcut for empty strings that makes sure everything gets set */
@@ -270,22 +272,27 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
     pointer = (unsigned char *)string;
     char_info = per_char(font, *(pointer++));
     width = char_info -> width;
-    if (lbearing != NULL)
-    {
-	*lbearing = char_info -> lbearing;
-    }
+    min = char_info -> lbearing;
+    max = char_info -> rbearing;
 
     /* Measure the rest of the characters */
     while (*pointer != '\0')
     {
 	char_info = per_char(font, *(pointer++));
+	min = (min < width + char_info -> lbearing) ? min : width + char_info -> lbearing;
+	max = (max > width + char_info -> rbearing) ? max : width + char_info -> rbearing;
 	width += char_info -> width;
     }
 
-    /* Adjust the width by the last character's rbearing */
+    /* Update the lbearing and rbearing */
+    if (lbearing != NULL)
+    {
+	*lbearing = min;
+    }
+
     if (rbearing != NULL)
     {
-	*rbearing = width + char_info -> rbearing - char_info -> width;
+	*rbearing = max;
     }
 
     return width;
