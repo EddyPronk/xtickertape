@@ -4,20 +4,21 @@
 
 TARGET = go
 
-OBJS = Scroller.o MessageView.o FontInfo.o Graphics.o Message.o Hash.o List.o main.o
+OBJS = Tickertape.o Scroller.o MessageView.o FontInfo.o Graphics.o Message.o \
+	Hash.o List.o main.o
 
-#CDEBUGFLAGS =
-CDEBUGFLAGS = -g
+CDEBUGFLAGS =
+#CDEBUGFLAGS = -g
 
-INCLUDES = -I/usr/openwin/include
+#INCLUDES = -I/usr/openwin/include
 
-CFLAGS = $(CCFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
-#LIBS = -L/usr/local/lib -lX11 
-LIBS = -lX11
+LIBDIRS = -L/usr/local/lib
+LIBS = -lXaw3d -lXt -lX11
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
+	$(CC) -o $@ $(OBJS) $(LIBDIRS) $(LIBS) $(EXTRALIBS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)
