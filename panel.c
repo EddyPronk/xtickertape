@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.29 2000/04/24 06:03:10 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.30 2000/04/28 00:37:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1540,18 +1540,20 @@ static void action_clear(Widget button, control_panel_t self, XtPointer ignored)
     char *domain;
     char *buffer;
 
-    /* Set the user to be ``user@domain'' */
+    /* Set the user to be `user@domain' unless domain is the empty
+     * string, in which case we just use `user' */
     user = tickertape_user_name(self -> tickertape);
     domain = tickertape_domain_name(self -> tickertape);
-    if ((buffer = (char *)malloc(strlen(USER_FMT) + strlen(user) + strlen(domain) - 3)) != NULL)
+    if (*domain == '\0' ||
+	(buffer = (char *)malloc(sizeof(USER_FMT) + strlen(user) + strlen(domain) - 4)) == NULL)
+    {
+	set_user(self, user);
+    }
+    else
     {
 	sprintf(buffer, USER_FMT, user, domain);
 	set_user(self, buffer);
 	free(buffer);
-    }
-    else
-    {
-	set_user(self, user);
     }
 
     set_text(self, "");
