@@ -30,6 +30,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* NULL */
+#endif
 #ifdef HAVE_CTYPE_H
 #include <ctype.h> /* toupper */
 #endif
@@ -95,5 +98,27 @@ int strcasecmp(const char *s1, const char *s2)
 
 	i++;
     }
+}
+#endif
+
+
+#ifndef HAVE_STRCHR
+/* A slow but correct implementation of strchr */
+char *strchr(const char *s, int c)
+{
+    size_t i = 0;
+    int ch;
+
+    while ((ch = s[i]) != 0)
+    {
+	if (ch == c)
+	{
+	    return s + i;
+	}
+
+	i++;
+    }
+
+    return NULL;
 }
 #endif

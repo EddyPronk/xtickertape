@@ -41,4 +41,8 @@ void *memset(void *s, int c, size_t n);
 #ifndef HAVE_STRCASECMP
 int strcasecmp(const char *s1, const char *s2);
 #endif /* HAVE_STRCASECMP */
+
+#ifndef HAVE_STRCHR
+char *strchr(const char *s, int c);
+#endif
 #endif /* REPLACE_H */
