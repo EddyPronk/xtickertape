@@ -15,8 +15,12 @@
 /* Parser callback */
 int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
 {
-    vm_print(vm, error);
-/*    vm_eval(vm, error);*/
+    if (! vm_eval(vm, error) || ! vm_print(vm, error))
+    {
+	elvin_error_fprintf(stdout, error);
+	elvin_error_clear(error);
+    }
+
     printf("> "); fflush(stdout);
     return 1;
 }
