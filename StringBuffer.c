@@ -1,4 +1,4 @@
-/* $Id: StringBuffer.c,v 1.1 1998/10/23 02:01:39 phelps Exp $ */
+/* $Id: StringBuffer.c,v 1.2 1998/10/23 10:03:56 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,6 +117,23 @@ void StringBuffer_debug(StringBuffer self)
 	putchar(*(pointer++));
     }
     printf("\"\n");
+}
+
+/* Resets the buffer to its first character */
+void StringBuffer_clear(StringBuffer self)
+{
+    self -> pointer = self -> buffer;
+}
+
+/* Appends a single character to the receiver */
+void StringBuffer_appendChar(StringBuffer self, char ch)
+{
+    if (! (self -> pointer < self -> end))
+    {
+	Grow(self);
+    }
+
+    *(self -> pointer++) = ch;
 }
 
 

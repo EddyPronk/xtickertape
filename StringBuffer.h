@@ -1,4 +1,4 @@
-/* $Id: StringBuffer.h,v 1.1 1998/10/23 02:01:39 phelps Exp $
+/* $Id: StringBuffer.h,v 1.2 1998/10/23 10:03:58 phelps Exp $
  * COPYRIGHT!
  *
  * Helps in the construction of Strings of unknown length by
@@ -18,6 +18,12 @@ void StringBuffer_free(StringBuffer self);
 
 /* Prints out debugging information about the receiver */
 void StringBuffer_debug(StringBuffer self);
+
+/* Resets the buffer to its first character */
+void StringBuffer_clear(StringBuffer self);
+
+/* Appends a single character to the receiver */
+void StringBuffer_appendChar(StringBuffer self, char ch);
 
 /* Appends a null-terminated character array to the receiver */
 void StringBuffer_append(StringBuffer self, char *string);
