@@ -85,14 +85,14 @@ int main(int argc, char *argv[])
     /* Construct a notification to play with */
     if (! (notification = notification_alloc(error)))
     {
-	elvin_error_fprintf(stderr, "en", error);
+	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
     /* Allocate a new parser */
     if ((parser = parser_alloc(parsed, notification, error)) == NULL)
     {
-	elvin_error_fprintf(stderr, "en", error);
+	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 	if (! parser_parse_file(parser, STDIN_FILENO, "[stdin]", error))
 	{
 	    fprintf(stderr, "parser_parse_file(): failed\n");
-	    elvin_error_fprintf(stderr, "en", error);
+	    elvin_error_fprintf(stderr, error);
 	}
     }
     else
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 	    if (! parser_parse_file(parser, fd, filename, error))
 	    {
 		fprintf(stderr, "parser_parse_file(): failed\n");
-		elvin_error_fprintf(stderr, "en", error);
+		elvin_error_fprintf(stderr, error);
 	    }
 
 	    /* Close the file */
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     if (! parser_free(parser, error))
     {
 	fprintf(stderr, "parser_free(): failed\n");
-	elvin_error_fprintf(stderr, "en", error);
+	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
