@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.25 1998/11/05 06:28:55 phelps Exp $ */
+/* $Id: Control.c,v 1.26 1998/11/10 00:03:07 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -325,7 +325,6 @@ static void CreateTopBox(ControlPanel self, Widget parent)
     /* The "User" text field */
     self -> user = XtVaCreateManagedWidget(
 	"user", xmTextFieldWidgetClass, form,
-	XmNtraversalOn, False,
 	XmNleftAttachment, XmATTACH_WIDGET,
 	XmNleftWidget, label,
 	NULL);
