@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.74 2000/12/09 08:46:19 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.75 2000/12/09 09:03:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1177,8 +1177,6 @@ static int prim_cond(vm_t vm, uint32_t argc, elvin_error_t error)
     while (argc > 0)
     {
 	object_type_t type;
-
-	vm_print_state(vm, error);
 
 	/* Evaluate the condition of the next clause */
 	if (! vm_unroll(vm, argc - 1, error) ||
