@@ -56,7 +56,7 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 }
 
 /* The `setq' special form */
-static int spec_setq(vm_t vm, uint32_t argc, elvin_error_t error)
+static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     /* FIX THIS: setq should allow multiple args */
     if (argc != 2)
@@ -65,10 +65,28 @@ static int spec_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 	return 0;
     }
 
-    /* FIX THIS: we need to evaluate the top of the stack */
+    /* Evaluate the top of the stack and assign it */
+    return vm_eval(vm, error) && vm_assign(vm, error);
+}
 
-    /* Assign the value to the variable */
-    return vm_assign(vm, error);
+/* The `+' subroutine */
+static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "prim_plus");
+    return 0;
+}
+
+/* Prints out the stack */
+static int prim_print_state(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 0)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* Print the stack */
+    return vm_print_state(vm, error) && vm_push_nil(vm, error);
 }
 
 /* For testing purposes */
@@ -99,9 +117,22 @@ int main(int argc, char *argv[])
 	! vm_push_float(vm, M_PI, error) ||
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error) ||
+
 	! vm_push_string(vm, "setq", error) ||
 	! vm_make_symbol(vm, error) ||
-	! vm_push_special_form(vm, spec_setq, error) ||
+	! vm_push_special_form(vm, prim_setq, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error) ||
+
+	! vm_push_string(vm, "+", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_push_subr(vm, prim_plus, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error) ||
+
+	! vm_push_string(vm, "print-state", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_push_special_form(vm, prim_print_state, error) ||
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error))
     {
