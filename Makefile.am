@@ -14,7 +14,8 @@ xtickertape_SOURCES = \
 	message.h message.c \
 	groups.h groups_parser.h groups_parser.c \
 	group_sub.h group_sub.c \
-	usenet.h UsenetSubscription.h UsenetSubscription.c \
+	usenet.h usenet_parser.h usenet_parser.c \
+	UsenetSubscription.h UsenetSubscription.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	orbit_sub.h orbit_sub.c \
 	StringBuffer.h StringBuffer.c \
