@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.14 2000/11/13 12:54:06 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.15 2000/11/13 13:42:02 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -91,85 +91,9 @@ struct sexp
     } value;
 };
 
-/* An environment is a hashtable and a parent */
-struct env
-{
-    /* The number of references to this environment */
-    int ref_count;
-
-    /* The parent environment */
-    env_t parent;
-
-    /* A mapping of symbols to their values */
-    elvin_hashtable_t map;
-};
-
 
 /* Some predefined sexps */
 static struct sexp nil = { SEXP_NIL, 1, { 0 } };
-
-/* Hash function for a symbol */
-static uint32_t symbol_hashfunc(elvin_hashtable_t table, elvin_hashkey_t key)
-{
-    char *start = (char *)key;
-    char *pointer;
-    uint32_t hash = 0;
-
-    /* Treat the pointer as a fixed-length byte array */
-    for (pointer = start; pointer < start + sizeof(void *); pointer++)
-    {
-	hash <<= 1;
-	hash ^= *pointer;
-    }
-
-    return hash;
-}
-
-/* Equality function for a symbol */
-static int symbol_hashequal(
-    elvin_hashtable_t table,
-    elvin_hashkey_t key1,
-    elvin_hashkey_t key2)
-{
-    return key1 == key2;
-}
-
-/* Grabs a reference to a symbol */
-static int symbol_hashcopy(
-    elvin_hashtable_t table,
-    elvin_hashkey_t *copy_out,
-    elvin_hashkey_t key,
-    elvin_error_t error)
-{
-    sexp_t sexp = (sexp_t)key;
-    sexp -> ref_count++;
-    *copy_out = key;
-    return 1;
-}
-
-/* Frees a reference to a symbol */
-static int symbol_hashfree(elvin_hashkey_t key, elvin_error_t error)
-{
-    return sexp_free((sexp_t)key, error);
-}
-
-/* Grabs a reference to an sexp */
-static int sexp_hashcopy(elvin_hashtable_t table,
-			 elvin_hashdata_t *copy_out,
-			 elvin_hashdata_t data,
-			 elvin_error_t error)
-{
-    sexp_t sexp = (sexp_t)data;
-    sexp -> ref_count++;
-    *copy_out = data;
-    return 1;
-}
-
-/* Frees a reference to an sexp */
-static int sexp_hashfree(elvin_hashdata_t data, elvin_error_t error)
-{
-    return sexp_free((sexp_t)data, error);
-}
 
 
 /* Initialize the interpreter */
@@ -423,6 +347,30 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error)
 	sexp = car;
     }
 }
+
+/* Locates an entry in an alist */
+int assoc(sexp_t symbol, sexp_t alist, sexp_t *result, elvin_error_t error)
+{
+    /* Keep going until we run out of elements or find a match */
+    while (sexp_get_type(alist) == SEXP_CONS)
+    {
+	*result = cons_car(alist, error);
+
+	/* Does the association match? */
+	if (cons_car(*result, error) == symbol)
+	{
+	    return 1;
+	}
+
+	/* Go on to the next association */
+	alist = cons_cdr(alist, error);
+    }
+
+    /* No match.  Return nil */
+    *result = nil_alloc(error);
+    return 1;
+}
+
 
 /* Allocates and initializes a new built-in sexp */
 sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error)
@@ -746,7 +694,7 @@ static int funcall(
 	    sexp_t body;
 
 	    /* Create an environment for execution */
-	    if ((lambda_env = env_alloc(17, function -> value.l.env, error)) == NULL)
+	    if ((lambda_env = env_alloc(function -> value.l.env, error)) == NULL)
 	    {
 		return 0;
 	    }
@@ -873,80 +821,45 @@ int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
 }
 
 /* Allocates and initializes an environment */
-env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
+env_t env_alloc(env_t parent, elvin_error_t error)
 {
-    env_t env;
-
-    /* Allocate some memory for the new environment */
-    if ((env = (env_t)ELVIN_MALLOC(sizeof(struct env), error)) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Allocate a hashtable to map symbols to their values */
-    if ((env -> map = elvin_hash_alloc(
-	     size,
-	     symbol_hashfunc,
-	     symbol_hashequal,
-	     symbol_hashcopy,
-	     symbol_hashfree,
-	     sexp_hashcopy,
-	     sexp_hashfree,
-	     error)) == NULL)
-    {
-	ELVIN_FREE(env, NULL);
-	return NULL;
-    }
-
-    env -> ref_count = 1;
-    env -> parent = parent;
-    return env;
+    /* Allocate a cons cell to hold the environment's parent and alist */
+    return cons_alloc(parent, nil_alloc(error), error);
 }
 
 /* Allocates another reference to the environment */
 int env_alloc_ref(env_t env, elvin_error_t error)
 {
-    env -> ref_count++;
-    return 1;
+    return sexp_alloc_ref(env, error);
 }
 
 /* Frees an environment and all of its references */
 int env_free(env_t env, elvin_error_t error)
 {
-    int result = 1;
-
-    /* Decrement the reference count */
-    if (--env -> ref_count > 0)
-    {
-	return 1;
-    }
-
-    /* Free the hashtable */
-    if (env -> map)
-    {
-	result = elvin_hash_free(env -> map, result ? error : NULL) && result;
-    }
-
-    /* Free the environment */
-    return ELVIN_FREE(env, result ? error : NULL) && result;
+    return sexp_free(env, error);
 }
 
 /* Looks up a symbol's value in the environment */
 int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 {
     /* Keep checking until we run out of parent environments */
-    while (env != NULL)
+    while (env != &nil)
     {
-	/* Look up the value in the environment */
-	if ((*result = (sexp_t)elvin_hash_get(
-		 env -> map,
-		 (elvin_hashkey_t)symbol,
-		 error)) != NULL)
+	/* Look for an assocation */
+	if (assoc(symbol, cons_cdr(env, error), result, error) == 0)
 	{
+	    return 0;
+	}
+
+	/* Did we find a match */
+	if (*result != &nil)
+	{
+	    *result = cons_cdr(*result, error);
 	    return 1;
 	}
 
-	env = env -> parent;
+	/* Move on to the parent environment */
+	env = cons_car(env, error);
     }
 
     ELVIN_ERROR_LISP_SYM_UNDEF(error, symbol_name(symbol, error));
@@ -956,34 +869,56 @@ int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 /* Sets a symbol's value in the environment */
 int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
-    /* Free our reference to the old value */
-    elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error);
+    sexp_t pair;
+    sexp_t alist;
 
-    /* Register the new value */
-    return elvin_hash_add(
-	env -> map,
-	(elvin_hashkey_t)symbol,
-	(elvin_hashdata_t)value,
-	error);
+    /* Create a new association */
+    if ((pair = cons_alloc(symbol, value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Prepend it to the list */
+    /* FIX THIS: this is a hideous hack -- it doesn't remove the old assocation! */
+    alist = cons_alloc(pair, cons_cdr(env, error), error);
+    env -> value.c.cdr = alist;
+
+    /* Allocate some references */
+    sexp_alloc_ref(symbol, error);
+    sexp_alloc_ref(value, error);
+
+    return 1;
 }
 
 /* Sets a symbol's value in the appropriate environment */
 int env_assign(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
-    /* Try to find an environment which contains the symbol */
-    while (elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error) == 0 &&
-	   env -> parent != NULL)
+    sexp_t pair;
+
+    /* Look for a non-root environment which defines the symbol */
+    while (cons_car(env, error) != &nil)
     {
-	env = env -> parent;
+	/* Do we have a match? */
+	if (assoc(symbol, cons_cdr(env, error), &pair, error) == 0)
+	{
+	    return 0;
+	}
+
+	/* If it's mentioned in this environment then set its value */
+	if (pair != &nil)
+	{
+	    sexp_free(pair -> value.c.cdr, error);
+	    pair -> value.c.cdr = value;
+	    sexp_alloc_ref(value, error);
+	    return 1;
+	}
+
+	/* No luck.  Try the parent environment */
+	env = cons_car(env, error);
     }
 
-    /* We've either found the defining environment or we're looking at
-     * the root environment.  Either way, record the value. */
-    return elvin_hash_add(
-	env -> map,
-	(elvin_hashkey_t)symbol,
-	(elvin_hashdata_t)value,
-	error);
+    /* We must be in the root environment */
+    return env_set(env, symbol, value, error);
 }
 
 /* Sets the named symbol's value */
