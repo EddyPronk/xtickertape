@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.42 1999/08/09 10:49:05 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.43 1999/08/17 18:02:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -52,6 +52,7 @@ static const char cvsid[] = "$Id: Tickertape.c,v 1.42 1999/08/09 10:49:05 phelps
 #ifdef ORBIT
 #include "OrbitSubscription.h"
 #endif /* ORBIT */
+#include "history.h"
 
 #ifdef SANITY
 static char *sanity_value = "Ticker";
@@ -106,6 +107,9 @@ struct Tickertape_t
 
     /* The ScrollerWidget */
     ScrollerWidget scroller;
+
+    /* The history */
+    history_t history;
 };
 
 
@@ -219,9 +223,8 @@ static void ReceiveMessage(Tickertape self, Message message)
     SANITY_CHECK(self);
     ScAddMessage(self -> scroller, message);
 
-    printf("new message received:\n");
-    Message_debug(message);
-    ControlPanel_addHistoryMessage(self -> controlPanel, message);
+/*    ControlPanel_addHistoryMessage(self -> controlPanel, message);*/
+    history_add(self -> history, message);
 }
 
 /* Read from the Groups file.  Returns a List of subscriptions if
@@ -370,7 +373,7 @@ static void ReloadUsenet(Tickertape self)
 static void InitializeUserInterface(Tickertape self)
 {
     self -> controlPanel = ControlPanel_alloc(
-	self -> top, self -> user,
+	self -> top, self -> user, self -> history,
 	(ReloadCallback)ReloadGroups, self,
 	(ReloadCallback)ReloadUsenet, self);
 
@@ -590,6 +593,7 @@ Tickertape Tickertape_alloc(
     self -> mailSubscription = MailSubscription_alloc(
 	user, (MailSubscriptionCallback)ReceiveMessage, self);
     self -> connection = NULL;
+    self -> history = history_alloc();
 
     InitializeUserInterface(self);
 
