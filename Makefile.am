@@ -7,7 +7,7 @@ xtickertape_SOURCES = \
 	sanity.h \
 	glyph.h gap.c message_glyph.c \
 	Tickertape.h Tickertape.c \
-	message_thread.h message_thread.c \
+	history.h history.c \
 	Control.h Control.c \
 	Scroller.h ScrollerP.h Scroller.c \
 	ElvinConnection.h ElvinConnection.c \
