@@ -356,6 +356,105 @@ static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
     return sexp_free(values[1], error);
 }
 
+/* The `if' primitive function */
+static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t test, true_branch, false_branch;
+    sexp_t value;
+
+    /* Make sure we have at least one arg */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((test = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure we have a second arg */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((true_branch = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure we have a third arg */
+    if (sexp_get_type(args) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((false_branch = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure there are no more args */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+
+    /* Evaluate the test */
+    if (sexp_eval(test, env, &value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* If it's non-nil then evaluate the true branch */
+    if (sexp_get_type(value) != SEXP_NIL)
+    {
+	if (sexp_eval(true_branch, env, result, error) == 0)
+	{
+	    sexp_free(value, NULL);
+	    return 0;
+	}
+    }
+    else
+    {
+	if (sexp_eval(false_branch, env, result, error) == 0)
+	{
+	    sexp_free(value, NULL);
+	    return 0;
+	}
+    }
+
+    /* Free the test's result */
+    return sexp_free(value, error);
+}
+
 /* The `lambda' primitive function */
 static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
@@ -543,6 +642,7 @@ static env_t root_env_alloc(elvin_error_t error)
 	env_set_builtin(env, "cdr", prim_cdr, error) == 0 ||
 	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
 	env_set_builtin(env, "eq", prim_eq, error) == 0 ||
+	env_set_builtin(env, "if", prim_if, error) == 0 ||
 	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
 	env_set_builtin(env, "+", prim_plus, error) == 0 ||
 	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
