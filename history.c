@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.26 2000/03/16 06:54:18 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.27 2000/03/27 00:44:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -401,9 +401,8 @@ static void history_unthread_node(history_t self, history_node_t node)
     /* Figure out which list of responses contains the node */
     probe = (parent == NULL) ? self -> last_response : parent -> last_response;
 
-    /* Free this node */
+    /* The node is no longer part of the history */
     self -> threaded_count--;
-    history_node_free(node);
 
     /* Watch for the node being the last response */
     if (probe == node)
@@ -411,6 +410,9 @@ static void history_unthread_node(history_t self, history_node_t node)
 	/* Remove this node from the parent's responses */
 	parent -> last_response = node -> previous_response;
 	node -> parent = NULL;
+
+	/* Free the node itself */
+	history_node_free(node);
 
 	/* Unthread the parent if appropriate */
 	history_unthread_node(self, parent);
@@ -423,7 +425,10 @@ static void history_unthread_node(history_t self, history_node_t node)
 	if (probe -> previous_response == node)
 	{
 	    /* Disconnect the node from the list of responses */
-	    probe -> previous_response = NULL;
+	    probe -> previous_response = node -> previous_response;
+
+	    /* Free the node itself */
+	    history_node_free(node);
 	    return;
 	}
 	    
@@ -432,6 +437,7 @@ static void history_unthread_node(history_t self, history_node_t node)
 
     /* Not found!? */
     fprintf(stderr, "*** Unable to delete the blasted node!\n");
+    abort();
 }
 
 
