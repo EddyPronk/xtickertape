@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.52 2000/04/11 09:36:26 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.53 2000/04/12 00:34:39 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -68,9 +68,10 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.52 2000/04/11 09:36:26 phelps
 /* How long to wait before we tell the user we're having trouble connecting */
 #define BUFFER_SIZE 1024
 
-#define CONNECT_MSG "Connected to elvin server: %s."
-#define LOST_CONNECT_MSG "Lost connection to elvin server %s."
-#define CONN_CLOSED_MSG "Server %s closed connection"
+#define CONNECT_MSG "Connected to elvin server: %s"
+#define LOST_CONNECT_MSG "Lost connection to elvin server %s"
+#define CONN_CLOSED_MSG "Connection closed by server: %s"
+#define PROTOCOL_ERROR_MSG "Protocol error encountered with server: %s"
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
@@ -1080,9 +1081,21 @@ static void status_cb(
 	    break;
 	}
 
+	case ELVIN_STATUS_PROTOCOL_ERROR:
+	{
+	    /* Make room for a message string */
+	    if ((buffer = (char *)malloc(sizeof(PROTOCOL_ERROR_MSG) + strlen(url) - 2)) == NULL)
+	    {
+		return;
+	    }
+
+	    sprintf(buffer, PROTOCOL_ERROR_MSG, url);
+	    string = buffer;
+	    break;
+	}
+
 	case ELVIN_STATUS_CONNECTION_FAILED:
 	case ELVIN_STATUS_IGNORED_ERROR:
-	case ELVIN_STATUS_PROTOCOL_ERROR:
 	case ELVIN_STATUS_CLIENT_ERROR:
 	default:
 	{
