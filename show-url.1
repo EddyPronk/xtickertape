@@ -66,19 +66,23 @@ doing naughty things.
 .SH EXAMPLES
 Here are some example values for the BROWSER variable:
 .TP 10
-.SB w3m
+.B
+w3m
 This will open the URL in w3m in the current terminal window.
 .TP
-.SB mozilla -raise -remote "openURL(%s,new-window)"
+.B
+mozilla -raise -remote "openURL(%s,new-window)"
 Requests that the running mozilla process open the URL in a new
 window.
 .TP
-.SB mozilla -raise -remote "openURL(%s,new-window)":w3m
+.B
+mozilla -raise -remote "openURL(%s,new-window)":w3m
 A combination of the above two.  If mozilla cannot open the window
 because it isn't running or there's not even an X session, then w3m is
 invoked to display the URL.
 .TP
-.SB netscape -raise -remote "openURL(%s,new-window)":lynx
+.B
+netscape -raise -remote "openURL(%s,new-window)":lynx
 This is effectively the same as the previous example except that
 netscape replaces mozilla as the graphical browser, and lynx replaces
 w3m as the text-based one.
