@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.10 2000/11/08 07:36:00 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.11 2000/11/08 11:18:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -658,11 +658,22 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 int env_set(env_t env, atom_t symbol, atom_t value, elvin_error_t error)
 {
     char *name;
+    atom_t old_value;
 
     /* Look up the symbol's name */
     if ((name = symbol_name(symbol, error)) == NULL)
     {
 	return 0;
+    }
+
+    /* Check for an old value */
+    if ((old_value = elvin_hash_get(env -> map, (elvin_hashkey_t)name, error)) != NULL)
+    {
+	/* Free our reference to it */
+	if (atom_free(old_value, error) == 0)
+	{
+	    return 0;
+	}
     }
 
     /* Use it to register the value in the map (automatically increases the ref_count) */
