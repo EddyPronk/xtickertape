@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.17 2002/04/12 13:20:25 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.18 2002/04/12 13:30:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,6 +37,7 @@ static const char cvsid[] = "$Id: message.c,v 1.17 2002/04/12 13:20:25 phelps Ex
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+#include <assert.h>
 #include "message.h"
 
 
@@ -108,11 +109,24 @@ message_t message_alloc(
 	return NULL;
     }
 
+    /* Set its contents to sane values */
+    memset(self, 0, sizeof(struct message));
+
     /* Initialize the contents to sane values */
     self -> ref_count = 1;
-    self -> info = (info == NULL) ? NULL : strdup(info);
+
+    if (info != NULL)
+    {
+	self -> info = strdup(info);
+    }
+
+    assert(group != NULL);
     self -> group = strdup(group);
+
+    assert(user != NULL);
     self -> user = strdup(user);
+
+    assert(string != NULL);
     self -> string = strdup(string);
 
     if (length == 0)
