@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.7 1998/10/21 08:20:00 phelps Exp $
+ * $Id: Ticker.c,v 1.8 1998/10/21 08:21:48 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -16,10 +16,10 @@
 #include "ElvinConnection.h"
 
 #ifdef ORBIT
-#define VERSION "1.3.1 (orbit)"
+#define VERSION "1.4 (orbit)"
 #include "OrbitSubscription.h"
 #else /* ORBIT */
-#define VERSION "1.3.1"
+#define VERSION "1.4"
 #endif /* ORBIT */
 
 
