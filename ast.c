@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.4 2000/07/07 10:43:15 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.5 2000/07/09 00:48:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -48,6 +48,7 @@ typedef enum ast_type
     AST_STRING,
     AST_LIST,
     AST_ID,
+    AST_UNARY,
     AST_BINOP,
     AST_FUNCTION,
     AST_BLOCK,
@@ -60,7 +61,17 @@ typedef enum ast_func
     FUNC_FORMAT
 } ast_func_t;
 
-/* The structure of a binary operation node */
+/* The structure of a unary operator node */
+struct unary
+{
+    /* The operator */
+    ast_unary_t op;
+
+    /* The operator's arg */
+    ast_t value;
+};
+
+/* The structure of a binary operator node */
 struct binop
 {
     /* The operation type */
@@ -93,6 +104,7 @@ union ast_union
     ast_t list;
     ast_t block;
     char *id;
+    struct unary unary;
     struct binop binop;
     struct func func;
     subscription_t sub;
@@ -222,6 +234,24 @@ ast_t ast_id_alloc(char *name, elvin_error_t error)
 	return NULL;
     }
 
+    return self;
+}
+
+/* Allocates and initialzes a new unary AST node */
+ast_t ast_unary_alloc(ast_unary_t op, ast_t value, elvin_error_t error)
+{
+    ast_t self;
+
+    /* Allocate some memory */
+    if (! (self = (ast_t)ELVIN_MALLOC(sizeof(struct ast), error)))
+    {
+	return NULL;
+    }
+
+    self -> type = AST_UNARY;
+    self -> next = NULL;
+    self -> value.unary.op = op;
+    self -> value.unary.value = value;
     return self;
 }
 
@@ -382,42 +412,42 @@ static int eval_producer_keys(
 
 /* Converts a list of strings into an elvin_keys_t */
 static int eval_consumer_keys(
-    ast_t list,
+    value_t *value,
     elvin_keys_t *keys_out,
     elvin_error_t error)
 {
     elvin_keys_t keys;
     elvin_key_t key;
-    ast_t ast;
+    uint32_t i;
 
     /* Don't accidentally return anything interesting */
     *keys_out = NULL;
 
     /* If the list is empty then don't bother creating a key set */
-    if (list -> value.list == NULL)
+    if (value -> value.list.count == 0)
     {
 	return 1;
     }
 
     /* Allocate some room for the key set */
-    if (! (keys = elvin_keys_alloc(7, error)))
+    if (! (keys = elvin_keys_alloc(value -> value.list.count, error)))
     {
 	return 0;
     }
 
     /* Go through the list and add keys */
-    for (ast = list -> value.list; ast != NULL; ast = ast -> next)
+    for (i = 0; i < value -> value.list.count; i++)
     {
-	/* FIX THIS: we should allow functions to read from files */
-	/* Make sure the key is a string */
-	if (ast -> type != AST_STRING)
+	value_t *item = &value -> value.list.items[i];
+
+	if (item -> type != VALUE_STRING)
 	{
-	    fprintf(stderr, "bad consumer key type: %d\n", ast -> type);
+	    fprintf(stderr, "bad consumer key type: %d\n", item -> type);
 	    return 0;
 	}
 
 	/* Convert it into a consumer key */
-	if (! (key = elvin_keyprime_from_hexstring(ast -> value.string, error)))
+	if (! (key = elvin_keyprime_from_hexstring(item -> value.string, error)))
 	{
 	    elvin_keys_free(keys, NULL);
 	    return 0;
@@ -526,7 +556,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		    }
 
 		    /* Convert the list into a set of keys */
-		    if (! eval_consumer_keys(value.value.list, &consumer_keys, error))
+		    if (! eval_consumer_keys(&value, &consumer_keys, error))
 		    {
 			fprintf(stderr, "bad keys\n");
 			abort();
@@ -812,8 +842,49 @@ int ast_eval(
 
 	case AST_LIST:
 	{
-	    printf("ast_eval: list\n");
-	    abort();
+	    uint32_t count, i;
+	    value_t *items;
+	    ast_t ast;
+
+	    /* Figure out how long the list needs to be */
+	    count = 0;
+	    for (ast = self -> value.list; ast != NULL; ast = ast -> next)
+	    {
+		count++;
+	    }
+
+	    /* Short-cut -- nothing to alloc if no items */
+	    if (count == 0)
+	    {
+		value_out -> type = VALUE_LIST;
+		value_out -> value.list.count = 0;
+		value_out -> value.list.items = NULL;
+		return 1;
+	    }
+
+	    /* Allocate an array to hold the items in the list */
+	    if (! (items = (value_t *)ELVIN_MALLOC(count * sizeof(value_t), error)))
+	    {
+		return 0;
+	    }
+
+	    /* Evaluate each ast item and put it into the resulting list */
+	    ast = self -> value.list;
+	    for (i = 0; i < count; i++)
+	    {
+		if (! ast_eval(ast, env, &items[i], error))
+		{
+		    return 0;
+		}
+
+		ast = ast -> next;
+	    }
+
+	    /* And we're done */
+	    value_out -> type = VALUE_LIST;
+	    value_out -> value.list.count = count;
+	    value_out -> value.list.items = items;
+	    return 1;
 	}
 
 	case AST_ID:
@@ -827,6 +898,80 @@ int ast_eval(
 
 	    /* Otherwise look up the value in the notification */
 	    printf("punt!\n");
+	    abort();
+	}
+
+	case AST_UNARY:
+	{
+	    switch (self -> value.unary.op)
+	    {
+		case AST_NOT:
+		{
+		    /* Evaluate the child */
+		    if (! ast_eval(self -> value.unary.value, env, value_out, error))
+		    {
+			return 0;
+		    }
+
+		    /* And negate its value */
+		    switch (value_out -> type)
+		    {
+			case VALUE_NONE:
+			{
+			    value_out -> type = VALUE_INT32;
+			    value_out -> value.int32 = 1;
+			}
+
+			case VALUE_INT32:
+			{
+			    value_out -> value.int32 = ! value_out -> value.int32;
+			    return 1;
+			}
+
+			case VALUE_INT64:
+			{
+			    value_out -> value.int64 = ! value_out -> value.int64;
+			    return 1;
+			}
+
+			case VALUE_REAL64:
+			{
+			    value_out -> value.real64 = ! value_out -> value.real64;
+			    return 1;
+			}
+
+			case VALUE_STRING:
+			{
+			    value_out -> type = VALUE_NONE;
+			    return ELVIN_FREE(value_out -> value.string, error);
+			}
+
+			case VALUE_OPAQUE:
+			{
+			    value_out -> type = VALUE_NONE;
+			    return ELVIN_FREE(value_out -> value.opaque.data, error);
+			}
+
+			case VALUE_LIST:
+			{
+			    printf("how do I negate a list?!\n");
+			    abort();
+			}
+
+			case VALUE_BLOCK:
+			{
+			    printf("how do I negate a block!?\n");
+			    abort();
+			}
+		    }
+
+		    fprintf(stderr, "doh!\n");
+		    abort();
+		}
+	    }
+
+	    /* Otherwise we're in trouble */
+	    printf("foon!\n");
 	    abort();
 	}
 

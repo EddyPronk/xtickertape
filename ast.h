@@ -31,11 +31,14 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.3 2000/07/07 10:43:15 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.4 2000/07/09 00:48:11 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
 typedef struct ast *ast_t;
+
+/* The value data type */
+typedef struct value value_t;
 
 
 
@@ -52,6 +55,18 @@ typedef enum value_type
     VALUE_BLOCK
 } value_type_t;
 
+/* A list is an array of other values */
+typedef struct list list_t;
+struct list
+{
+    /* The number of items in the list */
+    uint32_t count;
+
+    /* The items */
+    value_t *items;
+};
+
+
 /* The value union contains all possible types values */
 typedef union value_union
 {
@@ -60,11 +75,10 @@ typedef union value_union
     double real64;
     uchar *string;
     elvin_opaque_t opaque;
-    ast_t list;
+    list_t list;
     ast_t block;
 } value_union_t;
 
-typedef struct value value_t;
 struct value
 {
     value_type_t type;
@@ -72,7 +86,14 @@ struct value
 };
 
 
-/* The supported binary operators */
+/* The unary operators */
+enum ast_unary
+{
+    AST_NOT
+};
+typedef enum ast_unary ast_unary_t;
+
+/* The binary operators */
 enum ast_binop
 {
     AST_ASSIGN,
@@ -109,6 +130,9 @@ ast_t ast_function_alloc(ast_t id, ast_t args, elvin_error_t error);
 
 /* Allocates and initializes a new block AST node */
 ast_t ast_block_alloc(ast_t body, elvin_error_t error);
+
+/* Allocates and initialzes a new unary AST node */
+ast_t ast_unary_alloc(ast_unary_t op, ast_t value, elvin_error_t error);
 
 /* Allocates and initializes a new binary operation AST node */
 ast_t ast_binop_alloc(
