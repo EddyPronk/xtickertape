@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.81 2000/03/01 06:53:07 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.82 2000/03/27 01:46:02 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -125,30 +125,32 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
-static void start_drag(Widget widget, XEvent *event);
-static void drag(Widget widget, XEvent *event);
-static void show_menu(Widget widget, XEvent *event);
-static void show_attachment(Widget widget, XEvent *event);
-static void expire(Widget widget, XEvent *event);
-static void delete(Widget widget, XEvent *event);
-static void kill(Widget widget, XEvent *event);
-static void faster(Widget widget, XEvent *event);
-static void slower(Widget widget, XEvent *event);
+static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void expire(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void delete(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void kill(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void faster(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void slower(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 
 /*
  * Actions table
  */
 static XtActionsRec actions[] =
 {
-    { "start-drag", (XtActionProc)start_drag },
-    { "drag", (XtActionProc)drag },
-    { "show-menu", (XtActionProc)show_menu },
-    { "show-attachment", (XtActionProc)show_attachment },
-    { "expire", (XtActionProc)expire },
-    { "delete", (XtActionProc)delete },
-    { "kill", (XtActionProc)kill },
-    { "faster", (XtActionProc)faster },
-    { "slower", (XtActionProc)slower }
+    { "start-drag", start_drag },
+    { "drag", drag },
+    { "show-menu", show_menu },
+    { "show-attachment", show_attachment },
+    { "expire", expire },
+    { "delete", delete },
+    { "kill", kill },
+    { "faster", faster },
+    { "slower", slower },
+    { "set-speed", set_speed }
 };
 
 
@@ -168,6 +170,18 @@ static char defaultTranslations[] =
     "<Key>q: quit()\n"
     "<Key>-: slower()\n"
     "<Key>+: faster()\n"
+    "<Key>comma: faster()\n"
+    "<Key>.: slower()\n"
+    "<Key>0: set-speed(0)\n"
+    "<Key>1: set-speed(1)\n"
+    "<Key>2: set-speed(2)\n"
+    "<Key>3: set-speed(3)\n"
+    "<Key>4: set-speed(4)\n"
+    "<Key>5: set-speed(5)\n"
+    "<Key>6: set-speed(6)\n"
+    "<Key>7: set-speed(7)\n"
+    "<Key>8: set-speed(8)\n"
+    "<Key>9: set-speed(9)\n"
 };
 
 
@@ -1384,7 +1398,7 @@ static int pre_action(ScrollerWidget self, XEvent *event)
 
 
 /* Called when the button is pressed */
-void show_menu(Widget widget, XEvent *event)
+void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1401,7 +1415,7 @@ void show_menu(Widget widget, XEvent *event)
 }
 
 /* Spawn metamail to decode the message's attachment */
-static void show_attachment(Widget widget, XEvent *event)
+static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1421,7 +1435,7 @@ static void show_attachment(Widget widget, XEvent *event)
 
 
 /* Expires a message in short order */
-static void expire(Widget widget, XEvent *event)
+static void expire(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1651,7 +1665,7 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
 
 
 /* Simply remove the message from the scroller NOW */
-static void delete(Widget widget, XEvent *event)
+static void delete(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1675,7 +1689,7 @@ static void delete(Widget widget, XEvent *event)
 }
 
 /* Kill a message and any replies */
-static void kill(Widget widget, XEvent *event)
+static void kill(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
@@ -1695,7 +1709,7 @@ static void kill(Widget widget, XEvent *event)
 
 
 /* Scroll more quickly */
-static void faster(Widget widget, XEvent *event)
+static void faster(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
@@ -1717,7 +1731,7 @@ static void faster(Widget widget, XEvent *event)
 }
 
 /* Scroll more slowly */
-static void slower(Widget widget, XEvent *event)
+static void slower(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
@@ -1738,8 +1752,37 @@ static void slower(Widget widget, XEvent *event)
     }
 }
 
+/* Scroll at a specific speed */
+static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+
+    /* Abort if the pre-action tells us to */
+    if (pre_action(self, event) < 0)
+    {
+	return;
+    }
+
+    /* set-speed only accepts one parameter */
+    if (*nparams != 1)
+    {
+	return;
+    }
+
+    /* Set the speed */
+    if ((self -> scroller.step = atoi(params[0])) != 0)
+    {
+	EnableClock(self);
+    }
+    else
+    {
+	DisableClock(self);
+    }
+}
+
+
 /* Someone has pressed a mouse button */
-static void start_drag(Widget widget, XEvent *event)
+static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
@@ -1756,7 +1799,7 @@ static void start_drag(Widget widget, XEvent *event)
 }
 
 /* Someone is dragging the mouse */
-static void drag(Widget widget, XEvent *event)
+static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XMotionEvent *motion_event = (XMotionEvent *) event;
