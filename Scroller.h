@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.12 2000/04/19 07:17:57 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.13 2001/07/04 08:42:10 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -78,26 +78,66 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.12 2000/04/19 07:17:57
 
  */
 
-#define XtNattachmentCallback "attachmentCallback"
-#define XtNkillCallback "killCallback"
-#define XtNgroupPixel "groupPixel"
-#define XtCGroupPixel "GroupPixel"
-#define XtNuserPixel "userPixel"
-#define XtCUserPixel "UserPixel"
-#define XtNstringPixel "stringPixel"
-#define XtCStringPixel "StringPixel"
-#define XtNseparatorPixel "separatorPixel"
-#define XtCSeparatorPixel "SeparatorPixel"
-#define XtNfadeLevels "fadeLevels"
-#define XtCFadeLevels "FadeLevels"
-#define XtNusePixmap "usePixmap"
-#define XtCUsePixmap "UsePixmap"
-#define XtNdragDelta "dragDelta"
-#define XtCDragDelta "DragDelta"
-#define XtNfrequency "frequency"
-#define XtCFrequency "Frequency"
-#define XtNstepSize "stepSize"
-#define XtCStepSize "StepSize"
+#ifndef XtNattachmentCallback
+# define XtNattachmentCallback "attachmentCallback"
+#endif
+#ifndef XtNkillCallback
+# define XtNkillCallback "killCallback"
+#endif
+#ifndef XtNgroupPixel
+# define XtNgroupPixel "groupPixel"
+#endif
+#ifndef XtCGroupPixel
+# define XtCGroupPixel "GroupPixel"
+#endif
+#ifndef XtNuserPixel
+# define XtNuserPixel "userPixel"
+#endif
+#ifndef XtCUserPixel
+# define XtCUserPixel "UserPixel"
+#endif
+#ifndef XtNstringPixel
+# define XtNstringPixel "stringPixel"
+#endif
+#ifndef XtCStringPixel
+# define XtCStringPixel "StringPixel"
+#endif
+#ifndef XtNseparatorPixel
+# define XtNseparatorPixel "separatorPixel"
+#endif
+#ifndef XtCSeparatorPixel
+# define XtCSeparatorPixel "SeparatorPixel"
+#endif
+#ifndef XtNfadeLevels
+# define XtNfadeLevels "fadeLevels"
+#endif
+#ifndef XtCFadeLevels
+# define XtCFadeLevels "FadeLevels"
+#endif
+#ifndef XtNusePixmap
+# define XtNusePixmap "usePixmap"
+#endif
+#ifndef XtCUsePixmap
+# define XtCUsePixmap "UsePixmap"
+#endif
+#ifndef XtNdragDelta
+# define XtNdragDelta "dragDelta"
+#endif
+#ifndef XtCDragDelta
+# define XtCDragDelta "DragDelta"
+#endif
+#ifndef XtNfrequency
+# define XtNfrequency "frequency"
+#endif
+#ifndef XtCFrequency
+# define XtCFrequency "Frequency"
+#endif
+#ifndef XtNstepSize
+# define XtNstepSize "stepSize"
+#endif
+#ifndef XtCStepSize
+# define XtCStepSize "StepSize"
+#endif
 
 typedef struct _ScrollerClassRec *ScrollerWidgetClass;
 typedef struct _ScrollerRec *ScrollerWidget;
