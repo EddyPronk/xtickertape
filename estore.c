@@ -5,7 +5,7 @@
  *
  * This code is mostly stolen from rcvstore.c
  *
- * $Id: estore.c,v 1.1 1999/01/11 07:31:36 phelps Exp $
+ * $Id: estore.c,v 1.2 1999/10/11 04:44:55 phelps Exp $
  */
 
 #include <elvin3/elvin.h>
@@ -69,7 +69,6 @@ typedef enum
     WhitespaceState,
     FieldNameState,
     FieldBodyState,
-    MustFoldState,
     FoldState,
     EndState,
     ErrorState
@@ -196,10 +195,10 @@ static void Lex(int ch)
 	/* Reading whitespace at beginning of body */
 	case WhitespaceState:
 	{
-	    /* If we get a CR, then go to MustFoldState */
+	    /* If we get a CR now then try to fold */
 	    if (ch == '\n')
 	    {
-		lexer_state = MustFoldState;
+		lexer_state = FoldState;
 		return;
 	    }
 
@@ -266,21 +265,6 @@ static void Lex(int ch)
 	    }
 
 	    FieldBodyAppend(ch);
-	    return;
-	}
-
-	/* We've read an empty field body.  See if it's merely folded */
-	case MustFoldState:
-	{
-	    /* If we get linear whitespace, then we're ok */
-	    if ((ch == ' ') || (ch == '\t'))
-	    {
-		lexer_state = WhitespaceState;
-		return;
-	    }
-
-	    /* Otherwise, we're in error */
-	    lexer_state = ErrorState;
 	    return;
 	}
 
