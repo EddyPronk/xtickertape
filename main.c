@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.110 2002/06/07 15:13:20 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.111 2002/06/11 15:20:25 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -520,10 +520,14 @@ static void app_defaults_version_error(char *message)
 	    "XtResolvePathname for more information.\n", message);
 }
 
+
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
     XtAppContext context;
+#ifndef HAVE_XTVAOPENAPPLICATION
+    Display *display;
+#endif
     XTickertapeRec rc;
     elvin_handle_t handle;
     elvin_error_t error;
@@ -536,6 +540,7 @@ int main(int argc, char *argv[])
     char *keys_file;
     Widget top;
 
+#ifdef HAVE_XTVAOPENAPPLICATION
     /* Create the toplevel widget */
     top = XtVaOpenApplication(
 	&context, "XTickertape",
@@ -544,6 +549,27 @@ int main(int argc, char *argv[])
 	applicationShellWidgetClass,
 	XtNborderWidth, 0,
 	NULL);
+#else    
+    /* Initialize the X Toolkit */
+    XtToolkitInitialize();
+
+    /* Create an application context */
+    context = XtCreateApplicationContext();
+
+    /* Open the display */
+    if ((display = XtOpenDisplay(
+	     context, NULL, NULL, "XTickertape",
+	     NULL, 0,
+	     &argc, argv)) == NULL)
+    {
+
+	fprintf(stderr, "Error: Can't open display\n");
+	exit(1);
+    }
+
+    /* Create the toplevel widget */
+    top = XtAppCreateShell(NULL, "XTickertape", applicationShellWidgetClass, display, NULL, 0);
+#endif
 
     /* Load the application shell resources */
     XtGetApplicationResources(top, &rc, resources, XtNumber(resources), NULL, 0);

@@ -28,7 +28,7 @@ LIBS="$X_PRE_LIBS $X_EXTRA_LIBS $LIBS"
 AC_CHECK_LIB(X11, XOpenDisplay)
 
 # Check for the X toolkit library.
-AC_CHECK_LIB(Xt, XtVaAppInitialize)
+AC_CHECK_LIB(Xt, XtToolkitInitialize)
 
 # Check for the X extensions library.
 AC_CHECK_LIB(Xmu, _XEditResCheckMessages)
@@ -148,7 +148,7 @@ dnl =============================
 # then the cache value will be set to no, even if it was then found in
 # -lnsl.  By clearing the cache, we can force it to be checked again.
 unset ac_cv_func_gethostbyname
-AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname])
+AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
 
 
 dnl Checks for misc features
