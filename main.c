@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.59 1999/10/06 05:33:03 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.60 1999/11/01 03:37:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -183,8 +183,8 @@ static void parse_args(
     *ticker_dir_return = NULL;
     *groups_file_return = NULL;
     *usenet_file_return = NULL;
-    *host_return = HOST;
-    *port_return = PORT;
+    *host_return = NULL;
+    *port_return = 0;
 
     /* Read each argument using getopt */
     while ((choice = getopt_long(argc, argv, "h:p:u:D:U:G:v", long_options, NULL)) > 0)
@@ -266,6 +266,34 @@ static void parse_args(
     if (*domain_return == NULL)
     {
 	*domain_return = get_domain();
+    }
+
+    /* Generate a host name if none provided */
+    if (*host_return == NULL)
+    {
+	/* Try the environment variable */
+	if ((*host_return = getenv("ELVIN_HOST")) == NULL)
+	{
+	    *host_return = HOST;
+	}
+    }
+
+    /* Generate a port number if none provided */
+    if (*port_return == 0)
+    {
+	char *port;
+
+	/* Try the environment variable */
+	if ((port = getenv("ELVIN_PORT")) != NULL)
+	{
+	    *port_return = atoi(port);
+	}
+
+	/* Otherwise use the default */
+	if (*port_return == 0)
+	{
+	    *port_return = PORT;
+	}
     }
 }
 

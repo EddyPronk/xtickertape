@@ -212,7 +212,12 @@ If
 exists in the environment, then \*(xt will look in the directory it
 names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
 it defaults to \fB$HOME/.ticker\fP.  If no user name is specified on
-the command-line then the environment variables
+the command-line then the environment variables.
+.B ELVIN_HOST
+and
+.B ELVIN_PORT
+are used to locate the elvin server if the host and port are not
+specified on the command-line.
 .B USER
 and
 .B LOGNAME
