@@ -31,7 +31,7 @@
 #define CONNECT_H
 
 #ifndef lint
-static const char cvs_CONNECT_H[] = "$Id: connect.h,v 1.1 1999/09/26 14:00:18 phelps Exp $";
+static const char cvs_CONNECT_H[] = "$Id: connect.h,v 1.2 1999/10/06 08:38:47 phelps Exp $";
 #endif /* lint */
 
 typedef struct connection *connection_t;
@@ -47,7 +47,7 @@ typedef void (*reconnect_callback_t)(void *rock, connection_t self);
 /* Answers a new connection_t */
 connection_t connection_alloc(
     char *hostname, int port, XtAppContext app_context,
-    disconnect_callback_t disconnectCallback, void *disconnect_rock,
+    disconnect_callback_t disconnect_callback, void *disconnect_rock,
     reconnect_callback_t callback, void *reconnect_rock);
 
 /* Releases the resources used by the connection_t */

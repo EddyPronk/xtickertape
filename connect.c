@@ -28,18 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: connect.c,v 1.2 1999/09/29 06:58:25 phelps Exp $";
+static const char cvsid[] = "$Id: connect.c,v 1.3 1999/10/06 08:38:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <elvin3/elvin.h>
-/*#include <elvin3/element.h>*/
 #include <elvin3/subscription.h>
 #include "connect.h"
 
-#define INITIAL_PAUSE 1000 /* 1 second */
-#define MAX_PAUSE (5 * 60 * 1000) /* 5 minutes */
+/* The minimum number of milliseconds to wait before attempting to
+ * reconnect to the elvin server (1 second) */
+#define INITIAL_PAUSE 1000
+
+/* The maximum number of seconds to wait before attempting to
+ * reconnect to the elvin server (5 minutes) */
+#define MAX_PAUSE (5 * 60 * 1000)
 
 
 /* The receiver's state machine for connectivity status */
@@ -116,23 +120,23 @@ static void subscription_tuple_free(subscription_tuple_t self)
 
 
 /* Callback for a notification */
-static void notify(elvin_t connection, void *rock, uint32 id, en_notify_t notification)
+static void handle_notify(elvin_t connection, void *rock, uint32 id, en_notify_t notification)
 {
     subscription_tuple_t self = (subscription_tuple_t)rock;
-    
+
     (*self -> callback)(self -> rock, notification);
 }
 
 /* Subscribe to the tuple's subscription expression.
  * Returns 0 on success, -1 on failure */
-int subscription_tuple_subscribe(subscription_tuple_t self, elvin_t elvin)
+static int subscription_tuple_subscribe(subscription_tuple_t self, elvin_t elvin)
 {
-    self -> id = elvin_add_subscription(elvin, self -> expression, notify, self, 0);
+    self -> id = elvin_add_subscription(elvin, self -> expression, handle_notify, self, 0);
     return (self -> id != 0) ? 0 : -1;
 }
 
 /* Unsubscribes to the tuple's subscription expression */
-void subscription_tuple_unsubscribe(subscription_tuple_t self, elvin_t elvin)
+static void subscription_tuple_unsubscribe(subscription_tuple_t self, elvin_t elvin)
 {
     if (self -> id != 0)
     {
@@ -184,7 +188,7 @@ struct connection
 
 
 /* Callback for quench expressions (we don't use these) */
-static void (*QuenchCallback)(elvin_t elvin, void *arg, char *quench) = NULL;
+static void (*quench_callback)(elvin_t elvin, void *arg, char *quench) = NULL;
 
 
 /*
@@ -220,7 +224,7 @@ static void do_connect(connection_t self)
     /* Try to connect */
     if ((self -> elvin = elvin_connect(
 	EC_NAMEDHOST, self -> host, self -> port,
-	QuenchCallback, NULL, error, self, 1)) == NULL)
+	quench_callback, NULL, error, self, 1)) == NULL)
     {
 	int pause = self -> retry_pause;
 
@@ -302,8 +306,9 @@ connection_t connection_alloc(
     /* Allocate memory for the new connection_t */
     self = (connection_t)malloc(sizeof(struct connection));
 
-    self -> host = hostname;
+    self -> host = strdup(hostname);
     self -> port = port;
+    self -> elvin = NULL;
     self -> state = never_connected_state;
     self -> retry_pause = INITIAL_PAUSE;
     self -> app_context = app_context;
@@ -333,6 +338,13 @@ void connection_free(connection_t self)
 	tuple = next;
     }
 
+    /* Unregister our input handler */
+    if (self -> input_id != 0)
+    {
+	XtRemoveInput(self -> input_id);
+	self -> input_id = 0;
+    }
+
     /* Disconnect from elvin server */
     if (self -> state == connected_state)
     {
@@ -340,6 +352,8 @@ void connection_free(connection_t self)
 	self -> state = disconnected_state;
     }
 
+    /* Clean up easy stuff */
+    free(self -> host);
     free(self);
 }
 
