@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.15 1999/07/27 07:51:21 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.16 1999/07/27 11:56:14 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -83,9 +83,6 @@ typedef struct
 
     /* The rightmost glyph holder */
     glyph_holder_t right_holder;
-
-    /* The number of glyph holders in the queue */
-    int holder_count;
 
     /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
     int left_offset;
