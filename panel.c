@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.28 2000/03/16 06:54:18 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.29 2000/04/24 06:03:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1519,7 +1519,7 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
     if (self -> selection != NULL)
     {
 	message_t message = contruct_message(self);
-	(*self -> selection -> callback)(self -> selection -> rock, message);
+	self -> selection -> callback(self -> selection -> rock, message);
 	message_free(message);
     }
 
