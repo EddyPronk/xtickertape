@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.6 1998/10/15 06:15:30 phelps Exp $ */
+/* $Id: Subscription.c,v 1.7 1998/10/16 04:15:02 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,6 +88,7 @@ void Subscription_debug(Subscription self)
     printf("  sanity_check = \"%s\"\n", self -> sanity_check);
 #endif /* SANITY */    
     printf("  group = \"%s\"\n", self -> group ? self -> group : "<none>");
+    printf("  expression = \"%s\"\n", self -> expression ? self -> expression : "<none>");
     printf("  inMenu = %s\n", self -> inMenu ? "true" : "false");
     printf("  hasNazi = %s\n", self -> hasNazi ? "true" : "false");
     printf("  minTime = %d\n", self -> minTime);
