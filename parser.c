@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.19 2000/07/11 07:12:10 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.20 2000/07/28 05:57:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -750,8 +750,24 @@ static ast_t make_function(parser_t self, elvin_error_t error)
 /* <value> ::= ID LPAREN RPAREN */
 static ast_t make_noarg_function(parser_t self, elvin_error_t error)
 {
-    fprintf(stderr, "make_noarg_function(): not yet implemented\n");
-    return NULL;
+    ast_t id, result;
+
+    /* Get the function name */
+    id = self -> value_top[0];
+
+    /* Create the function node */
+    if (! (result = ast_function_alloc(id, NULL, error)))
+    {
+	return NULL;
+    }
+
+    /* Clean up */
+    if (! ast_free(id, error))
+    {
+	return NULL;
+    }
+
+    return result;
 }
 
 /* <block> ::= LBRACKET <value> RBRACKET */
