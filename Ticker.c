@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.8 1998/10/21 08:21:48 phelps Exp $
+ * $Id: Ticker.c,v 1.9 1998/10/22 07:08:09 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -13,13 +13,14 @@
 #include "Tickertape.h"
 #include "Control.h"
 #include "Subscription.h"
+#include "UsenetSubscription.h"
 #include "ElvinConnection.h"
 
 #ifdef ORBIT
-#define VERSION "1.4 (orbit)"
+#define VERSION "1.4.1 (orbit)"
 #include "OrbitSubscription.h"
 #else /* ORBIT */
-#define VERSION "1.4"
+#define VERSION "1.4.1"
 #endif /* ORBIT */
 
 
@@ -41,11 +42,18 @@ struct Tickertape_t
     /* The group file from which we read our subscriptions */
     char *groupsFile;
 
+    /* The usenet file from which we read our usenet subscription */
+    char *usenetFile;
+
     /* The top-level widget */
     Widget top;
 
     /* The receiver's subscriptions (from the groups file) */
     List subscriptions;
+
+    /* The receiver's usenet subscription (from the usenet file) */
+    UsenetSubscription usenetSubscription;
+
 #ifdef ORBIT
     /* The receiver's Orbit-related subscriptions */
     Hashtable orbitSubscriptionsById;
@@ -144,6 +152,26 @@ static List ReadGroupsFile(Tickertape self)
     return subscriptions;
 }
 
+
+/* Read from the usenet file.  Returns a Usenet subscription. */
+static UsenetSubscription ReadUsenetFile(Tickertape self)
+{
+    FILE *file;
+    UsenetSubscription subscription;
+
+    if ((file = fopen(self -> usenetFile, "r")) == NULL)
+    {
+	fprintf(stderr, "*** unable to open usenet file %s\n", self -> usenetFile);
+	return NULL;
+    }
+
+    /* Read the file */
+    subscription = UsenetSubscription_readFromUsenetFile(
+	file, (SubscriptionCallback)ReceiveMessage, self);
+    fclose(file);
+
+    return subscription;
+}
 
 
 /* Publishes a notification indicating that the receiver has started */
@@ -292,16 +320,25 @@ Tickertape Tickertape_alloc(char *user, char *file, char *host, int port, Widget
 #endif /* SANITY */
     self -> user = strdup(user);
     self -> groupsFile = strdup(file);
+    self -> usenetFile = "/home/phelps/.ticker/usenet";
     self -> top = top;
     self -> subscriptions = ReadGroupsFile(self);
+    self -> usenetSubscription = ReadUsenetFile(self);
     self -> connection = NULL;
 
     InitializeUserInterface(self);
 
+    /* Connect to elvin and subscribe */
     self -> connection = ElvinConnection_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
 	(ErrorCallback) Error, self);
     List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
+
+    /* Subscribe to the Usenet subscription if we have one */
+    if (self -> usenetSubscription != NULL)
+    {
+	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
+    }
 
 #ifdef ORBIT
     /* Listen for Orbit-related notifications and alert the world to our presence */
