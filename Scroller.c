@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.106 2001/05/02 01:55:11 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.107 2001/05/03 00:16:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1207,17 +1207,8 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 	holder = holder -> next;
     }
 
-    /* If the internal state is inconsistent then let's bail right now */
-    if (offset - self -> core.width != self -> scroller.right_offset)
-    {
-	DPRINTF((
-	    stderr,
-	    PACKAGE ": internal scroller state is inconsistent\n"
-	    PACKAGE ": please send the resulting core file to phelps@pobox.com\n"));
-
-	/* Force a core dump */
-	abort();
-    }
+    /* Sanity check */
+    assert(offset - self -> core.width == self -> scroller.right_offset);
 }
 
 
@@ -1259,36 +1250,53 @@ static void do_expose(Widget widget, XEvent *event, Region region)
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 {
-    XGraphicsExposeEvent *g_event;
     ScrollerWidget self = (ScrollerWidget)widget;
+    Display *display = XtDisplay(widget);
+    XEvent event_buffer;
 
     /* Sanity check */
     assert(! self -> scroller.use_pixmap);
 
-    /* See if the server has synced with our local state */
-    if (! (LastKnownRequestProcessed(XtDisplay(self)) < self -> scroller.request_id))
+    /* Process all of the GraphicsExpose events in one go */
+    while (1)
     {
-	self -> scroller.local_delta = 0;
+	XGraphicsExposeEvent *g_event;
+
+	/* See if the server has synced with our local state */
+	if (! (LastKnownRequestProcessed(display) < self -> scroller.request_id))
+	{
+	    self -> scroller.local_delta = 0;
+	}
+
+	/* Stop drawing stuff if the scroller is obscured */
+	if (event -> type == NoExpose)
+	{
+	    self -> scroller.is_visible = False;
+	    return;
+	}
+
+	/* Ignore anything that isn't a graphics expose event */
+	if (event -> type != GraphicsExpose)
+	{
+	    return;
+	}
+
+	/* Coerce the event */
+	g_event = (XGraphicsExposeEvent *)event;
+
+	/* Update this portion of the scroller */
+	Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
+
+	/* Bail if this is the last GraphicsExpose event */
+	if (g_event -> count < 1)
+	{
+	    return;
+	}
+
+	/* Otherwise grab the next GraphicsExpose event */
+	XNextEvent(display, &event_buffer);
+	event = &event_buffer;
     }
-
-    /* Is the scroller obscured? */
-    if (event -> type == NoExpose)
-    {
-	self -> scroller.is_visible = False;
-	return;
-    }
-
-    /* Ignore anything that isn't a graphics expose event */
-    if (event -> type != GraphicsExpose)
-    {
-	return;
-    }
-
-    /* Coerce the event */
-    g_event = (XGraphicsExposeEvent *)event;
-
-    /* Update this portion of the scroller */
-    Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
 }
 
 
