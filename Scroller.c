@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.121 2001/07/04 08:50:13 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.122 2001/07/04 11:48:46 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -401,7 +401,6 @@ static void glyph_tick(XtPointer closure, XtIntervalId *id)
     int level_count = self -> widget -> scroller.fade_levels;
 
     /* We don't have a timeout */
-    assert(self -> timeout == *id);
     self -> timeout = None;
 
     /* Have we faded through all of the levels yet? */
@@ -1333,11 +1332,6 @@ static void paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     XRectangle bbox;
 
     /* Compensate for unprocessed CopyArea requests */
-    if (self -> scroller.local_delta)
-    {
-	abort();
-    }
-
     x += self -> scroller.local_delta;
 
     /* Record the width an height of the bounding box */
