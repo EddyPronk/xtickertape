@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.10 2000/11/20 14:45:28 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.11 2000/11/22 12:50:30 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -510,8 +510,34 @@ int vm_make_cons(vm_t self, elvin_error_t error)
 /* Pops a cons cell off the top of the stack and pushes its car on instead */
 int vm_car(vm_t self, elvin_error_t error)
 {
-    object_t cons;
-    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[1], error);
+    object_t object;
+
+    /* Pop the top off the stack */
+    if (! vm_pop(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* We can work with a cons cell or nil */
+    switch (object_type(object))
+    {
+	/* (car nil) -> nil */
+	case SEXP_NIL:
+	{
+	    return vm_push(self, object, error);
+	}
+
+	case SEXP_CONS:
+	{
+	    return vm_push(self, (object_t)object[1], error);
+	}
+
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a cons");
+	    return 0;
+	}
+    }
 }
 
 /* Sets the car of a cons cell */
@@ -533,8 +559,34 @@ int vm_set_car(vm_t self, elvin_error_t error)
 /* Pops a cons cell off the top of the stack and pushes its car on instead */
 int vm_cdr(vm_t self, elvin_error_t error)
 {
-    object_t cons;
-    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[2], error);
+    object_t object;
+
+    /* Pop the top of the stack */
+    if (! vm_pop(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* We can work with nil or a cons cell */
+    switch (object_type(object))
+    {
+	/* (cdr nil) -> nil */
+	case SEXP_NIL:
+	{
+	    return vm_push(self, object, error);
+	}
+
+	case SEXP_CONS:
+	{
+	    return vm_push(self, (object_t)object[2], error);
+	}
+
+	default:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a cons");
+	    return 0;
+	}
+    }
 }
 
 /* Sets the cdr of a cons cell */
