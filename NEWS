@@ -32,6 +32,10 @@ Overview of changes in xtickertape-2.0
   than a `string'.  This makes it possible to display images, play
   sounds or view anything else you have a decoder for via tickertape.
   Of course, getting those things attached is somewhat tricky.
+  [Thanks Martin Wanicki]
+
+* The `show-menu' action now maps the control panel window so that it
+  will be visible even if it has been iconified [Thanks David Leonard]
 
 Overview of changes in xtickertape-1.6.6
 

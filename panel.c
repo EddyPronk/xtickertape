@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.42 2001/02/22 03:43:17 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.43 2001/02/22 06:14:23 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1828,7 +1828,11 @@ void control_panel_select(control_panel_t self, message_t message)
 /* Makes the control panel window visible */
 void control_panel_show(control_panel_t self)
 {
+    /* Pop up the control panel */
     XtPopup(self -> top, XtGrabNone);
+
+    /* Even if it's iconified */
+    XMapWindow(XtDisplay(self -> top), XtWindow(self -> top));
 }
 
 
