@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.18 2001/07/19 12:51:00 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.19 2001/07/19 12:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -926,14 +926,15 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
     y = self -> history.selection_index * self -> history.line_height;
 
     /* If it's above then scroll up to it */
-    if (y < self -> history.y)
+    if (y + self -> history.margin_height < self -> history.y)
     {
 	set_origin(self, self -> history.x, y + self -> history.margin_height);
 	return;
     }
 
     /* If it's below then scroll down to it */
-    if (self -> history.y + self -> core.height < y + self -> history.line_height)
+    if (self -> history.y + self -> core.height <
+	y + self -> history.line_height - self -> history.margin_height)
     {
 	set_origin(
 	    self, self -> history.x,
