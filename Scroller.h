@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2001.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -12,7 +12,7 @@
   below to determine an appropriate licensing arrangement.
 
      DSTC Pty Ltd
-     Level 7, Gehrmann Labs
+     Level 7, GP South
      University of Queensland
      St Lucia, 4072
      Australia
@@ -34,7 +34,7 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.13 2001/07/04 08:42:10 phelps Exp $";
+static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.14 2001/08/25 14:04:42 phelps Exp $";
 #endif /* lint */
 
 /*

@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -12,7 +12,7 @@
   below to determine an appropriate licensing arrangement.
 
      DSTC Pty Ltd
-     Level 7, Gehrmann Labs
+     Level 7, GP South
      University of Queensland
      St Lucia, 4072
      Australia
@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.17 2001/08/25 09:44:43 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.18 2001/08/25 14:04:42 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>

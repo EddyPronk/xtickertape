@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2000.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -12,7 +12,7 @@
   below to determine an appropriate licensing arrangement.
 
      DSTC Pty Ltd
-     Level 7, Gehrmann Labs
+     Level 7, GP South
      University of Queensland
      St Lucia, 4072
      Australia
@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.15 2000/12/09 01:43:55 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.16 2001/08/25 14:04:46 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */

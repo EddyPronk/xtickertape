@@ -109,7 +109,7 @@
 ! titleLabel.labelString is set in the Control.c from the PACKAGE and
 ! VERSION compile-time variables
 *titleLabel.fontList: -adobe-helvetica-bold-r-normal--18-180-75-75-p-*-iso8859-1
-*copyrightLabel.labelString: Copyright © 1999, 2000 DSTC Pty Ltd
+*copyrightLabel.labelString: Copyright © 1997-2001 DSTC Pty Ltd
 *authorLabel.labelString: Ted Phelps (phelps@dstc.edu.au)
 *dismiss.labelString: Dismiss
 

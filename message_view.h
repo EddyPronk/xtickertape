@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -12,7 +12,7 @@
   below to determine an appropriate licensing arrangement.
 
      DSTC Pty Ltd
-     Level 7, Gehrmann Labs
+     Level 7, GP South
      University of Queensland
      St Lucia, 4072
      Australia
@@ -31,7 +31,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.3 2001/08/25 08:56:49 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.4 2001/08/25 14:04:44 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */
