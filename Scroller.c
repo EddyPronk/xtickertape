@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.69 1999/09/14 11:10:39 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.70 1999/09/14 13:47:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -474,11 +474,27 @@ GC ScGCForBackground(ScrollerWidget self)
 static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width, int height)
 {
     XGCValues values;
-    XRectangle rectangle = { x, y, width, height };
 
-    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
-    values.foreground = foreground;
-    XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
+    /* Try to reuse the clip mask if at all possible */
+    if (self -> scroller.clip_width == width)
+    {
+	values.foreground = foreground;
+	values.clip_x_origin = x;
+	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground | GCClipXOrigin, &values);
+    }
+    else
+    {
+	XRectangle rectangle = { 0, 0, width, y + height };
+
+	/* Set up the clip mask */
+	XSetClipRectangles(XtDisplay(self), self -> scroller.gc, x, 0, &rectangle, 1, Unsorted);
+	self -> scroller.clip_width = width;
+
+	/* Set up the foreground color */
+	values.foreground = foreground;
+	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
+    }
+
     return self -> scroller.gc;
 }
 
@@ -653,6 +669,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.left_glyph = gap;
     self -> scroller.right_glyph = gap;
     self -> scroller.last_width = 0;
+    self -> scroller.start_drag_x = 0;
+    self -> scroller.last_x = 0;
+    self -> scroller.clip_width = 0;
 }
 
 /* Realize the widget by creating a window in which to display it */
