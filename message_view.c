@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.22 2003/01/14 12:52:49 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.23 2003/01/14 15:15:30 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -69,8 +69,15 @@ static const char cvsid[] = "$Id: message_view.c,v 2.22 2003/01/14 12:52:49 phel
 
 #define BUFFER_SIZE 1024
 #define MAX_CHAR_SIZE 2
+
+/* The CHARSET_REGISTRY atom */
 #define CHARSET_REGISTRY "CHARSET_REGISTRY"
+static Atom registry = None;
+
+/* The CHARSET_ENCODING atom */
 #define CHARSET_ENCODING "CHARSET_ENCODING"
+static Atom encoding = None;
+
 #define FROM_CODE "UTF-8"
 
 /* Uncomment this line to debug the per_char() function */
@@ -187,8 +194,6 @@ utf8_renderer_t utf8_renderer_alloc(
     XFontStruct *font,
     const char *tocode)
 {
-    static Atom registry = None;
-    static Atom encoding = None;
     utf8_renderer_t self;
     iconv_t cd;
     int dimension;
@@ -273,7 +278,7 @@ utf8_renderer_t utf8_renderer_alloc(
     }
 
     /* Look up the font's CHARSET_ENCODING property */
-    if (!XGetFontProperty(font, encoding, &atoms[1]))
+    if (! XGetFontProperty(font, encoding, &atoms[1]))
     {
 	return self;
     }
