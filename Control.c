@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.45 1999/08/22 07:54:49 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.46 1999/08/22 11:01:30 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: Control.c,v 1.45 1999/08/22 07:54:49 phelps Ex
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#include <time.h>
 #include <pwd.h>
 #include "sanity.h"
 #include "history.h"
@@ -254,7 +255,6 @@ static void OptionsThreaded(
     ControlPanel self,
     XmToggleButtonCallbackStruct *info)
 {
-    printf("threaded (set=%d)!\n", info -> set);
     history_set_threaded(tickertape_history(self -> tickertape), info -> set);
 }
 
