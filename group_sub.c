@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.11 2000/01/13 00:29:45 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.12 2000/03/30 06:37:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -77,8 +77,8 @@ struct group_sub
     /* A convenient error context */
     elvin_error_t error;
 
-    /* The receiver's subscription id (for unsubscribing) */
-    int64_t subscription_id;
+    /* The receiver's subscription */
+    elvin_sub_t subscription;
 
     /* The receiver's control panel */ 
     control_panel_t control_panel;
@@ -106,7 +106,7 @@ struct group_sub
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
-    int64_t subscription_id,
+    elvin_sub_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -458,7 +458,7 @@ group_sub_t group_sub_alloc(
     self -> control_panel_rock = NULL;
     self -> handle = NULL;
     self -> error = NULL;
-    self -> subscription_id = 0;
+    self -> subscription = NULL;
     self -> callback = callback;
     self -> rock = rock;
 
@@ -510,21 +510,21 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    int64_t subscription_id, void *rock,
+    elvin_sub_t subscription, void *rock,
     elvin_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
-    self -> subscription_id = subscription_id;
+    self -> subscription = subscription;
 }
 
 
 /* Sets the receiver's connection */
 void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_error_t error)
 {
-    if ((self -> handle != NULL) && (self -> subscription_id != 0))
+    if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
 	if (elvin_async_delete_subscription(
-	    self -> handle, self -> subscription_id,
+	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{

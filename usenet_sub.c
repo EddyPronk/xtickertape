@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.14 2000/01/13 00:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.15 2000/03/30 06:37:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -77,8 +77,8 @@ struct usenet_sub
     /* The receiver's elvin connection handle */
     elvin_handle_t handle;
 
-    /* The reciever's subscription id */
-    int64_t subscription_id;
+    /* The reciever's subscription */
+    elvin_sub_t subscription;
 
     /* The receiver's callback */
     usenet_sub_callback_t callback;
@@ -91,7 +91,7 @@ struct usenet_sub
 /* Delivers a notification which matches the receiver's subscription expression */
 static void notify_cb(
     elvin_handle_t handle,
-    int64_t subscription_id,
+    elvin_sub_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -476,7 +476,7 @@ usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
     self -> expression = NULL;
     self -> expression_size = 0;
     self -> handle = NULL;
-    self -> subscription_id = 0;
+    self -> subscription = NULL;
     self -> callback = callback;
     self -> rock = rock;
     return self;
@@ -561,21 +561,21 @@ int usenet_sub_add(
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    int64_t subscription_id, void *rock,
+    elvin_sub_t subscription, void *rock,
     elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
-    self -> subscription_id = subscription_id;
+    self -> subscription = subscription;
 }
 
 /* Sets the receiver's elvin connection */
 void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error)
 {
     /* Disconnect from the old connection */
-    if ((self -> handle != NULL) && (self -> subscription_id != 0))
+    if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
 	if (elvin_async_delete_subscription(
-	    self -> handle, self -> subscription_id,
+	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{

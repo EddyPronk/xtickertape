@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.15 2000/01/13 00:29:47 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.16 2000/03/30 06:37:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -59,7 +59,7 @@ struct mail_sub
     elvin_handle_t handle;
 
     /* The receiver's subscription id */
-    int64_t subscription_id;
+    elvin_sub_t subscription;
 
     /* The receiver's rfc822 mailbox parser */
     mbox_parser_t parser;
@@ -75,7 +75,7 @@ struct mail_sub
 /* Delivers a notification which matches the receiver's e-mail subscription */
 static void notify_cb(
     elvin_handle_t handle,
-    int64_t subscription_id,
+    elvin_sub_t subscription,
     elvin_notification_t notification,
     int is_secure,
     void *rock,
@@ -186,7 +186,7 @@ mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
 
     self -> user = strdup(user);
     self -> handle = NULL;
-    self -> subscription_id = 0;
+    self -> subscription = 0;
     self -> callback = callback;
     self -> rock = rock;
     return self;
@@ -211,11 +211,11 @@ void mail_sub_free(mail_sub_t self)
 /* Callback for a subscribe request */
 static void subscribe_cb(
     elvin_handle_t handle, int result,
-    int64_t subscription_id, void *rock,
+    elvin_sub_t subscription, void *rock,
     elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
-    self -> subscription_id = subscription_id;
+    self -> subscription = subscription;
 }
 
 /* Sets the receiver's connection */
@@ -225,7 +225,7 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
     if (self -> handle != NULL)
     {
 	if (elvin_async_delete_subscription(
-	    self -> handle, self -> subscription_id,
+	    self -> handle, self -> subscription,
 	    NULL, NULL,
 	    error) == 0)
 	{
