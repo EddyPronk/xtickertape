@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.22 1999/10/04 03:18:15 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.23 1999/10/04 07:05:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -53,6 +53,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.22 1999/10/04 03:18:15 phelps
 #include "group_sub.h"
 #include "usenet.h"
 #include "usenet_parser.h"
+#include "usenet_sub.h"
 #include "UsenetSubscription.h"
 #include "mail_sub.h"
 #include "connect.h"
@@ -103,6 +104,7 @@ struct tickertape
 
     /* The receiver's usenet subscription (from the usenet file) */
     UsenetSubscription usenetSubscription;
+    usenet_sub_t usenet_sub;
 
     /* The receiver's mail subscription */
     mail_sub_t mail_sub;
@@ -482,18 +484,13 @@ static int parse_groups_file(tickertape_t self)
 
 /* The callback for the usenet file parser */
 static int parse_usenet_callback(
-    tickertape_t self, char *pattern,
+    tickertape_t self, int has_not, char *pattern,
     struct usenet_expr *expressions, size_t count)
 {
     struct usenet_expr *pointer;
 
-    printf("===\n%s\n", pattern);
-    for (pointer = expressions; pointer < expressions + count; pointer++)
-    {
-	printf("  %d %d \"%s\"\n", pointer -> field, pointer -> operator, pointer -> pattern);
-    }
-
-    return 0;
+    /* Forward the information to the usenet subscription */
+    return usenet_sub_add(self -> usenet_sub, has_not, pattern, expressions, count);
 }
 
 /* Parse the usenet file and update the usenet subscription accordingly */
@@ -508,6 +505,14 @@ static int parse_usenet_file(tickertape_t self)
 	(usenet_parser_callback_t)parse_usenet_callback,
 	self, filename)) == NULL)
     {
+	return -1;
+    }
+
+    /* Allocate a new usenet subscription */
+    if ((self -> usenet_sub = usenet_sub_alloc(
+	(usenet_sub_callback_t)receive_callback, self)) == NULL)
+    {
+	usenet_parser_free(parser);
 	return -1;
     }
 
@@ -553,9 +558,6 @@ static UsenetSubscription read_usenet_file(tickertape_t self)
 {
     FILE *file;
     UsenetSubscription subscription;
-
-    /* Test our other parser */
-    parse_usenet_file(self);
 
     /* Open the usenet file and read */
     if ((file = tickertape_usenet_file(self)) == NULL)
@@ -916,6 +918,8 @@ tickertape_t tickertape_alloc(
     self -> groups_count = 0;
 
     self -> usenetSubscription = read_usenet_file(self);
+    self -> usenet_sub = NULL;
+    parse_usenet_file(self);
     self -> mail_sub = mail_sub_alloc(
 	user, (mail_sub_callback_t)receive_callback, self);
     self -> connection = NULL;
@@ -944,6 +948,12 @@ tickertape_t tickertape_alloc(
     if (self -> usenetSubscription != NULL)
     {
 	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
+    }
+
+    /* Subscribe to the usenet_sub */
+    if (self -> usenet_sub != NULL)
+    {
+	usenet_sub_set_connection(self -> usenet_sub, self -> connection);
     }
 
     /* Subscribe to the Mail subscription if we have one */
