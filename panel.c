@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.57 2002/04/08 14:55:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.58 2002/04/09 10:44:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -265,10 +265,6 @@ static void action_return(Widget textField, control_panel_t self, XmAnyCallbackS
 static void action_dismiss(Widget button, control_panel_t self, XtPointer ignored);
 
 static void prepare_reply(control_panel_t self, message_t message);
-#if 0
-static void make_index_visible(Widget list, int index);
-#endif
-
 
 /* This gets called when the user selects the "reloadGroups" menu item */
 static void file_groups(Widget widget, control_panel_t self, XtPointer unused)
@@ -672,7 +668,6 @@ static void create_history_box(control_panel_t self, Widget parent)
 {
     Widget scroll_window;
 
-#if 1
     /* Create a scrolled window to enclose History widget */
     scroll_window = XtVaCreateWidget(
 	"historySW", xmScrolledWindowWidgetClass, parent,
@@ -714,42 +709,6 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtAddCallback(
 	self -> history, XtNmotionCallback,
 	history_motion_callback, (XtPointer)self);
-#else
-    Arg args[10];
-
-    XtSetArg(args[0], XmNleftAttachment, XmATTACH_FORM);
-    XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
-    XtSetArg(args[2], XmNtopAttachment, XmATTACH_FORM);
-    XtSetArg(args[3], XmNbottomAttachment, XmATTACH_WIDGET);
-    XtSetArg(args[4], XmNbottomWidget, XtParent(self -> status_line));
-    XtSetArg(args[5], XmNselectionPolicy, XmBROWSE_SELECT);
-    XtSetArg(args[6], XmNitemCount, 0);
-    XtSetArg(args[7], XmNvisibleItemCount, 3);
-    XtSetArg(args[8], XmNlistSizePolicy, XmCONSTANT);
-    XtSetArg(args[9], XmNscrollBarDisplayPolicy, XmSTATIC);
-    self -> history = XmCreateScrolledList(parent, "history", args, 10);
-
-    /* Add callbacks for interesting things */
-    XtAddCallback(
-	self -> history, XmNbrowseSelectionCallback,
-	(XtCallbackProc)history_selection_callback, (XtPointer)self);
-    XtAddCallback(
-	self -> history, XmNdefaultActionCallback,
-	(XtCallbackProc)history_action_callback, (XtPointer)self);
-
-    XtAddEventHandler(
- 	self -> history,
-	KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
-	EnterWindowMask | LeaveWindowMask | PointerMotionMask,
-	False,
-	(XtEventHandler)history_motion_callback,
-	(XtPointer)self);
-
-    XtManageChild(self -> history);
-
-    /* Tell the tickertape's history to use this XmList widget */
-    history_set_list(tickertape_history(self -> tickertape), self -> history);
-#endif
 }
 
 /* Constructs the status line */
@@ -1830,36 +1789,6 @@ static void prepare_reply(control_panel_t self, message_t message)
 	}
     }
 }
-
-#if 0
-/* Ensures that the given list item is visible */
-static void make_index_visible(Widget list, int index)
-{
-    int top;
-    int count;
-
-    /* Figure out what we're looking at */
-    XtVaGetValues(
-	list,
-	XmNtopItemPosition, &top,
-	XmNvisibleItemCount, &count,
-	NULL);
-
-    /* Make the index the top if it's above the top */
-    if (index < top)
-    {
-	XmListSetPos(list, index);
-	return;
-    }
-
-    /* Make the index the bottom if it's below the bottom */
-    if (! (index < top + count))
-    {
-	XmListSetBottomPos(list, index);
-	return;
-    }
-}
-#endif
 
 /* Makes the control panel window visible */
 void control_panel_select(control_panel_t self, message_t message)
