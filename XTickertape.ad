@@ -189,5 +189,9 @@
 	<Key>Return: show-attachment()\n\
 	Ctrl<Key>p: select-previous()\n\
 	Ctrl<Key>n: select-next()\n\
+	Ctrl<Key>b: scroll-left()\n\
+	Ctrl<Key>f: scroll-right()\n\
 	<Key>osfUp: select-previous()\n\
-	<Key>osfDown: select-next()\n
+	<Key>osfDown: select-next()\n\
+	<Key>osfLeft: scroll-left()\n\
+	<Key>osfRight: scroll-right()\n

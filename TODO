@@ -60,11 +60,9 @@ History Widget
 - The history window should scroll messages up when the visible window
   is full rather than waiting until the history buffer is full.
 
-- It should be possible to scroll horizontally from the keyboard.
-
 - The highlight around the selection which indicates that the widget
   has focus should acknowledge the highlight_thickness resource, which
-  should affect the spacing between lines.
+  will need to affect the spacing between lines.
 
 - Dragging should not occur until a threshold has been crossed.  This
   should make it less annoying to deselect an item as dragging
