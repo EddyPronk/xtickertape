@@ -1,5 +1,17 @@
 Overview of changes in xtickertape-1.6.0
 
+* delete() is now called expire().  The new delete() function
+  removes a message from the scroller instantly.  expire() quickly
+  fades a message to the background color and makes it go away once it 
+  has safely scrolled off the screen.
+
+* The scroller can now scroll both right-to-left (as it always did)
+  and left-to-right.  This isn't quite as useless as it sounds -- in
+  combination with the '+' and '-' keys you can back up and look at a
+  message again after it has scrolled off the left edige.  It could
+  also be useful for arabic, but that will require further changes to
+  get the message order correct.
+
 * If no `groups' or `usenet' files found in the TICKERDIR, then
   default ones are created so that new users can get started without
   having to steal someone else's preferences.
