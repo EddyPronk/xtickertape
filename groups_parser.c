@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.4 1999/10/04 12:04:17 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.5 1999/10/05 05:29:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,6 +38,11 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.4 1999/10/04 12:04:17 phel
 #include "groups_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
+
+#define MENU_ERROR_MSG "expecting \"menu\" or \"no menu\", got \"%s\""
+#define NAZI_ERROR_MSG "expecting \"auto\" or \"no auto\", got \"%s\""
+#define TIMEOUT_ERROR_MSG "illegal timeout value \"%s\""
+#define EXTRA_ERROR_MSG "superfluous characters: \"%s\""
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -323,11 +328,14 @@ static int lex_menu(groups_parser_t self, int ch)
 	}
 	else
 	{
-	    char *buffer = (char *)malloc(
-		sizeof("expecting \"menu\" or \"no menu\", got \"\"") + strlen(self -> token));
-	    sprintf(buffer, "expecting \"menu\" or \"no menu\", got \"%s\"", self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
+	    char *buffer = (char *)malloc(strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1);
+	    if (buffer != NULL)
+	    {
+		sprintf(buffer, MENU_ERROR_MSG, self -> token);
+		parse_error(self, buffer);
+		free(buffer);
+	    }
+
 	    return -1;
 	}
 
@@ -378,11 +386,15 @@ static int lex_nazi(groups_parser_t self, int ch)
 	}
 	else
 	{
-	    char *buffer = (char *)malloc(
-		sizeof("expecting \"auto\" or \"manual\", got \"\"") + strlen(self -> token));
-	    sprintf(buffer, "expecting \"auto\" or \"manual\", got \"%s\"", self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
+	    char *buffer = malloc(strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1);
+
+	    if (buffer != NULL)
+	    {
+		sprintf(buffer, NAZI_ERROR_MSG, self -> token);
+		parse_error(self, buffer);
+		free(buffer);
+	    }
+
 	    return -1;
 	}
 
@@ -507,10 +519,14 @@ static int lex_bad_time(groups_parser_t self, int ch)
 	}
 
 	/* Generate an error message */
-	buffer = (char *)malloc(sizeof("illegal timeout value \"\"") + strlen(self -> token));
-	sprintf(buffer, "illegal timeout value \"%s\"", self -> token);
-	parse_error(self, buffer);
-	free(buffer);
+	buffer = (char *)malloc(strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1);
+	if (buffer != NULL)
+	{
+	    sprintf(buffer, TIMEOUT_ERROR_MSG, self -> token);
+	    parse_error(self, buffer);
+	    free(buffer);
+	}
+
 	return -1;
     }
 
@@ -533,10 +549,14 @@ static int lex_superfluous(groups_parser_t self, int ch)
 	}
 
 	/* Generate an error message */
-	buffer = (char *)malloc(sizeof("superfluous characters: \"\"") + strlen(self -> token));
-	sprintf(buffer, "superfluous characters: \"%s\"", self -> token);
-	parse_error(self, buffer);
-	free(buffer);
+	buffer = (char *)malloc(strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1);
+	if (buffer != NULL)
+	{
+	    sprintf(buffer, EXTRA_ERROR_MSG, self -> token);
+	    parse_error(self, buffer);
+	    free(buffer);
+	}
+
 	return -1;
     }
 

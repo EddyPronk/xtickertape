@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.7 1999/10/04 11:54:05 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.8 1999/10/05 05:29:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -42,6 +42,10 @@ static const char cvsid[] = "$Id: usenet_parser.c,v 1.7 1999/10/04 11:54:05 phel
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(usenet_parser_t self, int ch);
+
+#define FIELD_ERROR_MSG "unknown field \"%s\""
+#define OP_ERROR_MSG "unknown operator \"%s\""
+
 
 #define T_BODY "BODY"
 #define T_FROM "from"
@@ -585,10 +589,15 @@ static int lex_field(usenet_parser_t self, int ch)
 	/* Look up the field */
 	if ((self -> field = translate_field(self -> token)) == F_NONE)
 	{
-	    char *buffer = (char *)malloc(sizeof("unknown field \"\"") + strlen(self -> token));
-	    sprintf(buffer, "unknown field \"%s\"\n", self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
+	    char *buffer = (char *)malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
+
+	    if (buffer != NULL)
+	    {
+		sprintf(buffer, FIELD_ERROR_MSG, self -> token);
+		parse_error(self, buffer);
+		free(buffer);
+	    }
+
 	    return -1;
 	}
 
@@ -644,10 +653,15 @@ static int lex_op(usenet_parser_t self, int ch)
 	/* Look up the operator */
 	if ((self -> operator = translate_op(self -> token)) == O_NONE)
 	{
-	    char *buffer = (char *)malloc(sizeof("unknown operator \"\"") + strlen(self -> token));
-	    sprintf(buffer, "unknown operator \"%s\"\n", self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
+	    char *buffer = (char *)malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
+
+	    if (buffer != NULL)
+	    {
+		sprintf(buffer, OP_ERROR_MSG, self -> token);
+		parse_error(self, buffer);
+		free(buffer);
+	    }
+
 	    return -1;
 	}
 
