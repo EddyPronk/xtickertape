@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.6 1998/10/15 09:11:34 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.7 1998/10/16 02:09:08 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -15,7 +15,7 @@ typedef void (*EventLoopRegisterTimerFunc)(unsigned long interval, void *callbac
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
-    char *hostname, int port,
+    char *hostname, int port, char *user,
     List subscriptions,
     Subscription errorSubscription);
 

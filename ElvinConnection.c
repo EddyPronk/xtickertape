@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.17 1998/10/15 09:25:11 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.18 1998/10/16 02:09:02 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -45,6 +45,9 @@ struct ElvinConnection_t
     /* The host and port of the elvin server */
     char *host;
     int port;
+
+    /* The name of our user */
+    char *user;
 
     /* Our elvin connection */
     elvin_t elvin;
@@ -214,7 +217,7 @@ static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, cha
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
-    char *hostname, int port,
+    char *hostname, int port, char *user,
     List subscriptions, Subscription errorSubscription)
 {
     ElvinConnection self;
@@ -228,6 +231,7 @@ ElvinConnection ElvinConnection_alloc(
 
     self -> host = hostname;
     self -> port = port;
+    self -> user = strdup(user);
     self -> state = NeverConnected;
     self -> retryPause = INITIAL_PAUSE;
     self -> registerFunc = NULL;
