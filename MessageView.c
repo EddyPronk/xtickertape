@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.41 1999/06/15 08:01:02 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.42 1999/06/16 04:33:26 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -262,6 +262,9 @@ static void Tick(MessageView self, XtIntervalId *ignored)
     {
 	self -> isExpired = 1;
     }
+
+    /* Have the Scroller repaint the receiver */
+    ScRepaintMessageView(self -> widget, self);
 }
 
 /* Answers the offset to the baseline we should use */
