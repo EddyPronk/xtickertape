@@ -223,6 +223,7 @@ static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
 static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
     sexp_t values[2];
+    int match = 0;
 
     /* Evaluate the args */
     if (! eval_args(env, args, values, 2, error))
@@ -230,8 +231,118 @@ static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 	return 0;
     }
 
+    /* If the values are identical then return true */
+    if (values[0] == values[1])
+    {
+	match = 1;
+    }
+    else
+    {
+	/* Numbers are more difficult */
+	switch (sexp_get_type(values[0]))
+	{
+	    case SEXP_INT32:
+	    {
+		switch (sexp_get_type(values[1]))
+		{
+		    case SEXP_INT32:
+		    {
+			match = int32_value(values[0], error) == int32_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			match = int32_value(values[0], error) == int64_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			match = int32_value(values[0], error) == float_value(values[1], error);
+			break;
+		    }
+
+		    default:
+		    {
+			match = 0;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_INT64:
+	    {
+		switch (sexp_get_type(values[1]))
+		{
+		    case SEXP_INT32:
+		    {
+			match = int64_value(values[0], error) == int32_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			match = int64_value(values[0], error) == int64_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			match = int64_value(values[0], error) == float_value(values[1], error);
+			break;
+		    }
+
+		    default:
+		    {
+			match = 0;
+		    }
+		}
+
+		break;
+	    }
+
+	    case SEXP_FLOAT:
+	    {
+		switch (sexp_get_type(values[1]))
+		{
+		    case SEXP_INT32:
+		    {
+			match = float_value(values[0], error) == int32_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_INT64:
+		    {
+			match = float_value(values[0], error) == int64_value(values[1], error);
+			break;
+		    }
+
+		    case SEXP_FLOAT:
+		    {
+			match = float_value(values[0], error) == float_value(values[1], error);
+			break;
+		    }
+
+		    default:
+		    {
+			match = 0;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		match = 0;
+	    }
+	}
+    }
+
     /* Construct our result */
-    if ((*result = values[0] == values[1] ? symbol_alloc("t", error) : nil_alloc(error)) == NULL)
+    if ((*result = match ? symbol_alloc("t", error) : nil_alloc(error)) == NULL)
     {
 	return 0;
     }
@@ -292,6 +403,13 @@ static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t err
     }
 
     return 1;
+}
+
+/* The `+' primitive function */
+static int prim_plus(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "prim_plus");
+    return 0;
 }
 
 /* The `quote' primitive function */
@@ -426,6 +544,7 @@ static env_t root_env_alloc(elvin_error_t error)
 	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
 	env_set_builtin(env, "eq", prim_eq, error) == 0 ||
 	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
+	env_set_builtin(env, "+", prim_plus, error) == 0 ||
 	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
 	env_set_builtin(env, "setq", prim_setq, error) == 0)
     {
