@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.31 1998/10/21 01:58:09 phelps Exp $ */
+/* $Id: main.c,v 1.32 1998/10/23 03:32:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +23,8 @@ static void QuitAction(
 static void Usage(char *argv[]);
 static void ParseArgs(
     int argc, char *argv[],
-    char **user_return, char **file_return,
+    char **user_return,
+    char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return);
 
 
@@ -58,17 +59,20 @@ static void Usage(char *argv[])
     fprintf(stderr, "  -port port\n");
     fprintf(stderr, "  -user username\n");
     fprintf(stderr, "  -groupsfile filename\n");
+    fprintf(stderr, "  -usenetfile filename\n");
 }
 
 /* Parses arguments and sets stuff up */
 static void ParseArgs(
     int argc, char *argv[],
-    char **user_return, char **file_return,
+    char **user_return,
+    char **groupsFile_return, char **usenetFile_return,
     char **host_return, int *port_return)
 {
     int index = 1;
     *user_return = NULL;
-    *file_return = NULL;
+    *groupsFile_return = NULL;
+    *usenetFile_return = NULL;
     *host_return = HOST;
     *port_return = PORT;
 
@@ -98,20 +102,7 @@ static void ParseArgs(
 	    {
 		if (strcmp(arg, "-groupsfile") == 0)
 		{
-		    *file_return = argv[index++];
-		    break;
-		}
-
-		Usage(argv);
-		exit(1);
-	    }
-
-	    /* user */
-	    case 'u':
-	    {
-		if (strcmp(arg, "-user") == 0)
-		{
-		    *user_return = argv[index++];
+		    *groupsFile_return = argv[index++];
 		    break;
 		}
 
@@ -145,6 +136,25 @@ static void ParseArgs(
 		exit(1);
 	    }
 
+	    /* user */
+	    case 'u':
+	    {
+		if (strcmp(arg, "-user") == 0)
+		{
+		    *user_return = argv[index++];
+		    break;
+		}
+
+		if (strcmp(arg, "-usenetfile") == 0)
+		{
+		    *usenetFile_return = argv[index++];
+		    break;
+		}
+
+		Usage(argv);
+		exit(1);
+	    }
+
 	    /* Anything else is bogus */
 	    default:
 	    {
@@ -161,7 +171,7 @@ static void ParseArgs(
     }
 
     /* Set the groups file name if not specified on the command line */
-    if (*file_return == NULL)
+    if ((*groupsFile_return == NULL) || (*usenetFile_return == NULL))
     {
 	char *dir;
 
@@ -169,8 +179,18 @@ static void ParseArgs(
 	dir = getenv("TICKERDIR");
 	if (dir != NULL)
 	{
-	    *file_return = malloc(strlen(dir) + sizeof("/groups"));
-	    sprintf(*file_return, "%s/groups", dir);
+	    if (*groupsFile_return == NULL)
+	    {
+		*groupsFile_return = (char *)malloc(strlen(dir) + sizeof("/groups"));
+		sprintf(*groupsFile_return, "%s/groups", dir);
+	    }
+
+	    if (*usenetFile_return == NULL)
+	    {
+		*usenetFile_return = (char *)malloc(strlen(dir) + sizeof("/usenet"));
+		sprintf(*usenetFile_return, "%s/usenet", dir);
+	    }
+
 	    return;
 	}
 
@@ -178,17 +198,20 @@ static void ParseArgs(
 	dir = getenv("HOME");
 	if (dir != NULL)
 	{
-	    *file_return = malloc(strlen(dir) + sizeof("/.ticker/groups"));
-	    sprintf(*file_return, "%s/.ticker/groups", dir);
-	    return;
-	}
+	    if (*groupsFile_return == NULL)
+	    {
+		*groupsFile_return = (char *)malloc(strlen(dir) + sizeof("/.ticker/groups"));
+		sprintf(*groupsFile_return, "%s/.ticker/groups", dir);
+	    }
 
-	/* No $HOME either.  Give up. */
-	*file_return = NULL;
+	    if (*usenetFile_return == NULL)
+	    {
+		*usenetFile_return = (char *)malloc(strlen(dir) + sizeof("/.ticker/usenet"));
+		sprintf(*usenetFile_return ,"%s/.ticker/usenet", dir);
+	    }
+	}
     }
 }
-
-
 
 
 /* Parse args and go */
@@ -197,7 +220,8 @@ int main(int argc, char *argv[])
     XtAppContext context;
     Widget top;
     char *user;
-    char *file;
+    char *groupsFile;
+    char *usenetFile;
     char *host;
     int port;
     Atom deleteAtom;
@@ -214,10 +238,10 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Scan what's left of the arguments */
-    ParseArgs(argc, argv, &user, &file, &host, &port);
+    ParseArgs(argc, argv, &user, &groupsFile, &usenetFile, &host, &port);
 
     /* Create a Tickertape */
-    tickertape = Tickertape_alloc(user, file, host, port, top);
+    tickertape = Tickertape_alloc(user, groupsFile, usenetFile, host, port, top);
 
     /* Quit when the window is closed */
     XtOverrideTranslations(
