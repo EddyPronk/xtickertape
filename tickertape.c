@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.65 2000/10/09 04:25:13 bill Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.66 2000/10/16 04:43:34 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -169,7 +169,9 @@ static void orbit_callback(tickertape_t self, en_notify_t notification);
 static void subscribe_to_orbit(tickertape_t self);
 #endif /* ORBIT */
 static char *tickertape_ticker_dir(tickertape_t self);
+#if 0
 static char *tickertape_config_filename(tickertape_t self);
+#endif
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
 
@@ -1436,6 +1438,7 @@ static char *tickertape_ticker_dir(tickertape_t self)
     return self -> ticker_dir;
 }
 
+#if 0
 /* Answers the receiver's config file filename */
 static char *tickertape_config_filename(tickertape_t self)
 {
@@ -1448,7 +1451,7 @@ static char *tickertape_config_filename(tickertape_t self)
 
     return self -> config_file;
 }
-
+#endif
 
 /* Answers the receiver's groups file filename */
 static char *tickertape_groups_filename(tickertape_t self)
