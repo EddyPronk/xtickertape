@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.5 1999/10/06 01:48:21 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.6 1999/10/19 00:52:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.5 1999/10/06 01:48:21 phelps 
 #define FROM_NAME "FROM_NAME"
 #define FROM_EMAIL "FROM_EMAIL"
 #define FROM "From"
-#define KEYWORDS "keywords"
+#define KEYWORDS "KEYWORDS"
 #define MESSAGE_ID "Message-ID"
 #define MIME_ARGS "MIME_ARGS"
 #define MIME_TYPE "MIME_TYPE"
