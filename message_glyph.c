@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.26 1999/11/08 09:26:16 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.27 1999/11/10 13:18:12 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -329,10 +329,11 @@ static void paint_string(
 	char_info = per_char(font, *last);
     }
 
-
 #ifdef DEBUG_GLYPH
     {
 	XGCValues values;
+
+	XFillRectangle(display, drawable, gc, offset, 0, string_width, height);
 	values.foreground = random();
 	XChangeGC(display, gc, GCForeground, &values);
     }
@@ -360,6 +361,17 @@ static void do_paint(
     int level = self -> fade_level;
     int baseline = y + self -> ascent;
     int left = offset - self -> group_lbearing;
+
+#ifdef DEBUG_GLYPH
+    /* Draw a rectangle around the message */
+    {
+	GC gc = ScGCForSeparator(self -> widget, level, x, y, width, height);
+	unsigned int my_width = get_width(self);
+
+	XDrawRectangle(display, drawable, gc, offset, 0, my_width, height);
+	XFillRectangle(display, drawable, gc, offset, 0, my_width - self -> spacing, height);
+    }
+#endif /* DEBUG_GLYPH */
 
     /* Draw the group string if appropriate */
     if (((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width)) ||
