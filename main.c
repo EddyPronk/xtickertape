@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.20 1998/03/06 07:36:50 phelps Exp $ */
+/* $Id: main.c,v 1.21 1998/04/21 04:34:26 bill Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,15 +10,7 @@
 
 #include "Message.h"
 #include "Subscription.h"
-#ifdef USE_ELVIN
-# include "ElvinConnection.h"
-# define CONNECTION ElvinConnection
-# define CONNECTION_ALLOC ElvinConnection_alloc
-# define CONNECTION_SEND ElvinConnection_send
-# define CONNECTION_GETFD ElvinConnection_getFD
-# define CONNECTION_READ ElvinConnection_read
-# define PORT 5678
-#else /* USE_ELVIN */
+#ifdef USE_BRIDGE
 # include "BridgeConnection.h"
 # define CONNECTION BridgeConnection
 # define CONNECTION_ALLOC BridgeConnection_alloc
@@ -26,7 +18,15 @@
 # define CONNECTION_GETFD BridgeConnection_getFD
 # define CONNECTION_READ BridgeConnection_read
 # define PORT 8800
-#endif /* USE_ELVIN */
+#else /* USE_BRIDGE */
+# include "ElvinConnection.h"
+# define CONNECTION ElvinConnection
+# define CONNECTION_ALLOC ElvinConnection_alloc
+# define CONNECTION_SEND ElvinConnection_send
+# define CONNECTION_GETFD ElvinConnection_getFD
+# define CONNECTION_READ ElvinConnection_read
+# define PORT 5678
+#endif /* USE_BRIDGE */
 #include "Control.h"
 #include "Tickertape.h"
 
