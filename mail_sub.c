@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.24 2001/08/25 14:04:43 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.25 2001/10/10 12:56:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -91,10 +91,20 @@ static void notify_cb(
     char *folder;
     char *subject;
     char *buffer = NULL;
+    int found;
 
     /* Get the name from the `From' field */
-    if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_FROM,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	from = value.s;
 
@@ -115,8 +125,17 @@ static void notify_cb(
     }
 
     /* Get the folder field */
-    if (elvin_notification_get(notification, F_FOLDER, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_FOLDER,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	folder = value.s;
 
@@ -133,8 +152,17 @@ static void notify_cb(
     }
 
     /* Get the subject field */
-    if (elvin_notification_get(notification, F_SUBJECT, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_SUBJECT,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	subject = value.s;
     }

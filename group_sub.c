@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.28 2001/08/25 14:04:43 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.29 2001/10/10 12:56:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -135,6 +135,7 @@ static void notify_cb(
     char *tag;
     char *message_id;
     char *reply_id;
+    int found;
 
     /* If we don't have a callback then just quit now */
     if (self -> callback == NULL)
@@ -143,8 +144,17 @@ static void notify_cb(
     }
     
     /* Get the user from the notification (if provided) */
-    if (elvin_notification_get(notification, F_USER, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_USER,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	user = value.s;
     }
@@ -154,8 +164,17 @@ static void notify_cb(
     }
 
     /* Get the text of the notification (if provided) */
-    if (elvin_notification_get(notification, F_TICKERTEXT, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_TICKERTEXT,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	text = value.s;
     }
@@ -165,8 +184,21 @@ static void notify_cb(
     }
 
     /* Get the timeout for the notification (if provided) */
-    timeout = 0;
-    if (elvin_notification_get(notification, F_TIMEOUT, &type, &value, error))
+    if (! elvin_notification_get(
+	    notification,
+	    F_TIMEOUT,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (! found)
+    {
+	timeout = 0;
+    }
+    else
     {
 	switch (type)
 	{
@@ -215,8 +247,17 @@ static void notify_cb(
     }
 
     /* Get the MIME type (if provided) */
-    if (elvin_notification_get(notification, F_MIME_TYPE, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_MIME_TYPE,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	mime_type = value.s;
     }
@@ -226,31 +267,44 @@ static void notify_cb(
     }
 
     /* Get the MIME args (if provided) */
-    mime_args.data = NULL;
-    mime_args.length = 0;
-
-    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error))
+    if (! elvin_notification_get(
+	    notification,
+	    F_MIME_ARGS,
+	    &found, &type, &value,
+	    error))
     {
-	if (type == ELVIN_STRING)
-	{
-	    mime_args.data = value.s;
-	    mime_args.length = strlen(value.s);
-	}
-	else if (type == ELVIN_OPAQUE)
-	{
-	    mime_args.data = value.o.data;
-	    mime_args.length = value.o.length;
-	}
-	else
-	{
-	    mime_args.data = NULL;
-	    mime_args.length = 0;
-	}
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
+    {
+	mime_args.data = value.s;
+	mime_args.length = strlen(value.s);
+    }
+    else if (type == ELVIN_OPAQUE)
+    {
+	mime_args.data = value.o.data;
+	mime_args.length = value.o.length;
+    }
+    else
+    {
+	mime_args.data = NULL;
+	mime_args.length = 0;
     }
 
     /* Get the replacement tag (if provided) */
-    if (elvin_notification_get(notification, F_REPLACEMENT, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_REPLACEMENT,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	tag = value.s;
     }
@@ -260,8 +314,17 @@ static void notify_cb(
     }
 
     /* Get the message id (if provided) */
-    if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_MESSAGE_ID,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	message_id = value.s;
     }
@@ -271,8 +334,17 @@ static void notify_cb(
     }
 
     /* Get the reply id (if provided) */
-    if (elvin_notification_get(notification, F_IN_REPLY_TO, &type, &value, error) &&
-	type == ELVIN_STRING)
+    if (! elvin_notification_get(
+	    notification,
+	    F_IN_REPLY_TO,
+	    &found, &type, &value,
+	    error))
+    {
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    if (found && type == ELVIN_STRING)
     {
 	reply_id = value.s;
     }
