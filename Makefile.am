@@ -24,6 +24,7 @@ xtickertape_SOURCES = \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	mask.xbm red.xbm white.xbm \
 	errors.h replace.h replace.c \
+	utf8.h utf8.c \
 	globals.h main.c
 
 # show-url only has one
