@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.19 2001/07/19 12:54:07 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.20 2001/07/20 01:09:12 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -152,6 +152,7 @@ static XtResource resources[] =
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void drag_done(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void toggle_selection(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_previous(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams);
@@ -161,6 +162,7 @@ static XtActionsRec actions[] =
     { "drag", drag },
     { "drag-done", drag_done },
     { "select", do_select },
+    { "toggle-selection", toggle_selection },
     { "show-attachment", show_attachment },
     { "select-previous", select_previous },
     { "select-next", select_next }
@@ -933,8 +935,8 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
     }
 
     /* If it's below then scroll down to it */
-    if (self -> history.y + self -> core.height <
-	y + self -> history.line_height - self -> history.margin_height)
+    if (self -> history.y + self -> core.height - self -> history.margin_height <
+	y + self -> history.line_height)
     {
 	set_origin(
 	    self, self -> history.x,
@@ -1044,7 +1046,13 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 		y + self -> history.font -> ascent,
 		&bbox);
 	}
+
+	/* Try to make the entire selection is visible */
+	make_index_visible(self, index);
     }
+
+    /* Call the callback with our new selection */
+    XtCallCallbackList((Widget)self, self -> history.callbacks, (XtPointer)message);
 }
 
 /* Selects the message at the given index */
@@ -1259,6 +1267,27 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
 	index = self -> history.message_count - 1;
     }
 
+    /* Set the selection */
+    set_selection_index(self, index);
+}
+
+/* Select or deselect the item under the pointer */
+static void toggle_selection(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    XButtonEvent *button_event = (XButtonEvent *)event;
+    unsigned int index;
+
+    /* Convert the y coordinate into an index */
+    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
+	self -> history.line_height;
+
+    /* Are we selecting past the end of the list? */
+    if (! (index < self -> history.message_count))
+    {
+	index = self -> history.message_count - 1;
+    }
+
     /* Is this our current selection? */
     if (self -> history.selection_index == index)
     {
@@ -1270,9 +1299,27 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
     set_selection_index(self, index);
 }
 
+
+/* Call the attachment callbacks */
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
-    printf("action: show-attachment()\n");
+    HistoryWidget self = (HistoryWidget)widget;
+
+    /* Finish the dragging */
+    if (self -> history.drag_timeout != None)
+    {
+	XtRemoveTimeOut(self -> history.drag_timeout);
+	self -> history.drag_timeout = None;
+    }
+
+    /* Call the attachment callbacks */
+    if (self -> history.selection)
+    {
+	XtCallCallbackList(
+	    widget,
+	    self -> history.attachment_callbacks,
+	    (XtPointer)self -> history.selection);
+    }
 }
 
 
@@ -1302,9 +1349,6 @@ static void select_previous(Widget widget, XEvent *event, String *params, Cardin
 
     /* Select the previous item */
     set_selection_index(self, index - 1);
-
-    /* Make sure it's visible */
-    make_index_visible(self, index);
 }
 
 /* Select the next item in the history */
@@ -1324,9 +1368,6 @@ static void select_next(Widget widget, XEvent *event, String *params, Cardinal *
 
     /* Select the next item */
     set_selection_index(self, index);
-
-    /* Make sure it's visible */
-    make_index_visible(self, index);
 }
 
 
