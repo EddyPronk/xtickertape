@@ -1,8 +1,12 @@
-# This is a test
+# First work out the executables
+bin_PROGRAMS = xtickertape show-url
 
-bin_PROGRAMS = xtickertape
+# show-url is a script
+show_url_SOURCES = show-url
 
+# xtickertape has many sources
 xtickertape_SOURCES = \
+	config.h \
 	sanity.h \
 	Tickertape.h Tickertape.c \
 	Control.h Control.c \
@@ -20,3 +24,5 @@ xtickertape_SOURCES = \
 	List.h List.c \
 	mask.xbm red.xbm white.xbm \
 	main.c
+
+# how do we do the app-defaults?
