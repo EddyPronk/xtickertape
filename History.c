@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.49 2002/04/04 15:27:35 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.50 2002/04/04 16:10:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -315,16 +315,26 @@ static void node_add1(node_t *self,
 	    /* Record output information */
 	    *index_out = *index;
 	    *depth_out = depth + 1;
+
+	    /* The next node we visit will be the new child.  We don't
+	     * want it to update the index to be consistent with the
+	     * case where we can't find its parent, so we increment
+	     * the index here to compensate for it being decremented
+	     * when we traverse the children next. */
+	    (*index)++;
 	}
 
 	/* Check with the descendents */
-	if ((*self) -> child)
+	if ((*self) -> child != NULL)
 	{
 	    node_add1(&(*self) -> child,
 		     parent_id, child,
 		     index, index_out,
 		     depth + 1, depth_out);
 	}
+
+	/* We've traversed a node */
+	(*index)--;
 
 	/* If this node has scrolled off the top of the history and
 	 * has no children then we can safely remove it from the tree.
@@ -340,18 +350,12 @@ static void node_add1(node_t *self,
 
 	    /* Free the node */
 	    node_free(*self);
-
-	    /* End the loop */
 	    *self = NULL;
-	}
-	else
-	{
-	    /* The pointer we want to update if this node disappears */
-	    self = &(*self) -> sibling;
+	    return;
 	}
 
-	/* We've actually checked a node */
-	(*index)--;
+	/* The pointer we want to update if this node disappears */
+	self = &(*self) -> sibling;
     }
 }
 
