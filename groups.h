@@ -28,7 +28,7 @@
 ****************************************************************/
 
 static char *defaultGroupsFile = "\
-# TickerTape groups file - $HOME/.ticker/groups\n\
+# Tickertape groups file - $HOME/.ticker/groups\n\
 #\n\
 # empty lines and those beginning with a hash are ignored\n\
 #\n\
@@ -36,7 +36,7 @@ static char *defaultGroupsFile = "\
 # \n\
 #	<group name>:<menu option>:<auto option>:<min time>:<max time>\n\
 #\n\
-# group name	is the group of TickerTape events the line relates to\n\
+# group name	is the group of Tickertape events the line relates to\n\
 # menu option	whether the group appears on the 'Send' menu.  One of\n\
 #		'menu' or 'no menu'\n\
 # auto option	indicates MIME attachments should be automatically\n\
