@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.15 1998/10/21 01:58:06 phelps Exp $ */
+/* $Id: Control.c,v 1.16 1998/10/21 02:44:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -555,7 +555,7 @@ ControlPanel ControlPanel_alloc(Widget parent, char *user)
     self -> username = strdup(user);
 
     CreateControlPanelPopup(self, self -> top);
-    ActionClear(NULL, (XtPointer)self, NULL);
+    ActionClear(NULL, self, NULL);
 
     XtOverrideTranslations(
 	self -> top,
@@ -702,6 +702,6 @@ void ControlPanel_handleNotify(ControlPanel self, Widget widget)
 
     if (widget == self -> text)
     {
-	ActionOK(widget, (XtPointer)self, NULL);
+	ActionOK(widget, self, NULL);
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.23 1998/10/21 01:58:07 phelps Exp $ */
+/* $Id: MessageView.c,v 1.24 1998/10/21 02:44:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -438,7 +438,7 @@ void MessageView_decodeMime(MessageView self)
     fclose(file);
 
     /* Send it off to metamail to display */
-    buffer = alloca(
+    buffer = (char *)alloca(
 	strlen(mimeType) + strlen(filename) +
 	sizeof("metamail -B -q -b -c   > /dev/null 2>&1"));
     sprintf(buffer, "metamail -B -q -b -c %s %s > /dev/null 2>&1", mimeType, filename);

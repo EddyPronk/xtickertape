@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.8 1998/10/21 01:58:08 phelps Exp $ */
+/* $Id: Subscription.c,v 1.9 1998/10/21 02:44:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,7 +137,7 @@ static Subscription GetFromGroupFileLine(
     expression = strtok(NULL, "\n");
     if (expression == NULL)
     {
-	char *buffer = alloca(strlen(group) + sizeof("TICKERTAPE == \"\""));
+	char *buffer = (char *)alloca(strlen(group) + sizeof("TICKERTAPE == \"\""));
 
 	sprintf(buffer, "TICKERTAPE == \"%s\"", group);
 	return Subscription_alloc(

@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.22 1998/10/21 01:58:06 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.23 1998/10/21 02:44:52 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -148,7 +148,7 @@ static void Connect(ElvinConnection self)
 	{
 	    char *buffer;
 
-	    buffer = alloca(
+	    buffer = (char *)alloca(
 		strlen(self -> host) + 10 +
 		sizeof("Unable to connect to elvin server :"));
 	    sprintf(
@@ -172,7 +172,7 @@ static void Connect(ElvinConnection self)
 	    char *buffer;
 
 	    self -> retryPause = INITIAL_PAUSE;
-	    buffer = alloca(
+	    buffer = (char *)alloca(
 		strlen(self -> host) + 10 +
 		sizeof("Connected to %s:%d"));
 	    sprintf(buffer, "Connected to %s:%d", self -> host, self -> port);
@@ -204,7 +204,7 @@ static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
 
     /* Notify the user that we've lost our connection */
     self -> state = LostConnection;
-    buffer = alloca(
+    buffer = (char *)alloca(
 	strlen(self -> host) + 10 +
 	sizeof("Lost connection to elvin server :.  Attempting to reconnect"));
     sprintf(buffer, "Lost connection to elvin server %s:%d.  Attempting to reconnect",

@@ -1,4 +1,4 @@
-/* $Id: OrbitSubscription.c,v 1.2 1998/10/21 01:58:08 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.3 1998/10/21 02:44:52 phelps Exp $ */
 
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
@@ -280,7 +280,8 @@ void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection con
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
-	char *buffer = alloca(strlen(self -> id) + sizeof("exists(TICKERTEXT) && zone.id == \"\""));
+	char *buffer = (char *)
+	    alloca(strlen(self -> id) + sizeof("exists(TICKERTEXT) && zone.id == \"\""));
 	sprintf(buffer, "exists(TICKERTEXT) && zone.id == \"%s\"\n", self -> id);
 	self -> connectionInfo = ElvinConnection_subscribe(
 	    self -> connection, buffer,

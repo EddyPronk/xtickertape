@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.2 1998/10/21 01:58:08 phelps Exp $
+ * $Id: Ticker.c,v 1.3 1998/10/21 02:44:52 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -265,7 +265,7 @@ static void SubscribeToOrbit(Tickertape self)
     char *buffer;
     SANITY_CHECK(self);
 
-    buffer = alloca(
+    buffer = (char *)alloca(
 	sizeof("exists(orbit.view_update) && exists(tickertape) && user == \"\"") +
 	strlen(self -> user));
     sprintf(buffer, "exists(orbit.view_update) && exists(tickertape) && user == \"%s\"",

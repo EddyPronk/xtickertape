@@ -3,24 +3,21 @@
 #
 
 TICKERTAPE = xtickertape
-CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
 
-OBJS = $(CONNECTION) \
-	Control.o Tickertape.o \
-	MessageView.o Message.o Subscription.o List.o main.o
+OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o OrbitSubscription.o \
+    MessageView.o Message.o Subscription.o Hash.o List.o main.o
 
-CDEBUGFLAGS = -g -D__DEC_OSF_ALPHA4_0
+CDEBUGFLAGS = -g -D__ALPHA_DEC_OSFV4_0 -DORBIT
 #CDEBUGFLAGS = -g
 
-INCLUDES = -I/usr/openwin/include -I/usr/local/dstc/include \
-	-I/usr/local/dstc/include/elvin3
+INCLUDES = -I/usr/local/dstc/include -I/usr/local/dstc/include/elvin3
 
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
-LIBDIRS = -L/usr/openwin/lib
-LIBS = -lXaw -lXt -lXmu -lX11 -lvin -threads
+LIBDIRS = -L/usr/local/dstc/alpha-dec-osfV4.0/lib -L/usr/local/lib -L/usr/openwin/lib -rpath /usr/local/dstc/alpha-dec-osfV4.0/lib:/usr/local/lib:/usr/openwin/lib
+LIBS = -lXaw3d -lXt -lXmu -lX11 -lvin -threads
 
 all: $(ALL)
 
