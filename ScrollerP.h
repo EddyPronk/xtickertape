@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.43 2001/08/25 14:04:42 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.44 2002/04/12 14:37:16 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -188,11 +188,5 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);
 
 /* Callback for expiring glyphs */
 void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
-
-/* Answers the width of the gap glyph */
-int ScGapWidth(ScrollerWidget self);
-
-/* Delete a message from the receiver */
-void ScDeleteMessage(ScrollerWidget self, message_t message);
 
 #endif /* SCROLLERP_H */
