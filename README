@@ -1,0 +1,47 @@
+INTRODUCTION
+
+XTickertape is a scrolling one-line window of event notifications,
+providing you with information from many sources in a minimum of
+screen space.  It is built on top of the Elvin notification service
+and can be used to monitor computational activites or simply to chat
+with other tickertape users.
+
+PREREQUISITES
+
+In order to compile XTickertape you will need X11, Motif or lesstif,
+and the aforementioned Elvin notification service.  Additionally, if
+you want to be able to view MIME attachments you will need to have
+metamail installed.  The following URLs may be of use:
+
+Metamail:
+ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z
+
+Elvin:
+http://www.dstc.edu.au/Elvin
+
+Lesstif:
+http://www.lesstif.org/
+
+X11
+http://www.x.org/
+http://www.xfree86.org/
+
+
+INSTALLATION
+
+The quick way:
+
+./configure
+make
+make install
+
+By default, xtickertape installs itself in /usr/local which means that 
+it will be unable to access its app-defaults file unless your
+XFILESEARCHPATH environment variable is set to something like
+/usr/local/lib/X11/%T/%N:%D (see the man page for XtResolvePathname
+for more information on XFILESEARCHPATH).  The other alternative is to 
+install xtickertape in the X tree (--prefix=/usr on most platforms,
+--prefix=/usr/openwin on Solaris, --prefix=/usr/X11R6 on Linux).
+
+For more information on installation see the INSTALL file in this
+directory. 
