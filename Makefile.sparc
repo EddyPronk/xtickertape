@@ -10,7 +10,7 @@ OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o
 	Subscription.o UsenetSubscription.o MailSubscription.o OrbitSubscription.o \
 	StringBuffer.o FileStreamTokenizer.o Hash.o List.o main.o
 
-CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -Wall
+CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -Wall -DORBIT
 #CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -DORBIT -DSANITY -Wall
 
 
@@ -20,7 +20,7 @@ INCLUDES = -I. -I/usr/openwin/include -I/usr/local/dstc/include \
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
 LIBDIRS = -R/usr/local/dstc/sparc-sun-solaris2.5/lib:/usr/local/lib:/usr/openwin/lib -L/usr/local/dstc/sparc-sun-solaris2.5/lib -L/usr/local/lib -L/usr/openwin/lib
-LIBS = -lXaw3d -lXt -lXmu -lXext -lX11 -lvin -ldstc_std -lpthread
+LIBS = -lXm -lXext -lXmu  -lXt -lX11 -lvin -ldstc_std -lpthread
 
 all: $(ALL)
 

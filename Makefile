@@ -31,7 +31,7 @@
 # History:
 #           08-Feb-1996  Bill Segall (bill) : created
 #
-# "@(#)$RCSfile: Makefile,v $ $Revision: 1.17 $"
+# "@(#)$RCSfile: Makefile,v $ $Revision: 1.18 $"
 #
 #############################################################################
 
@@ -53,12 +53,12 @@ include $(DSTCDIR)/$(PROJDIR)/install/Makefile.elvin
 uninstall clobber
 
 C_SOURCE = Ticker.c Control.c Tickertape.c ElvinConnection.c MessageView.c Message.c \
-	Subscription.c UsenetSubscription.c OrbitSubscription.c Hash.c List.c \
-	StringBuffer.c FileStreamTokenizer.c main.c
+	Subscription.c UsenetSubscription.c MailSubscription.c OrbitSubscription.c \
+	StringBuffer.c FileStreamTokenizer.c Hash.c List.c main.c
 
 HEADERS = Ticker.h Control.h Tickertape.h ElvinConnection.h MessageView.h Message.h \
-	Subscription.h UsenetSubscription.h OrbitSubscription.h Hash.h List.h \
-	StringBuffer.h FileStreamTokenizer.h sanity.h TickertapeP.h
+	Subscription.h UsenetSubscription.h MailSubscription.h OrbitSubscription.h \
+	StringBuffer.h FileStreamTokenizer.h  Hash.h List.h sanity.h TickertapeP.h
 
 OBJECTS =  $(patsubst %.c,$(ARCHITECTURE)/obj/%.o,$(C_SOURCE))
 BINARIES = $(ELVIN_BIN_DIR)/xtickertape$(.EXE)
