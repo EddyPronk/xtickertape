@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.19 1999/09/01 13:51:41 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.20 1999/09/01 15:29:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -278,7 +278,7 @@ void history_free(history_t self)
 }
 
 /* Finds the node whose Message has the given id */
-static history_node_t find_by_id(history_t self, char *id)
+static history_node_t find_by_id(history_node_t self, char *id)
 {
     history_node_t node;
 
@@ -288,16 +288,23 @@ static history_node_t find_by_id(history_t self, char *id)
 	return NULL;
     }
 
-    /* Search the history from youngest to oldest */
-    for (node = self -> last; node != NULL; node = node -> previous)
+    /* Search the threaded version of the history */
+    for (node = self; node != NULL; node = node -> previous_response)
     {
 	char *node_id;
+	history_node_t probe;
 
 	/* Watch for a matching id */
 	if (((node_id = Message_getId(node -> message)) != NULL) &&
 	    (strcmp(id, node_id) == 0))
 	{
 	    return node;
+	}
+
+	/* Check the children */
+	if ((probe = find_by_id(self -> last_response, id)) != NULL)
+	{
+	    return probe;
 	}
     }
 
@@ -315,7 +322,9 @@ static void history_thread_node(history_t self, history_node_t node)
     self -> threaded_count++;
 
     /* If the message's parent node isn't in the history then pretend there is no parent */
-    if ((parent = find_by_id(self, Message_getReplyId(node -> message))) == NULL)
+    if ((parent = find_by_id(
+	self -> last_response,
+	Message_getReplyId(node -> message))) == NULL)
     {
 	node -> previous_response = self -> last_response;
 	self -> last_response = node;
