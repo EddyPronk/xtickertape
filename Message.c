@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.1 1997/02/05 06:24:12 phelps Exp $ */
+/* $Id: Message.c,v 1.2 1997/02/10 07:11:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +11,7 @@ struct Message_t
     char *user;
     char *string;
     unsigned long length;
-    unsigned long timeout;
-    Font cacheFont;
-    unsigned long width;
+    unsigned long timeout; /* in seconds */
 };
 
 
