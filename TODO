@@ -13,8 +13,6 @@ Things that would be nice to have in future versions of xtickertape:
 
 - Non-empty INSTALL and README files
 
-- SIGHUP should reload groups and usenet files
-
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program
 
