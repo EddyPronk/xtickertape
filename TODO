@@ -18,7 +18,9 @@ Things that would be nice to have in future versions of xtickertape:
   leaving a gaping white space at the bottom of the list.  Bizarre.
 
 - Perhaps the control panel should resize in increments corresponding
-  to a complete line in the history?
+  to a complete line in the history?  Not until the major window
+  managers handle the resources properly.
 
-- The length of the history should be configurable.
-
+- The length of the history should be configurable (how?
+  configuration file?  I'd like to do this via a resource but it
+  doesn't look like it'll be easy without building a widget...)
