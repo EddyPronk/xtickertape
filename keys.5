@@ -1,0 +1,50 @@
+.TH KEYS 5 "2002 April 25"
+.ds xt \fIxtickertape\fP
+.ds Xt \fIXTickertape\fP
+.UC 4
+.SH NAME
+keys \- keys table for xtickertape
+.SH DESCRIPTION
+The keys file contains lines which define mappings from symbolic key
+names to the actual bytes which make up the keys.  Empty lines and
+those beginning with a hash (#) are ignored.  Each line has the
+following format:
+.TP
+.B <key name>:<key type>:<key format>:<key data>
+.TP
+.B key name
+This is an arbitrary label for the key.  This is the name that goes in
+the groups file to associate a key with a group.
+.TP
+.B key type
+This should be either \fBprivate\fP or \fBpublic\fP.  A private key is
+transformed using a one-way hash algorithm (sha1digest) to generate
+the public key.  There may be restrictions on the length of a public
+key.
+.TP
+.B key format
+This should be \fBhex-inline\fP, \fBhex-file\fP or \fBbinary-file\fP.
+The first indicates that the key-data section contains the actual key
+as a hexadecimal string.  The other two indicate that the key should
+be read from the file named in the key data section.
+.TP
+.B key data
+This is either the name of the file containing the key, or a
+hexadecimal string, depending on the setting of the key format above.
+.PP
+There are a number of ways in which the keys can be used to manage
+access control to notifications.  The most straightforward way is to
+share a single private key amongst the people who want to
+communicate.
+.PP
+An alternative way is to exchange public keys with everyone else in
+the group.  By specifying your private key and their public keys for a
+group, you can limit access to that group without having a common
+shared secret.
+.SH SEE ALSO
+.BR xtickertape (1),
+.BR elvin (1)
+.B The Elvin Security Guide
+.SH AUTHORS
+This page was written by Ted Phelps <phelps@pobox.com>, based on the
+work by Ian Lister <ilister@dstc.edu.au>.
