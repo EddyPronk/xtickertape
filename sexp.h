@@ -31,11 +31,11 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.7 2000/11/12 01:52:07 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.8 2000/11/13 13:42:34 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
-typedef struct env *env_t;
+typedef struct sexp *env_t;
 
 /* The types of sexps */
 typedef enum
@@ -141,7 +141,7 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error);
 
 
 /* Allocates and returns an evalutaion environment */
-env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error);
+env_t env_alloc(env_t parent, elvin_error_t error);
 
 /* Allocates another reference to the environment */
 int env_alloc_ref(env_t env, elvin_error_t error);

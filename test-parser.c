@@ -1388,7 +1388,7 @@ static env_t root_env_alloc(elvin_error_t error)
 {
     env_t env;
 
-    if ((env = env_alloc(40, NULL, error)) == NULL)
+    if ((env = env_alloc(nil_alloc(error), error)) == NULL)
     {
 	return NULL;
     }
