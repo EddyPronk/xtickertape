@@ -6,39 +6,79 @@
 #include <fcntl.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
+#include "errors.h"
 #include "ast.h"
 #include "subscription.h"
 #include "parser.h"
 
+
 /* Callback for completion of the parsing */
 static int parsed(void *rock, uint32_t count, subscription_t *subs, elvin_error_t error)
 {
+    elvin_notification_t notification = (elvin_notification_t)rock;
     uint32_t i;
 
-    printf("parsed (count=%u)\n", count);
+    /* Test each notification to see what message it generates */
     for (i = 0; i < count; i++)
     {
+	message_t message;
+
+	/* Get the subscription to transmute the message */
+	if (! (message = subscription_transmute(subs[i], notification, error)))
+	{
+	    return 0;
+	}
+
+	/* Clean up */
 	if (! subscription_free(subs[i], error))
 	{
 	    return 0;
 	}
     }
 
+    /* Free the subscription array */
     return ELVIN_FREE(subs, error);
+}
+
+/* Constructs a simple notification */
+static elvin_notification_t notification_alloc(elvin_error_t error)
+{
+    elvin_notification_t notification;
+
+    /* Allocate a new notification */
+    if (! (notification = elvin_notification_alloc(error)))
+    {
+	return NULL;
+    }
+
+    /* Populate it */
+    elvin_notification_add_string(notification, "TICKERTAPE", "Chat", error);
+    elvin_notification_add_string(notification, "USER", "phelps", error);
+    elvin_notification_add_string(notification, "TICKERTEXT", "flonk", error);
+    elvin_notification_add_int32(notification, "TIMEOUT", 10, error);
+    return notification;
 }
 
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
     elvin_error_t error = elvin_error_alloc();
+    elvin_notification_t notification;
     parser_t parser;
     int i;
 
     /* Allocate a new parser */
-    if ((parser = parser_alloc(parsed, (void *)13, error)) == NULL)
+    if ((parser = parser_alloc(parsed, notification, error)) == NULL)
     {
 	fprintf(stderr, "parser_alloc(): failed\n");
 	abort();
+    }
+
+    /* Construct a notification to play with */
+    if (! (notification = notification_alloc(error)))
+    {
+	elvin_error_fprintf(stderr, "en", error);
+	exit(1);
     }
 
     /* If we have no args, then read from stdin */
@@ -90,6 +130,7 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    elvin_notification_free(notification, error);
     elvin_error_free(error);
 
     /* Report on memory usage */
