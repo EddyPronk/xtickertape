@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.91 2000/10/26 05:28:47 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.92 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -203,7 +203,8 @@ static void parse_args(
 	    {
 		if (elvin_handle_append_url(handle, optarg, error) == 0)
 		{
-		    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
+		    fprintf(stderr, PACKAGE ":bad URL: no doughnut \"%s\"\n", optarg);
+		    elvin_error_fprintf(stderr, error);
 		    exit(1);
 		}
 
@@ -215,7 +216,7 @@ static void parse_args(
 	    {
 		if (! elvin_handle_set_discovery_scope(handle, optarg, error))
 		{
-		    fprintf(stderr, "Unable to set scope to %s\n", optarg);
+		    fprintf(stderr, PACKAGE ": unable to set scope to %s\n", optarg);
 		    elvin_error_fprintf(stderr, error);
 		    exit(1);
 		}
@@ -268,7 +269,7 @@ static void parse_args(
 	    /* --version or -v */
 	    case 'v':
 	    {
-		printf("%s version %s\n", PACKAGE, VERSION);
+		printf(PACKAGE " version " VERSION "\n");
 		exit(0);
 	    }
 
@@ -425,15 +426,32 @@ int main(int argc, char *argv[])
     /* Initialize the elvin client library */
     if ((error = elvin_xt_init(context)) == NULL)
     {
-	fprintf(stderr, "*** elvin_xt_init(): failed\n");
-	abort();
+	fprintf(stderr, PACKAGE ": elvin_xt_init(): failed\n");
+	exit(1);
+    }
+
+    /* Check to see if we have a more meaningful error message */
+    if (elvin_error_is_error(error))
+    {
+	fprintf(stderr, PACKAGE ": elvin_xt_init(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
     }
 
     /* Create a new elvin connection handle */
     if ((handle = elvin_handle_alloc(error)) == NULL)
     {
-	fprintf(stderr, "*** elvin_handle_alloc(): failed\n");
-	abort();
+	fprintf(stderr, PACKAGE ": elvin_handle_alloc(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
+
+    /* Tell the handle to keep trying to connect forever */
+    if (elvin_handle_set_connection_retries(handle, 0, error) == 0)
+    {
+	fprintf(stderr, PACKAGE ": elvin_handle_set_connect_retries(): failed\n");
+	elvin_error_fprintf(stderr, error);
+	exit(1);
     }
 
     /* Scan what's left of the arguments */

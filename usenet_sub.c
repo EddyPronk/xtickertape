@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.21 2000/04/17 00:45:26 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.22 2000/10/31 04:49:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -322,7 +322,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 	/* Should never get here */
 	default:
 	{
-	    fprintf(stderr, "*** internal error\n");
+	    fprintf(stderr, PACKAGE ": internal error\n");
 	    return NULL;
 	}
     }
@@ -410,7 +410,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
 	default:
 	{
-	    fprintf(stderr, "*** Internal error\n");
+	    fprintf(stderr, PACKAGE ": internal error\n");
 	    return NULL;
 	}
     }
@@ -587,7 +587,7 @@ int usenet_sub_add(
     /* If we're connected then resubscribe */
     if (self -> handle != NULL)
     {
-	fprintf(stderr, "*** Hmmm\n");
+	fprintf(stderr, PACKAGE ": hmmm\n");
 	abort();
     }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.102 2000/05/28 08:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.103 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1234,8 +1234,10 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     /* If the internal state is inconsistent then let's bail right now */
     if (offset - self -> core.width != self -> scroller.right_offset)
     {
-	fprintf(stderr, "*** Internal scroller state is inconsistent\n");
-	fprintf(stderr, "*** Please alert Ted Phelps <phelps@pobox.com>\n");
+	fprintf(
+	    stderr,
+	    PACKAGE ": internal scroller state is inconsistent\n"
+	    PACKAGE ": please send the resulting core file to phelps@pobox.com\n");
 
 	/* Force a core dump */
 	abort();

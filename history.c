@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.29 2000/04/28 05:52:40 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.30 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -436,7 +436,7 @@ static void history_unthread_node(history_t self, history_node_t node)
     }
 
     /* Not found!? */
-    fprintf(stderr, "*** Unable to delete the blasted node!\n");
+    fprintf(stderr, PACKAGE ": unable to delete the blasted node!\n");
     abort();
 }
 

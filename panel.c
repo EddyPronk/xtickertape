@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.37 2000/10/26 05:21:40 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.38 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1518,7 +1518,7 @@ void *control_panel_add_subscription(
     /* Create a tuple to hold callback information */
     if ((tuple = (menu_item_tuple_t)malloc(sizeof(struct menu_item_tuple))) == NULL)
     {
-	fprintf(stderr, "*** Out of memory\n");
+	fprintf(stderr, PACKAGE ": out of memory\n");
 	exit(1);
     }
 

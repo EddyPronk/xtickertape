@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.20 2000/10/06 08:25:01 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.21 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -175,7 +175,7 @@ mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
     /* Allocate memory for the receiver */
     if ((self = (mail_sub_t)malloc(sizeof(struct mail_sub))) == NULL)
     {
-	fprintf(stderr, "*** Out of memory\n");
+	fprintf(stderr, PACKAGE ": out of memory\n");
 	exit(1);
     }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.67 2000/10/30 04:04:35 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.68 2000/10/31 04:48:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1123,7 +1123,7 @@ tickertape_t tickertape_alloc(
     /* Connect to the elvin server */
     if (elvin_xt_connect(handle, connect_cb, self, self -> error) == 0)
     {
-	fprintf(stderr, "*** elvin_xt_connect(): failed\n");
+	fprintf(stderr, "%s: elvin_xt_connect(): failed\n", PACKAGE);
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
