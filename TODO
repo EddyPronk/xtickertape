@@ -16,6 +16,9 @@ Configuration
   other than the terminal which started the program.  A message in the
   scroller is probably the most appropriate place. [Thanks Clinton Roy]
 
+- Write replacement functions for XtVaXXX() so that we can run with
+  older versions of X11.
+
 Control Panel:
 
 - You should be able to traverse the list of messages you have sent by 
