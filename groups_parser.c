@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.10 2000/06/13 07:27:32 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.11 2000/06/13 12:41:51 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.10 2000/06/13 07:27:32 phe
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <elvin/elvin.h>
 #include "groups_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
@@ -91,17 +92,11 @@ struct groups_parser
     /* The maximum timeout value for the current group */
     int max_time;
 
-    /* The number of producer keys thus far */
-    int producer_key_count;
+    /* The producer keys */
+    elvin_keys_t producer_keys;
 
-    /* The producer keys for the current subscription */
-    char **producer_keys;
-
-    /* The number of consumer keys thus far */
-    int consumer_key_count;
-
-    /* The consumer keys for the current subscription */
-    char **consumer_keys;
+    /* The consumer keys */
+    elvin_keys_t consumer_keys;
 };
 
 
@@ -127,7 +122,7 @@ static int lex_superfluous(groups_parser_t self, int ch);
 /* Calls the callback with the given information */
 static int accept_subscription(groups_parser_t self)
 {
-    int result, i;
+    int result;
 
     /* Make sure there is a callback */
     if (self -> callback == NULL)
@@ -140,86 +135,81 @@ static int accept_subscription(groups_parser_t self)
 	self -> rock, self -> name,
 	self -> in_menu, self -> has_nazi,
 	self -> min_time, self -> max_time,
-	self -> producer_key_count, self -> producer_keys,
-	self -> consumer_key_count, self -> consumer_keys);
+	self -> producer_keys,
+	self -> consumer_keys);
 
     /* Clean up */
+    if (self -> producer_keys != NULL)
+    {
+	elvin_keys_free(self -> producer_keys, NULL);
+	self -> producer_keys = NULL;
+    }
+
+    if (self -> consumer_keys != NULL)
+    {
+	elvin_keys_free(self -> consumer_keys, NULL);
+	self -> consumer_keys = NULL;
+    }
+
     free(self -> name);
-
-    /* Free the producer keys */
-    for (i = 0; i < self -> producer_key_count; i++)
-    {
-	free(self -> producer_keys[i]);
-    }
-
-    free(self -> producer_keys);
-    self -> producer_key_count = 0;
-    self -> producer_keys = NULL;
-
-    /* Free the consumer keys */
-    for (i = 0; i < self -> consumer_key_count; i++)
-    {
-	free(self -> consumer_keys[i]);
-    }
-
-    free(self -> consumer_keys);
-    self -> consumer_key_count = 0;
-    self -> consumer_keys = NULL;
-    
     return result;
 }
 
 /* Adds a producer key to the current list */
-static int accept_producer_key(groups_parser_t self, char *key)
+static int accept_producer_key(groups_parser_t self, char *string)
 {
-    char *copy;
-    char **keys;
+    elvin_key_t key;
 
-    /* Copy the producer key */
-    if ((copy = strdup(key)) == NULL)
+    /* Make sure we have a key set */
+    if (self -> producer_keys == NULL)
     {
-	return -1;
+	if ((self -> producer_keys = elvin_keys_alloc(7, NULL)) == NULL)
+	{
+	    abort();
+	}
     }
 
-    /* Make some more room in the array */
-    if ((keys = (char **)realloc(
-	self -> producer_keys,
-	self -> producer_key_count + 1 * sizeof(char *))) == NULL)
+    /* Create our producer key */
+    if ((key = elvin_keyraw_alloc((uchar *)string, strlen(string), NULL)) == NULL)
     {
-	free(key);
-	return 0;
+	abort();
     }
 
-    /* Fill in the key */
-    keys[self -> producer_key_count++] = copy;
-    self -> producer_keys = keys;
+    /* Add it to the keys */
+    if (elvin_keys_add(self -> producer_keys, key, NULL) == 0)
+    {
+	abort();
+    }
+
     return 0;
 }
 
 /* Adds a consumer key to the current list */
-static int accept_consumer_key(groups_parser_t self, char *key)
+static int accept_consumer_key(groups_parser_t self, char *string)
 {
-    char *copy;
-    char **keys;
+    elvin_key_t key;
 
-    /* Copy the consumer key */
-    if ((copy = strdup(key)) == NULL)
+    /* Make sure we have a key set */
+    if (self -> consumer_keys == NULL)
     {
-	return -1;
+	if ((self -> consumer_keys = elvin_keys_alloc(7, NULL)) == NULL)
+	{
+	    abort();
+	}
     }
 
-    /* Make some more room in the array */
-    if ((keys = (char **)realloc(
-	self -> consumer_keys,
-	self -> consumer_key_count + 1 * sizeof(char *))) == NULL)
+    /* Create our consumer key */
+    if ((key = elvin_keyprime_from_hexstring(string, NULL)) == NULL)
     {
-	free(key);
-	return 0;
+	abort();
     }
 
-    /* Fill in the key */
-    keys[self -> consumer_key_count++] = copy;
-    self -> consumer_keys = keys;
+    /* Add it to the keys */
+    if (elvin_keys_add(self -> consumer_keys, key, NULL) == 0)
+    {
+	abort();
+    }
+
     return 0;
 }
 
@@ -1009,9 +999,7 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
     }
 
     /* Initialize everything else to sane values */
-    self -> producer_key_count = 0;
     self -> producer_keys = NULL;
-    self -> consumer_key_count = 0;
     self -> consumer_keys = NULL;
     self -> callback = callback;
     self -> rock = rock;
