@@ -7,8 +7,9 @@ CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
 
-OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o \
-	MessageView.o Message.o Subscription.o OrbitSubscription.o Hash.o List.o main.o
+OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o \
+	Subscription.o UsenetSubscription.o OrbitSubscription.o Hash.o List.o \
+	FileStreamTokenizer.o main.o
 
 CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5
 #CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -DORBIT -DSANITY -Wall
