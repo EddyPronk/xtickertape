@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.40 1999/11/25 08:47:51 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.41 1999/11/29 03:44:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -63,12 +63,15 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.40 1999/11/25 08:47:51 phelps
 #define METAMAIL_OPTIONS "-B -q -b -c"
 #define METAMAIL_FORMAT "%s %s %s %s"
 
+/* How long to wait before we tell the user we're having trouble connecting */
+#define CONNECT_TIMEOUT 3 * 1000
 #define BUFFER_SIZE 1024
 
 #define RECONNECT_MSG "Connected to elvin server at %s:%d."
 #define NO_CONNECT_MSG "Unable to connect to elvin server at %s:%d.  Still trying..."
 #define LOST_CONNECT_MSG \
 "Lost connection to elvin server at %s:%d.  Attempting to reconnect..."
+#define SLOW_CONNECT_MSG "The elvin server is slow to reply.  Still trying..."
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
 #define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
@@ -967,6 +970,31 @@ static void subscribe_to_orbit(tickertape_t self)
 
 #endif /* ORBIT */
 
+/* This is called when our connection request hasn't been handled in a
+ * timely fasion (usually means the server is broken or a very long
+ * way away). */
+static void connect_timeout(XtPointer rock, XtIntervalId *interval)
+{
+    tickertape_t self = (tickertape_t)rock;
+    message_t message;
+
+    /* If we've successfully connected then we're done */
+    if (self -> handle != NULL)
+    {
+	return;
+    }
+
+    /* Otherwise alert the user that we're having trouble connecting */
+    message = message_alloc(
+	NULL,
+	"internal", "tickertape",
+	SLOW_CONNECT_MSG, 10,
+	NULL, NULL,
+	NULL, NULL, NULL);
+    receive_callback(self, message);
+    message_free(message);
+}
+
 /* This is called when our connection request is handled */
 static void connect_cb(
     elvin_handle_t handle, int result,
@@ -974,6 +1002,9 @@ static void connect_cb(
 {
     tickertape_t self = (tickertape_t)rock;
     int index;
+
+    /* Record the elvin_handle */
+    self -> handle = handle;
 
     /* Subscribe to the groups */
     for (index = 0; index < self -> groups_count; index++)
@@ -1017,6 +1048,7 @@ tickertape_t tickertape_alloc(
 {
     XtAppContext app_context = XtWidgetToApplicationContext(top);
     tickertape_t self;
+    elvin_handle_t handle;
 
     /* Allocate some space for the new tickertape */
     if ((self = (tickertape_t) malloc(sizeof(struct tickertape))) == NULL)
@@ -1079,7 +1111,7 @@ tickertape_t tickertape_alloc(
     }
 
     /* Create an elvin connection handle */
-    if ((self -> handle = elvin_hdl_alloc(self -> error)) == NULL)
+    if ((handle = elvin_hdl_alloc(self -> error)) == NULL)
     {
 	fprintf(stderr, "*** elvin_hdl_alloc(): failed\n");
 	exit(1);
@@ -1088,7 +1120,7 @@ tickertape_t tickertape_alloc(
     /* Specify the server address if given on the command-line */
     if (elvin_url != NULL)
     {
-	if (elvin_hdl_insert_server(self -> handle, 0, elvin_url, self -> error) == 0)
+	if (elvin_hdl_insert_server(handle, 0, elvin_url, self -> error) == 0)
 	{
 	    printf("Bad URL: no doughnut \"%s\"\n", elvin_url);
 	    exit(1);
@@ -1096,12 +1128,14 @@ tickertape_t tickertape_alloc(
     }
 
     /* Connect to the elvin server */
-    if (elvin_async_connect(self -> handle, connect_cb, self, self -> error) == 0)
+    if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
     {
 	fprintf(stderr, "*** elvin_async_connect(): failed\n");
 	exit(1);
     }
 
+    /* Register a timeout in case the connect request doesn't come back */
+    XtAppAddTimeOut(app_context, CONNECT_TIMEOUT, connect_timeout, self);
     return self;
 }
 
