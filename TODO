@@ -14,7 +14,7 @@ Configuration
 
 - Errors in the configuration files should be reported to somewhere
   other than the terminal which started the program.  A message in the
-  scroller is probably the most appropriate place.
+  scroller is probably the most appropriate place. [Thanks Clinton Roy]
 
 Control Panel:
 
@@ -25,6 +25,9 @@ Control Panel:
   messages or the server will dump us when we try to send any
   non-ASCII characters.
 
+- Add an Edit menu with Cut, Paste and Copy options which apply to the
+  widget with focus.  This should allow us to cut and paste messages
+  from the history into another application. [Thanks David Arnold]
 
 Scroller:
 
@@ -55,7 +58,7 @@ History Widget
   automatically selects.
 
 - The widget should scroll horizontally in response to mouse
-  movement.  [Thanks to Clinton Roy]
+  movement.  [Thanks Clinton Roy]
 
 - The timestamp should optionally include the date as well as simply
   HH:MM(am|pm), and should be internationalized.  It should be
