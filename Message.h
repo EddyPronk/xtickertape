@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: Message.h,v 1.2 1997/02/10 07:14:54 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -22,9 +22,6 @@ char *Message_getUser(Message self);
 
 /* Answers the receiver's string */
 char *Message_getString(Message self);
-
-/* Answers the length of the receiver's string */
-unsigned long Message_getStringLength(Message self);
 
 /* Answers the receiver's timout */
 unsigned long Message_getTimeout(Message self);
