@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.3 2001/07/06 04:11:10 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.4 2001/07/06 05:02:07 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -355,7 +355,7 @@ void message_view_get_sizes(message_view_t self, string_sizes_t sizes)
     sizes -> rbearing = rbearing;
     sizes -> width = width;
     sizes -> ascent = self -> separator_sizes.ascent;
-    sizes -> descent = self -> separator_sizes.ascent;
+    sizes -> descent = self -> separator_sizes.descent;
 }
 
 /* Draws the message_view */
