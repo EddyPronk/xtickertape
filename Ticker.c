@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.16 1998/10/29 03:40:14 phelps Exp $
+ * $Id: Ticker.c,v 1.17 1998/10/30 08:13:51 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -14,6 +14,7 @@
 #include "Control.h"
 #include "Subscription.h"
 #include "UsenetSubscription.h"
+#include "MailSubscription.h"
 #include "ElvinConnection.h"
 #include "version.h"
 
@@ -47,6 +48,9 @@ struct Tickertape_t
 
     /* The receiver's usenet subscription (from the usenet file) */
     UsenetSubscription usenetSubscription;
+
+    /* The receiver's mail subscription */
+    MailSubscription mailSubscription;
 
 #ifdef ORBIT
     /* The receiver's Orbit-related subscriptions */
@@ -386,6 +390,8 @@ Tickertape Tickertape_alloc(
     self -> top = top;
     self -> subscriptions = ReadGroupsFile(self);
     self -> usenetSubscription = ReadUsenetFile(self);
+    self -> mailSubscription = MailSubscription_alloc(
+	user, (MailSubscriptionCallback)ReceiveMessage, self);
     self -> connection = NULL;
 
     InitializeUserInterface(self);
@@ -401,6 +407,12 @@ Tickertape Tickertape_alloc(
     if (self -> usenetSubscription != NULL)
     {
 	UsenetSubscription_setConnection(self -> usenetSubscription, self -> connection);
+    }
+
+    /* Subscribe to the Mail subscription if we have one */
+    if (self -> mailSubscription != NULL)
+    {
+	MailSubscription_setConnection(self -> mailSubscription, self -> connection);
     }
 
 #ifdef ORBIT
