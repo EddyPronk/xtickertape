@@ -139,8 +139,10 @@ XTickertape.sendHistoryCapacity: 32
 	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line()\n\
 	<Key>osfUp: history-prev()\n\
 	Ctrl<Key>p: history-prev()\n\
+	Meta<Key>p: history-prev()\n\
 	<Key>osfDown: history-next()\n\
-	Ctrl<Key>n: history-next()\n
+	Ctrl<Key>n: history-next()\n\
+	Meta<Key>n: history-next()
 
 !
 ! Scroller action translations
