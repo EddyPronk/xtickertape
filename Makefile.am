@@ -64,8 +64,7 @@ show_url_SOURCES = show-url.c
 man_MANS = xtickertape.1 show-url.1 groups.5 keys.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
-# and also the show-url script
-EXTRA_DIST = XTickertape.ad.in show-url $(man_MANS) index en
+EXTRA_DIST = XTickertape.ad.in $(man_MANS)
 
 
 # Put the app-defaults somewhere...
