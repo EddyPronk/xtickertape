@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.59 1999/08/28 03:05:45 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.60 1999/08/29 14:19:01 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -60,6 +60,12 @@ static XtResource resources[] =
     {
 	XtNcallback, XtCCallback, XtRCallback, sizeof(XtPointer),
 	offset(scroller.callbacks), XtRCallback, (XtPointer)NULL
+    },
+
+    /* XtCallbackList action_callbacks */
+    {
+	XtNactionCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
+	offset(scroller.action_callbacks), XtRCallback, (XtPointer)NULL
     },
 
     /* XFontStruct *font */
@@ -116,10 +122,10 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
-static void draginit(Widget widget, XEvent *event);
+static void init_drag(Widget widget, XEvent *event);
 static void drag(Widget widget, XEvent *event);
-static void menu(Widget widget, XEvent *event);
-static void decode_mime(Widget widget, XEvent *event);
+static void show_menu(Widget widget, XEvent *event);
+static void show_attachment(Widget widget, XEvent *event);
 static void expire(Widget widget, XEvent *event);
 static void delete(Widget widget, XEvent *event);
 static void faster(Widget widget, XEvent *event);
@@ -130,10 +136,10 @@ static void slower(Widget widget, XEvent *event);
  */
 static XtActionsRec actions[] =
 {
-    { "draginit", (XtActionProc)draginit },
+    { "init-drag", (XtActionProc)init_drag },
     { "drag", (XtActionProc)drag },
-    { "menu", (XtActionProc)menu },
-    { "decodeMime", (XtActionProc)decode_mime },
+    { "show-menu", (XtActionProc)show_menu },
+    { "show-attachment", (XtActionProc)show_attachment },
     { "expire", (XtActionProc)expire },
     { "delete", (XtActionProc)delete },
     { "faster", (XtActionProc)faster },
@@ -146,10 +152,10 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: draginit()\n"
+    "<Btn1Down>: init-drag()\n"
     "<Btn1Motion>: drag()\n"
-    "<Btn1Up>: menu()\n"
-    "<Btn2Down>: decodeMime()\n"
+    "<Btn1Up>: show-menu()\n"
+    "<Btn2Down>: show-attachment()\n"
     "<Btn3Down>: expire()\n"
     "<Key>d: expire()\n"
     "<Key>x: delete()\n"
@@ -1258,7 +1264,7 @@ static int pre_action(ScrollerWidget self, XEvent *event)
 
 
 /* Called when the button is pressed */
-void menu(Widget widget, XEvent *event)
+void show_menu(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1275,17 +1281,10 @@ void menu(Widget widget, XEvent *event)
 }
 
 /* Spawn metamail to decode the Message's MIME attachment */
-static void decode_mime(Widget widget, XEvent *event)
+static void show_attachment(Widget widget, XEvent *event)
 {
-#ifdef METAMAIL
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
-    Message message;
-    char *mime_type;
-    char *mime_args;
-    char *filename;
-    char *buffer;
-    FILE *file;
 
     /* Abort if the pre-action tells us to */
     if (pre_action(self, event) < 0)
@@ -1293,57 +1292,11 @@ static void decode_mime(Widget widget, XEvent *event)
 	return;
     }
 
-    /* Figure out which message was clicked on */
+    /* Deliver the chosen message to the callbacks */
     glyph = glyph_at_event(self, event);
-    message = glyph -> get_message(glyph);
-
-    /* If there's no message, then we can't decode any mime */
-    if (message == NULL)
-    {
-#ifdef DEBUG
-	printf("missed!\n");
-#endif /* DEBUG */
-	return;
-    }
-
-    /* Make sure there's a mime type and args */
-    if (((mime_type = Message_getMimeType(message)) == NULL) ||
-	((mime_args = Message_getMimeArgs(message)) == NULL))
-    {
-#ifdef DEBUG
-	printf("no mime\n");
-#endif /* DEBUG */
-	return;
-    }
-
-#ifdef DEBUG
-    printf("MIME: %s %s\n", mime_type, mime_args);
-#endif /* DEBUG */
-
-    /* If we can't open the file then print an error and give up */
-    filename = tmpnam(NULL);
-    if ((file = fopen(filename, "wb")) == NULL)
-    {
-	perror("unable to open a temporary file");
-	return;
-    }
-
-    fputs(mime_args, file);
-    fclose(file);
-
-    /* Invoke metamail to display the message */
-    buffer = (char *) malloc(
-	sizeof(METAMAIL) + sizeof(" -B -q -b -c   > /dev/null 2>&1")
-	+ strlen(mime_type) + strlen(filename));
-
-    sprintf(buffer, "%s -B -q -b -c %s %s > /dev/null 2>&1",
-	    METAMAIL, mime_type, filename);
-    system(buffer);
-
-    /* Remove the temporary file */
-    unlink(filename);
-    free(buffer);
-#endif /* METAMAIL */
+    XtCallCallbackList(
+	widget, self -> scroller.action_callbacks,
+	(XtPointer)glyph -> get_message(glyph));
 }
 
 
@@ -1618,7 +1571,7 @@ static void slower(Widget widget, XEvent *event)
 }
 
 /* Someone has pressed a mouse button */
-static void draginit(Widget widget, XEvent *event)
+static void init_drag(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
