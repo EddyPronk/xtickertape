@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.125 2001/08/25 07:00:44 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.126 2001/08/25 08:53:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -360,7 +360,7 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
     }
 
     /* Figure out how big the glyph should be */
-    message_view_get_sizes(self -> message_view, &self -> sizes);
+    message_view_get_sizes(self -> message_view, False, 0, &self -> sizes);
 
     /* Add a little space on the end */
     /* FIX THIS: compute the per_char info for a space */
@@ -473,10 +473,10 @@ static void glyph_paint(
     }
 
     /* Delegate to the message_view */
-    /* FIX THIS: get some *real* colors */
     message_view_paint(
 	self -> message_view,
 	display, drawable, gc,
+	False, 0, 0,
 	self -> widget -> scroller.group_pixels[self -> fade_level],
 	self -> widget -> scroller.user_pixels[self -> fade_level],
 	self -> widget -> scroller.string_pixels[self -> fade_level],
