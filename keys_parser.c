@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.7 2003/01/23 09:47:11 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.8 2003/01/23 12:03:30 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -728,7 +728,7 @@ void keys_parser_free(keys_parser_t self)
  * interpreted as an end-of-input marker */
 int keys_parser_parse(keys_parser_t self, char *buffer, size_t length)
 {
-    unsigned char *end = (unsigned char *)buffer;
+    unsigned char *end = (unsigned char *)buffer + length;
     unsigned char *pointer;
 
     /* Length of 0 indicates EOF */
