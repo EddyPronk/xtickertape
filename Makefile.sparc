@@ -7,14 +7,14 @@ TICKERTAPE = xtickertape
 ALL = $(TICKERTAPE) 
 
 OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o \
-	Subscription.o UsenetSubscription.o OrbitSubscription.o Hash.o List.o \
-	StringBuffer.o FileStreamTokenizer.o main.o
+	Subscription.o UsenetSubscription.o MailSubscription.o OrbitSubscription.o \
+	StringBuffer.o FileStreamTokenizer.o Hash.o List.o main.o
 
-CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5
+CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -Wall
 #CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -DORBIT -DSANITY -Wall
 
 
-INCLUDES = -I/usr/openwin/include -I/usr/local/dstc/include \
+INCLUDES = -I. -I/usr/openwin/include -I/usr/local/dstc/include \
 	-I/usr/local/dstc/include/elvin3
 
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
