@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.8 1999/08/22 12:39:37 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.9 1999/08/27 15:26:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -184,83 +184,155 @@ static unsigned int get_width(message_glyph_t self)
 	SPACING;
 }
 
+/* Answers the width of the character in the given font */
+static unsigned int measure_char(XFontStruct *font, int ch)
+{
+    unsigned int first = font -> min_char_or_byte2;
+    unsigned int last = font -> max_char_or_byte2;
+
+    /* Watch for the easy ones */
+    if ((first <= ch) && (ch <= last))
+    {
+	return font -> per_char[ch - first].width;
+    }
+
+    /* If the font's default char is valid then return its width */
+    if ((first <= font -> default_char) && (font -> default_char <= last))
+    {
+	return font -> per_char[font -> default_char - first].width;
+    }
+
+    /* Failing that, try a space */
+    if ((first <= ' ') && (' ' <= last))
+    {
+	return font -> per_char[' ' - first].width;
+    }
+
+    /* No luck there.  Resort to the font's max_width */
+    return font -> max_bounds.width;
+}
+
+/* Measure all of the characters in a string */
+static unsigned int measure_string(XFontStruct *font, char *string)
+{
+    unsigned char *pointer;
+    unsigned int width = 0;
+
+    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
+    {
+	width += measure_char(font, *pointer);
+    }
+
+    return width;
+}
+
 /* Draws a String with an optional underline */
 static void paint_string(
     message_glyph_t self,
-    Display *display, Drawable drawable, GC gc,
-    int left, int right, int y, char *string, int do_underline)
+    Display *display, Drawable drawable, GC gc, XFontStruct *font,
+    int left, int right, int baseline, char *string, int do_underline,
+    int x, int y, int width, int height)
 {
+    int char_width;
+    char *first;
+    char *last;
+
+    /* Make sure the string is visible left-to-right */
+    if ((x + width < left) || (right <= x))
+    {
+	return;
+    }
+
+    /* Find the first visible character in the string */
+    first = string;
+    while (left + (char_width = measure_char(font, *first)) < x)
+    {
+	left += char_width;
+	first++;
+    }
+
+    /* Count the number of visible characters in the string */
+    last = first;
+    right = left;
+    while ((right < x + width) && (*last != '\0'))
+    {
+	right += measure_char(font, *last);
+	last++;
+    }
+
+#ifdef DEBUG_GLYPH
+    {
+	XGCValues values;
+	values.foreground = random();
+	XChangeGC(display, gc, GCForeground, &values);
+    }
+#endif /* DEBUG */
+
     /* Draw all of the characters of the string */
-    XDrawString(display, drawable, gc, left, y, string, strlen(string));
+    XDrawString(display, drawable, gc, left, baseline, first, last - first);
 
     /* Draw the underline if appropriate */
     if (do_underline)
     {
-	XDrawLine(display, drawable, gc, left, y + 1, right, y + 1);
+	XDrawLine(display, drawable, gc, left, baseline + 1, right, baseline + 1);
     }
 }
 
 /* Draw the receiver */
 static void do_paint(
     message_glyph_t self, Display *display, Drawable drawable,
-    int offset, int w, int x, int y, unsigned int width, unsigned int height)
+    int offset, int w, int x, int y, int width, int height)
 {
     int do_underline = Message_hasAttachment(self -> message);
-    int max = x + width;
     int level = self -> fade_level;
-    int bottom = y + self -> ascent;
+    int baseline = y + self -> ascent;
     int left;
     int right;
 
     /* If the group string fits, draw it */
     left = offset;
     right = left + self -> group_width;
-    if ((left <= max) && (x < right))
-    {
-	paint_string(
-	    self, display, drawable, ScGCForGroup(self -> widget, level),
-	    left, right, bottom, Message_getGroup(self -> message), do_underline);
-    }
+    paint_string(
+	self, display, drawable, ScGCForGroup(self -> widget, level),
+	ScFontForGroup(self -> widget),
+	left, right, baseline, Message_getGroup(self -> message), do_underline,
+	x, y, width, height);
 
     /* If the separator fits, draw it */
     left = right;
     right = left + self -> separator_width;
-    if ((left <= max) && (x < right))
-    {
-	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level),
-	    left, right, bottom, SEPARATOR, do_underline);
-    }
+    paint_string(
+	self, display, drawable, ScGCForSeparator(self -> widget, level),
+	ScFontForSeparator(self -> widget),
+	left, right, baseline, SEPARATOR, do_underline,
+	x, y, width, height);
 
     /* If the user string fits, draw it */
     left = right;
     right = left + self -> user_width;
-    if ((left <= max) && (x < right))
-    {
-	paint_string(
-	    self, display, drawable, ScGCForUser(self -> widget, level),
-	    left, right, bottom, Message_getUser(self -> message), do_underline);
-    }
+    paint_string(
+	self, display, drawable, ScGCForUser(self -> widget, level),
+	ScFontForUser(self -> widget),
+	left, right, baseline, Message_getUser(self -> message), do_underline,
+	x, y, width, height);
 
     /* If the separator fits, draw it */
     left = right;
     right = left + self -> separator_width;
-    if ((left <= max) && (x < right))
-    {
-	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level),
-	    left, right, bottom, SEPARATOR, do_underline);
-    }
+    paint_string(
+	self, display, drawable, ScGCForSeparator(self -> widget, level),
+	ScFontForSeparator(self -> widget),
+	left, right, baseline, SEPARATOR, do_underline,
+	x, y, width, height);
 
     /* If the message string fits, draw it */
     left = right;
     right = left + self -> string_width;
-    if ((left <= max) && (x < right))
-    {
-	paint_string(
-	    self, display, drawable, ScGCForString(self -> widget, level),
-	    left, right, bottom, Message_getString(self -> message), do_underline);
-    }
+    paint_string(
+	self, display, drawable, ScGCForString(self -> widget, level),
+	ScFontForString(self -> widget),
+	left, right, baseline, Message_getString(self -> message), do_underline,
+	x, y, width, height);
 }
 
 /* Answers True if the receiver has [been] expired */
@@ -283,43 +355,6 @@ static void do_expire(message_glyph_t self)
 	set_clock(self);
     }
 }
-
-
-/* Measures the width of a string in the given font */
-static unsigned int measure_string(XFontStruct *font, char *string)
-{
-    unsigned int first = font -> min_char_or_byte2;
-    unsigned int last = font -> max_char_or_byte2;
-    unsigned int default_width;
-    unsigned int width = 0;
-    unsigned char *pointer;
-
-    /* Make sure the font's default_char is valid */
-    if ((first <= font -> default_char) && (font -> default_char <= last))
-    {
-	default_width = font -> per_char[font -> default_char].width;
-    }
-    /* Otherwise see if a space will work */
-    else if ((first <= ' ') && (' ' <= last))
-    {
-	default_width = font -> per_char[' '].width;
-    }
-    /* abandon all hope and use max_width */
-    else
-    {
-	default_width = font -> max_bounds.width;
-    }
-
-    /* Add up the character widths */
-    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
-    {
-	unsigned char ch = *pointer;
-	width += ((first <= ch) && (ch <= last)) ? font -> per_char[ch - first].width : default_width;
-    }
-
-    return width;
-}
-
 
 
 /* Allocates and initializes a new message_glyph glyph */
