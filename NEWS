@@ -1,5 +1,9 @@
 Overview of changes in xtickertape-1.6.3
 
+* Fixed a bug in the measuring of non-printing characters which
+  resulted in an attractive yet incorrect double-imaging of messages
+  on the scroller.
+
 * Fixed a counting error in the e-mail subscription generation code
   which could result in a coredump depending on the length of the
   username.
