@@ -1,8 +1,13 @@
 Overview of changes in xtickertape-1.6.5
 
+* The user field now defaults to a combination of the user name and
+  local domain.  These can be overridden with environment variables
+  (USER/LOGNAME, DOMAIN) or on the command-line (--user/-u,
+  --domain/-D).
+
 * Completed the great tickertape naming reform.
 
-* Plugged all remaining memory leaks (hopefully!)
+* Plugged all known memory leaks.
 
 Overview of changes in xtickertape-1.6.4
 

@@ -1,3 +1,23 @@
+1999-10-06  Ted Phelps  <phelps@pobox.com>
+
+	* mail_sub.c: fixed a bug that got introduced in some of
+		  yesterday's tidyings.  Silly, silly bug.
+
+	* main.c, tickertape.h, tickertape.c: rearranged the domain stuff
+		  so that it can be specified on the command-line or in an 
+		  environment variable.
+	
+1999-10-05  Ted Phelps  <phelps@pobox.com>
+
+	* List.h, List.c: removed
+	
+	* Hash.h, Hash.c: removed
+
+	* Control.h, Control.c: renamed to panel.h, panel.c.  Effected the
+		  great naming reform in this last file.
+
+	* All: lots of tidying
+	
 1999-10-04  Ted Phelps  <phelps@pobox.com>
 
 	* FileStreamTokenizer.h, FileStreamTokenizer.c: removed
