@@ -24,9 +24,9 @@
 
 *toolTipShell.borderWidth: 1
 *toolTip.background: #ffffcc
-!*scroller.groupPixel: BlueViolet
-!*scroller.userPixel: ForestGreen
-!*scroller.stringPixel: IndianRed
+*scroller.groupPixel: BlueViolet
+*scroller.userPixel: ForestGreen
+*scroller.stringPixel: IndianRed
 
 !
 ! Fonts
