@@ -1,3 +1,8 @@
+1999-09-27  Ted Phelps  <phelps@pobox.com>
+
+	* message_glyph.c: Characters which don't have a glyph in the
+		  current font are now measured correctly.
+
 1999-09-26  Ted Phelps  <phelps@pobox.com>
 
 	* ElvinConnection.h, ElvinConnection.c, others: naming reform hits 
