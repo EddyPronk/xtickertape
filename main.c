@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.84 2000/08/03 22:42:04 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.85 2000/08/28 13:53:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -56,7 +56,6 @@ static const char cvsid[] = "$Id: main.c,v 1.84 2000/08/03 22:42:04 phelps Exp $
 #include "mask.xbm"
 
 #define DEFAULT_DOMAIN "no.domain"
-#define DEFAULT_SCOPE "DEFAULT"
 
 /* The list of long options */
 static struct option long_options[] =
@@ -183,7 +182,6 @@ static void parse_args(
     int choice;
 
     /* Initialize arguments to sane values */
-    handle -> scope = DEFAULT_SCOPE;
     *user_return = NULL;
     *domain_return = NULL;
     *ticker_dir_return = NULL;
@@ -214,7 +212,13 @@ static void parse_args(
 	    /* --scope= or -S */
 	    case 'S':
 	    {
-		handle -> scope = optarg;
+		if (! elvin_handle_set_discovery_scope(handle, optarg, error))
+		{
+		    fprintf(stderr, "Unable to set scope to %s\n", optarg);
+		    elvin_error_fprintf(stderr, "en", error);
+		    exit(1);
+		}
+
 		break;
 	    }
 
