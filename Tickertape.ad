@@ -56,6 +56,17 @@
 *menuBar*exit.accelerator: Alt<Key>Q
 *menuBar*exit.acceleratorText: Alt+Q
 
+! options menu labels
+*menuBar*optionsMenu.labelString: Options
+*menuBar*optionsMenu.mnemonic: O
+
+*menuBar*threaded.labelString: Thread History
+*menuBar*threaded.mnemonic: t
+*menuBar*threaded.accelerator: Alt<Key>T
+*menuBar*threaded.acceleratorText: Alt+T
+*menuBar*threaded.set: True
+*menuBar*threaded.visibleWhenOff: True
+
 ! help menu labels
 *menuBar.helpMenu.labelString: Help
 *menuBar.helpMenu.mnemonic: H
