@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.50 1999/09/09 14:29:45 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.51 1999/09/22 02:47:39 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1425,10 +1425,12 @@ void ControlPanel_select(ControlPanel self, message_t message)
     /* Set up to reply */
     prepare_reply(self, message);
 
-    /* Select the appropriate item in the history */
+    /* Unselect everything */
+    XmListDeselectAllItems(self -> history);
+
+    /* If the message isn't visible in the history list then don't select anything */
     if ((index = history_index(tickertape_history(self -> tickertape), message)) < 0)
     {
-	XmListDeselectAllItems(self -> history);
 	return;
     }
 
