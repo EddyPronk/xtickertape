@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.24 2000/11/05 08:42:00 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.25 2000/11/07 04:01:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -152,13 +152,13 @@ struct parser
     lexer_state_t state;
 
     /* The token construction buffer */
-    uchar *token;
+    char *token;
 
     /* The character past the end of the token construction buffer */
-    uchar *token_end;
+    char *token_end;
 
     /* A pointer to the next free character in the token buffer */
-    uchar *point;
+    char *point;
 
     /* The offset to the beginning of the current number */
     int offset;
@@ -180,14 +180,14 @@ static atom_t make_cons(parser_t self, elvin_error_t error);
 #include "grammar.h"
 
 /* Returns a string representation of most terminal types */
-static uchar *terminal_string(terminal_t terminal)
+static char *terminal_string(terminal_t terminal)
 {
     static char *strings[] =
     {
 	"[eof]", "(", ")", ".", NULL
     };
 
-    return (uchar *)strings[terminal];
+    return strings[terminal];
 }
 
 
@@ -422,7 +422,7 @@ static int accept_eof(parser_t self, elvin_error_t error)
 }
 
 /* Update the parser state to reflect the reading of a STRING token */
-static int accept_string(parser_t self, uchar *string, elvin_error_t error)
+static int accept_string(parser_t self, char *string, elvin_error_t error)
 {
     atom_t atom;
 
@@ -473,11 +473,11 @@ static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
 }
 
 /* Transform a string into an integer and accept it */
-static int accept_int32_string(parser_t self, uchar *string, elvin_error_t error)
+static int accept_int32_string(parser_t self, char *string, elvin_error_t error)
 {
     int32_t value;
 
-    if (elvin_string_to_int32((char *)string, &value, error) == 0)
+    if (elvin_string_to_int32(string, &value, error) == 0)
     {
 	return 0;
     }
@@ -501,11 +501,11 @@ static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
 }
 
 /* Transform a string into an int64 and accept it */
-static int accept_int64_string(parser_t self, uchar *string, elvin_error_t error)
+static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
 {
     int64_t value;
 
-    if (elvin_string_to_int64((char *)string, &value, error) == 0)
+    if (elvin_string_to_int64(string, &value, error) == 0)
     {
 	return 0;
     }
@@ -530,12 +530,12 @@ static int accept_real64(parser_t self, double value, elvin_error_t error)
 }
 
 /* Translate the string into a double-precision floating point number and accept it */
-static int accept_real64_string(parser_t self, uchar *string, elvin_error_t error)
+static int accept_real64_string(parser_t self, char *string, elvin_error_t error)
 {
     double value;
 
     errno = 0;
-    value = strtod((char *)string, NULL);
+    value = strtod(string, NULL);
     if (errno != 0)
     {
 	if (errno == ERANGE)
@@ -580,10 +580,10 @@ static int accept_symbol(parser_t self, char *string, elvin_error_t error)
 static int grow_buffer(parser_t self, elvin_error_t error)
 {
     size_t length = (self -> token_end - self -> token) * 2;
-    uchar *token;
+    char *token;
 
     /* Allocate a bigger buffer */
-    if ((token = (uchar *)ELVIN_REALLOC(self -> token, length, error)) == NULL)
+    if ((token = (char *)ELVIN_REALLOC(self -> token, length, error)) == NULL)
     {
 	return 0;
     }
@@ -1224,7 +1224,7 @@ static int lex_symbol(parser_t self, int ch, elvin_error_t error)
     }
 
     /* Accept the symbol */
-    if (accept_symbol(self, (char *)self -> token, error) == 0)
+    if (accept_symbol(self, self -> token, error) == 0)
     {
 	return 0;
     }
@@ -1370,7 +1370,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock, elvin_error_t erro
     self -> offset = 0;
 
     /* Allocate memory for the token buffer */
-    if ((self -> token = (uchar *)ELVIN_MALLOC(INITIAL_BUFFER_SIZE, error)) == NULL)
+    if ((self -> token = (char *)ELVIN_MALLOC(INITIAL_BUFFER_SIZE, error)) == NULL)
     {
 	parser_free(self, error);
 	return NULL;

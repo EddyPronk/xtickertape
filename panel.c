@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.38 2000/10/31 04:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.39 2000/11/07 04:01:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1288,7 +1288,7 @@ char *create_uuid(control_panel_t self)
     char buffer[32];
     time_t now;
     struct tm *tm_gmt;
-    uchar digest[SHA1DIGESTLEN];
+    char digest[SHA1DIGESTLEN];
     char result[SHA1DIGESTLEN * 2 + 1];
     int index;
 
@@ -1313,7 +1313,7 @@ char *create_uuid(control_panel_t self)
 
     /* Construct a SHA1 digest of the UUID, which should be just as
      * unique but should make it much harder to track down the sender */
-    if (! elvin_sha1digest((uchar *)buffer, 31, digest))
+    if (! elvin_sha1digest(buffer, 31, digest))
     {
 	return NULL;
     }

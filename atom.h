@@ -31,7 +31,7 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.5 2000/11/06 12:33:47 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.6 2000/11/07 04:01:21 phelps Exp $";
 #endif /* lint */
 
 /* The types of atoms */
@@ -44,7 +44,7 @@ typedef enum
     ATOM_STRING,
     ATOM_CHAR,
     ATOM_SYMBOL,
-    ATOM_CONS,
+    ATOM_CONS
 } atom_type_t;
 
 /* An atom_t is a an opaque struct */
@@ -69,10 +69,10 @@ atom_t int64_alloc(int64_t value, elvin_error_t error);
 atom_t float_alloc(double value, elvin_error_t error);
 
 /* Allocates and initializes a new string atom */
-atom_t string_alloc(uchar *value, elvin_error_t error);
+atom_t string_alloc(char *value, elvin_error_t error);
 
 /* Allocates and initializes a new char atom */
-atom_t char_alloc(uchar ch, elvin_error_t error);
+atom_t char_alloc(char ch, elvin_error_t error);
 
 /* Allocates and initializes a new cons atom */
 atom_t cons_alloc(atom_t car, atom_t cdr, elvin_error_t error);
@@ -101,10 +101,10 @@ int32_t int32_value(atom_t atom, elvin_error_t error);
 int64_t int64_value(atom_t atom, elvin_error_t error);
 
 /* Returns the string's bytes */
-uchar *string_value(atom_t atom, elvin_error_t error);
+char *string_value(atom_t atom, elvin_error_t error);
 
 /* Returns the char's byte */
-uchar char_value(atom_t atom, elvin_error_t error);
+char char_value(atom_t atom, elvin_error_t error);
 
 /* Answers the car of a cons atom */
 atom_t cons_car(atom_t atom, elvin_error_t error);

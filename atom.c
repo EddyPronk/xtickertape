@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.7 2000/11/06 12:33:47 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.8 2000/11/07 04:01:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -64,7 +64,7 @@ struct atom
 	int32_t i;
 	int64_t h;
 	double d;
-	uchar *s;
+	char *s;
 	struct cons c;
     } value;
 };
@@ -213,7 +213,7 @@ atom_t float_alloc(double value, elvin_error_t error)
 
 
 /* Allocates and initializes a new string atom */
-atom_t string_alloc(uchar *value, elvin_error_t error)
+atom_t string_alloc(char *value, elvin_error_t error)
 {
     atom_t atom;
 
@@ -224,7 +224,7 @@ atom_t string_alloc(uchar *value, elvin_error_t error)
     }
 
     /* Duplicate the value */
-    if ((atom -> value.s = ELVIN_USTRDUP(value, error)) == NULL)
+    if ((atom -> value.s = ELVIN_STRDUP(value, error)) == NULL)
     {
 	ELVIN_FREE(atom, NULL);
 	return NULL;
@@ -234,13 +234,13 @@ atom_t string_alloc(uchar *value, elvin_error_t error)
 }
 
 /* Answers the string's characters */
-uchar *string_value(atom_t atom, elvin_error_t error)
+char *string_value(atom_t atom, elvin_error_t error)
 {
     return atom -> value.s;
 }
 
 /* Allocates and initializes a new char atom */
-atom_t char_alloc(uchar ch, elvin_error_t error)
+atom_t char_alloc(char ch, elvin_error_t error)
 {
     atom_t atom;
 
@@ -255,9 +255,9 @@ atom_t char_alloc(uchar ch, elvin_error_t error)
 }
 
 /* Answers the char's char */
-uchar char_value(atom_t atom, elvin_error_t error)
+char char_value(atom_t atom, elvin_error_t error)
 {
-    return (uchar)atom->value.i;
+    return (char)atom->value.i;
 }
 
 
@@ -273,7 +273,7 @@ atom_t symbol_alloc(char *name, elvin_error_t error)
     }
 
     /* Duplicate the value */
-    if ((atom -> value.s = ELVIN_USTRDUP(name, error)) == NULL)
+    if ((atom -> value.s = ELVIN_STRDUP(name, error)) == NULL)
     {
 	ELVIN_FREE(atom, NULL);
 	return NULL;
@@ -512,7 +512,8 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, (uchar *)"atom_eval");
+	    /* FIX THIS: set a better error */
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "atom_eval");
 	    return 0;
 	}
     }
@@ -580,7 +581,7 @@ int env_get(env_t env, atom_t symbol, atom_t *result, elvin_error_t error)
 	env = env -> parent;
     }
 
-    ELVIN_ERROR_LISP_SYM_UNDEF(error, (uchar *)name);
+    ELVIN_ERROR_LISP_SYM_UNDEF(error, name);
     return 0;
 }
 
