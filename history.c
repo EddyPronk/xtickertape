@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.18 1999/08/30 03:49:07 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.19 1999/09/01 13:51:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -368,6 +368,7 @@ static void history_unthread_node(history_t self, history_node_t node)
     {
 	/* Remove this node from the parent's responses */
 	parent -> last_response = node -> previous_response;
+	node -> parent = NULL;
 
 	/* Unthread the parent if appropriate */
 	history_unthread_node(self, parent);
@@ -603,50 +604,48 @@ Message history_get(history_t self, int index)
 }
 
 
-/* Updates the history's list widget after a message was added */
-static void history_update_list(history_t self, history_node_t node)
+/* Removes the oldest items from the threaded and unthreaded lists */
+static void history_remove_old(history_t self)
 {
-    XmString string;
+    history_node_t probe;
+    history_node_t previous;
 
-    /* Make sure we have a list to play with */
-    if (self -> list == NULL)
+    /* Make sure we've got a full list first */
+    if (self -> threaded_count < MAX_LIST_COUNT)
     {
 	return;
     }
 
-    /* Make sure the list doesn't grow without bound */
-    if (self -> threaded_count > MAX_LIST_COUNT)
+    /* Update the List widget if we have one */
+    if (self -> list != NULL)
     {
-	history_node_t probe = self -> last;
-	history_node_t previous = probe -> previous;
-
-	/* Find the node after the first node in the unthreaded history */
-	while ((previous != NULL) && (previous -> previous != NULL))
-	{
-	    probe = previous;
-	    previous = previous -> previous;
-	}
-
-	/* Remove it and lose our reference to it */
-	probe -> previous = NULL;
-	history_node_free(previous);
-
-	/* Free references to the former first item on the threaded list */
-	history_unthread_node(self, history_get_node_threaded(self, 0));
-
 	XmListDeletePos(self -> list, 1);
     }
 
-    /* Add the string to the end of the list */
-    string = history_node_string(node, self -> is_threaded);
-    XmListAddItem(self -> list, string, history_index(self, node -> message));
-    XmStringFree(string);
+    /* Locate the oldest node in the unthreaded list */
+    probe = self -> last;
+    previous = probe -> previous;
+    while ((previous != NULL) && (previous -> previous != NULL))
+    {
+	probe = previous;
+	previous = probe -> previous;
+    }
+
+    /* Remove it from the unthreaded list */
+    probe -> previous = NULL;
+    history_node_free(previous);
+
+    /* Free references to the former first item on the threaded list */
+    history_unthread_node(self, history_get_node_threaded(self, 1));
 }
 
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message)
 {
     history_node_t node;
+
+    /* Make sure the list doesn't get too big */
+    history_remove_old(self);
 
     /* Allocate a node to hold the message */
     if ((node = history_node_alloc(message)) == NULL)
@@ -662,7 +661,12 @@ int history_add(history_t self, Message message)
     self -> last = node;
 
     /* Update the List widget */
-    history_update_list(self, node);
+    if (self -> list != NULL)
+    {
+	XmString string = history_node_string(node, self -> is_threaded);
+	XmListAddItem(self -> list, string, history_index(self, node -> message));
+	XmStringFree(string);
+    }
 
     return node -> is_killed;
 }
