@@ -28,13 +28,19 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.31 2002/04/11 15:36:13 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.32 2002/04/23 16:22:25 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#endif
+#include <stdio.h> /* fprintf, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* exit, free, malloc, realloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strlen */
+#endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
@@ -128,7 +134,7 @@ static void notify_cb(
     char *mime_type;
     char *mime_args;
     char *attachment = NULL;
-    size_t length = 0;
+    size_t length;
     char *buffer = NULL;
 
     /* If we don't have a callback than bail out now */
@@ -149,12 +155,13 @@ static void notify_cb(
     }
 
     /* Prepend `usenet:' to the beginning of the group field */
-    if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
+    length = strlen(USENET_PREFIX) + strlen(string) - 1;
+    if ((newsgroups = (char *)malloc(length)) == NULL)
     {
 	return;
     }
 
-    sprintf(newsgroups, USENET_PREFIX, string);
+    snprintf(newsgroups, length, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
     if (elvin_notification_get(notification, FROM_NAME, &type, &value, error) &&
@@ -232,17 +239,15 @@ static void notify_cb(
 		news_host = "news";
 	    }
 
-	    if ((buffer = (char *)malloc(
-		sizeof(NEWS_URL) +
-		strlen(news_host) +
-		strlen(message_id) - 4)) == NULL)
+	    length = strlen(NEWS_URL) + strlen(new_host) + strlen(message_id) - 3;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		mime_type = NULL;
 		mime_args = NULL;
 	    }
 	    else
 	    {
-		sprintf(buffer, NEWS_URL, news_host, message_id);
+		snprintf(buffer, length, NEWS_URL, news_host, message_id);
 		mime_args = buffer;
 		mime_type = NEWS_MIME_TYPE;
 	    }
@@ -255,9 +260,14 @@ static void notify_cb(
     }
 
     /* Convert the mime type and args into an attachment */
-    if (mime_type && mime_args)
+    if (mime_type == NULL || mime_args == NULL)
     {
-	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+	attachment = NULL;
+	length = 0;
+    }
+    else
+    {
+	length = strlen(ATTACHMENT_FMT) + strlen(mime_type) + strlen(mime_args) - 4;
 	if ((attachment = malloc(length + 1)) == NULL)
 	{
 	    length = 0;
@@ -271,7 +281,7 @@ static void notify_cb(
     /* Construct a message out of all of that */
     if ((message = message_alloc(
 	NULL, newsgroups, name, subject, 60,
-	attachment, length,
+	attachment, length - 1,
  	NULL, NULL, NULL)) != NULL)
     {
 	/* Deliver the message */
@@ -332,12 +342,13 @@ static void notify_cb(
     string = found ? string : "news";
 
     /* Prepend `usenet:' to the beginning of the group field */
-    if ((newsgroups = (char *)malloc(sizeof(USENET_PREFIX) + strlen(string) - 2)) == NULL)
+    length = strlen(USENET_PREFIX) + strlen(string) - 1;
+    if ((newsgroups = (char *)malloc(length)) == NULL)
     {
 	return;
     }
 
-    sprintf(newsgroups, USENET_PREFIX, string);
+    snprintf(newsgroups, length, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
     if (! elvin_notification_get_string(notification, FROM_NAME, &found, &name, error))
@@ -438,17 +449,15 @@ static void notify_cb(
 
 	    news_host = found ? news_host : "news";
 
-	    if ((buffer = (char *)malloc(
-		sizeof(NEWS_URL) +
-		strlen(news_host) +
-		strlen(message_id) - 4)) == NULL)
+	    length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		mime_type = NULL;
 		mime_args = NULL;
 	    }
 	    else
 	    {
-		sprintf(buffer, NEWS_URL, news_host, message_id);
+		snprintf(buffer, length, NEWS_URL, news_host, message_id);
 		mime_args = buffer;
 		mime_type = NEWS_MIME_TYPE;
 	    }
@@ -461,9 +470,14 @@ static void notify_cb(
     }
 
     /* Convert the mime type and args into an attachment */
-    if (mime_type && mime_args)
+    if (mime_type == NULL || mime_args == NULL)
     {
-	length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+	attachment = NULL;
+	length = 0;
+    }
+    else
+    {
+	length = strlen(ATTACHMENT_FMT) - 4 + strlen(mime_type) + strlen(mime_args);
 	if ((attachment = malloc(length + 1)) == NULL)
 	{
 	    length = 0;
@@ -500,6 +514,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     char *field_name;
     char *format;
     size_t format_length;
+    size_t length;
     char *result;
 
     /* Get the string representation for the field */
@@ -644,16 +659,14 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     }
 
     /* Allocate space for the result */
-    if ((result = (char *)malloc(
-	format_length +
-	strlen(field_name) +
-	strlen(expression -> pattern) - 4)) == NULL)
+    length = format_length + strlen(field_name) + strlen(expression -> pattern) - 3;
+    if ((result = (char *)malloc(length)) == NULL)
     {
 	return NULL;
     }
 
     /* Construct the string */
-    sprintf(result, format, field_name, expression -> pattern);
+    snprintf(result, length, format, field_name, expression -> pattern);
     return result;
 }
 
@@ -665,57 +678,53 @@ static char *alloc_sub(
     struct usenet_expr *pointer;
     char *not_string = has_not ? "!" : "";
     char *result;
-    size_t size;
+    size_t length;
 
     /* Shortcut -- if there are no expressions then we don't need parens */
     if (count == 0)
     {
-	if ((result = (char *)malloc(
-	    strlen(PATTERN_ONLY) + strlen(not_string) + strlen(pattern) - 3)) == NULL)
+	length = strlen(PATTERN_ONLY) + strlen(not_string) + strlen(pattern) - 3;
+	if ((result = (char *)malloc(length)) == NULL)
 	{
 	    return NULL;
 	}
 
-	sprintf(result, PATTERN_ONLY, not_string, pattern);
+	snprintf(result, length, PATTERN_ONLY, not_string, pattern);
 	return result;
     }
 
     /* Otherwise we have to do this the hard way.  Allocate space for
      * the initial pattern and then extend it for each of the expressions */
-    size = strlen(PATTERN_PLUS) + strlen(not_string) + strlen(pattern) - 3;
-    if ((result = (char *)malloc(size)) == NULL)
+    length = strlen(PATTERN_PLUS) + strlen(not_string) + strlen(pattern) - 3;
+    if ((result = (char *)malloc(length)) == NULL)
     {
 	return NULL;
     }
 
-    sprintf(result, PATTERN_PLUS, not_string, pattern);
+    snprintf(result, length, PATTERN_PLUS, not_string, pattern);
 
     /* Insert the expressions */
     for (pointer = expressions; pointer < expressions + count; pointer++)
     {
 	/* Get the string for the expression */
 	char *expr = alloc_expr(self, pointer);
-	size_t new_size = size + strlen(expr) + 4;
+	size_t new_length = length + strlen(expr) + 4;
 
 	/* Expand the buffer */
-	if ((result = (char *)realloc(result, new_size)) == NULL)
+	if ((result = (char *)realloc(result, new_length)) == NULL)
 	{
 	    free(expr);
 	    return NULL;
 	}
 
 	/* Overwrite the trailing right paren with the new stuff */
-	strcpy(result + size - 2, " && ");
-	strcpy(result + size + 2, expr);
-	result[new_size - 2] = ')';
-	result[new_size - 1] = '\0';
-	size = new_size;
+	snprintf(result + length - 2, new_length - length + 2, " && %s)", expr);
+	length = new_length;
 	free(expr);
     }
 
     return result;
 }
-
 
 /* Allocates and initializes a new usenet_sub_t */
 usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
@@ -783,32 +792,33 @@ int usenet_sub_add(
     /* If we had no previous expression, then simply create one */
     if (self -> expression == NULL)
     {
-	self -> expression_size = sizeof(ONE_SUB) + entry_length - 2;
+	self -> expression_size = strlen(ONE_SUB) + entry_length - 1;
 	if ((self -> expression = (char *)malloc(self -> expression_size)) == NULL)
 	{
 	    free(entry_sub);
 	    return -1;
 	}
 
-	sprintf(self -> expression, ONE_SUB, entry_sub);
+	snprintf(self -> expression, self -> expression_size, ONE_SUB, entry_sub);
     }
     /* Otherwise we need to extend the existing expression */
     else
     {
 	size_t new_size;
+	char *new_expression;
 
 	/* Expand the expression buffer */
 	new_size = self -> expression_size + entry_length + 4;
-	if ((self -> expression = (char *)realloc(self -> expression, new_size)) == NULL)
+	if ((new_expression = (char *)realloc(self -> expression, new_size)) == NULL)
 	{
 	    return -1;
 	}
 
 	/* Overwrite the trailing right paren with the new stuff */
-	strcpy(self -> expression + self -> expression_size - 2, " || ");
-	strcpy(self -> expression + self -> expression_size + 2, entry_sub);
-	self -> expression[new_size - 2] = ')';
-	self -> expression[new_size - 1] = '\0';
+	snprintf(new_expression + self -> expression_size - 2,
+		 new_size - self -> expression_size + 2,
+		 " || %s)", entry_sub);
+	self -> expression = new_expression;
 	self -> expression_size = new_size;
     }
 

@@ -28,14 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.131 2002/04/16 08:28:57 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.132 2002/04/23 16:22:23 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <assert.h>
+#endif
+#include <stdio.h> /* atoi, fprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* calloc, free, malloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memset */
+#endif
+#ifdef HAVE_ASSERT_H
+#include <assert.h> /* assert */
+#endif
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
@@ -382,10 +390,6 @@ static void glyph_free(glyph_t self)
     }
 
     /* Sanity checks */
-#if 0
-    assert(self -> previous = NULL);
-    assert(self -> next == NULL);
-#endif
     assert(self -> visible_count == 0);
 
     /* Free the message_view */
@@ -949,7 +953,7 @@ static void initialize(
     ArgList args,
     Cardinal *num_args)
 {
-    ScrollerWidget self = (ScrollerWidget) widget;
+    ScrollerWidget self = (ScrollerWidget)widget;
     glyph_holder_t holder;
 
     /* Make sure we have a width */

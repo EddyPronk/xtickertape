@@ -28,23 +28,36 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.102 2002/04/23 12:29:38 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.103 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
 #endif
-#include <pwd.h>
-#include <signal.h>
-#include <netdb.h>
-#include <sys/utsname.h>
-#include <X11/Intrinsic.h>
+#include <stdio.h> /* fprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* exit, getenv */
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> /* getopt */
+#endif
+#ifdef HAVE_GETOPT_H
+#include <getopt.h> /* getopt_long */
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h> /* getpwuid */
+#endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h> /* signal */
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h> /* gethostbyname */
+#endif
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h> /* uname */
+#endif
+#include <X11/Xlib.h> /* X.* */
+#include <X11/Intrinsic.h> /* Xt* */
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
@@ -60,6 +73,7 @@ static const char cvsid[] = "$Id: main.c,v 1.102 2002/04/23 12:29:38 phelps Exp 
 
 #define DEFAULT_DOMAIN "no.domain"
 
+#if defined(HAVE_GETOPT_LONG)
 /* The list of long options */
 static struct option long_options[] =
 {
@@ -78,6 +92,7 @@ static struct option long_options[] =
     { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, '\0' }
 };
+#endif /* GETOPT_LONG */
 
 /* Static function headers */
 static void do_quit(
@@ -90,7 +105,7 @@ static tickertape_t tickertape;
 /* The default application actions table */
 static XtActionsRec actions[] =
 {
-    {"quit", do_quit}
+    { "quit", do_quit}
 };
 
 /* Callback for when the Window Manager wants to close a window */
@@ -431,24 +446,6 @@ static void reload_subs(int signum)
     tickertape_reload_usenet(tickertape);
 }
 
-#ifndef HAVE_STRDUP
-/* Define strdup if it's not in the standard C library */
-char *strdup(const char *string)
-{
-    char *result;
-
-    /* Allocate some heap memory for the copy of the string */
-    if ((result = (char *)malloc(strlen(string) + 1)) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Copy the characters */
-    strcpy(result, string);
-    return result;
-}
-#endif /* HAVE_STRDUP */
-
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
@@ -491,7 +488,6 @@ int main(int argc, char *argv[])
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
-
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     /* Allocate an error context */
     if (! (error = elvin_error_alloc(NULL))) {

@@ -28,16 +28,25 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.18 2002/04/12 13:30:04 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.19 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <time.h>
-#include <assert.h>
+#endif
+#include <stdio.h> /* perror, printf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* free, malloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memset, strdup */
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h> /* time */
+#endif
+#ifdef HAVE_ASSERT_H
+#include <assert.h> /* assert */
+#endif
 #include "message.h"
 
 

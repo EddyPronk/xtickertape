@@ -28,14 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.10 2001/08/25 14:04:45 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.11 2002/04/23 16:22:25 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+#endif
+#include <stdio.h> /* EOF, fprintf  */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* calloc, free, malloc */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isspace */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strcmp, strdup */
+#endif
 #include "usenet_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
@@ -845,8 +853,8 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     }
 
     /* Allocate room for the expression array */
-    if ((self -> expressions = (struct usenet_expr *)malloc(
-	sizeof(struct usenet_expr) * INITIAL_EXPR_MAX)) == NULL)
+    if ((self -> expressions = (struct usenet_expr *)calloc(
+	     INITIAL_EXPR_MAX, sizeof(struct usenet_expr))) == NULL)
     {
 	free(self -> token);
 	free(self -> tag);

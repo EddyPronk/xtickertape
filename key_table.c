@@ -28,12 +28,18 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.2 2002/04/14 22:29:13 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.3 2002/04/23 16:22:23 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdlib.h>
-#include <string.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* calloc, free, malloc, realloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memcpy, memset, strcmp, strdup */
+#endif
 #include "key_table.h"
 
 #define TABLE_MIN_SIZE 8
@@ -92,7 +98,6 @@ static key_entry_t key_entry_alloc(
     /* Store the other values */
     self -> length = length;
     self -> is_private = is_private;
-
     return self;
 }
 
@@ -114,7 +119,6 @@ static void key_entry_free(key_entry_t self)
     /* Free the memory used by the key's context. */
     free(self);
 }
-
 
 struct key_table
 {
@@ -145,7 +149,7 @@ key_table_t key_table_alloc()
     /* Initialize its contents */
     self -> entries_used = 0;
     self -> entries_size = TABLE_MIN_SIZE;
-    if ((self -> entries = malloc(sizeof(key_entry_t) * self -> entries_size)) == NULL)
+    if ((self -> entries = calloc(self -> entries_size, sizeof(key_entry_t))) == NULL)
     {
         key_table_free(self);
         return NULL;
@@ -251,8 +255,8 @@ int key_table_add(
     if (! (self -> entries_size < self -> entries_used))
     {
         key_entry_t *new_entries;
-        new_entries = realloc(self -> entries, self -> entries_size * 2);
-        if (new_entries == NULL)
+
+        if ((new_entries = realloc(self -> entries, self -> entries_size * 2)) == NULL)
         {
             key_entry_free(entry);
             return -1;

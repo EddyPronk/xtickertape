@@ -28,14 +28,25 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.23 2002/04/22 10:57:30 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.24 2002/04/23 16:22:23 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+#endif
+#include <stdio.h> /* fprintf, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* atoi, free, malloc, realloc */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isdigit */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memcpy, memset, strdup, strlen */
+#endif
+#ifdef HAVE_STRINGS_H
+#include <strings.h> /* strcasecmp */
+#endif
 #include <elvin/elvin.h>
 #include <elvin/sha1.h>
 #include "key_table.h"
@@ -626,10 +637,12 @@ static int lex_menu(groups_parser_t self, int ch)
 	}
 	else
 	{
-	    char *buffer = (char *)malloc(strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1);
-	    if (buffer != NULL)
+	    size_t length = strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1;
+	    char *buffer;
+
+	    if ((buffer = (char *)malloc(length)) != NULL)
 	    {
-		sprintf(buffer, MENU_ERROR_MSG, self -> token);
+		snprintf(buffer, length, MENU_ERROR_MSG, self -> token);
 		parse_error(self, buffer);
 		free(buffer);
 	    }
@@ -684,14 +697,16 @@ static int lex_nazi(groups_parser_t self, int ch)
 	}
 	else
 	{
-	    char *buffer = (char*)malloc(strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1);
+	    size_t length = strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1;
+	    char *buffer;
 
-	    if (buffer != NULL)
+	    if ((buffer = (char *)malloc(length)) != NULL)
 	    {
-		sprintf(buffer, NAZI_ERROR_MSG, self -> token);
+		snprintf(buffer, length, NAZI_ERROR_MSG, self -> token);
 		parse_error(self, buffer);
 		free(buffer);
 	    }
+
 	    return -1;
 	}
 
@@ -824,6 +839,7 @@ static int lex_bad_time(groups_parser_t self, int ch)
     /* Watch for EOF, end of line or ':' as end of token */
     if ((ch == EOF) || (ch == '\n') || (ch == ':'))
     {
+	size_t length;
 	char *buffer;
 
 	/* Null-terminate the token */
@@ -833,10 +849,10 @@ static int lex_bad_time(groups_parser_t self, int ch)
 	}
 
 	/* Generate an error message */
-	buffer = (char *)malloc(strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1);
-	if (buffer != NULL)
+	length = strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1;
+	if ((buffer = (char *)malloc(length)) != NULL)
 	{
-	    sprintf(buffer, TIMEOUT_ERROR_MSG, self -> token);
+	    snprintf(buffer, length, TIMEOUT_ERROR_MSG, self -> token);
 	    parse_error(self, buffer);
 	    free(buffer);
 	}
@@ -954,6 +970,7 @@ static int lex_superfluous(groups_parser_t self, int ch)
     /* Watch for EOF or linefeed */
     if ((ch == EOF) || (ch == '\n'))
     {
+	size_t length;
 	char *buffer;
 
 	/* Null-terminate the token */
@@ -963,10 +980,10 @@ static int lex_superfluous(groups_parser_t self, int ch)
 	}
 
 	/* Generate an error message */
-	buffer = (char *)malloc(strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1);
-	if (buffer != NULL)
+	length = strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1;
+	if ((buffer = (char *)malloc(length)) != NULL)
 	{
-	    sprintf(buffer, EXTRA_ERROR_MSG, self -> token);
+	    snprintf(buffer, length, EXTRA_ERROR_MSG, self -> token);
 	    parse_error(self, buffer);
 	    free(buffer);
 	}
@@ -1002,9 +1019,6 @@ static int parse_char(groups_parser_t self, int ch)
 
     return 0;
 }
-
-
-
 
 /* Allocates and initializes a new groups file parser */
 groups_parser_t groups_parser_alloc(
@@ -1079,4 +1093,3 @@ int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
 
     return 0;
 }
-

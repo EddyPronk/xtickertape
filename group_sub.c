@@ -28,14 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.39 2002/04/14 22:33:15 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.40 2002/04/23 16:22:23 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#endif
+#include <stdio.h> /* exit, fprintf, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* abort, atoi, exit, free, malloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memcpy, memset, strcpy, strlen */
+#endif
+#ifdef HAVE_ASSERT_H
+#include <assert.h> /* assert */
+#endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include "group_sub.h"
@@ -117,14 +125,11 @@ struct group_sub
 };
 
 
-
-
 /*
  *
  * Static functions
  *
  */
-
 
 #if ! defined(ELVIN_VERSION_AT_LEAST)    
 /* Delivers a notification which matches the receiver's subscription expression */

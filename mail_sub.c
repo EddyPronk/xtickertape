@@ -28,13 +28,19 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.30 2002/04/11 15:36:12 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.31 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#endif
+#include <stdio.h> /* exit, fprintf, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* exit, free, malloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strdup, strlen */
+#endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
@@ -92,6 +98,7 @@ static void notify_cb(
     char *folder;
     char *subject;
     char *buffer = NULL;
+    size_t length;
 
     /* Get the name from the `From' field */
     if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
@@ -122,9 +129,10 @@ static void notify_cb(
 	folder = value.s;
 
 	/* Format the folder name to use as the group */
-	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
+	length = strlen(FOLDER_FMT) + strlen(folder) - 1
+	if ((buffer = (char *)malloc(length)) != NULL)
 	{
-	    sprintf(buffer, FOLDER_FMT, folder);
+	    snprintf(buffer, length, FOLDER_FMT, folder);
 	    folder = buffer;
 	}
     }
@@ -177,6 +185,7 @@ static void notify_cb(
     char *folder;
     char *subject;
     char *buffer = NULL;
+    size_t length;
     int found;
 
     /* Get the name from the `From' field */
@@ -217,9 +226,10 @@ static void notify_cb(
     else
     {
 	/* Format the folder name to use as the group */
-	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
+	length = strlen(FOLDER_FMT) + strlen(folder) - 1;
+	if ((buffer = (char *)malloc(length)) != NULL)
 	{
-	    sprintf(buffer, FOLDER_FMT, folder);
+	    snprintf(buffer, length, FOLDER_FMT, folder);
 	    folder = buffer;
 	}
     }
@@ -333,14 +343,16 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
     /* Subscribe using the new handle */
     if (self -> handle != NULL)
     {
+	size_t length;
 	char *buffer;
 
-	if ((buffer = (char *)malloc(strlen(MAIL_SUB) + strlen(self -> user) - 1)) == NULL)
+	length = strlen(MAIL_SUB) + strlen(self -> user) - 1;
+	if ((buffer = (char *)malloc(length)) == NULL)
 	{
 	    return;
 	}
 
-	sprintf(buffer, MAIL_SUB, self -> user);
+	snprintf(buffer, length, MAIL_SUB, self -> user);
 
 	/* Subscribe to elvinmail notifications */
 	if (elvin_async_add_subscription(

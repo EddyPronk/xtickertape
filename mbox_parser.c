@@ -28,13 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.7 2001/08/25 14:04:43 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.8 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
+#endif
+#include <stdio.h> /* fprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* free, malloc, realloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strlen */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isspace */
+#endif
 #include "mbox_parser.h"
 
 /* The type of a lexer state */
@@ -427,9 +436,6 @@ static int lex_domain_lit_esc(mbox_parser_t self, int ch)
     return 0;
 }
 
-
-
-
 /*
  * Allocates a new RFC-822 mailbox parser.  This takes a strings as
  * input, which it parses as a mailbox (commented e-mail address) into 
@@ -444,7 +450,7 @@ mbox_parser_t mbox_parser_alloc()
     mbox_parser_t self;
 
     /* Allocate memory for the new mbox_parser */
-    if ((self = (mbox_parser_t) malloc(sizeof(struct mbox_parser))) == NULL)
+    if ((self = (mbox_parser_t)malloc(sizeof(struct mbox_parser))) == NULL)
     {
 	return NULL;
     }

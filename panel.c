@@ -28,18 +28,25 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.66 2002/04/21 13:42:11 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.67 2002/04/23 16:22:25 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#include <time.h>
-#include <pwd.h>
+#endif
+#include <stdio.h> /* snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* abort, atoi, free, malloc */
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h> /* gmtime */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memset, strcmp */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isprint */
+#endif
 #include <elvin/elvin.h>
 #include "panel.h"
 
@@ -54,6 +61,9 @@ static const char cvsid[] = "$Id: panel.c,v 1.66 2002/04/21 13:42:11 phelps Exp 
 
 /* The UUIDs we generate will need this many bytes */
 #define UUID_SIZE (ELVIN_SHA1DIGESTLEN * 2 + 1)
+
+/* The maximum size of the message-id pre-digested string */
+#define PREDIGEST_ID_SIZE 32
 
 #define BUFFER_SIZE 1024
 #define ATTACHMENT_FMT \
@@ -1273,7 +1283,7 @@ static char *get_mime_args(control_panel_t self)
  * should point to a buffer of UUID_SIZE bytes. */
 void create_uuid(control_panel_t self, char *result)
 {
-    char buffer[32];
+    char buffer[PREDIGEST_ID_SIZE];
     time_t now;
     struct tm *tm_gmt;
     char digest[ELVIN_SHA1DIGESTLEN];
@@ -1290,7 +1300,8 @@ void create_uuid(control_panel_t self, char *result)
     tm_gmt = gmtime(&now);
 
     /* Construct the UUID */
-    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%08lx-%04x-%02x",
+    snprintf(buffer, PREDIGEST_ID_SIZE,
+	     "%04x%02x%02x%02x%02x%02x-%08lx-%04x-%02x",
 	    tm_gmt -> tm_year + 1900, tm_gmt -> tm_mon + 1, tm_gmt -> tm_mday,
 	    tm_gmt -> tm_hour, tm_gmt -> tm_min, tm_gmt -> tm_sec,
 	    (long)gethostid(), (int)getpid(), self -> uuid_count);
@@ -1319,6 +1330,7 @@ void create_uuid(control_panel_t self, char *result)
 	result[index * 2] = hex_chars[ch >> 4];
 	result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
+
     result[ELVIN_SHA1DIGESTLEN * 2] = '\0';
 }
 
@@ -1421,20 +1433,22 @@ static void action_clear(Widget button, control_panel_t self, XtPointer ignored)
 {
     char *user;
     char *domain;
+    size_t length;
     char *buffer;
 
     /* Set the user to be `user@domain' unless domain is the empty
      * string, in which case we just use `user' */
     user = tickertape_user_name(self -> tickertape);
     domain = tickertape_domain_name(self -> tickertape);
-    if (*domain == '\0' ||
-	(buffer = (char *)malloc(sizeof(USER_FMT) + strlen(user) + strlen(domain) - 4)) == NULL)
+    length = strlen(USER_FMT) + strlen(user) + strlen(domain) - 3;
+
+    if (*domain == '\0' || (buffer = (char *)malloc(length)) == NULL)
     {
 	set_user(self, user);
     }
     else
     {
-	sprintf(buffer, USER_FMT, user, domain);
+	snprintf(buffer, length, USER_FMT, user, domain);
 	set_user(self, buffer);
 	free(buffer);
     }
@@ -1506,7 +1520,6 @@ void control_panel_free(control_panel_t self)
 {
     free(self);
 }
-
 
 /* Show a status message in the status bar */
 static void show_status(control_panel_t self, char *message)
@@ -1730,7 +1743,6 @@ void *control_panel_add_subscription(
     return tuple;
 }
 
-
 /* Removes a subscription from the receiver (tuple was returned by addSubscription) */
 void control_panel_remove_subscription(control_panel_t self, void *info)
 {
@@ -1833,6 +1845,7 @@ void control_panel_set_index(control_panel_t self, void *info, int index)
 	XmNnumChildren, &num_children,
 	XmNchildren, &children,
 	NULL);
+
     for (child = children; child < children + num_children; child++)
     {
 	menu_item_tuple_t child_tuple;

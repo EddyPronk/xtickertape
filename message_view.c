@@ -28,14 +28,22 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.13 2002/04/04 12:32:16 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.14 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#endif
+#include <stdio.h> /* perror, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* exit, free, malloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* memset */
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h> /* localtime */
+#endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "message.h"
@@ -375,9 +383,10 @@ message_view_t message_view_alloc(
     }
 
     /* Convert that into a string */
-    sprintf(self -> timestamp, TIMESTAMP_FORMAT,
-	    ((timestamp -> tm_hour + 11) % 12) + 1,
-	    timestamp -> tm_min,
+    snprintf(self -> timestamp, TIMESTAMP_SIZE,
+	     TIMESTAMP_FORMAT,
+	     ((timestamp -> tm_hour + 11) % 12) + 1,
+	     timestamp -> tm_min,
 	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
 
     /* Measure the width of the string to use for noon */
@@ -592,4 +601,3 @@ void message_view_paint(
 	self -> underline_thickness, self -> underline_position);
     x += self -> message_sizes.width;
 }
-

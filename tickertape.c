@@ -28,18 +28,37 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.91 2002/04/14 22:33:17 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.92 2002/04/23 16:22:25 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
+#endif
+#include <stdio.h> /* fclose, fopen, fprintf, fputc, fputs, perror, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* exit, free, getenv, malloc, realloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strcat, strcmp, strcpy, strdup, strlen, strrchr */
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h> /* fork, mkdir, open, stat, waitpid */
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h> /* mkdir, open, stat */
+#endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h> /* waitpid */
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h> /* open */
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> /* close, dup2, execl, fork, pipe, read, stat, write */
+#endif
+#ifdef HAVE_ERRNO_H
+#include <errno.h> /* errno */
+#endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
@@ -454,17 +473,18 @@ static int parse_groups_callback(
     elvin_keys_t notification_keys,
     elvin_keys_t subscription_keys)
 {
+    size_t length;
     char *expression;
     group_sub_t subscription;
 
     /* Construct the subscription expression */
-    if ((expression = (char *)malloc(
-	strlen(GROUP_SUB) + 2 * strlen(name) - 3)) == NULL)
+    length = strlen(GROUP_SUB) + 2 * strlen(name) - 3;
+    if ((expression = (char *)malloc(length)) == NULL)
     {
 	return -1;
     }
 
-    sprintf(expression, GROUP_SUB, name, name);
+    snprintf(expression, length, GROUP_SUB, name, name);
 
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
@@ -706,8 +726,7 @@ static int find_group(group_sub_t *groups, int count, char *expression)
 
     for (pointer = groups; pointer < groups + count; pointer++)
     {
-	if (*pointer != NULL && 
-	    strcmp(group_sub_expression(*pointer), expression) == 0)
+	if (*pointer != NULL && strcmp(group_sub_expression(*pointer), expression) == 0)
 	{
 	    return pointer - groups;
 	}
@@ -918,6 +937,7 @@ static void status_cb(
 {
     tickertape_t self = (tickertape_t)rock;
     message_t message;
+    size_t length;
     char *buffer = NULL;
     char *string;
 
@@ -938,12 +958,13 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, True);
 	    
 	    /* Make room for a combined string and URL */
-	    if ((buffer = (char *)malloc(sizeof(CONNECT_MSG) + strlen(url) - 2)) == NULL)
+	    length = strlen(CONNECT_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, CONNECT_MSG, url);
+	    snprintf(buffer, length, CONNECT_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -954,12 +975,13 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a combined string and URL */
-	    if ((buffer = (char *)malloc(sizeof(LOST_CONNECT_MSG) + strlen(url) - 2)) == NULL)
+	    length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, LOST_CONNECT_MSG, url);
+	    snprintf(buffer, length, LOST_CONNECT_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -970,12 +992,13 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a message string */
-	    if ((buffer = (char *)malloc(sizeof(CONN_CLOSED_MSG) + strlen(url) - 2)) == NULL)
+	    length = strlen(CONN_CLOSED_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, CONN_CLOSED_MSG, url);
+	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -1017,12 +1040,13 @@ static void status_cb(
 	    control_panel_set_connected(self -> control_panel, False);
 
 	    /* Make room for a message string */
-	    if ((buffer = (char *)malloc(sizeof(PROTOCOL_ERROR_MSG) + strlen(url) - 2)) == NULL)
+	    length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
+	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		return;
 	    }
 
-	    sprintf(buffer, PROTOCOL_ERROR_MSG, url);
+	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
 	    string = buffer;
 	    break;
 	}
@@ -1043,8 +1067,9 @@ static void status_cb(
 
 	default:
 	{
-	    buffer = (char *)malloc(sizeof(UNKNOWN_STATUS_MSG) + 11);
-	    sprintf(buffer, UNKNOWN_STATUS_MSG, event);
+	    length = sizeof(UNKNOWN_STATUS_MSG) + 16;
+	    buffer = (char *)malloc(length);
+	    snprintf(buffer, length, UNKNOWN_STATUS_MSG, event);
 	    string = buffer;
 	    break;
 	}
@@ -1681,7 +1706,7 @@ tickertape_t tickertape_alloc(
     tickertape_t self;
 
     /* Allocate some space for the new tickertape */
-    if ((self = (tickertape_t) malloc(sizeof(struct tickertape))) == NULL)
+    if ((self = (tickertape_t)malloc(sizeof(struct tickertape))) == NULL)
     {
 	return NULL;
     }
@@ -1864,6 +1889,7 @@ void tickertape_quit(tickertape_t self)
 static char *tickertape_ticker_dir(tickertape_t self)
 {
     char *dir;
+    size_t length;
 
     /* See if we've already looked it up */
     if (self -> ticker_dir != NULL)
@@ -1885,8 +1911,9 @@ static char *tickertape_ticker_dir(tickertape_t self)
 	}
 
 	/* And append /.ticker to the end of it */
-	self -> ticker_dir = (char *)malloc(strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2);
-	sprintf(self -> ticker_dir, "%s/%s", dir, DEFAULT_TICKERDIR);
+	length = strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2;
+	self -> ticker_dir = (char *)malloc(length);
+	snprintf(self -> ticker_dir, length, "%s/%s", dir, DEFAULT_TICKERDIR);
     }
 
     /* Make sure the TICKERDIR exists 
@@ -1908,6 +1935,7 @@ static char *tickertape_config_filename(tickertape_t self)
     if (self -> config_file == NULL)
     {
 	char *dir = tickertape_ticker_dir(self);
+
 	self -> config_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
 	sprintf(self -> config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
     }
@@ -1922,10 +1950,15 @@ static char *tickertape_groups_filename(tickertape_t self)
     if (self -> groups_file == NULL)
     {
 	char *dir = tickertape_ticker_dir(self);
-	self -> groups_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
-	strcpy(self -> groups_file, dir);
-	strcat(self -> groups_file, "/");
-	strcat(self -> groups_file, DEFAULT_GROUPS_FILE);
+	size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
+
+	if ((self -> groups_file = (char *)malloc(length)) == NULL)
+	{
+	    perror("unable to allocate memory");
+	    exit(1);
+	}
+
+	snprintf(self -> groups_file, length, "%s/%s", dir, DEFAULT_GROUPS_FILE);
     }
 
     return self -> groups_file;
@@ -1937,10 +1970,15 @@ static char *tickertape_usenet_filename(tickertape_t self)
     if (self -> usenet_file == NULL)
     {
 	char *dir = tickertape_ticker_dir(self);
-	self -> usenet_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
-	strcpy(self -> usenet_file, dir);
-	strcat(self -> usenet_file, "/");
-	strcat(self -> usenet_file, DEFAULT_USENET_FILE);
+	size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
+
+	if ((self -> usenet_file = (char *)malloc(length)) == NULL)
+	{
+	    perror("unable to allocate memory");
+	    exit(1);
+	}
+
+	snprintf(self -> usenet_file, length, "%s/%s", dir, DEFAULT_USENET_FILE);
     }
 
     return self -> usenet_file;
@@ -1955,7 +1993,12 @@ static char *tickertape_keys_filename(tickertape_t self)
 	size_t length;
 
 	length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
-	self -> keys_file = (char *)malloc(length);
+	if ((self -> keys_file = (char *)malloc(length)) == NULL)
+	{
+	    perror("unable to allocate memory");
+	    exit(1);
+	}
+
 	snprintf(self -> keys_file, length, "%s/%s", dir, DEFAULT_KEYS_FILE);
     }
 
@@ -1966,7 +2009,7 @@ static char *tickertape_keys_filename(tickertape_t self)
 /* Displays a message's MIME attachment */
 int tickertape_show_attachment(tickertape_t self, message_t message)
 {
-#ifdef METAMAIL
+#if defined(METAMAIL) && defined(HAVE_DUP2) && defined(HAVE_FORK)
     char *attachment;
     size_t count;
     char *pointer;
@@ -1978,7 +2021,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     /* If the message has no attachment then we're done */
     if ((count = message_get_attachment(message, &attachment)) == 0)
     {
-#ifdef DEBUG
+#if defined(DEBUG)
 	printf("no attachment\n");
 #endif /* DEBUG */
 	return -1;
@@ -2062,7 +2105,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     {
 	return 0;
     }
-#ifdef DEBUG
+#if defined(DEBUG)
     /* Did it exit badly? */
     if (WIFEXITED(status))
     {
@@ -2072,7 +2115,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 
     fprintf(stderr, METAMAIL " died badly\n");
 #endif
-#endif /* METAMAIL */
+#endif /* METAMAIL & DUP2 & FORK */
 
     return -1;
 }

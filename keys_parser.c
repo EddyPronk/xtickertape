@@ -28,19 +28,40 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.2 2002/04/14 22:29:47 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.3 2002/04/23 16:22:24 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#endif
+#include <stdio.h> /* fprintf, snprintf */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* free, malloc, realloc */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strdup, strlen */
+#endif
+#ifdef HAVE_STRINGS_H
+#include <strings.h> /* strcasecmp */
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h> /* close, fstat, read */
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h> /* fstat, open */
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h> /* fstat, open */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isspace */
+#endif
+#ifdef HAVE_ERRNO_H
+#include <errno.h> /* errno, strerror */
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h> /* open */
+#endif
 #include "keys_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
@@ -118,7 +139,7 @@ static void parse_error(keys_parser_t self, char *message)
 /* Calls the callback with the given key */
 static int accept_key(keys_parser_t self)
 {
-    int result;
+    int result = 1;
 
     if (! self -> is_inline)
     {
@@ -129,13 +150,13 @@ static int accept_key(keys_parser_t self)
         if ((fd = open(self -> key_data, O_RDONLY)) < 0)
         {
             char *error_string = strerror(errno);
+	    size_t length;
 	    char *buffer;
 
-	    if ((buffer = (char *)malloc(strlen(FILE_ERROR_MSG)
-					 + strlen(self -> token)
-					 + strlen(error_string) - 1)) != NULL)
+	    length = strlen(FILE_ERROR_MSG) + strlen(self -> token) + strlen(error_string) - 1;
+	    if ((buffer = (char *)malloc(length)) != NULL)
 	    {
-		sprintf(buffer, FILE_ERROR_MSG, self -> token, error_string);
+		snprintf(buffer, length, FILE_ERROR_MSG, self -> token, error_string);
 		parse_error(self, buffer);
 		free(buffer);
 	    }
@@ -171,7 +192,8 @@ static int accept_key(keys_parser_t self)
     if (self -> is_hex)
     {
         char *hex;
-        int hex_index, binary_index, value, first_nibble;
+        int hex_index, binary_index, first_nibble;
+	int value = 0;
 
         /* Move the hex data aside so we can store the real data. */
         hex = self -> key_data;
@@ -459,11 +481,13 @@ static int lex_type(keys_parser_t self, int ch)
 	}
 	else
 	{
-	    char *buffer = (char *)malloc(strlen(TYPE_ERROR_MSG)
-                                          + strlen(self -> token) - 1);
-	    if (buffer != NULL)
+	    size_t length;
+	    char *buffer;
+
+	    length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
+	    if ((buffer = (char *)malloc(TYPE_ERROR_MSG)) != NULL)
 	    {
-		sprintf(buffer, TYPE_ERROR_MSG, self -> token);
+		snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
 		parse_error(self, buffer);
 		free(buffer);
 	    }
@@ -525,15 +549,17 @@ static int lex_format(keys_parser_t self, int ch)
         }
 	else
 	{
-	    char *buffer = (char*)malloc(strlen(FORMAT_ERROR_MSG)
-                                         + strlen(self -> token) - 1);
+	    size_t length;
+	    char *buffer;
 
-	    if (buffer != NULL)
+	    length = strlen(FORMAT_ERROR_MSG) + strlen(self -> token) - 1;
+	    if ((buffer = (char*)malloc(length)) != NULL)
 	    {
-		sprintf(buffer, FORMAT_ERROR_MSG, self -> token);
+		snprintf(buffer, length, FORMAT_ERROR_MSG, self -> token);
 		parse_error(self, buffer);
 		free(buffer);
 	    }
+
 	    return -1;
 	}
 
@@ -608,8 +634,10 @@ static int parse_char(keys_parser_t self, int ch)
 }
 
 /* Allocates and initializes a new keys file parser */
-keys_parser_t keys_parser_alloc(keys_parser_callback_t callback,
-                                void *rock, char *tag)
+keys_parser_t keys_parser_alloc(
+    keys_parser_callback_t callback,
+    void *rock,
+    char *tag)
 {
     keys_parser_t self;
 
