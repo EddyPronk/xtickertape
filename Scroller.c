@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.12 1999/05/06 00:34:32 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.13 1999/05/17 12:56:30 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -148,6 +148,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
 static void Rotate(ScrollerWidget self);
 static void Redisplay(Widget widget, XEvent *event, Region region);
+static void Paint(ScrollerWidget self);
 static void Destroy(Widget widget);
 static void Resize(Widget widget);
 static Boolean SetValues(
@@ -278,7 +279,6 @@ static MessageView ViewHolder_view(ViewHolder self)
 /* Displays a ViewHolder */
 static void ViewHolder_redisplay(ViewHolder self, void *context[])
 {
-    ScrollerWidget widget = (ScrollerWidget) context[0];
     Drawable drawable = (Drawable) context[1];
     int x = (int) context[2];
     int y = (int) context[3];
@@ -287,15 +287,8 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
     {
 	MessageView_redisplay(self -> view, drawable, x, y);
     }
-    else /* Fill the background color */
-    {
-	XFillRectangle(
-	    XtDisplay(widget), drawable, widget -> scroller.backgroundGC,
-	    x, y, self -> width, widget -> core.height);
-    }
 
     context[2] = (void *)(x + self -> width);
-    XFlush(XtDisplay(widget));
 }
 
 /* Locates the Message at the given offset */
@@ -400,6 +393,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     ScrollerWidget self = (ScrollerWidget) widget;
 
     Rotate(self);
+    Paint(self);
     Redisplay((Widget)self, NULL, 0);
     SetClock(self);
 }
@@ -503,12 +497,6 @@ GC ScGCForSeparator(ScrollerWidget self, int level)
     return self -> scroller.gc;
 }
 
-/* Answers a GC to be used to draw things in the background color */
-GC ScGCForBackground(ScrollerWidget self)
-{
-    return self -> scroller.backgroundGC;
-}
-
 /* Answers the XFontStruct to be use for displaying the group */
 XFontStruct *ScFontForGroup(ScrollerWidget self)
 {
@@ -543,15 +531,6 @@ XFontStruct *ScFontForSeparator(ScrollerWidget self)
 Dimension ScGetFadeLevels(ScrollerWidget self)
 {
     return self -> scroller.fadeLevels;
-}
-
-/* Answers a Pixmap of the given width */
-Pixmap ScCreatePixmap(ScrollerWidget self, unsigned int width, unsigned int height)
-{
-    Pixmap pixmap;
-    pixmap = XCreatePixmap(XtDisplay(self), XtWindow(self), width, height, self -> core.depth);
-    XFillRectangle(XtDisplay(self), pixmap, ScGCForBackground(self), 0, 0, width, height);
-    return pixmap;
 }
 
 /* Sets a timer to go off in interval milliseconds */
@@ -622,6 +601,15 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
     /* Create a window and couple graphics contexts */
     XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
     CreateGC(self);
+
+    /* Create an offscreen pixmap */
+    self -> scroller.pixmap = XCreatePixmap(
+	XtDisplay(self), XtWindow(self),
+	self -> core.width, self -> core.height,
+	self -> core.depth);
+
+    /* Clear the offscreen pixmap to the background color */
+    Paint(self);
 
     /* Allocate colors */
     self -> scroller.groupPixels = CreateFadedColors(
@@ -733,24 +721,36 @@ static void Rotate(ScrollerWidget self)
 }
 
 
-/* ARGSUSED */
+/* Repaints all of the ViewHolders' views */
+static void Paint(ScrollerWidget self)
+{
+    Widget widget = (Widget)self;
+    void *context[4];
+
+    /* Reset the pixmap to the background color */
+    XFillRectangle(
+	XtDisplay(widget), self -> scroller.pixmap, self -> scroller.backgroundGC,
+	0, 0, self -> core.width, self -> core.height);
+
+    /* Draw each of the visible ViewHolders */
+    context[0] = (void *)widget;
+    context[1] = (void *)self -> scroller.pixmap;
+    context[2] = (void *)(-self -> scroller.offset);
+    context[3] = (void *)0;
+    List_doWith(self -> scroller.holders, ViewHolder_redisplay, context);
+}
+
 /* Repaints all of the ViewHolders' views */
 static void Redisplay(Widget widget, XEvent *event, Region region)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
-    void *context[4];
 
-#ifdef DEBUG
-    /* Fill in any areas that aren't redrawn so we can spot redisplay bugs... */
-    XFillRectangle(
-	XtDisplay(widget), XtWindow(self), self -> scroller.gc,
-	0, 0, self -> core.width, self -> core.height);
-#endif /* 0 */
-    context[0] = (void *)widget;
-    context[1] = (void *)XtWindow(self);
-    context[2] = (void *)(0 - self -> scroller.offset);
-    context[3] = (void *)0;
-    List_doWith(self -> scroller.holders, ViewHolder_redisplay, context);
+    /* Copy the pixmap to the window */
+    XCopyArea(
+	XtDisplay(self), self -> scroller.pixmap,
+	XtWindow(self), self -> scroller.backgroundGC,
+	0, 0, self -> core.width, self -> core.height, 0, 0);
+    XFlush(XtDisplay(widget));
 }
 
 /* FIX THIS: should actually do something? */
@@ -800,11 +800,21 @@ static void Resize(Widget widget)
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
 
+    /* Update our offscreen pixmap */
+    XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
+    self -> scroller.pixmap = XCreatePixmap(
+	XtDisplay(widget), XtWindow(widget),
+	self -> core.width, self -> core.height,
+	self -> core.depth);
+
+    /* Update the size of the placeholder */
     List_doWithWith(self -> scroller.holders, ViewHolder_Resize, self, &x);
 
     /* Make sure we have the right number of things visible */
     OutWithTheOld(self);
     InWithTheNew(self);
+
+    Paint(self);
 }
 
 /* What should this do? */
