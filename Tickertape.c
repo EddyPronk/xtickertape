@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.20 1998/05/09 06:19:45 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.21 1998/05/13 07:17:08 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -233,16 +233,21 @@ static void ViewHolder_free(ViewHolder self)
 /* Displays a ViewHolder */
 static void ViewHolder_redisplay(ViewHolder self, void *context[])
 {
-    Drawable drawable = (Drawable)context[0];
-    int x = (int)context[1];
-    int y = (int)context[2];
+    TickertapeWidget widget = (TickertapeWidget) context[0];
+    Drawable drawable = (Drawable) context[1];
+    int x = (int) context[2];
+    int y = (int) context[3];
 
     if (self -> view)
     {
 	MessageView_redisplay(self -> view, drawable, x, y);
     }
+    else /* Fill the background color */
+    {
+	XFillRectangle(XtDisplay(widget), drawable, widget -> tickertape.backgroundGC, x, y, self -> width, widget -> core.height);
+    }
 
-    context[1] = (void *)(x + self -> width);
+    context[2] = (void *)(x + self -> width);
 }
 
 /* Locates the Message at the given offset */
@@ -275,6 +280,10 @@ static void CreateGC(TickertapeWidget self)
 
     values.font = self -> tickertape.font -> fid;
     values.background = self -> core.background_pixel;
+    values.foreground = self -> core.background_pixel;
+    self -> tickertape.backgroundGC = XCreateGC(
+	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
+	GCFont | GCBackground | GCForeground, &values);
     self -> tickertape.gc = XCreateGC(
 	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
 	GCFont | GCBackground, &values);
@@ -447,11 +456,7 @@ GC TtGCForSeparator(TickertapeWidget self, int level)
 /* Answers a GC to be used to draw things in the background color */
 GC TtGCForBackground(TickertapeWidget self)
 {
-    XGCValues values;
-
-    values.foreground = self -> core.background_pixel;
-    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
-    return self -> tickertape.gc;
+    return self -> tickertape.backgroundGC;
 }
 
 /* Answers the XFontStruct to be use for displaying the group */
@@ -644,11 +649,12 @@ static void Rotate(TickertapeWidget self)
 static void Redisplay(Widget widget, XEvent *event, Region region)
 {
     TickertapeWidget self = (TickertapeWidget)widget;
-    void *context[3];
+    void *context[4];
 
-    context[0] = (void *)XtWindow(self);
-    context[1] = (void *)(0 - self -> tickertape.offset);
-    context[2] = (void *)0;
+    context[0] = (void *)widget;
+    context[1] = (void *)XtWindow(self);
+    context[2] = (void *)(0 - self -> tickertape.offset);
+    context[3] = (void *)0;
     List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
 }
 

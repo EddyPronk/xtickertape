@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.9 1997/02/24 01:14:33 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.10 1998/05/13 07:17:22 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -49,6 +49,7 @@ typedef struct
     long visibleWidth;
     unsigned int nextVisible;
     unsigned int realCount;
+    GC backgroundGC;
     GC gc;
     Pixel *groupPixels;
     Pixel *userPixels;
