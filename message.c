@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.23 2003/01/27 17:50:42 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.24 2004/05/28 12:09:21 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -429,6 +429,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 	    if (*point == '\r' && point + 1 < end && *(point + 1) == '\n')
 	    {
 		mark = point + 2;
+		point++;
 	    }
 	    else
 	    {
