@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.52 2001/08/25 14:04:44 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.53 2001/10/05 14:58:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1193,7 +1193,7 @@ static void select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignor
     if (self -> selection != tuple)
     {
 	self -> selection = tuple;
-/*	XmListDeselectAllItems(self -> history); */
+	HistorySelect(self -> history, NULL);
     }
 
     /* Changing the group prevents a reply */
@@ -1350,7 +1350,7 @@ char *create_uuid(control_panel_t self)
 
     /* Construct a SHA1 digest of the UUID, which should be just as
      * unique but should make it much harder to track down the sender */
-    if (! elvin_sha1digest(buffer, 31, digest))
+    if (! elvin_sha1digest(buffer, 31, digest, NULL))
     {
 	return NULL;
     }
