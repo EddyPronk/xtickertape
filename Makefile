@@ -2,7 +2,7 @@
 # Makefile for Tickertape
 #
 
-TICKERTAPE = tickertape
+TICKERTAPE = xtickertape
 CONNECTION = ElvinConnection.o
 
 ALL = $(TICKERTAPE) 
