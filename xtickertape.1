@@ -66,7 +66,7 @@ some idea of how old they are.  You may specify minimum and maximum
 timeouts for a given group in your \fIgroups\fP file.  You may also
 delete notifications before they timeout by clicking on them with the
 right mouse button (or by placing the pointer on them and pressing the 
-"d" key).
+'d' key).
 .PP
 In addition to these four attributes, notifications may also include
 MIME attachment (typically a URL).  If they do, they will be
@@ -76,6 +76,11 @@ inclined, you may specify in your \fIgroups\fP file that any
 notification with a MIME attachment sent to a given group should
 automatically be displayed, thus saving you the trouble of clicking on 
 it.
+.PP
+The scrolling speed of the tickertape can be adjusted with the '-' and 
+'=' keys.  These increment and decrement the number of pixels a
+message should move each time the scroller is updated (see the
+\fBstepSize()\fP resource below).
 .PP
 To send a notification you should bring up the \fIcontrol panel\fP
 window.  This is done by clicking in the \*(xt window with the left
@@ -88,7 +93,7 @@ message.
 The control panel also allows you to tell \*(xt to re-read your
 \fIgroups\fP or \fIusenet\fP files if you have changed them since you
 started \*(xt from the File menu.  You may also exit the program from
-this menu (or by pressing the "q" key in the scroller window).
+this menu (or by pressing the 'q' key in the scroller window).
 .SH RESOURCES
 \*(Xt understands all of the core X Toolkit and Motif resource names
 and classes.  Additionally, the Scroller widget understands the
@@ -138,6 +143,26 @@ Displays the MIME attachment of the notification under the pointer.
 .TP
 .B delete()
 Deletes the notification under the pointer.
+.TP
+.B faster()
+Increases the step size of the scroller, making messages scroll more
+quickly.
+.TP
+.B slower()
+Decreases the step size of the scroller, making message scroll more
+slowly.
+.PP
+For example, to bind the left mouse button to
+.B delete()
+and the 'm' key to
+.B menu()
+put something like the following in your .Xdefaults (or
+equivalent) file:
+.TP
+Tickertape.scroller.translations: #override \en\e
+<Btn1Down>: delete() \en\e
+.br
+<Key>m: menu() \en
 .SH ENVIRONMENT VARIABLES
 If
 .B TICKERDIR
