@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.9 1999/01/21 00:07:34 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.10 1999/01/21 00:46:03 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -114,6 +114,7 @@ static XtResource resources[] =
 static void Menu(Widget widget, XEvent *event);
 static void DecodeMime(Widget widget, XEvent *event);
 static void Delete(Widget widget, XEvent *event);
+static void Kill(Widget widget, XEvent *event);
 static void Faster(Widget widget, XEvent *event);
 static void Slower(Widget widget, XEvent *event);
 
@@ -125,6 +126,7 @@ static XtActionsRec actions[] =
     { "menu", (XtActionProc)Menu },
     { "decodeMime", (XtActionProc)DecodeMime },
     { "delete", (XtActionProc)Delete },
+    { "kill", (XtActionProc)Kill },
     { "faster", (XtActionProc)Faster },
     { "slower", (XtActionProc)Slower }
 };
@@ -135,7 +137,8 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
+    "<Btn1Down>: menu()\n\
+<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>x: kill()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
 };
 
 
@@ -224,6 +227,7 @@ typedef struct ViewHolder_t
 
 static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
 static void ViewHolder_free(ViewHolder self);
+static MessageView ViewHolder_view(ViewHolder self);
 static void ViewHolder_redisplay(ViewHolder self, void *context[]);
 
 static void CreateGC(ScrollerWidget self);
@@ -266,6 +270,13 @@ static void ViewHolder_free(ViewHolder self)
     free(self);
 }
 
+
+/* Answers the receiver's MessageView */
+static MessageView ViewHolder_view(ViewHolder self)
+{
+    return self -> view;
+}
+
 /* Displays a ViewHolder */
 static void ViewHolder_redisplay(ViewHolder self, void *context[])
 {
@@ -274,7 +285,7 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
     int x = (int) context[2];
     int y = (int) context[3];
 
-    if (self -> view)
+    if (self -> view != NULL)
     {
 	MessageView_redisplay(self -> view, drawable, x, y);
     }
@@ -290,19 +301,16 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
 }
 
 /* Locates the Message at the given offset */
-static void ViewHolder_locate(ViewHolder self, long *x, MessageView *view_return)
+static int ViewHolder_locate(ViewHolder self, long *x)
 {
     if (*x < 0)
     {
-	return;
+	return 0;
     }
 
     *x -= self -> width;
 
-    if (*x < 0)
-    {
-	*view_return = self -> view;
-    }
+    return (*x < 0);
 }
 
 
@@ -433,11 +441,22 @@ static void EnqueueViewHolder(ScrollerWidget self, ViewHolder holder)
 }
 
 /* Removes a ViewHolder from the receiver */
-static ViewHolder DequeueViewHolder(ScrollerWidget self)
+static ViewHolder RemoveViewHolder(ScrollerWidget self, ViewHolder holder)
 {
-    ViewHolder holder = List_dequeue(self -> scroller.holders);
+    /* Remove the holder from the list (and make sure it was there) */
+    if (List_remove(self -> scroller.holders, holder) == NULL)
+    {
+	return NULL;
+    }
+
     self -> scroller.visibleWidth -= holder -> width;
     return holder;
+}
+
+/* Removes a ViewHolder from the receiver */
+static ViewHolder DequeueViewHolder(ScrollerWidget self)
+{
+    return RemoveViewHolder(self, List_first(self -> scroller.holders));
 }
 
 
@@ -818,38 +837,42 @@ static XtGeometryResult QueryGeometry(
 }
 
 
-/* Locates the message at the given offset (NULL if none) */
-static MessageView messageAtOffset(ScrollerWidget self, int offset)
+/* Locates the ViewHolder at the given offset (NULL if none) */
+static ViewHolder ViewHolderAtOffset(ScrollerWidget self, int offset)
 {
     long x = offset + self -> scroller.offset;
-    MessageView view = NULL;
 
-    List_doWithWith(self -> scroller.holders, ViewHolder_locate, &x, &view);
-    return view;
+    return List_findFirstWith(self -> scroller.holders, (ListFindWithFunc)ViewHolder_locate, &x);
 }
 
-/* Answers the message under the mouse in the given event */
-static MessageView messageAtEvent(ScrollerWidget self, XEvent *event)
+/* Answers the ViewHolder corresponding to the location of the last event */
+static ViewHolder ViewHolderAtEvent(ScrollerWidget self, XEvent *event)
 {
     if ((event -> type == KeyPress) || (event -> type == KeyRelease))
     {
 	XKeyEvent *keyEvent = (XKeyEvent *) event;
-	return messageAtOffset(self, keyEvent -> x);
+	return ViewHolderAtOffset(self, keyEvent -> x);
     }
 
     if ((event -> type == ButtonPress) || (event -> type == ButtonRelease))
     {
 	XButtonEvent *buttonEvent = (XButtonEvent *) event;
-	return messageAtOffset(self, buttonEvent -> x);
+	return ViewHolderAtOffset(self, buttonEvent -> x);
     }
 
     if (event -> type == MotionNotify)
     {
 	XMotionEvent *motionEvent = (XMotionEvent *) event;
-	return messageAtOffset(self, motionEvent -> x);
+	return ViewHolderAtOffset(self, motionEvent -> x);
     }
 
     return NULL;
+}
+
+/* Answers the message under the mouse in the given event */
+static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
+{
+    return ViewHolder_view(ViewHolderAtEvent(self, event));
 }
 
 
@@ -861,15 +884,16 @@ static MessageView messageAtEvent(ScrollerWidget self, XEvent *event)
 void Menu(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = messageAtEvent(self, event);
+    MessageView view = MessageAtEvent(self, event);
     Message message = view ? MessageView_getMessage(view) : NULL;
     XtCallCallbackList((Widget)self, self -> scroller.callbacks, (XtPointer) message);
 }
 
+/* Spawn metamail to decode the Message's MIME attachment */
 static void DecodeMime(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = messageAtEvent(self, event);
+    MessageView view = MessageAtEvent(self, event);
     
     if (view)
     {
@@ -888,17 +912,26 @@ static void DecodeMime(Widget widget, XEvent *event)
 static void Delete(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = messageAtEvent(self, event);
+    MessageView view = MessageAtEvent(self, event);
 
-    if (view)
+    if (view != NULL)
     {
 	MessageView_expire(view);
     }
-    else
+}
+
+/* Simple remove the message from the scroller NOW */
+static void Kill(Widget widget, XEvent *event)
+{
+    ScrollerWidget self = (ScrollerWidget) widget;
+    ViewHolder holder = ViewHolderAtEvent(self, event);
+    MessageView view = ViewHolder_view(holder);
+
+    if (view != NULL)
     {
-#ifdef DEBUG       
-	fprintf(stderr, "missed\n");
-#endif /* DEBUG */
+	MessageView_expireNow(view);
+	RemoveViewHolder(self, holder);
+	Resize(widget);
     }
 }
 
