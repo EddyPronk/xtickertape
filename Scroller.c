@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.39 1999/07/27 11:57:52 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.40 1999/07/28 00:17:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -728,6 +728,22 @@ static void adjust_left_left(ScrollerWidget self)
 	/* Update the left_glyph if appropriate */
 	if (holder -> glyph == self -> scroller.left_glyph)
 	{
+	    glyph_holder_t probe = self -> scroller.left_holder;
+
+	    /* Find an unexpired glyph to become the next left_glyph */
+	    while (probe != NULL)
+	    {
+		if (! probe -> glyph -> is_expired(probe -> glyph))
+		{
+		    self -> scroller.left_glyph = probe -> glyph;
+		    glyph_holder_free(holder);
+		    return;
+		}
+
+		probe = probe -> next;
+	    }
+
+	    /* All of the visible glyphs have expired! */
 	    self -> scroller.left_glyph = self -> scroller.left_glyph -> next;
 	}
 
@@ -773,6 +789,7 @@ static void adjust_right_left(ScrollerWidget self)
 	/* Find the next glyph to show */
 	self -> scroller.left_glyph = self -> scroller.left_glyph -> previous;
 	glyph = self -> scroller.left_glyph;
+	printf("left glyph = %p (new left glyph scrolled in)\n", self -> scroller.left_glyph);
 
 	/* We need to do magic for the gap */
 	if (glyph == self -> scroller.gap)
@@ -831,6 +848,21 @@ static void adjust_right_right(ScrollerWidget self)
 	/* Update the right_glyph if appropriate */
 	if (holder -> glyph == self -> scroller.right_glyph)
 	{
+	    glyph_holder_t probe = self -> scroller.right_holder;
+
+	    /* Find an unexpired glyph to become the next right_glyph */
+	    while (probe != NULL)
+	    {
+		if (! probe -> glyph -> is_expired(probe -> glyph))
+		{
+		    self -> scroller.right_glyph = probe -> glyph;
+		    glyph_holder_free(holder);
+		    return;
+		}
+
+		probe = probe -> previous;
+	    }
+
 	    self -> scroller.right_glyph = self -> scroller.right_glyph -> previous;
 	}
 
