@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.10 1999/09/07 14:08:44 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.11 1999/09/07 14:36:27 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -185,7 +185,7 @@ static unsigned int get_width(message_glyph_t self)
 }
 
 /* Answers statistics to use for a given character in the font */
-inline static XCharStruct *per_char(XFontStruct *font, int ch)
+static XCharStruct *per_char(XFontStruct *font, int ch)
 {
     unsigned int first = font -> min_char_or_byte2;
     unsigned int last = font -> max_char_or_byte2;
@@ -213,14 +213,14 @@ inline static XCharStruct *per_char(XFontStruct *font, int ch)
 }
 
 /* Measure all of the characters in a string */
-static unsigned int measure_string(XFontStruct *font, unsigned char *string)
+static unsigned int measure_string(XFontStruct *font, char *string)
 {
     unsigned char *pointer;
     unsigned int width = 0;
     unsigned int result = 0;
 
     /* Include the right bearing of the last character in the width */
-    for (pointer = string; *pointer != '\0'; pointer++)
+    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
     {
 	result = width + per_char(font, *pointer) -> rbearing;
 	width += per_char(font, *pointer) -> width;
@@ -233,7 +233,7 @@ static unsigned int measure_string(XFontStruct *font, unsigned char *string)
 static void paint_string(
     message_glyph_t self,
     Display *display, Drawable drawable, GC gc, XFontStruct *font,
-    int left, int right, int baseline, unsigned char *string, int do_underline,
+    int left, int right, int baseline, char *string, int do_underline,
     int x, int y, int width, int height)
 {
     XCharStruct *char_info;
@@ -247,7 +247,7 @@ static void paint_string(
     }
 
     /* If the glyph is off to the right of the rectangle then quit */
-    first = string;
+    first = (unsigned char *)string;
     char_info = per_char(font, *first);
     if ((x + width < left - char_info -> lbearing) && (x + width < left))
     {
