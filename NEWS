@@ -4,7 +4,9 @@ Overview of changes in xtickertape-1.5.10
   attempts was never being reset to the initial delay.
 
 * Added the -nw option to show-url to placate users who only want to
-  have one Nescape window open at a time.
+  have one Nescape window open at a time.  Also made it possible to
+  specify a difference netscape executable by setting the NETSCAPE
+  environment variable.
 
 Overview of changes in xtickertape-1.5.9
 
