@@ -105,6 +105,126 @@ static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t erro
     return atom_alloc_ref(*result, error);
 }
 
+/* The `car' primitive function */
+static int prim_car(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    atom_t cons, value;
+
+    /* Make sure we have at least one arg */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract the cons cell */
+    if ((cons = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure there are no more ags */
+    if (atom_get_type(args) != ATOM_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    /* Evaluate the arg */
+    if (atom_eval(cons, env, &value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Make sure the cons really is a cons cell */
+    if (atom_get_type(value) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
+	return 0;
+    }
+
+    /* Extract the car of the cons cell */
+    if ((*result = cons_car(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the cons cell */
+    if (atom_free(value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Grab a reference to it */
+    return atom_alloc_ref(*result, error);
+}
+
+/* The `car' primitive function */
+static int prim_cdr(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    atom_t cons, value;
+
+    /* Make sure we have at least one arg */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract the cons cell */
+    if ((cons = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure there are no more ags */
+    if (atom_get_type(args) != ATOM_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    /* Evaluate the arg */
+    if (atom_eval(cons, env, &value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Make sure the cons really is a cons cell */
+    if (atom_get_type(value) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
+	return 0;
+    }
+
+    /* Extract the car of the cons cell */
+    if ((*result = cons_cdr(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the cons cell */
+    if (atom_free(value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Grab a reference to it */
+    return atom_alloc_ref(*result, error);
+}
+
 /* The `setq' primitive function */
 static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error)
 {
@@ -197,6 +317,20 @@ static env_t root_env_alloc(elvin_error_t error)
 
     /* Register the built-in function `quote' */
     if (env_set_builtin(env, "quote", prim_quote, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `car' */
+    if (env_set_builtin(env, "car", prim_car, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `cdr' */
+    if (env_set_builtin(env, "cdr", prim_cdr, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
