@@ -1,22 +1,14 @@
-/* $Id: main.c,v 1.7 1997/02/11 06:46:41 phelps Exp $ */
+/* $Id: main.c,v 1.8 1997/02/12 07:33:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
-#include <signal.h>
 #include <errno.h>
-
-#include "Hash.h"
-#include "Message.h"
 
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
+
+#include "Message.h"
+#include "BridgeConnection.h"
 #include "Tickertape.h"
 
 
@@ -27,46 +19,6 @@
 #define PERIOD (1000000 / FREQUENCY)
 
 #if 0
-Scroller scroller;
-
-void tick();
-
-
-/* Set the timer to go off in a bit */
-void setTimer()
-{
-    struct itimerval clock;
-
-    signal(SIGALRM, tick);
-    clock.it_interval.tv_sec = 0;
-    clock.it_interval.tv_usec = 0;
-    clock.it_value.tv_sec = 0;
-    clock.it_value.tv_usec = PERIOD;
-    setitimer(ITIMER_REAL, &clock, NULL);
-}
-
-/* Pause the timer */
-void clearTimer()
-{
-    struct itimerval clock;
-
-    signal(SIGALRM, SIG_IGN);
-    clock.it_interval.tv_sec = 0;
-    clock.it_interval.tv_usec = 0;
-    clock.it_value.tv_sec = 0;
-    clock.it_value.tv_usec = 0;
-    setitimer(ITIMER_REAL, &clock, NULL);
-}
-
-/* The animation clock has ticked - do something */
-void tick()
-{
-    Scroller_tick(scroller);
-    setTimer();
-}
-
-
-
 /* Reads a single token of the message */
 int readToken(FILE *in, char *buffer)
 {
@@ -257,8 +209,23 @@ int main(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    BridgeConnection connection;
+    List subscriptions;
     Widget top;
+    TickertapeWidget tickertape;
     XtAppContext context;
+
+    /* Connect to the bridge */
+    subscriptions = List_alloc();
+    List_addLast(subscriptions, "Chat");
+    List_addLast(subscriptions, "Coffee");
+    List_addLast(subscriptions, "Rooms");
+    List_addLast(subscriptions, "level7");
+    List_addLast(subscriptions, "email");
+    List_addLast(subscriptions, "Files");
+    List_addLast(subscriptions, "rwall");
+    List_addLast(subscriptions, "elvin_news");
+    List_addLast(subscriptions, "phelps");
 
     /* Create the toplevel widget */
     top = XtVaAppInitialize(
@@ -267,10 +234,20 @@ int main(int argc, char *argv[])
 	NULL, NULL);
 
     /* Create the tickertape widget */
-    XtVaCreateManagedWidget(
+    tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
 	"ticker", tickertapeWidgetClass, top,
 	NULL, 0);
 
+    /* listen for messages from the bridge */
+    connection = BridgeConnection_alloc(tickertape, "fatcat", 8800, subscriptions);
+    XtAppAddInput(
+	context,
+	BridgeConnection_getFD(connection),
+	XtInputReadMask,
+	BridgeConnection_read,
+	connection);
+
+    /* Create the widget */
     XtRealizeWidget(top);
     XtAppMainLoop(context);
 
