@@ -1,4 +1,4 @@
-/* $Id: TickertapeP.h,v 1.4 1997/02/10 13:31:58 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.5 1997/02/10 14:45:00 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
@@ -39,11 +39,14 @@ typedef struct
     Dimension fadeLevels;
 
     /* Private state */
+    int isStopped;
     List messages;
     List holders;
     long offset;
+    long visibleWidth;
+    unsigned int nextVisible;
+    unsigned int realCount;
     GC gc;
-    XtIntervalId timer;
     Pixel *groupPixels;
     Pixel *userPixels;
     Pixel *stringPixels;

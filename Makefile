@@ -5,7 +5,7 @@
 TARGET = go
 
 #OBJS = Scroller.o MessageView.o FontInfo.o Graphics.o Message.o Hash.o List.o main.o
-OBJS = Tickertape.o MessageView.o Message.o main.o
+OBJS = Tickertape.o MessageView.o Message.o List.o main.o
 
 CDEBUGFLAGS =
 #CDEBUGFLAGS = -g

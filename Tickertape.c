@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.5 1997/02/10 13:31:10 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.6 1997/02/10 14:45:00 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,8 @@
 #include <X11/Xaw/SimpleP.h>
 #include "TickertapeP.h"
 #include "MessageView.h"
+
+#define END_SPACING 30
 
 /*
  * Resources
@@ -158,15 +160,21 @@ typedef struct ViewHolder_t
 } *ViewHolder;
 
 static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
-/*static void ViewHolder_free(ViewHolder self);*/
+static void ViewHolder_free(ViewHolder self);
 static void ViewHolder_redisplay(ViewHolder self, void *context[]);
 
 static void CreateGC(TickertapeWidget self);
 static Pixel *CreateFadedColors(Display *display, Colormap colormap,
 				XColor *first, XColor *last, unsigned int levels);
 static void StartClock(TickertapeWidget self);
-/*static void StopClock(TickertapeWidget self);*/
+static void StopClock(TickertapeWidget self);
+static void SetClock(TickertapeWidget self);
 static void Tick(XtPointer widget, XtIntervalId *interval);
+
+static void AddMessageView(TickertapeWidget self, MessageView view);
+static MessageView RemoveMessageView(TickertapeWidget self, MessageView view);
+static void EnqueueViewHolder(TickertapeWidget self, ViewHolder holder);
+static ViewHolder DequeueViewHolder(TickertapeWidget self);
 
 
 /* Allocates a new ViewHolder */
@@ -175,19 +183,25 @@ static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width)
     ViewHolder self = (ViewHolder) malloc(sizeof(struct ViewHolder_t));
     self -> view = view;
     self -> width = width;
+
+    if (view)
+    {
+	MessageView_allocReference(view);
+    }
+
     return self;
 }
 
 /* Frees a ViewHolder */
-/*static void ViewHolder_free(ViewHolder self)
+static void ViewHolder_free(ViewHolder self)
 {
     if (self -> view)
     {
-	MessageView_freeReference(view);
+	MessageView_freeReference(self -> view);
     }
 
     free(self);
-}*/
+}
 
 /* Displays a ViewHolder */
 static void ViewHolder_redisplay(ViewHolder self, void *context[])
@@ -250,19 +264,33 @@ static Pixel *CreateFadedColors(
 
 
 
-/* Sets the clock */
+/* Starts the clock if it isn't already going */
 static void StartClock(TickertapeWidget self)
 {
-    self -> tickertape.timer = TtStartTimer(self, 41, Tick, self);
+    if (self -> tickertape.isStopped)
+    {
+	printf("restarting\n");
+	self -> tickertape.isStopped = FALSE;
+	SetClock(self);
+    }
 }
 
 /* Stops the clock */
-/*
 static void StopClock(TickertapeWidget self)
 {
-    XtRemoveTimeOut(self -> tickertape.timer);
+    printf("stalling\n");
+    self -> tickertape.isStopped = TRUE;
 }
-*/
+
+/* Sets the timer if the clock isn't stopped */
+static void SetClock(TickertapeWidget self)
+{
+    if (! self -> tickertape.isStopped)
+    {
+	TtStartTimer(self, 41, Tick, self);
+    }
+}
+
 
 /* One interval has passed */
 static void Tick(XtPointer widget, XtIntervalId *interval)
@@ -270,7 +298,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     TickertapeWidget self = (TickertapeWidget) widget;
 
     Redisplay(self, NULL, 0);
-    StartClock(self);
+    SetClock(self);
 }
 
 
@@ -278,8 +306,36 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 static void AddMessageView(TickertapeWidget self, MessageView view)
 {
     List_addLast(self -> tickertape.messages, view);
+    MessageView_allocReference(view);
+
+    /* Make sure the clock is running */
+    StartClock(self);
 }
 
+/* Removes a MessageView from the receiver */
+static MessageView RemoveMessageView(TickertapeWidget self, MessageView view)
+{
+    List_remove(self -> tickertape.messages, view);
+    MessageView_freeReference(view);
+
+    return view;
+}
+
+
+/* Adds a ViewHolder to the receiver */
+static void EnqueueViewHolder(TickertapeWidget self, ViewHolder holder)
+{
+    List_addLast(self -> tickertape.holders, holder);
+    self -> tickertape.visibleWidth += holder -> width;
+}
+
+/* Removes a ViewHolder from the receiver */
+static ViewHolder DequeueViewHolder(TickertapeWidget self)
+{
+    ViewHolder holder = List_dequeue(self -> tickertape.holders);
+    self -> tickertape.visibleWidth -= holder -> width;
+    return holder;
+}
 
 /*
  * Semi-private methods
@@ -403,13 +459,17 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
     XColor colors[5];
 
+    self -> tickertape.isStopped = TRUE;
     self -> tickertape.messages = List_alloc();
     self -> tickertape.holders = List_alloc();
     self -> tickertape.offset = 0;
+    self -> tickertape.visibleWidth = 0;
+    self -> tickertape.nextVisible = 0;
+    self -> tickertape.realCount = 0;
 
     CreateGC(self);
     self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
-    self -> core.width = 200; /* FIX THIS: should be what? */
+    self -> core.width = 400; /* FIX THIS: should be what? */
 
     /* Initialize colors */
     colors[0].pixel = self -> core.background_pixel;
@@ -428,15 +488,14 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> tickertape.separatorPixels = CreateFadedColors(
 	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
 
-    List_addLast(self -> tickertape.holders, ViewHolder_alloc(NULL, self -> core.width));
+    EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
 
     {
-	Message message = Message_alloc("this", "is", "a test", 30);
+	Message message = Message_alloc("tickertape", "internal", "nevermind", 30);
 	MessageView view = MessageView_alloc(self, message);
-	ViewHolder holder = ViewHolder_alloc(view, MessageView_getWidth(view));
 
 	MessageView_debug(view);
-	List_addLast(self -> tickertape.holders, holder);
+	AddMessageView(self, view);
     }
 
     StartClock(self);
@@ -454,10 +513,58 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
     context[2] = (void *)0;
     List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
 
-    /* see if it's time to pop a view off the front */
+    /* see if it's time to dequeue a view */
     if (holder -> width <= self -> tickertape.offset)
     {
-	exit(0);
+	ViewHolder holder = DequeueViewHolder(self);
+	
+	if (holder -> view)
+	{
+	    self -> tickertape.realCount--;
+	}
+	self -> tickertape.offset = 0;
+	ViewHolder_free(holder);
+    }
+
+    /* If no messages around then stop spinning */
+    if ((self -> tickertape.realCount == 0) && List_isEmpty(self -> tickertape.messages))
+    {
+	StopClock(self);
+    }
+    
+    /* see if it's time to enqueue a view */
+    while (self -> tickertape.visibleWidth - self -> tickertape.offset < self -> core.width)
+    {
+	MessageView next;
+
+	/* Find a message that hasn't expired */
+	next = List_get(self -> tickertape.messages, self -> tickertape.nextVisible);
+	while ((next != NULL) && (MessageView_isTimedOut(next)))
+	{
+	    RemoveMessageView(self, next);
+	    next = List_get(self -> tickertape.messages, self -> tickertape.nextVisible);
+	}
+	self -> tickertape.nextVisible++;
+
+	/* If at end of list, add a spacer */
+	if (next == NULL)
+	{
+	    ViewHolder last = List_last(self -> tickertape.holders);
+	    long width = self -> core.width - last -> width;
+
+	    if (width < END_SPACING)
+	    {
+		width = END_SPACING;
+	    }
+	    self -> tickertape.nextVisible = 0;
+	    EnqueueViewHolder(self, ViewHolder_alloc(NULL, width));
+	}
+	/* otherwise add message */
+	else
+	{
+	    EnqueueViewHolder(self, ViewHolder_alloc(next, MessageView_getWidth(next)));
+	    self -> tickertape.realCount++;
+	}
     }
 }
 
@@ -496,6 +603,7 @@ void Click(Widget widget, XEvent event)
     TickertapeWidget self = (TickertapeWidget) widget;
 
     fprintf(stderr, "Click 0x%p\n", self);
+    TtAddMessage(self, Message_alloc("tickertape", "internal", "buttonpress ignored", 30));
 }
 
 /*
