@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.76 2001/01/05 04:22:09 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.77 2001/02/22 01:31:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1037,7 +1037,7 @@ static void status_cb(
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
 	NULL, "internal", "tickertape", string, 30,
-	NULL, NULL,
+	NULL, NULL, 0,
 	NULL, NULL, NULL)) != NULL)
     {
 	receive_callback(self, message, False);
@@ -1929,6 +1929,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 #ifdef METAMAIL
     char *mime_type;
     char *mime_args;
+    size_t mime_length;
     char *pointer;
     char *end;
     pid_t pid;
@@ -1937,7 +1938,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 
     /* If the message has no attachment then we're done */
     if (((mime_type = message_get_mime_type(message)) == NULL) ||
-	((mime_args = message_get_mime_args(message)) == NULL))
+	((mime_length = message_get_mime_args(message, &mime_args)) == 0))
     {
 #ifdef DEBUG
 	printf("no attachment\n");
@@ -1993,7 +1994,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Write the mime args into the pipe */
-    end = mime_args + strlen(mime_args);
+    end = mime_args + mime_length;
     pointer = mime_args;
     while (pointer < end)
     {

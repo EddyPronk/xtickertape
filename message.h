@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.4 2000/05/31 05:46:25 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.5 2001/02/22 01:31:30 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -50,6 +50,7 @@ message_t message_alloc(
     unsigned int timeout,
     char *mime_type,
     char *mime_args,
+    size_t mime_length,
     char *tag,
     char *id,
     char *reply_id);
@@ -92,7 +93,7 @@ int message_has_attachment(message_t self);
 char *message_get_mime_type(message_t self);
 
 /* Answers the receiver's MIME arguments */
-char *message_get_mime_args(message_t self);
+size_t message_get_mime_args(message_t self, char **mime_args_out);
 
 /* Answers the receiver's tag */
 char *message_get_tag(message_t self);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.9 2000/10/29 12:28:21 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.10 2001/02/22 01:31:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -69,6 +69,9 @@ struct message
     /* The receiver's MIME arg */
     char *mime_args;
 
+    /* The length of the receiver's mime arg */
+    size_t mime_length;
+
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
 
@@ -92,6 +95,7 @@ message_t message_alloc(
     unsigned int timeout,
     char *mime_type,
     char *mime_args,
+    size_t mime_length,
     char *tag,
     char *id,
     char *reply_id)
@@ -113,6 +117,7 @@ message_t message_alloc(
 
     self -> mime_type = (mime_type == NULL) ? NULL : strdup(mime_type);
     self -> mime_args = (mime_args == NULL) ? NULL : strdup(mime_args);
+    self -> mime_length = mime_length;
     self -> timeout = timeout;
 
     self -> tag = (tag == NULL) ? NULL : strdup(tag);
@@ -288,9 +293,10 @@ char *message_get_mime_type(message_t self)
 }
 
 /* Answers the receiver's MIME arguments */
-char *message_get_mime_args(message_t self)
+size_t message_get_mime_args(message_t self, char **mime_args_out)
 {
-    return self -> mime_args;
+    *mime_args_out = self -> mime_args;
+    return self -> mime_length;
 }
 
 /* Answers the receiver's tag */

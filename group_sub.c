@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.24 2000/11/07 04:01:21 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.25 2001/02/22 01:31:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -131,7 +131,7 @@ static void notify_cb(
     char *text;
     int timeout;
     char *mime_type;
-    char *mime_args;
+    elvin_opaque_t mime_args;
     char *tag;
     char *message_id;
     char *reply_id;
@@ -226,14 +226,26 @@ static void notify_cb(
     }
 
     /* Get the MIME args (if provided) */
-    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error) &&
-	type == ELVIN_STRING)
+    mime_args.data = NULL;
+    mime_args.length = 0;
+
+    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error))
     {
-	mime_args = value.s;
-    }
-    else
-    {
-	mime_args = NULL;
+	if (type == ELVIN_STRING)
+	{
+	    mime_args.data = value.s;
+	    mime_args.length = strlen(value.s);
+	}
+	else if (type == ELVIN_OPAQUE)
+	{
+	    mime_args.data = value.o.data;
+	    mime_args.length = value.o.length;
+	}
+	else
+	{
+	    mime_args.data = NULL;
+	    mime_args.length = 0;
+	}
     }
 
     /* Get the replacement tag (if provided) */
@@ -273,7 +285,7 @@ static void notify_cb(
     message = message_alloc(
 	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
-	mime_type, mime_args,
+	mime_type, mime_args.data, mime_args.length,
 	tag, message_id, reply_id);
 
     /* Deliver the message */
@@ -292,13 +304,14 @@ static void send_message(group_sub_t self, message_t message)
     char *reply_id;
     char *mime_args;
     char *mime_type;
+    size_t mime_length;
     
     /* Pull information out of the message */
     timeout = message_get_timeout(message);
     message_id = message_get_id(message);
     reply_id = message_get_reply_id(message);
-    mime_args = message_get_mime_args(message);
     mime_type = message_get_mime_type(message);
+    mime_length = message_get_mime_args(message, &mime_args);
 
     /* Allocate a new notification */
     if ((notification = elvin_notification_alloc(self -> error)) == NULL)
@@ -363,13 +376,14 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add mime information if both mime_args and mime_type are provided */
-    if ((mime_args != NULL) && (mime_type != NULL))
+    if ((mime_length != 0) && (mime_type != NULL))
     {
-	if (elvin_notification_add_string(
-	    notification,
-	    F_MIME_ARGS,
-	    mime_args,
-	    self -> error) == 0)
+	if (elvin_notification_add_opaque(
+		notification,
+		F_MIME_ARGS,
+		mime_args,
+		mime_length,
+		self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    abort();

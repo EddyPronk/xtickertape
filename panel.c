@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.40 2000/11/21 02:05:48 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.41 2001/02/22 01:31:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -664,6 +664,7 @@ static void history_motion_callback(
     Position x, y;
     message_t message;
     char *mime_args;
+    int mime_length;
 
     switch (event->type)
     {
@@ -706,7 +707,7 @@ static void history_motion_callback(
     }
 
     /* See if it has mime args attached */
-    if ((mime_args = message_get_mime_args(message)) == NULL)
+    if ((mime_length = message_get_mime_args(message, &mime_args)) == 0)
     {
 	show_status(self, " ");
 	return;
@@ -1354,7 +1355,8 @@ message_t contruct_message(control_panel_t self)
     message = message_alloc(
 	self -> selection -> tag,
 	self -> selection -> title, user, text, get_timeout(self),
-	(mime_args == NULL) ? NULL : mime_type, mime_args,
+	(mime_args == NULL) ? NULL : mime_type,
+	mime_args, strlen(mime_args),
 	NULL, uuid, self -> message_id);
 
     /* Clean up */
