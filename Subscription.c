@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.22 1998/12/24 05:48:30 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.23 1999/01/20 04:57:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -289,7 +289,7 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     en_type_t type;
     char *user;
     char *text;
-    int32 *timeout_p;
+    void *value;
     int32 timeout;
     char *mimeType;
     char *mimeArgs;
@@ -320,30 +320,55 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     }
 
     /* Get the timeout for the notification (if provided) */
-    if ((en_search(notification, "TIMEOUT", &type, (void **)&timeout_p) != 0) ||
-	(type != EN_INT32))
+    if (en_search(notification, "TIMEOUT", &type, (void **)&value) != 0)
     {
-	timeout_p = &timeout;
 	timeout = 0;
-
-	if (type == EN_STRING)
-	{
-	    char *timeoutString;
-	    en_search(notification, "TIMEOUT", &type, (void **)&timeoutString);
-	    timeout = atoi(timeoutString);
-	}
-
-	timeout = (timeout == 0) ? 10 : timeout;
     }
+    else
+    {
+	switch (type)
+	{
+	    /* If it's a string, then use atoi to make it into an integer */
+	    case EN_STRING:
+	    {
+		char *string = (char *)value;
+		timeout = atoi(string);
+		break;
+	    }
+
+	    /* If it's an integer, then just copy the value */
+	    case EN_INT32:
+	    {
+		timeout = *((int32 *) value);
+		break;
+	    }
+
+	    /* If it's a float, then round it to the nearest integer */
+	    case EN_FLOAT:
+	    {
+		timeout = (0.5 + *((float *) value));
+		break;
+	    }
+
+	    /* Just use a default for anything else */
+	    default:
+	    {
+		timeout = 0;
+	    }
+	}
+    }
+
+    /* If the timeout was illegible, then set it to 10 minutes */
+    timeout = (timeout == 0) ? 10 : timeout;
 
     /* Make sure the timeout conforms */
-    if (*timeout_p < self -> minTime)
+    if (timeout < self -> minTime)
     {
-	*timeout_p = self -> minTime;
+	timeout = self -> minTime;
     }
-    else if (*timeout_p > self -> maxTime)
+    else if (timeout > self -> maxTime)
     {
-	*timeout_p = self -> maxTime;
+	timeout = self -> maxTime;
     }
 
     /* Get the MIME type (if provided) */
@@ -379,7 +404,7 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     /* Construct a message */
     message = Message_alloc(
 	self -> controlPanelInfo, self -> group,
-	user, text, *timeout_p,
+	user, text, timeout,
 	mimeType, mimeArgs,
 	*messageId_p, *replyId_p);
 
