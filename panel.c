@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.17 1999/11/19 04:10:41 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.18 1999/11/19 04:54:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1660,6 +1660,10 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 	return;
     }
 
+    /* Remove the widget's client data since Motif won't really
+     * destroy the widget until much later */
+    XtVaSetValues(tuple -> widget, XmNuserData, NULL, NULL);
+
     /* Destroy it's widget so it isn't in the menu anymore */
     XtDestroyWidget(tuple -> widget);
     tuple -> widget = NULL;
@@ -1677,7 +1681,7 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 	menu_item_tuple_t child_tuple;
 
 	XtVaGetValues(*child, XmNuserData, &child_tuple, NULL);
-	if (child != NULL)
+	if (child_tuple != NULL)
 	{
 	    /* Pull the following children up */
 	    if (tuple -> index < child_tuple -> index)
@@ -1734,7 +1738,7 @@ void control_panel_set_index(control_panel_t self, void *info, int index)
 	menu_item_tuple_t child_tuple;
 
 	XtVaGetValues(*child, XmNuserData, &child_tuple, NULL);
-	if (child != NULL)
+	if (child_tuple != NULL)
 	{
 	    /* Push the following children along */
 	    if (index <= child_tuple -> index)
