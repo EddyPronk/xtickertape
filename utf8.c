@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.4 2003/01/16 16:42:06 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.5 2003/01/17 16:00:17 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -155,6 +155,9 @@ struct utf8_renderer
      * code set used by the font */
     iconv_t cd;
 
+    /* If non-zero then we're skipping a troublesome UTF-8 character */
+    int is_skipping;
+
     /* The number of bytes per character in the font's code set */
     int dimension;
 
@@ -268,6 +271,7 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Set its fields to sane values */
     self -> font = font;
     self -> cd = (iconv_t)-1;
+    self -> is_skipping = 0;
     self -> dimension = 1;
 
     /* Is there a font property for underline thickness? */
@@ -300,7 +304,8 @@ utf8_renderer_t utf8_renderer_alloc(
 	/* Yes.  Use it to create a conversion descriptor */
 	if ((cd = iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
 	{
-	    perror("iconv_open() failed");
+	    fprintf(stderr, "Unable convert from %s to %s: %s\n",
+		    tocode, UTF8_CODE, strerror(errno));
 	    return self;
 	}
 
@@ -353,29 +358,47 @@ static size_t utf8_renderer_iconv(
     char **inbuf, size_t *inbytesleft,
     char **outbuf, size_t *outbytesleft)
 {
-    size_t length;
     size_t count;
 
-    /* An invalid conversion descriptor becomes memcpy */
+    /* An unsupported conversion becomse UTF-8 to ASCII */
     if (self -> cd == (iconv_t)-1)
     {
+	/* This is a stateless translation */
 	if (inbytesleft == NULL || outbytesleft == NULL)
 	{
 	    return 0;
 	}
 
-	length =  MIN(*inbytesleft, *outbytesleft);
-	memcpy(*outbuf, *inbuf, length);
-	*inbuf += length;
-	*inbytesleft -= length;
-	*outbuf += length;
-	*outbytesleft -= length;
+	/* Keep going until we're out of room */
+	while (*inbytesleft && *outbytesleft)
+	{
+	    int ch;
+
+	    /* Get the next character */
+	    ch = *(*inbuf)++;
+	    (*inbytesleft)--;
+
+	    /* If it's the beginning of a multibyte character then
+	     * replace it with the default char */
+	    if ((ch & 0xc0) == 0xc0)
+	    {
+		*(*outbuf)++ = self -> font -> default_char;
+		(*outbytesleft)--;
+	    }
+	    else if ((ch & 0xc0) != 0x80)
+	    {
+		*(*outbuf)++ = ch;
+		(*outbytesleft)--;
+	    }
+	}
+	
 	return 0;
     }
 
     /* Watch for a NULL transformation */
     if (inbytesleft == NULL || outbytesleft == NULL)
     {
+	self -> is_skipping = 0;
 	return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
     }
 
@@ -385,6 +408,24 @@ static size_t utf8_renderer_iconv(
     while (*inbytesleft && *outbytesleft)
     {
 	size_t n;
+
+	/* Skip the rest of an untranslatable character */
+	if (self -> is_skipping)
+	{
+	    while (*inbytesleft > 0 && (*(*inbuf) & 0xc0) == 0x80)
+	    {
+		(*inbuf)++;
+		(*inbytesleft)--;
+	    }
+
+	    /* Bail if we're out of input */
+	    if (*inbytesleft == 0)
+	    {
+		break;
+	    }
+
+	    self -> is_skipping = 0;
+	}
 
 	/* Try to convert the sequence */
 	if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
@@ -400,7 +441,7 @@ static size_t utf8_renderer_iconv(
 		{
 		    errno = 0;
 
-		    /* Dump the illegal character */
+		    /* Skip the first byte of the untranslatable character */
 		    (*inbuf)++;
 		    (*inbytesleft)--;
 
@@ -409,7 +450,8 @@ static size_t utf8_renderer_iconv(
 		    {
 			*(*outbuf)++ = self -> font -> default_char;
 			(*outbytesleft)--;
-		    } else
+		    }
+		    else
 		    {
 			*(*outbuf)++ = self -> font -> default_char >> 8;
 			*(*outbuf)++ = self -> font -> default_char & 0xFF;
@@ -420,11 +462,14 @@ static size_t utf8_renderer_iconv(
 
 		    /* Reset the conversion descriptor */
 		    iconv(self -> cd, NULL, NULL, NULL, NULL);
+
+		    /* Arrange to skip the rest of the character */
+		    self -> is_skipping = 1;
 		    break;
 		}
 
 		default:
-		{
+		{			    
 		    perror("iconv() failed");
 		    return (size_t)-1;
 		}
