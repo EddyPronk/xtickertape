@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.6 1999/08/21 07:28:00 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.7 1999/08/21 07:57:12 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -36,8 +36,8 @@ static const char cvsid[] = "$Id: history.c,v 1.6 1999/08/21 07:28:00 phelps Exp
 #include <Xm/List.h>
 #include "history.h"
 
-/*#define MAX_LIST_COUNT 30*/
-#define MAX_LIST_COUNT 5
+#define MAX_LIST_COUNT 30
+/*#define MAX_LIST_COUNT 5*/
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 /* The structure of a node in a message history */
@@ -49,6 +49,9 @@ struct history_node
 
     /* The node's `color' */
     int color;
+
+    /* The node's indentation level */
+    int indent;
 
     /* The previous node (by order of receipt) */
     history_node_t previous;
@@ -75,6 +78,7 @@ static history_node_t history_node_alloc(Message message)
     /* Initialize the fields to sane values */
     self -> message = Message_allocReference(message);
     self -> color = 0;
+    self -> indent = 0;
     self -> previous = NULL;
     self -> previous_response = NULL;
     self -> last_response = NULL;
@@ -90,15 +94,23 @@ static void history_node_free(history_node_t self)
 }
 
 /* Constructs a Motif string representation of the receiver's message */
-static XmString history_node_get_string(history_node_t self)
+static XmString history_node_get_string(history_node_t self, int is_threaded)
 {
     char *group = Message_getGroup(self -> message);
     char *user = Message_getUser(self -> message);
     char *string = Message_getString(self -> message);
-    char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string)+ 3);
+    int spaces = is_threaded ? (self -> indent * 2) : 0;
+    char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string) + spaces + 3);
     XmString result;
+    int i;
 
-    sprintf(buffer, "%s:%s:%s", group, user, string);
+    /* Set up the indent */
+    for (i = 0; i < spaces; i++)
+    {
+	buffer[i] = ' ';
+    }
+
+    sprintf(buffer + spaces, "%s:%s:%s", group, user, string);
     result = XmStringCreateSimple(buffer);
     free(buffer);
 
@@ -278,6 +290,7 @@ static void history_thread_node(history_t self, history_node_t node)
     }
 
     /* Append this node to the end of the parent's replies */
+    node -> indent = parent -> indent + 1;
     node -> previous_response = parent -> last_response;
     parent -> last_response = node;
 }
@@ -292,7 +305,6 @@ void history_set_list(history_t self, Widget list)
 /* Updates the history's list widget after a message was added */
 static void history_update_list(history_t self, history_node_t node)
 {
-    int index;
     XmString string;
 
     /* Make sure we have a list to play with */
@@ -308,10 +320,8 @@ static void history_update_list(history_t self, history_node_t node)
     }
 
     /* Add the string to the end of the list */
-    index = history_index(self, node -> message);
-    string = history_node_get_string(node);
-    XmListAddItem(self -> list, string, index);
-    printf("index=%d\n", index);
+    string = history_node_get_string(node, self -> is_threaded);
+    XmListAddItem(self -> list, string, history_index(self, node -> message));
     XmStringFree(string);
 }
 
@@ -341,7 +351,7 @@ int history_add(history_t self, Message message)
 }
 
 /* Answers the Message at the given index */
-static Message unthreaded_get(history_t self, int index)
+static Message history_unthreaded_get(history_t self, int index)
 {
     history_node_t probe;
     int i;
@@ -367,16 +377,102 @@ static Message unthreaded_get(history_t self, int index)
     return NULL;
 }
 
-/* Answers the Message at the given index */
-static Message threaded_get(history_t self, int index)
+/* Answers the Message at the given index in the history */
+static Message history_node_threaded_get2(history_node_t self, int target, int *index)
 {
+    Message result;
+
+    /* Watch for the beginning of the thread */
+    if (self == NULL)
+    {
+	return NULL;
+    }
+
+    /* Visit the previous nodes */
+    if ((result = history_node_threaded_get2(self -> previous_response, target, index)) != NULL)
+    {
+	return result;
+    }
+
+    /* Unmark this node */
+    self -> color = 0;
+
+    /* Check for a match */
+    (*index)++;
+    if (*index == target)
+    {
+	return self -> message;
+    }
+
+    /* Check the children */
+    return history_node_threaded_get2(self -> last_response, target, index);
+}
+
+/* Answers the Message at the given index in the history */
+static Message history_node_threaded_get(history_node_t self, int target, int *index)
+{
+    Message result;
+
+    /* Watch for the beginning of history */
+    if (self == NULL)
+    {
+	return NULL;
+    }
+
+    /* Mark ourselves */
+    self -> color = 1;
+
+    /* Visit the previous nodes */
+    (*index)--;
+    if ((result = history_node_threaded_get(self -> previous, target, index)) != NULL)
+    {
+	return result;
+    }
+
+    /* If we haven't been unmarked, then increment the index */
+    if (self -> color == 1)
+    {
+	(*index)++;
+
+	/* Check for a match */
+	if (*index == target)
+	{
+	    return self -> message;
+	}
+
+	/* Otherwise check our children */
+	return history_node_threaded_get2(self -> last_response, target, index);
+    }
+
     return NULL;
+}
+
+/* Answers the Message at the given index */
+static Message history_threaded_get(history_t self, int index)
+{
+    int target = index;
+    int dummy;
+
+    /* Normalize the index */
+    if (self -> count > MAX_LIST_COUNT)
+    {
+	target += MAX_LIST_COUNT - self -> count;
+    }
+
+    /* Search and locate */
+    dummy = self -> count;
+    return history_node_threaded_get(self -> last, target, &dummy);
 }
 
 /* Answers the Message at the given index */
 Message history_get(history_t self, int index)
 {
-    return self -> is_threaded ? threaded_get(self, index) : unthreaded_get(self, index);
+    if (self -> is_threaded)
+    {
+	return history_threaded_get(self, index);
+    }
+
+    return history_unthreaded_get(self, index);
 }
 
 /* Answers the index of given Message in the history */
@@ -453,13 +549,10 @@ static int history_node_threaded_index(history_node_t self, Message message, int
 	return result;
     }
 
-    /* If we haven't yet been marked, then increment the index */
+    /* If we haven't yet been unmarked, then increment the index */
     if (self -> color == 1)
     {
 	(*index)++;
-
-	/* Unmark this node */
-	self -> color = 0;
 
 	/* Check for a match */
 	if (self -> message == message)
@@ -483,7 +576,7 @@ static int history_threaded_index(history_t self, Message message)
     /* Adjust the position to account for a maximum list size */
     if (self -> count > MAX_LIST_COUNT)
     {
-	result -= self -> count - MAX_LIST_COUNT;
+	result += MAX_LIST_COUNT - self -> count;
     }
 
     /* Normalize the results */
