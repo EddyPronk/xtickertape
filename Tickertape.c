@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.41 1999/08/09 10:47:00 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.42 1999/08/09 10:49:05 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -585,7 +585,6 @@ Tickertape Tickertape_alloc(
     self -> groupsFile = (groupsFile == NULL) ? NULL : strdup(groupsFile);
     self -> usenetFile = (usenetFile == NULL) ? NULL : strdup(usenetFile);
     self -> top = top;
-    self -> messages = NULL;
     self -> subscriptions = ReadGroupsFile(self);
     self -> usenetSubscription = ReadUsenetFile(self);
     self -> mailSubscription = MailSubscription_alloc(
