@@ -28,19 +28,24 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.9 2001/07/10 04:44:42 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.10 2001/08/25 08:56:49 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "message.h"
 #include "message_view.h"
 
 #define SEPARATOR ":"
+#define NOON_TIMESTAMP "12:00pm"
+#define TIMESTAMP_FORMAT "%2d:%02d%s"
+#define TIMESTAMP_SIZE 8
+
 #if ! defined(MIN)
 # define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #endif
@@ -193,6 +198,18 @@ struct message_view
     /* The position of the underline for this message */
     int underline_position;
 
+    /* The width of the longest timestamp (12:00pm) */
+    long noon_width;
+
+    /* The width of a single logical indent */
+    long indent_width;
+
+    /* The timestamp as a string */
+    char timestamp[TIMESTAMP_SIZE];
+
+    /* Dimensions of the time string */
+    struct string_sizes timestamp_sizes;
+
     /* Dimensions of the group string */
     struct string_sizes group_sizes;
 
@@ -294,6 +311,9 @@ message_view_t message_view_alloc(
 {
     message_view_t self;
     unsigned long value;
+    struct tm *timestamp;
+    struct string_sizes sizes;
+    XCharStruct *info;
 
     /* Allocate enough memory for the new message view */
     if ((self = (message_view_t)malloc(sizeof(struct message_view))) == NULL)
@@ -342,7 +362,29 @@ message_view_t message_view_alloc(
 	}
     }
 
+    /* Get the message's timestamp */
+    if ((timestamp = localtime(message_get_creation_time(message))) == NULL)
+    {
+	perror("localtime(): failed");
+	exit(1);
+    }
+
+    /* Convert that into a string */
+    sprintf(self -> timestamp, TIMESTAMP_FORMAT,
+	    ((timestamp -> tm_hour - 1) % 12) + 1,
+	    timestamp -> tm_min,
+	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
+
+    /* Measure the width of the string to use for noon */
+    measure_string(font, NOON_TIMESTAMP, &sizes);
+    self -> noon_width = sizes.width;
+
+    /* Figure out how big a single indent should be */
+    info = per_char(font, ' ');
+    self -> indent_width = info -> width * 2;
+
     /* Measure the message's strings */
+    measure_string(font, self -> timestamp, &self -> timestamp_sizes);
     measure_string(font, message_get_group(message), &self -> group_sizes);
     measure_string(font, message_get_user(message), &self -> user_sizes);
     measure_string(font, message_get_string(message), &self -> message_sizes);
@@ -367,16 +409,35 @@ message_t message_view_get_message(message_view_t self)
 }
 
 /* Returns the sizes of the message view */
-void message_view_get_sizes(message_view_t self, string_sizes_t sizes)
+void message_view_get_sizes(
+    message_view_t self,
+    int show_timestamp,
+    unsigned long indent,
+    string_sizes_t sizes_out)
 {
-    long lbearing;
-    long rbearing;
-    long width;
+    long lbearing = 0;
+    long rbearing = 0;
+    long width = 0;
+
+    /* See if we're including the timestamp */
+    if (show_timestamp)
+    {
+	/* Skip to the end of the timestamp string */
+	width += self -> noon_width - self -> timestamp_sizes.width;
+
+	/* And right-justify the timestamp */
+	lbearing = MIN(lbearing, width + self -> timestamp_sizes.lbearing);
+	rbearing = MAX(rbearing, width + self -> timestamp_sizes.rbearing);
+	width += self -> timestamp_sizes.width + self -> indent_width;
+    }
+
+    /* Include the width of the indent */
+    width += indent * self -> indent_width;
 
     /* Start with the sizes of the group string */
-    lbearing = self -> group_sizes.lbearing;
-    rbearing = self -> group_sizes.rbearing;
-    width = self -> group_sizes.width;
+    lbearing = MIN(lbearing, width + self -> group_sizes.lbearing);
+    rbearing = MAX(rbearing, width + self -> group_sizes.rbearing);
+    width += self -> group_sizes.width;
 
     /* Adjust for the size of the first separator string */
     lbearing = MIN(lbearing, width + self -> separator_sizes.lbearing);
@@ -399,11 +460,11 @@ void message_view_get_sizes(message_view_t self, string_sizes_t sizes)
     width += self -> message_sizes.width;
 
     /* Export our results */
-    sizes -> lbearing = lbearing;
-    sizes -> rbearing = rbearing;
-    sizes -> width = width;
-    sizes -> ascent = self -> separator_sizes.ascent;
-    sizes -> descent = self -> separator_sizes.descent;
+    sizes_out -> lbearing = lbearing;
+    sizes_out -> rbearing = rbearing;
+    sizes_out -> width = width;
+    sizes_out -> ascent = self -> separator_sizes.ascent;
+    sizes_out -> descent = self -> separator_sizes.descent;
 }
 
 /* Draws the message_view */
@@ -412,6 +473,9 @@ void message_view_paint(
     Display *display,
     Drawable drawable,
     GC gc,
+    int show_timestamp,
+    unsigned long indent,
+    unsigned long timestamp_pixel,
     unsigned long group_pixel,
     unsigned long user_pixel,
     unsigned long message_pixel,
@@ -463,6 +527,27 @@ void message_view_paint(
 	XFillRectangle(display, drawable, gc, x, y + 2, px - x, underline_height);
     }
 #endif /* DEBUG_PER_CHAR */
+
+    /* Paint the timestamp */
+    if (show_timestamp)
+    {
+	/* Go to the end of the timestamp */
+	x += self -> noon_width;
+
+	/* Draw the timestamp right justified */
+	paint_string(
+	    display, drawable, gc, timestamp_pixel,
+	    x - self -> timestamp_sizes.width , y,
+	    bbox, &self -> timestamp_sizes,
+	    self -> font, self -> timestamp,
+	    0, 0);
+
+	/* Indent the next bit */
+	x += self -> indent_width;
+    }
+
+    /* Indent */
+    x += indent * self -> indent_width;
 
     /* Paint the group string */
     paint_string(
