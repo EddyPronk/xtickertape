@@ -28,19 +28,26 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.103 2000/10/31 04:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.104 2001/05/01 07:58:43 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 
 #include "ScrollerP.h"
 #include "glyph.h"
+
+#ifdef DEBUG
+#define DPRINTF(x) fprintf x
+#else
+#define DPRINTF(x)
+#endif
 
 
 /*
@@ -203,11 +210,11 @@ static void scroll(ScrollerWidget self, int offset);
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
 static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
 static void Redisplay(ScrollerWidget self, Region region);
-static void do_expose(Widget widget, XEvent *event, Region region);
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
 static void Destroy(Widget widget);
 static void Resize(Widget widget);
+static void do_expose(Widget widget, XEvent *event, Region region);
 static Boolean SetValues(
     Widget current,
     Widget request,
@@ -282,9 +289,6 @@ struct glyph_holder
     /* The width (in pixels) of this holder's glyph */
     int width;
 
-    /* Nonzero if the glyph needs to be repainted */
-    int is_pending;
-
     /* This holder's glyph */
     glyph_t glyph;
 };
@@ -304,7 +308,6 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> previous = NULL;
     self -> next = NULL;
     self -> width = width;
-    self -> is_pending = False;
     self -> glyph = glyph -> alloc(glyph);
     return self;
 }
@@ -403,9 +406,7 @@ static void EnableClock(ScrollerWidget self)
 {
     if ((self -> scroller.timer == 0) && (self -> scroller.step != 0))
     {
-#ifdef DEBUG
-	fprintf(stderr, "clock enabled\n");
-#endif /* DEBUG */	
+	DPRINTF((stderr, "clock enabled\n"));
 	SetClock(self);
     }
 }
@@ -415,9 +416,7 @@ static void DisableClock(ScrollerWidget self)
 {
     if (self -> scroller.timer != 0)
     {
-#ifdef DEBUG
-	fprintf(stderr, "clock disabled\n");
-#endif /* DEBUG */
+	DPRINTF((stderr, "clock disabled\n"));
 	ScStopTimer(self, self -> scroller.timer);
 	self -> scroller.timer = 0;
     }
@@ -447,14 +446,6 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 	self -> scroller.timer = 0;
     }
 
-    /* If we haven't yet finished our last scroll then arrange to call
-     * Tick again once it has finished */
-    if (self -> scroller.state == SS_PENDING)
-    {
-	self -> scroller.state = SS_OVERFLOW;
-	return;
-    }
-
     /* Set the clock now so that we get consistent scrolling speed */
     SetClock(self);
 
@@ -462,10 +453,6 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     if (self -> scroller.step != 0)
     {
 	scroll(self, self -> scroller.step);
-	if (self -> scroller.use_pixmap)
-	{
-	    Redisplay(self, NULL);
-	}
     }
 }
 
@@ -716,17 +703,9 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 	    }
 	    else
 	    {
-		if (self -> scroller.state == SS_READY)
-		{
-		    glyph_holder_paint(
-			holder, display, XtWindow((Widget)self),
-			offset, 0, 0, self -> core.width, self -> scroller.height);
-		    holder -> is_pending = False;
-		}
-		else
-		{
-		    holder -> is_pending = True;
-		}
+		glyph_holder_paint(
+		    holder, display, XtWindow((Widget)self),
+		    offset, 0, 0, self -> core.width, self -> scroller.height);
 	    }
 	}
 
@@ -798,7 +777,8 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     /* Initialize the queue to only contain the gap with 0 offsets */
     self -> scroller.timer = 0;
     self -> scroller.is_stopped = True;
-    self -> scroller.drag_state = DS_NOT_DRAGGING;
+    self -> scroller.is_visible = False;
+    self -> scroller.is_dragging = False;
     self -> scroller.left_holder = holder;
     self -> scroller.right_holder = holder;
     self -> scroller.left_offset = 0;
@@ -810,7 +790,9 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
     self -> scroller.clip_width = 0;
-    self -> scroller.state = SS_READY;
+    self -> scroller.request_id = 0;
+    self -> scroller.local_delta = 0;
+    self -> scroller.target_delta = 0;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1113,89 +1095,87 @@ static void adjust_right(ScrollerWidget self)
 }
 
 
-/* Scrolls the glyphs in the widget to the left */
-static void scroll_left(ScrollerWidget self, int offset)
+/* Try to scroll to the desired position as determined by
+ * target_delta.  If the X server hasn't acknowledged our last
+ * CopyArea request then we leave this pending */
+static void scroll(ScrollerWidget self, int offset)
 {
-    Display *display = XtDisplay((Widget)self);
-    self -> scroller.left_offset += offset;
-    self -> scroller.right_offset -= offset;
+    Display *display = XtDisplay(self);
+    int delta;
 
-    /* Update the glyph_holders list */
-    adjust_left(self);
+    /* FIX THIS: offsets should be positive */
+    self -> scroller.target_delta -= offset;
 
-    /* Copy the existing bits of the scroller */
+    /* Bail if we have an outstanding CopyArea request */
+    if (self -> scroller.local_delta != 0)
+    {
+	return;
+    }
+
+    /* Bail if we're at the target position */
+    if ((delta = self -> scroller.target_delta) == 0)
+    {
+	return;
+    }
+
+    /* Scroll left or right as appropriate */
+    self -> scroller.left_offset -= self -> scroller.target_delta;
+    self -> scroller.right_offset += self -> scroller.target_delta;
+    self -> scroller.local_delta = delta;
+    self -> scroller.target_delta = 0;
+
+    /* Update the view holders */
+    if (delta < 0)
+    {
+	adjust_left(self);
+    }
+    else
+    {
+	adjust_right(self);
+    }
+
+    /* Pixmaps are easy */
     if (self -> scroller.use_pixmap)
     {
 	/* Scroll the pixmap */
 	XCopyArea(
 	    display, self -> scroller.pixmap, self -> scroller.pixmap,
 	    self -> scroller.backgroundGC,
-	    0, 0, self -> core.width, self -> core.height, -offset, 0);
+	    0, 0, self -> core.width, self -> core.height,
+	    delta, 0);
 
-	/* Scroll the display and paint in the missing bits */
-	Paint(self, self -> core.width - offset, 0, offset, self -> scroller.height);
+	/* Repaint the missing bits */
+	Paint(
+	    self,
+	    delta < 0 ? self -> core.width - self -> scroller.target_delta : 0, 0,
+	    self -> scroller.target_delta, self -> scroller.height);
+
+	self -> scroller.local_delta = 0;
+
+	/* Copy the pixmap to the screen */
+	Redisplay(self, NULL);
+	return;
     }
-    else
+
+    /* If the scroller is obscured then we're done */
+    if (! self -> scroller.is_visible)
     {
-	if (self -> scroller.state == SS_READY)
-	{
-	    /* Scroll the window's contents */
-	    XCopyArea(
-		display, XtWindow(self), XtWindow(self),
-		self -> scroller.backgroundGC,
-		offset, 0, self -> core.width, self -> scroller.height, 0, 0);
-	    self -> scroller.state = SS_PENDING;
-	}
+	self -> scroller.local_delta = 0;
+	return;
     }
+
+    /* Record the sequence number for the CopyArea request */
+    self -> scroller.request_id = NextRequest(display);
+
+    /* Copy the window to itself */
+    XCopyArea(
+	display, XtWindow(self), XtWindow(self),
+	self -> scroller.backgroundGC,
+	-delta, 0, self -> core.width, self -> scroller.height, 0, 0);
+
+    /* Record that we're out of sync */
+    self -> scroller.local_delta = delta;
 }
-
-/* Scrolls the glyphs in the widget to the right */
-static void scroll_right(ScrollerWidget self, int offset)
-{
-    self -> scroller.left_offset += offset;
-    self -> scroller.right_offset -= offset;
-
-    /* Update the glyph_holders list */
-    adjust_right(self);
-
-    if (self -> scroller.use_pixmap)
-    {
-	/* Scroll the pixmap */
-	XCopyArea(
-	    XtDisplay(self), self -> scroller.pixmap, self -> scroller.pixmap,
-	    self -> scroller.backgroundGC,
-	    0, 0, self -> core.width, self -> scroller.height, -offset, 0);
-
-	/* Scroll the display and paint in the missing bits */
-	Paint(self, 0, 0, -offset, self -> scroller.height);
-    }
-    else
-    {
-	if (self -> scroller.state == SS_READY)
-	{
-	    /* Scroll the window's contents */
-	    XCopyArea(
-		XtDisplay(self), XtWindow(self), XtWindow(self),
-		self -> scroller.backgroundGC,
-		offset, 0, self -> core.width, self -> scroller.height, 0, 0);
-	    self -> scroller.state = SS_PENDING;
-	}
-    }
-}
-
-/* Scrolls the glyphs in the widget by offset pixels */
-static void scroll(ScrollerWidget self, int offset)
-{
-    if (offset < 0)
-    {
-	scroll_right(self, offset);
-    }
-    else
-    {
-	scroll_left(self, offset);
-    }
-}
-
 
 
 /* Repaints the view of each view_holder_t */
@@ -1206,6 +1186,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     glyph_holder_t holder = self -> scroller.left_holder;
     int offset = 0 - self -> scroller.left_offset;
     int end = self -> core.width;
+    int delta = self -> scroller.local_delta;
 
     if (self -> scroller.use_pixmap)
     {
@@ -1224,7 +1205,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 	}
 	else
 	{
-	    glyph_holder_paint(holder, display, XtWindow(self), offset, x, y, width, height);
+	    glyph_holder_paint(holder, display, XtWindow(self), offset, x + delta, y, width, height);
 	}
 
 	offset += glyph_holder_width(holder);
@@ -1234,152 +1215,51 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     /* If the internal state is inconsistent then let's bail right now */
     if (offset - self -> core.width != self -> scroller.right_offset)
     {
-	fprintf(
+	DPRINTF((
 	    stderr,
 	    PACKAGE ": internal scroller state is inconsistent\n"
-	    PACKAGE ": please send the resulting core file to phelps@pobox.com\n");
+	    PACKAGE ": please send the resulting core file to phelps@pobox.com\n"));
 
 	/* Force a core dump */
 	abort();
     }
 }
 
-/* Process events that were postponed until the GraphicsExpose (or
- * NoExpose) events were received */
-static void pending_recover(ScrollerWidget self)
-{
-    Display *display = XtDisplay((Widget)self);
-    glyph_holder_t holder;
-    int offset = 0 - self -> scroller.left_offset;
-
-    /* Don't bother repainting if we're not visible */
-    if (self -> scroller.state != SS_READY)
-    {
-	return;
-    }
-
-    /* Update any glyphs which need to be repainted */
-    for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
-    {
-	int width = glyph_holder_width(holder);
-
-	if (holder -> is_pending)
-	{
-	    if (self -> scroller.use_pixmap)
-	    {
-		glyph_holder_paint(
-		    holder, display, self -> scroller.pixmap,
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
-		Redisplay(self, NULL);
-	    }
-	    else
-	    {
-		glyph_holder_paint(
-		    holder, display, XtWindow((Widget)self),
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
-	    }
-
-	    holder -> is_pending = False;
-	}
-
-	offset += width;
-    }
-}
-
-/* Processes events that were postponed until the GraphicsExpose (or
- * NoExpose) events were received */
-static void overflow_recover(ScrollerWidget self)
-{
-    /* Do the pending recovery stuff first */
-    pending_recover(self);
-
-    /* What we do now depends on whether or not we were dragging */
-    switch (self -> scroller.drag_state)
-    {
-	case DS_NOT_DRAGGING:
-	{
-	    Tick((XtPointer)self, NULL);
-	    return;
-	}
-
-	case DS_DRAGGING:
-	{
-	    drag_to(self, self -> scroller.overflow_x);
-	    return;
-	}
-
-	case DS_PENDING:
-	{
-	    drag_to(self, self -> scroller.overflow_x);
-	    self -> scroller.drag_state = DS_NOT_DRAGGING;
-	    EnableClock(self);
-	    return;
-	}
-    }
-}
-
-/* Recover from an old state */
-static void recover(ScrollerWidget self, scroller_state_t old_state)
-{
-    switch (old_state)
-    {
-	case SS_PENDING:
-	{
-	    pending_recover(self);
-	    break;
-	}
-
-	case SS_OVERFLOW:
-	{
-	    pending_recover(self);
-	    overflow_recover(self);
-	    break;
-	}
-
-	default:
-	{
-	    break;
-	}
-    }
-}
-
-
 
 /* Repaints the scroller */
 static void Redisplay(ScrollerWidget self, Region region)
 {
+    /* If we're using a pixmap then just copy it to the window */
     if (self -> scroller.use_pixmap)
     {
-	/* Copy the pixmap to the window */
 	XCopyArea(
 	    XtDisplay((Widget)self), self -> scroller.pixmap,
 	    XtWindow((Widget)self), self -> scroller.backgroundGC,
 	    0, 0, self -> core.width, self -> scroller.height, 0, 0);
+	return;
     }
-    else
-    {
-	/* Repaint each of the regions */
-	if (region != NULL)
-	{
-	    XRectangle rectangle;
 
-	    XClipBox(region, &rectangle);
-	    Paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
-	}
+    /* Repaint each of the regions */
+    if (region != NULL)
+    {
+	XRectangle rectangle;
+
+	XClipBox(region, &rectangle);
+	Paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
     }
 }
 
+/* Redisplay the portion of the scroller in the Region */
 static void do_expose(Widget widget, XEvent *event, Region region)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
-    scroller_state_t old_state = self -> scroller.state;
+
+    /* The scroller is visible */
+    self -> scroller.is_visible = True;
 
     /* Should we postpone the expose event until we're ready? */
-    self -> scroller.state = SS_READY;
-    recover(self, old_state);
     Redisplay(self, region);
 }
-
 
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
@@ -1387,20 +1267,20 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     XEvent event_holder;
     XGraphicsExposeEvent *g_event;
     ScrollerWidget self = (ScrollerWidget)widget;
-    scroller_state_t old_state = self -> scroller.state;
 
     /* Sanity check */
-    if (self -> scroller.use_pixmap)
+    assert(! self -> scroller.use_pixmap);
+
+    /* See if the server has synced with our local state */
+    if (! (LastKnownRequestProcessed(XtDisplay(self)) < self -> scroller.request_id))
     {
-	return;
+	self -> scroller.local_delta = 0;
     }
 
-    /* Watch for no expose events */
+    /* Is the scroller obscured? */
     if (event -> type == NoExpose)
     {
-	self -> scroller.state = SS_OBSCURED;
-	recover(self, old_state);
-
+	self -> scroller.is_visible = False;
 	return;
     }
 
@@ -1413,56 +1293,15 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     /* Coerce the event */
     g_event = (XGraphicsExposeEvent *)event;
 
-    /* Get all of the GExpose events so that we don't accidentally get
-     * a timeout in the middle (which could lead to blank spots) */
-    while (1)
-    {
-#ifdef DEBUG_GLYPH
-	{
-	    XGCValues values;
-
-	    values.foreground = random();
-	    values.clip_mask = None;
-	    XChangeGC(
-		g_event ->display,
-		self -> scroller.gc,
-		GCForeground | GCClipMask,
-		&values);
-	    XFillRectangle(g_event -> display,
-			   g_event -> drawable,
-			   self -> scroller.gc,
-			   g_event -> x, g_event -> y,
-			   g_event -> width, g_event -> height);
-	}
-#endif
-
-	/* Update this portion of the scroller */
-	Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
-
-	/* If there are no more GraphicsExpose events then exit the loop */
-	if (g_event -> count < 1)
-	{
-	    self -> scroller.state = SS_READY;
-	    recover(self, old_state);
-	    
-	    return;
-	}
-
-	/* Get the next GraphicsExpose event */
-	XNextEvent(XtDisplay(widget), &event_holder);
-
-	/* Coerce the event */
-	g_event = (XGraphicsExposeEvent *)&event_holder;
-    }
+    /* Update this portion of the scroller */
+    Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
 }
 
 
 /* FIX THIS: should actually do something? */
 static void Destroy(Widget widget)
 {
-#ifdef DEBUG
-    fprintf(stderr, "Destroy %p\n", widget);
-#endif /* DEBUG */
+    DPRINTF((stderr, "Destroy %p\n", widget));
 }
 
 
@@ -1587,9 +1426,7 @@ static Boolean SetValues(
     ArgList args,
     Cardinal *num_args)
 {
-#ifdef DEBUG
-    fprintf(stderr, "SetValues\n");
-#endif /* DEBUG */
+    DPRINTF((stderr, "SetValues\n"));
     return False;
 }
 
@@ -1599,10 +1436,7 @@ static XtGeometryResult QueryGeometry(
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred)
 {
-#ifdef DEBUG
-    fprintf(stderr, "QueryGeometry\n");
-#endif /* DEBUG */
-
+    DPRINTF((stderr, "QueryGeometry\n"));
     return XtGeometryYes;
 }
 
@@ -1616,9 +1450,7 @@ static glyph_holder_t holder_at_point(ScrollerWidget self, int x, int y)
     /* Points outside the scroller bounds return NULL */
     if ((x < 0) || (self -> core.width <= x) || (y < 0) || (self -> core.height <= y))
     {
-#ifdef DEBUG
-	printf("out of bounds! (x=%d, y=%d)\n", x, y);
-#endif /* DEBUG */
+	DPRINTF((stderr, "out of bounds! (x=%d, y=%d)\n", x, y));
 	return NULL;
     }
 
@@ -1697,26 +1529,19 @@ static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
 static int pre_action(ScrollerWidget self, XEvent *event)
 {
     /* Watch for a button release after a drag */
-    if (event -> type == ButtonRelease)
+    if (event -> type == ButtonRelease && self -> scroller.is_dragging)
     {
-	if (self -> scroller.drag_state != DS_NOT_DRAGGING)
-	{
-	    if (self -> scroller.state == SS_OVERFLOW)
-	    {
-		self -> scroller.drag_state = DS_PENDING;
-		return -1;
-	    }
-	    else
-	    {
-		/* Restart the timer */
-		self -> scroller.drag_state = DS_NOT_DRAGGING;
-		EnableClock(self);
-		return -1;
-	    }
-	}
+	/* We're not dragging anymore */
+	self -> scroller.is_dragging = False;
+
+	/* Restart the timer */
+	EnableClock(self);
+
+	/* And don't preform any action */
+	return -1;
     }
 
-    /* Ignore everything else */
+    /* Otherwise carry on as usual */
     return 0;
 }
 
@@ -2144,23 +1969,9 @@ static void drag_to(ScrollerWidget self, int x)
 	return;
     }
 
-    /* If we're in overflow mode then just record x for future use */
-    if (self -> scroller.state == SS_PENDING || self -> scroller.state == SS_OVERFLOW)
-    {
-	self -> scroller.state = SS_OVERFLOW;
-	self -> scroller.overflow_x = x;
-	return;
-    }
-
     /* Scroll to the x position */
     scroll(self, self -> scroller.last_x - x);
     self -> scroller.last_x = x;
-
-    /* Repaint the pixmap if appropriate */
-    if (self -> scroller.use_pixmap)
-    {
-	Redisplay(self, NULL);
-    }
 }
 
 /* Someone is dragging the mouse */
@@ -2175,8 +1986,8 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	return;
     }
 
-    /* Do we know if we're dragging yet? */
-    if (self -> scroller.drag_state == DS_NOT_DRAGGING)
+    /* Aren't we officially dragging yet? */
+    if (! self -> scroller.is_dragging)
     {
 	/* Give a little leeway so that a wobbly click doesn't become a drag */
 	if (self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x &&
@@ -2186,7 +1997,7 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	}
 
 	/* Otherwise we're definitely dragging */
-	self -> scroller.drag_state = DS_DRAGGING;
+	self -> scroller.is_dragging = True;
 
 	/* Disable the timer until the drag is done */
 	DisableClock(self);
@@ -2258,9 +2069,7 @@ void ScAddMessage(ScrollerWidget self, message_t message)
 /* Callback for expiring glyphs */
 void ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
-#ifdef DEBUG
-    printf("expired...\n");
-#endif /* DEBUG */
+    DPRINTF((stderr, "expired...\n"));
     dequeue(self, glyph);
 }
 

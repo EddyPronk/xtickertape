@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.36 2000/05/29 01:34:38 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.37 2001/05/01 07:58:43 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -59,21 +59,6 @@ typedef struct _ScrollerClassRec
 
 
 typedef struct glyph_holder *glyph_holder_t;
-
-/* Various dragging states */
-enum drag_state
-{
-    /* Not dragging */
-    DS_NOT_DRAGGING,
-
-    /* Dragging */
-    DS_DRAGGING,
-
-    /* Dragging with the intention of stopping when we get caught up */
-    DS_PENDING
-};
-
-typedef enum drag_state drag_state_t;
 
 /* Indicates how much of the last scroll request has completed */
 enum scroller_state
@@ -119,8 +104,11 @@ typedef struct
     /* True if there are no messages to scroll */
     Bool is_stopped;
 
+    /* True if the scroller is visible */
+    Bool is_visible;
+
     /* Are we dragging? */
-    drag_state_t drag_state;
+    Bool is_dragging;
 
     /* The leftmost glyph holder */
     glyph_holder_t left_holder;
@@ -153,14 +141,29 @@ typedef struct
     /* The height of the scrolling text */
     int height;
 
+
+    /* The sequence number of our last CopyArea request */
+    unsigned long request_id;
+
+    /* The difference in position between the left_offset and
+     * right_offset view of our position and our knowledge of the X
+     * server's state.  Positive values indicate the we've performed a
+     * CopyArea to the right that hasn't yet been acknowledged by the
+     * server.  If this is zero then the server should be in sync. */
+    int local_delta;
+
+    /* The difference between the current scroller position and the
+     * desired scroller position.  Positive values indicate that we
+     * would like to see the scroller to the right of its current
+     * position. */
+    int target_delta;
+
+
     /* The initial position of the drag */
     int start_drag_x;
 
     /* The position of the pointer the last time we noticed a drag */
     int last_x;
-
-    /* The position of the mouse during the last overflowed drag request */
-    int overflow_x;
 
     /* The width of the clip mask */
     int clip_width;
@@ -190,10 +193,6 @@ typedef struct
     /* The array of Pixels used to display the string portion of a
      * message at varying degrees of fading */
     Pixel *stringPixels;
-
-    /* The `readyness' state of the scroller. */
-    scroller_state_t state;
-
 } ScrollerPart;
 
 
