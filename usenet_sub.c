@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.28 2002/02/25 16:22:51 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.29 2002/04/04 21:20:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -68,9 +68,8 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.28 2002/02/25 16:22:51 phelps
 #define F_LE "%s <= %s"
 #define F_GE "%s >= %s"
 
-#define ONE_SUB \
-"ELVIN_CLASS == \"NEWSWATCHER\" && " \
-"ELVIN_SUBCLASS == \"MONITOR\" && (%s)"
+#define ONE_SUB "ELVIN_CLASS == \"NEWSWATCHER\" && (%s)"
+
 
 #define PATTERN_ONLY "%sregex(NEWSGROUPS, \"%s\")"
 #define PATTERN_PLUS "(%sregex(NEWSGROUPS, \"%s\"))"
