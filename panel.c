@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.19 1999/11/22 21:32:35 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.20 1999/11/25 08:46:55 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -381,10 +381,10 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 {
     Widget top;
     Widget form;
-    Widget infoForm;
+    Widget info_form;
     Widget title;
     Widget copyright;
-    Widget buttonForm;
+    Widget button_form;
     Widget button;
     Atom wm_delete_window;
     XmString string;
@@ -414,7 +414,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 	NULL);
 
     /* Create a Form widget to manage the Labels */
-    infoForm = XtVaCreateWidget(
+    info_form = XtVaCreateWidget(
 	"infoForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
@@ -425,7 +425,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
     sprintf(buffer, "%s %s", PACKAGE, VERSION);
     string = XmStringCreateSimple(buffer);
     title = XtVaCreateManagedWidget(
-	"titleLabel", xmLabelWidgetClass, infoForm,
+	"titleLabel", xmLabelWidgetClass, info_form,
 	XmNlabelString, string,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
@@ -435,7 +435,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 
     /* Create the copyright label */
     copyright = XtVaCreateManagedWidget(
-	"copyrightLabel", xmLabelWidgetClass, infoForm,
+	"copyrightLabel", xmLabelWidgetClass, info_form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
@@ -444,28 +444,28 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 
     /* Create the author label */
     XtVaCreateManagedWidget(
-	"authorLabel", xmLabelWidgetClass, infoForm,
+	"authorLabel", xmLabelWidgetClass, info_form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
 	XmNtopWidget, copyright,
 	NULL);
 
-    XtManageChild(infoForm);
+    XtManageChild(info_form);
 
     /* Create a Form widget to manage the button */
-    buttonForm = XtVaCreateWidget(
+    button_form = XtVaCreateWidget(
 	"buttonForm", xmFormWidgetClass, form,
 	XmNleftAttachment, XmATTACH_FORM,
 	XmNrightAttachment, XmATTACH_FORM,
 	XmNtopAttachment, XmATTACH_WIDGET,
 	XmNbottomAttachment, XmATTACH_FORM,
-	XmNtopWidget, infoForm,
+	XmNtopWidget, info_form,
 	NULL);
 
     /* Create the dismiss button */
     button = XtVaCreateManagedWidget(
-	"dismiss", xmPushButtonWidgetClass, buttonForm,
+	"dismiss", xmPushButtonWidgetClass, button_form,
 	XmNsensitive, True,
 	XmNshowAsDefault, True,
 	XmNbottomAttachment, XmATTACH_FORM,
@@ -478,7 +478,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 	button, XmNactivateCallback,
 	(XtCallbackProc)action_dismiss, (XtPointer)self);
 
-    XtManageChild(buttonForm);
+    XtManageChild(button_form);
 
     /* Manage all of the widgets */
     XtManageChild(form);
