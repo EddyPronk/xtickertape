@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.55 1999/08/15 03:00:27 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.56 1999/08/17 18:04:50 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -263,7 +263,7 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> previous = NULL;
     self -> next = NULL;
     self -> width = width;
-    self -> glyph = glyph;
+    self -> glyph = glyph -> alloc(glyph);
     return self;
 }
 
@@ -272,8 +272,9 @@ void glyph_holder_free(glyph_holder_t self)
 {
     self -> previous = NULL;
     self -> next = NULL;
+    self -> glyph -> free(self -> glyph);
     self -> glyph = NULL;
-/*    free(self);*/
+    free(self);
 }
 
 /* Answers the width of the holder's glyph */
@@ -1385,6 +1386,9 @@ static void dequeue(ScrollerWidget self, glyph_t glyph)
     }
 
     queue_remove(glyph);
+
+    /* Free our reference to the glyph */
+    glyph -> free(glyph);
 }
 
 /* Delete a message when scrolling left to right (backwards) */
