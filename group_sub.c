@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.10 1999/12/16 07:52:08 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.11 2000/01/13 00:29:45 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -135,7 +135,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_USER, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	user = value.s;
+	user = (char *)value.s;
     }
     else
     {
@@ -146,7 +146,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_TICKERTEXT, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	text = value.s;
+	text = (char *)value.s;
     }
     else
     {
@@ -179,7 +179,7 @@ static void notify_cb(
 
 	    case ELVIN_STRING:
 	    {
-		timeout = atoi(value.s);
+		timeout = atoi((char *)value.s);
 		break;
 	    }
 
@@ -207,7 +207,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_MIME_TYPE, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	mime_type = value.s;
+	mime_type = (char *)value.s;
     }
     else
     {
@@ -218,7 +218,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	mime_args = value.s;
+	mime_args = (char *)value.s;
     }
     else
     {
@@ -229,7 +229,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_REPLACEMENT, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	tag = value.s;
+	tag = (char *)value.s;
     }
     else
     {
@@ -240,7 +240,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	message_id = value.s;
+	message_id = (char *)value.s;
     }
     else 
     {
@@ -251,7 +251,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_IN_REPLY_TO, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	reply_id = value.s;
+	reply_id = (char *)value.s;
     }
     else
     {
@@ -300,7 +300,7 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(
 	notification,
 	F_VERSION,
-	VERSION,
+	(uchar *)VERSION,
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -311,7 +311,7 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(
 	notification,
 	F_TICKERTAPE,
-	self -> name,
+	(uchar *)self -> name,
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -322,7 +322,7 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(
 	notification,
 	F_USER,
-	message_get_user(message),
+	(uchar *)message_get_user(message),
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -333,7 +333,7 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(
 	notification,
 	F_TICKERTEXT,
-	message_get_string(message),
+	(uchar *)message_get_string(message),
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -357,7 +357,7 @@ static void send_message(group_sub_t self, message_t message)
 	if (elvin_notification_add_string(
 	    notification,
 	    F_MIME_ARGS,
-	    mime_args,
+	    (uchar *)mime_args,
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -367,7 +367,7 @@ static void send_message(group_sub_t self, message_t message)
 	if (elvin_notification_add_string(
 	    notification,
 	    F_MIME_TYPE,
-	    mime_type,
+	    (uchar *)mime_type,
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -379,7 +379,7 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(
 	notification,
 	F_MESSAGE_ID,
-	message_id,
+	(uchar *)message_id,
 	self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -393,7 +393,7 @@ static void send_message(group_sub_t self, message_t message)
 	if (elvin_notification_add_string(
 	    notification,
 	    F_IN_REPLY_TO,
-	    reply_id,
+	    (uchar *)reply_id,
 	    self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
@@ -539,7 +539,7 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
     if (self -> handle != NULL)
     {
 	if (elvin_async_add_subscription(
-	    self -> handle, self -> expression, NULL, 1,
+	    self -> handle, (uchar *)self -> expression, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)

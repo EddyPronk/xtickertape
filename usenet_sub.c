@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.13 1999/12/16 07:52:11 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.14 2000/01/13 00:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -119,7 +119,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, NEWSGROUPS, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	string = value.s;
+	string = (char *)value.s;
     }
     else
     {
@@ -138,21 +138,21 @@ static void notify_cb(
     if (elvin_notification_get(notification, FROM_NAME, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	name = value.s;
+	name = (char *)value.s;
     }
     else
     {
 	if (elvin_notification_get(notification, FROM_EMAIL, &type, &value, error) &&
 	    type == ELVIN_STRING)
 	{
-	    name = value.s;
+	    name = (char *)value.s;
 	}
 	else
 	{
 	    if (elvin_notification_get(notification, FROM, &type, &value, error) &&
 		type == ELVIN_STRING)
 	    {
-		name = value.s;
+		name = (char *)value.s;
 	    }
 	    else
 	    {
@@ -165,7 +165,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, SUBJECT, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	subject = value.s;
+	subject = (char *)value.s;
     }
     else
     {
@@ -176,13 +176,13 @@ static void notify_cb(
     if (elvin_notification_get(notification, MIME_ARGS, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	mime_args = value.s;
+	mime_args = (char *)value.s;
 
 	/* Get the MIME_TYPE field (if provided) */
 	if (elvin_notification_get(notification, MIME_TYPE, &type, &value, error) &&
 	    type == ELVIN_STRING)
 	{
-	    mime_type = value.s;
+	    mime_type = (char *)value.s;
 	}
 	else
 	{
@@ -195,13 +195,13 @@ static void notify_cb(
 	if (elvin_notification_get(notification, MESSAGE_ID, &type, &value, error) &&
 	    type == ELVIN_STRING)
 	{
-	    char *message_id = value.s;
+	    char *message_id = (char *)value.s;
 	    char *news_host;
 
 	    if (elvin_notification_get(notification, X_NNTP_HOST, &type, &value, error) &&
 		type == ELVIN_STRING)
 	    {
-		news_host = value.s;
+		news_host = (char *)value.s;
 	    }
 	    else
 	    {
@@ -590,7 +590,7 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
     if ((self -> handle != NULL) && (self -> expression != NULL))
     {
 	if (elvin_async_add_subscription(
-	    self -> handle, self -> expression, NULL, 1,
+	    self -> handle, (uchar *)self -> expression, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)

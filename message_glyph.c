@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.30 1999/12/16 07:52:10 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.31 2000/01/13 00:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -312,13 +312,13 @@ static void paint_string(
     int x, int y, int width, int height)
 {
     XCharStruct *char_info;
-    unsigned char *first;
-    unsigned char *last;
+    char *first;
+    char *last;
     int left, right;
 
     /* Find the first visible character in the string */
     left = offset;
-    first = (unsigned char *)string;
+    first = string;
     char_info = per_char(font, *first);
 
     while ((left + char_info -> rbearing < x) && (*first != '\0'))

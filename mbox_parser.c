@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.5 1999/12/16 07:52:10 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.6 2000/01/13 00:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,13 +42,12 @@ typedef int (*lexer_state_t)(mbox_parser_t self, int ch);
 
 
 /* The type of a parser state */
-typedef enum parser_state parser_state_t;
-enum parser_state
+typedef enum parser_state
 {
     PRE_ROUTE_ADDR,
     ROUTE_ADDR,
     POST_ROUTE_ADDR
-};
+} parser_state_t;
 
 /* Instance variables of a mbox_parser */
 struct mbox_parser

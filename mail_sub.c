@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.14 1999/12/16 07:52:09 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.15 2000/01/13 00:29:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -94,7 +94,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	from = value.s;
+	from = (char *)value.s;
 
 	/* Split the user name from the address. */
 	if ((mbox_parser_parse(self -> parser, from)) == 0)
@@ -116,7 +116,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_FOLDER, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	folder = value.s;
+	folder = (char *)value.s;
 
 	/* Format the folder name to use as the group */
 	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
@@ -134,7 +134,7 @@ static void notify_cb(
     if (elvin_notification_get(notification, F_SUBJECT, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
-	subject = value.s;
+	subject = (char *)value.s;
     }
     else
     {
@@ -250,7 +250,7 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
 
 	/* Subscribe to elvinmail notifications */
 	if (elvin_async_add_subscription(
-	    self -> handle, buffer, NULL, 1,
+	    self -> handle, (uchar *)buffer, NULL, 1,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)

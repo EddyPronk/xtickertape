@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.73 2000/01/11 02:31:38 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.74 2000/01/13 00:29:48 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -295,7 +295,7 @@ static Window create_icon(Widget shell)
 
     /* Create a pixmap from the red bitmap data */
     pixmap = XCreatePixmapFromBitmapData(
-	display, window, red_bits, red_width, red_height,
+	display, window, (char *)red_bits, red_width, red_height,
 	color.pixel, black, depth);
 
     /* Create a graphics context */
@@ -304,7 +304,7 @@ static Window create_icon(Widget shell)
 
     /* Create a pixmap for the white 'e' and paint it on top */
     mask = XCreatePixmapFromBitmapData(
-	display, pixmap, white_bits, white_width, white_height,
+	display, pixmap, (char *)white_bits, white_width, white_height,
 	WhitePixelOfScreen(screen) ^ black, 0, depth);
     XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
     XFreePixmap(display, mask);
@@ -312,7 +312,7 @@ static Window create_icon(Widget shell)
 
 #ifdef HAVE_LIBXEXT
     /* Create a shape mask and apply it to the window */
-    mask = XCreateBitmapFromData(display, pixmap, mask_bits, mask_width, mask_height);
+    mask = XCreateBitmapFromData(display, pixmap, (char *)mask_bits, mask_width, mask_height);
     XShapeCombineMask(display, window, ShapeBounding, 0, 0, mask, ShapeSet);
 #endif /* HAVE_LIBXEXT */
 
