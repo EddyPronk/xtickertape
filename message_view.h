@@ -31,47 +31,11 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.8 2003/01/14 12:52:49 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.9 2003/01/14 16:57:53 phelps Exp $";
 #endif /* lint */
-
-/* String measurements */
-typedef struct string_sizes *string_sizes_t;
-
-/* The utf8_renderer type */
-typedef struct utf8_renderer *utf8_renderer_t;
 
 /* The message_view type */
 typedef struct message_view *message_view_t;
-
-/* Use for string measurement results */
-struct string_sizes
-{
-    /* The distance from the origin to the left edge of the string */
-    long lbearing;
-
-    /* The distance from the origin to the right edge of the string */
-    long rbearing;
-
-    /* The distance from the origin to the next string's origin */
-    long width;
-
-    /* The distance from the baseline to the top of the string */
-    short ascent;
-
-    /* The distance from the baseline to the bottom of the string */
-    short descent;
-};
-
-/* Returns an iconv conversion descriptor for converting characters to
- * be displayed in a given font from a given code set.  If tocode is
- * non-NULL then it will be tried first. */
-utf8_renderer_t utf8_renderer_alloc(
-    Display *display,
-    XFontStruct *font,
-    const char *tocode);
-
-/* Releases the resources allocated by a utf8_renderer_t */
-void utf8_renderer_free(utf8_renderer_t self);
 
 /* Allocates and initializes a new message_view_t */
 message_view_t message_view_alloc(
