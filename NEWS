@@ -13,7 +13,10 @@ Overview of changes in xtickertape-1.6.0
 * A history of the last few messages sent is now shown at the bottom
   of the control panel window.  The history can be displayed in
   threaded or chronological order and a toggle under the `Options'
-  menu lets the user switch between them.
+  menu lets the user switch between them.  Messages with attachments
+  are displayed in the history list in a bold font (or whichever font
+  has the MIME tag in the fontList), and their attachment may be
+  viewed by double-clicking on them.
 
 * The new action drag() can be used to drag the tickertape's scroller
   around.  Not necessarily useful, but quite cute.
