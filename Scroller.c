@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.139 2003/01/14 12:52:48 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.140 2003/01/14 16:56:55 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -47,7 +47,9 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.139 2003/01/14 12:52:48 phelps 
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
+#include "globals.h"
 #include "replace.h"
+#include "utf8.h"
 #include "message.h"
 #include "message_view.h"
 #include "ScrollerP.h"
@@ -56,13 +58,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.139 2003/01/14 12:52:48 phelps 
 #define DPRINTF(x) fprintf x
 #else
 #define DPRINTF(x)
-#endif
-
-#if ! defined(MIN)
-# define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#endif
-#if ! defined(MAX)
-# define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
 
 /*

@@ -36,7 +36,7 @@
 #define GLOBALS_H
 
 #ifndef lint
-static const char cvs_GLOBALS_H[] = "$Id: globals.h,v 1.2 2002/07/02 15:48:50 phelps Exp $";
+static const char cvs_GLOBALS_H[] = "$Id: globals.h,v 1.3 2003/01/14 16:56:55 phelps Exp $";
 #endif /* lint */
 
 #if defined(ELVIN_VERSION_AT_LEAST)
@@ -45,6 +45,15 @@ extern elvin_client_t client;
 #else
 #error "Unsupported Elvin library version"
 #endif
+#endif
+
+/* Useful macros */
+#if !defined(MIN)
+# define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+
+#if !defined(MAX)
+# define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
 #endif /* GLOBALS_H */

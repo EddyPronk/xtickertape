@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.72 2003/01/14 12:52:48 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.73 2003/01/14 16:56:55 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -52,8 +52,10 @@ static const char cvsid[] = "$Id: History.c,v 1.72 2003/01/14 12:52:48 phelps Ex
 #include <X11/Xaw/SimpleP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
+#include "globals.h"
 #include "replace.h"
 #include "message.h"
+#include "utf8.h"
 #include "message_view.h"
 #include "History.h"
 #include "HistoryP.h"
@@ -63,14 +65,6 @@ static const char cvsid[] = "$Id: History.c,v 1.72 2003/01/14 12:52:48 phelps Ex
 #define dprintf(x) printf x
 #else
 #define dprintf(x) ;
-#endif
-
-#if !defined(MIN)
-# define MIN(x, y) ((x) < (y) ? (x) : (y))
-#endif
-
-#if !defined(MAX)
-# define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
 
