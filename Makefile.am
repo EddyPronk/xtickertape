@@ -21,6 +21,7 @@ xtickertape_SOURCES = \
 	main.c
 
 test_parser_SOURCES = \
+	message.h message.c \
 	subscription.h subscription.c \
 	ast.h ast.c \
 	grammar.h parser.h parser.c \
