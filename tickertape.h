@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.2 1999/08/19 01:52:59 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.3 1999/08/19 04:37:51 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -58,26 +58,16 @@ void tickertape_free(tickertape_t self);
 /* Prints out debugging information about the Tickertape */
 void tickertape_debug(tickertape_t self);
 
-/* Handles the notify action */
-void tickertape_handleNotify(tickertape_t self, Widget widget);
+/* Answers the tickertape's user name */
+char *tickertape_user_name(tickertape_t self);
 
-/* Handles the quit action */
-void tickertape_handleQuit(tickertape_t self, Widget widget);
+/* Reloads the tickertape's groups file */
+void tickertape_reload_groups(tickertape_t self);
 
+/* Reloads the tickertape's usenet file */
+void tickertape_reload_usenet(tickertape_t self);
 
-/* Answers the receiver's tickerDir filename */
-char *tickertape_tickerDir(tickertape_t self);
-
-/* Answers the receiver's groups file filename */
-char *tickertape_groupsFilename(tickertape_t self);
-
-/* Answers the receiver's usenet filename */
-char *tickertape_usenetFilename(tickertape_t self);
-
-/* Answers the receiver's groups file */
-FILE *tickertape_groupsFile(tickertape_t self);
-
-/* Answers the receiver's usenet file */
-FILE *tickertape_usenetFile(tickertape_t self);
+/* Quit the application */
+void tickertape_quit(tickertape_t self);
 
 #endif /* TICKERTAPE_H */

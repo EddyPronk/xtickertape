@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.6 1999/08/19 01:52:59 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.7 1999/08/19 04:37:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -95,11 +95,12 @@ struct tickertape
     /* The receiver's Orbit-related subscriptions */
     Hashtable orbitSubscriptionsById;
 #endif /* ORBIT */
+
     /* The elvin connection */
     ElvinConnection connection;
 
     /* The control panel */
-    ControlPanel controlPanel;
+    ControlPanel control_panel;
 
     /* The ScrollerWidget */
     ScrollerWidget scroller;
@@ -115,19 +116,22 @@ struct tickertape
  *
  */
 static int mkdirhier(char *dirname);
-static void PublishStartupNotification(tickertape_t self);
-static void Click(Widget widget, tickertape_t self, Message message);
-static void ReceiveMessage(tickertape_t self, Message message);
-static List ReadGroupsFile(tickertape_t self);
-static void ReloadGroups(tickertape_t self);
-static void ReloadUsenet(tickertape_t self);
-static void InitializeUserInterface(tickertape_t self);
-static void Disconnect(tickertape_t self, ElvinConnection connection);
-static void Reconnect(tickertape_t self, ElvinConnection connection);
+static void publish_startup_notification(tickertape_t self);
+static void click_callback(Widget widget, tickertape_t self, Message message);
+static void receive_callback(tickertape_t self, Message message);
+static List read_groups_file(tickertape_t self);
+static void init_ui(tickertape_t self);
+static void disconnect_callback(tickertape_t self, ElvinConnection connection);
+static void reconnect_callback(tickertape_t self, ElvinConnection connection);
 #ifdef ORBIT
-static void OrbitCallback(tickertape_t self, en_notify_t notification);
-static void SubscribeToOrbit(tickertape_t self);
+static void orbit_callback(tickertape_t self, en_notify_t notification);
+static void subscribe_to_orbit(tickertape_t self);
 #endif /* ORBIT */
+static char *tickertape_ticker_dir(tickertape_t self);
+static char *tickertape_groups_filename(tickertape_t self);
+static char *tickertape_usenet_filename(tickertape_t self);
+static FILE *tickertape_groups_file(tickertape_t self);
+static FILE *tickertape_usenet_file(tickertape_t self);
 
 
 /*
@@ -188,7 +192,7 @@ static int mkdirhier(char *dirname)
 }
 
 /* Publishes a notification indicating that the receiver has started */
-static void PublishStartupNotification(tickertape_t self)
+static void publish_startup_notification(tickertape_t self)
 {
     en_notify_t notification;
     SANITY_CHECK(self);
@@ -207,38 +211,38 @@ static void PublishStartupNotification(tickertape_t self)
 }
 
 /* Callback for a mouse click in the scroller */
-static void Click(Widget widget, tickertape_t self, Message message)
+static void click_callback(Widget widget, tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
-    ControlPanel_show(self -> controlPanel, message);
+    ControlPanel_show(self -> control_panel, message);
 }
 
 /* Receive a Message matched by Subscription */
-static void ReceiveMessage(tickertape_t self, Message message)
+static void receive_callback(tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
     ScAddMessage(self -> scroller, message);
 
-/*    ControlPanel_addHistoryMessage(self -> controlPanel, message);*/
+/*    ControlPanel_addHistoryMessage(self -> control_panel, message);*/
     history_add(self -> history, message);
 }
 
 /* Read from the Groups file.  Returns a List of subscriptions if
  * successful, NULL otherwise */
-static List ReadGroupsFile(tickertape_t self)
+static List read_groups_file(tickertape_t self)
 {
     FILE *file;
     List subscriptions;
 
     /* Open the groups file and read */
-    if ((file = tickertape_groupsFile(self)) == NULL)
+    if ((file = tickertape_groups_file(self)) == NULL)
     {
 	return List_alloc();
     }
 
     /* Read the file */
     subscriptions = Subscription_readFromGroupFile(
-	file, (SubscriptionCallback)ReceiveMessage, self);
+	file, (SubscriptionCallback)receive_callback, self);
 
     fclose(file);
     return subscriptions;
@@ -246,20 +250,20 @@ static List ReadGroupsFile(tickertape_t self)
 
 
 /* Read from the usenet file.  Returns a Usenet subscription. */
-static UsenetSubscription ReadUsenetFile(tickertape_t self)
+static UsenetSubscription read_usenet_file(tickertape_t self)
 {
     FILE *file;
     UsenetSubscription subscription;
 
     /* Open the usenet file and read */
-    if ((file = tickertape_usenetFile(self)) == NULL)
+    if ((file = tickertape_usenet_file(self)) == NULL)
     {
 	return NULL;
     }
 
     /* Read the file */
     subscription = UsenetSubscription_readFromUsenetFile(
-	file, (SubscriptionCallback)ReceiveMessage, self);
+	file, (SubscriptionCallback)receive_callback, self);
     fclose(file);
 
     return subscription;
@@ -269,14 +273,14 @@ static UsenetSubscription ReadUsenetFile(tickertape_t self)
 
 
 /* Adds the subscription into the Hashtable using the expression as its key */
-static void MapByExpression(Subscription subscription, Hashtable hashtable)
+static void map_by_expression(Subscription subscription, Hashtable hashtable)
 {
     Hashtable_put(hashtable, Subscription_expression(subscription), subscription);
 }
 
 /* Make sure that we're subscribed to the right stuff, but share elvin
  * subscriptions whenever possible */
-static void UpdateElvin(
+static void update_elvin(
     Subscription subscription,
     tickertape_t self,
     Hashtable hashtable,
@@ -301,7 +305,7 @@ static void UpdateElvin(
 }
 
 /* Request from the ControlPanel to reload groups file */
-static void ReloadGroups(tickertape_t self)
+void tickertape_reload_groups(tickertape_t self)
 {
     Hashtable hashtable;
     List newSubscriptions;
@@ -309,12 +313,12 @@ static void ReloadGroups(tickertape_t self)
     SANITY_CHECK(self);
 
     /* Read the new list of subscriptions */
-    newSubscriptions = ReadGroupsFile(self);
+    newSubscriptions = read_groups_file(self);
 
     /* Reuse any elvin subscriptions if we can, create new ones we need */
     hashtable = Hashtable_alloc(37);
-    List_doWith(self -> subscriptions, MapByExpression, hashtable);
-    List_doWithWithWith(newSubscriptions, UpdateElvin, self, hashtable, newSubscriptions);
+    List_doWith(self -> subscriptions, map_by_expression, hashtable);
+    List_doWithWithWith(newSubscriptions, update_elvin, self, hashtable, newSubscriptions);
 
     /* Delete any elvin subscriptions we're no longer listening to,
      * remove them from the ControlPanel and free the corresponding
@@ -334,19 +338,19 @@ static void ReloadGroups(tickertape_t self)
     List_doWithWith(
 	self -> subscriptions,
 	Subscription_updateControlPanelIndex,
-	self -> controlPanel,
+	self -> control_panel,
 	&index);
 }
 
 
 /* Request from the ControlPanel to reload usenet file */
-static void ReloadUsenet(tickertape_t self)
+void tickertape_reload_usenet(tickertape_t self)
 {
     UsenetSubscription subscription;
     SANITY_CHECK(self);
 
     /* Read the new usenet subscription */
-    subscription = ReadUsenetFile(self);
+    subscription = read_usenet_file(self);
 
     /* Stop listening to old subscription */
     if (self -> usenetSubscription != NULL)
@@ -366,29 +370,26 @@ static void ReloadUsenet(tickertape_t self)
 
 
 /* Initializes the User Interface */
-static void InitializeUserInterface(tickertape_t self)
+static void init_ui(tickertape_t self)
 {
-    self -> controlPanel = ControlPanel_alloc(
-	self -> top, self -> user, self -> history,
-	(ReloadCallback)ReloadGroups, self,
-	(ReloadCallback)ReloadUsenet, self);
+    self -> control_panel = ControlPanel_alloc(self, self -> top);
 
     List_doWith(
 	self -> subscriptions,
 	Subscription_setControlPanel,
-	self -> controlPanel);
+	self -> control_panel);
 
     self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
 	"scroller", scrollerWidgetClass, self -> top,
 	NULL);
-    XtAddCallback((Widget)self -> scroller, XtNcallback, (XtCallbackProc)Click, self);
+    XtAddCallback((Widget)self -> scroller, XtNcallback, (XtCallbackProc)click_callback, self);
     XtRealizeWidget(self -> top);
 }
 
 
 
 /* This is called when we get our elvin connection back */
-static void Reconnect(tickertape_t self, ElvinConnection connection)
+static void reconnect_callback(tickertape_t self, ElvinConnection connection)
 {
     StringBuffer buffer;
     Message message;
@@ -409,14 +410,14 @@ static void Reconnect(tickertape_t self, ElvinConnection connection)
 	StringBuffer_getBuffer(buffer), 10,
 	NULL, NULL,
 	0, 0);
-    ReceiveMessage(self, message);
+    receive_callback(self, message);
 
     /* Republish the startup notification */
-    PublishStartupNotification(self);
+    publish_startup_notification(self);
 }
 
 /* This is called when we lose our elvin connection */
-static void Disconnect(tickertape_t self, ElvinConnection connection)
+static void disconnect_callback(tickertape_t self, ElvinConnection connection)
 {
     StringBuffer buffer;
     Message message;
@@ -457,7 +458,7 @@ static void Disconnect(tickertape_t self, ElvinConnection connection)
 	StringBuffer_getBuffer(buffer), 10,
 	NULL, NULL,
 	0, 0);
-    ReceiveMessage(self, message);
+    receive_callback(self, message);
     StringBuffer_free(buffer);
 }
 
@@ -471,7 +472,7 @@ static void Disconnect(tickertape_t self, ElvinConnection connection)
  */
 
 /* Callback for when we match the Orbit notification */
-static void OrbitCallback(tickertape_t self, en_notify_t notification)
+static void orbit_callback(tickertape_t self, en_notify_t notification)
 {
     en_type_t type;
     char *id;
@@ -516,12 +517,12 @@ static void OrbitCallback(tickertape_t self, en_notify_t notification)
 	/* Otherwise create a new Subscription and record it in the table */
 	subscription = OrbitSubscription_alloc(
 	    title, id,
-	    (OrbitSubscriptionCallback)ReceiveMessage, self);
+	    (OrbitSubscriptionCallback)receive_callback, self);
 	Hashtable_put(self -> orbitSubscriptionsById, id, subscription);
 
 	/* Register the subscription with the ElvinConnection and the ControlPanel */
 	OrbitSubscription_setConnection(subscription, self -> connection);
-	OrbitSubscription_setControlPanel(subscription, self -> controlPanel);
+	OrbitSubscription_setControlPanel(subscription, self -> control_panel);
     }
 
     /* See if we're unsubscribing */
@@ -538,7 +539,7 @@ static void OrbitCallback(tickertape_t self, en_notify_t notification)
 
 
 /* Subscribes to the Orbit meta-subscription */
-static void SubscribeToOrbit(tickertape_t self)
+static void subscribe_to_orbit(tickertape_t self)
 {
     StringBuffer buffer;
     SANITY_CHECK(self);
@@ -553,7 +554,7 @@ static void SubscribeToOrbit(tickertape_t self)
     /* Subscribe to the meta-subscription */
     ElvinConnection_subscribe(
 	self -> connection, StringBuffer_getBuffer(buffer),
-	(NotifyCallback)OrbitCallback, self);
+	(NotifyCallback)orbit_callback, self);
 
     StringBuffer_free(buffer);
 }
@@ -584,20 +585,20 @@ tickertape_t tickertape_alloc(
     self -> groupsFile = (groupsFile == NULL) ? NULL : strdup(groupsFile);
     self -> usenetFile = (usenetFile == NULL) ? NULL : strdup(usenetFile);
     self -> top = top;
-    self -> subscriptions = ReadGroupsFile(self);
-    self -> usenetSubscription = ReadUsenetFile(self);
+    self -> subscriptions = read_groups_file(self);
+    self -> usenetSubscription = read_usenet_file(self);
     self -> mailSubscription = MailSubscription_alloc(
-	user, (MailSubscriptionCallback)ReceiveMessage, self);
+	user, (MailSubscriptionCallback)receive_callback, self);
     self -> connection = NULL;
-    self -> history = history_alloc();
+    self -> history = history_alloc(self);
 
-    InitializeUserInterface(self);
+    init_ui(self);
 
     /* Connect to elvin and subscribe */
     self -> connection = ElvinConnection_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
-	(DisconnectCallback)Disconnect, self,
-	(ReconnectCallback)Reconnect, self);
+	(DisconnectCallback)disconnect_callback, self,
+	(ReconnectCallback)reconnect_callback, self);
     List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
 
     /* Subscribe to the Usenet subscription if we have one */
@@ -615,10 +616,10 @@ tickertape_t tickertape_alloc(
 #ifdef ORBIT
     /* Listen for Orbit-related notifications and alert the world to our presence */
     self -> orbitSubscriptionsById = Hashtable_alloc(37);
-    SubscribeToOrbit(self);
+    subscribe_to_orbit(self);
 #endif /* ORBIT */
 
-    PublishStartupNotification(self);
+    publish_startup_notification(self);
     return self;
 }
 
@@ -655,9 +656,9 @@ void tickertape_free(tickertape_t self)
 	ElvinConnection_free(self -> connection);
     }
 
-    if (self -> controlPanel)
+    if (self -> control_panel)
     {
-	ControlPanel_free(self -> controlPanel);
+	ControlPanel_free(self -> control_panel);
     }
 
     /* How do we free a ScrollerWidget? */
@@ -685,35 +686,25 @@ void tickertape_debug(tickertape_t self)
     printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
 #endif /* ORBIT */
     printf("  connection = 0x%p\n", self -> connection);
-    printf("  controlPanel = 0x%p\n", self -> controlPanel);
+    printf("  control_panel = 0x%p\n", self -> control_panel);
     printf("  scroller = 0x%p\n", self -> scroller);
 }
 
-
-/* Handle the notify action */
-void tickertape_handleNotify(tickertape_t self, Widget widget)
+/* Answers the tickertape's user name */
+char *tickertape_user_name(tickertape_t self)
 {
-    /* Pass this on to the control panel */
-    ControlPanel_handleNotify(self -> controlPanel, widget);
+    return self -> user;
 }
 
-
-/* Handle the quit action */
-void tickertape_handleQuit(tickertape_t self, Widget widget)
+/* Quit the application */
+void tickertape_quit(tickertape_t self)
 {
-    /* If we get the quit action from the top-level widget or the tickertape then quit */
-    if ((widget == self -> top) || (widget == (Widget) self -> scroller))
-    {
-	XtDestroyApplicationContext(XtWidgetToApplicationContext(widget));
-	exit(0);
-    }
-
-    /* Otherwise close the control panel window */
-    XtPopdown(widget);
+    XtDestroyApplicationContext(XtWidgetToApplicationContext(self -> top));
+    exit(0);
 }
 
 /* Answers the receiver's tickerDir filename */
-char *tickertape_tickerDir(tickertape_t self)
+static char *tickertape_ticker_dir(tickertape_t self)
 {
     /* See if we've already looked it up */
     if (self -> tickerDir != NULL)
@@ -741,7 +732,7 @@ char *tickertape_tickerDir(tickertape_t self)
 
     /* Make sure the TICKERDIR exists 
      * Note: we're being clever here and assuming that nothing will
-     * call tickertape_tickerDir() if both groupsFile and usenetFile
+     * call tickertape_ticker_dir() if both groupsFile and usenetFile
      * are set */
     if (mkdirhier(self -> tickerDir) < 0)
     {
@@ -752,11 +743,11 @@ char *tickertape_tickerDir(tickertape_t self)
 }
 
 /* Answers the receiver's groups file filename */
-char *tickertape_groupsFilename(tickertape_t self)
+static char *tickertape_groups_filename(tickertape_t self)
 {
     if (self -> groupsFile == NULL)
     {
-	char *dir = tickertape_tickerDir(self);
+	char *dir = tickertape_ticker_dir(self);
 	self -> groupsFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
 	strcpy(self -> groupsFile, dir);
 	strcat(self -> groupsFile, "/");
@@ -767,11 +758,11 @@ char *tickertape_groupsFilename(tickertape_t self)
 }
 
 /* Answers the receiver's usenet filename */
-char *tickertape_usenetFilename(tickertape_t self)
+static char *tickertape_usenet_filename(tickertape_t self)
 {
     if (self -> usenetFile == NULL)
     {
-	char *dir = tickertape_tickerDir(self);
+	char *dir = tickertape_ticker_dir(self);
 	self -> usenetFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
 	strcpy(self -> usenetFile, dir);
 	strcat(self -> usenetFile, "/");
@@ -783,9 +774,9 @@ char *tickertape_usenetFilename(tickertape_t self)
 
 
 /* Answers the receiver's groups file */
-FILE *tickertape_groupsFile(tickertape_t self)
+static FILE *tickertape_groups_file(tickertape_t self)
 {
-    char *filename = tickertape_groupsFilename(self);
+    char *filename = tickertape_groups_filename(self);
     FILE *file;
     int result;
 
@@ -822,9 +813,9 @@ FILE *tickertape_groupsFile(tickertape_t self)
 }
 
 /* Answers the receiver's usenet file */
-FILE *tickertape_usenetFile(tickertape_t self)
+static FILE *tickertape_usenet_file(tickertape_t self)
 {
-    char *filename = tickertape_usenetFilename(self);
+    char *filename = tickertape_usenet_filename(self);
     FILE *file;
     int result;
 
