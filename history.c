@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.14 1999/08/24 04:12:52 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.15 1999/08/25 08:09:13 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,10 +39,17 @@ static const char cvsid[] = "$Id: history.c,v 1.14 1999/08/24 04:12:52 phelps Ex
 #define MAX_LIST_COUNT 30
 /*#define MAX_LIST_COUNT 5*/
 
+/* Helpful macro */
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+
+
 /* The structure of a node in a message history */
 typedef struct history_node *history_node_t;
 struct history_node
 {
+    /* The node's reference count */
+    int ref_count;
+
     /* The node's message */
     Message message;
 
@@ -75,6 +82,7 @@ static history_node_t history_node_alloc(Message message)
     }
 
     /* Initialize the fields to sane values */
+    self -> ref_count = 1;
     self -> message = Message_allocReference(message);
     self -> previous = NULL;
     self -> parent = NULL;
@@ -85,9 +93,22 @@ static history_node_t history_node_alloc(Message message)
     return self;
 }
 
+/* Allocates another reference to a history_node_t */
+static history_node_t history_node_alloc_reference(history_node_t self)
+{
+    self -> ref_count++;
+    return self;
+}
+
 /* Releases the resources consumed by the receiver */
 static void history_node_free(history_node_t self)
 {
+    /* Decrement the reference count */
+    if ((--self -> ref_count > 0) || (self -> child_count > 0))
+    {
+	return;
+    }
+
     /* Release our reference to the Message */
     Message_free(self -> message);
     free(self);
@@ -187,17 +208,17 @@ static void history_node_print_threaded(history_node_t self, FILE *out)
 /* The structure of a threaded (or not) message history */
 struct history
 {
-    /* The number of nodes in the history */
-    int count;
-
     /* Nonzero if the history is being displayed threaded */
     int is_threaded;
 
     /* The last node in the history (in receipt order) */
     history_node_t last;
 
+    /* The number of nodes in the threaded history */
+    int threaded_count;
+
     /* The last thread in the history */
-    history_node_t last_thread;
+    history_node_t last_response;
 
     /* The receiver's Motif List widget */
     Widget list;
@@ -216,10 +237,10 @@ history_t history_alloc()
     }
 
     /* Initialize the fields to sane values */
-    self -> count = 0;
+    self -> threaded_count = 0;
     self -> is_threaded = 1;
     self -> last = NULL;
-    self -> last_thread = NULL;
+    self -> last_response = NULL;
     self -> list = NULL;
 
     return self;
@@ -275,11 +296,15 @@ static void history_thread_node(history_t self, history_node_t node)
 {
     history_node_t parent;
 
+    /* Allocate a reference to the node and add it to our count */
+    history_node_alloc_reference(node);
+    self -> threaded_count++;
+
     /* If the message's parent node isn't in the history then pretend there is no parent */
     if ((parent = find_by_id(self, Message_getReplyId(node -> message))) == NULL)
     {
-	node -> previous_response = self -> last_thread;
-	self -> last_thread = node;
+	node -> previous_response = self -> last_response;
+	self -> last_response = node;
 	return;
     }
 
@@ -295,6 +320,62 @@ static void history_thread_node(history_t self, history_node_t node)
 	parent = parent -> parent;
     }
 }
+
+
+/* Deletes previous_response pointers to the node */
+static void history_unthread_node(history_t self, history_node_t node)
+{
+    history_node_t parent;
+    history_node_t probe;
+
+    /* If the node has children then we can't do anything to it yet */
+    if (node -> child_count > 0)
+    {
+	return;
+    }
+
+    /* Reduce the child_count of all parent nodes */
+    parent = node -> parent;
+    for (probe = parent; probe != NULL; probe = probe -> parent)
+    {
+	probe -> child_count--;
+    }
+
+    /* Figure out which list of responses contains the node */
+    probe = (parent == NULL) ? self -> last_response : parent -> last_response;
+
+    /* Free this node */
+    self -> threaded_count--;
+    history_node_free(node);
+
+    /* Watch for the node being the last response */
+    if (probe == node)
+    {
+	/* Remove this node from the parent's responses */
+	parent -> last_response = node -> previous_response;
+
+	/* Unthread the parent if appropriate */
+	history_unthread_node(self, parent);
+	return;
+    }
+
+    /* Remove this node from the list of responses */
+    while (probe -> previous_response != NULL)
+    {
+	if (probe -> previous_response == node)
+	{
+	    /* Disconnect the node from the list of responses */
+	    probe -> previous_response = NULL;
+	    return;
+	}
+	    
+	probe = probe -> previous_response;
+    }
+
+    /* Not found!? */
+    fprintf(stderr, "*** Unable to delete the blasted node!\n");
+}
+
 
 /* Sets the history's Motif List widget */
 void history_set_list(history_t self, Widget list)
@@ -353,7 +434,7 @@ static XmString *history_get_strings(history_t self, int count)
 
     if (self -> is_threaded)
     {
-	history_node_get_strings_threaded(self -> last_thread, items, count);
+	history_node_get_strings_threaded(self -> last_response, items, count);
 	return items;
     }
     else
@@ -399,7 +480,7 @@ void history_set_threaded(history_t self, int is_threaded)
     self -> is_threaded = is_threaded;
 
     /* Update the list */
-    count = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
+    count = MIN(self -> threaded_count, MAX_LIST_COUNT);
     items = history_get_strings(self, count);
 
     /* Replace the old list with the new one */
@@ -421,87 +502,11 @@ void history_set_threaded(history_t self, int is_threaded)
     XmListSelectPos(self -> list, index, False);
 }
 
-
-/* Updates the history's list widget after a message was added */
-static void history_update_list(history_t self, history_node_t node)
-{
-    XmString string;
-
-    /* Make sure we have a list to play with */
-    if (self -> list == NULL)
-    {
-	return;
-    }
-
-    /* Make sure the list doesn't grow without bound */
-    if (self -> count > MAX_LIST_COUNT)
-    {
-	XmListDeletePos(self -> list, 1);
-    }
-
-    /* Add the string to the end of the list */
-    string = history_node_string(node, self -> is_threaded);
-    XmListAddItem(self -> list, string, history_index(self, node -> message));
-    XmStringFree(string);
-}
-
-/* Adds a message to the end of the history */
-int history_add(history_t self, Message message)
-{
-    history_node_t node;
-
-    /* Allocate a node to hold the message */
-    if ((node = history_node_alloc(message)) == NULL)
-    {
-	return -1;
-    }
-
-    /* If the message is part of a thread then deal with it */
-    history_thread_node(self, node);
-
-    /* Append the node to the end of the history */
-    self -> count++;
-    node -> previous = self -> last;
-    self -> last = node;
-
-    /* Update the List widget */
-    history_update_list(self, node);
-
-    return 0;
-}
-
 /* Answers the Message at the given index */
-static history_node_t history_get_unthreaded(history_t self, int index)
+static history_node_t history_get_node_threaded(history_t self, int index)
 {
-    history_node_t probe;
-    int i = self -> count;
-
-    /* Search for our victim */
-    for (probe = self -> last; probe != NULL; probe = probe -> previous)
-    {
-	if (index == i)
-	{
-	    return probe;
-	}
-
-	i--;
-    }
-
-    return NULL;
-}
-
-
-/* Answers the Message at the given index */
-static history_node_t history_get_threaded(history_t self, int index)
-{
-    history_node_t node = self -> last_thread;
-    int max = self -> count + 1;
-
-    /* Watch for out of bounds */
-    if (! (index < max))
-    {
-	return NULL;
-    }
+    history_node_t node = self -> last_response;
+    int max = MIN(self -> threaded_count, MAX_LIST_COUNT) + 1;
 
     /* Keep looking until we run out of nodes */
     while (node != NULL)
@@ -529,19 +534,31 @@ static history_node_t history_get_threaded(history_t self, int index)
     return NULL;
 }
 
+/* Answers the Message at the given index */
+static history_node_t history_get_node_unthreaded(history_t self, int index)
+{
+    history_node_t probe;
+    int i = MIN(self -> threaded_count, MAX_LIST_COUNT);
+
+    /* Search for our victim */
+    for (probe = self -> last; probe != NULL; probe = probe -> previous)
+    {
+	if (index == i)
+	{
+	    return probe;
+	}
+
+	i--;
+    }
+
+    return NULL;
+}
+
 /* Answers the history_node_t at the given index */
 history_node_t history_get_node(history_t self, int index)
 {
-    int i = index;
-
-    /* Convert the index into an absolute number */
-    if (self -> count > MAX_LIST_COUNT)
-    {
-	i += (self -> count - MAX_LIST_COUNT);
-    }
-
     /* Make sure the index is not out-of-bounds */
-    if ((i < 1) || (i > self -> count))
+    if ((index > self -> threaded_count) || (index > MAX_LIST_COUNT))
     {
 	return NULL;
     }
@@ -549,11 +566,11 @@ history_node_t history_get_node(history_t self, int index)
     /* Locate the node */
     if (self -> is_threaded)
     {
-	return history_get_threaded(self, i);
+	return history_get_node_threaded(self, index);
     }
     else
     {
-	return history_get_unthreaded(self, i);
+	return history_get_node_unthreaded(self, index);
     }
 }
 
@@ -571,13 +588,79 @@ Message history_get(history_t self, int index)
 }
 
 
+/* Updates the history's list widget after a message was added */
+static void history_update_list(history_t self, history_node_t node)
+{
+    XmString string;
+
+    /* Make sure we have a list to play with */
+    if (self -> list == NULL)
+    {
+	return;
+    }
+
+    /* Make sure the list doesn't grow without bound */
+    if (self -> threaded_count > MAX_LIST_COUNT)
+    {
+	history_node_t probe = self -> last;
+	history_node_t previous = probe -> previous;
+
+	/* Find the node after the first node in the unthreaded history */
+	while ((previous != NULL) && (previous -> previous != NULL))
+	{
+	    probe = previous;
+	    previous = previous -> previous;
+	}
+
+	/* Remove it and lose our reference to it */
+	probe -> previous = NULL;
+	history_node_free(previous);
+
+	/* Free references to the former first item on the threaded list */
+	history_unthread_node(self, history_get_node_threaded(self, 0));
+
+	XmListDeletePos(self -> list, 1);
+    }
+
+    /* Add the string to the end of the list */
+    string = history_node_string(node, self -> is_threaded);
+    XmListAddItem(self -> list, string, history_index(self, node -> message));
+    XmStringFree(string);
+}
+
+/* Adds a message to the end of the history */
+int history_add(history_t self, Message message)
+{
+    history_node_t node;
+
+    /* Allocate a node to hold the message */
+    if ((node = history_node_alloc(message)) == NULL)
+    {
+	return -1;
+    }
+
+    /* If the message is part of a thread then deal with it */
+    history_thread_node(self, node);
+
+    /* Append the node to the end of the history */
+    node -> previous = self -> last;
+    self -> last = node;
+
+    /* Update the List widget */
+    history_update_list(self, node);
+
+    return 0;
+}
+
+
+
 /* Answers the index of given Message in the history */
 static int history_index_unthreaded(history_t self, Message message)
 {
     history_node_t probe;
     int index;
 
-    index = self -> count;
+    index = MIN(self -> threaded_count, MAX_LIST_COUNT);
     for (probe = self -> last; probe != NULL; probe = probe -> previous)
     {
 	if (probe -> message == message)
@@ -591,8 +674,9 @@ static int history_index_unthreaded(history_t self, Message message)
     return -1;
 }
 
-/* Answers the absolute index of the given node in the history */
-static int history_node_threaded_index(history_node_t self)
+/* Answers the absolute index of the given node in the history.
+ * The index of the first node should be before_index + 1 */
+static int history_node_index_threaded(history_node_t self, int before_index)
 {
     history_node_t thread;
     int count = 0;
@@ -610,7 +694,7 @@ static int history_node_threaded_index(history_node_t self)
 	}
     }
 
-    return count;
+    return count + before_index;
 }
 
 /* Answers the absolute index of the given Message in the history */
@@ -623,7 +707,9 @@ static int history_index_threaded(history_t self, Message message)
     {
 	if (node -> message == message)
 	{
-	    return history_node_threaded_index(node);
+	    int before_index = MIN(self -> threaded_count, MAX_LIST_COUNT) -
+		self -> threaded_count;
+	    return history_node_index_threaded(node, before_index);
 	}
     }
 
@@ -633,29 +719,18 @@ static int history_index_threaded(history_t self, Message message)
 /* Answers the index of given Message in the history */
 int history_index(history_t self, Message message)
 {
-    int index;
-
     if (self -> is_threaded)
     {
-	index = history_index_threaded(self, message);
-    }
-    else
-    {
-	index = history_index_unthreaded(self, message);
+	return history_index_threaded(self, message);
     }
 
-    if (self -> count > MAX_LIST_COUNT)
-    {
-	index -= self -> count - MAX_LIST_COUNT;
-    }
-
-    return (index < 1) ? -1 : index;
+    return history_index_unthreaded(self, message);
 }
 
 /* Just for debugging */
-void history_print(history_t self, FILE *out)
+void history_print_unthreaded(history_t self, FILE *out)
 {
-    fprintf(out, "unthreaded (%d):\n", self -> count);
+    fprintf(out, "unthreaded (??):\n");
 
     /* Fob this off on the nodes */
     history_node_print_unthreaded(self -> last, out);
@@ -663,9 +738,9 @@ void history_print(history_t self, FILE *out)
 
 void history_print_threaded(history_t self, FILE *out)
 {
-    fprintf(out, "threaded (%d):\n", self -> count);
+    fprintf(out, "threaded (%d):\n", self -> threaded_count);
 
     /* Fob this off on the nodes */
-    history_node_print_threaded(self -> last_thread, out);
+    history_node_print_threaded(self -> last_response, out);
 }
 
