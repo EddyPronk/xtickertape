@@ -6,27 +6,79 @@
 show-url \- show a URL in netscape
 .SH SYNOPSIS
 .nf
-show-url [-nw] filename | url
+show-url [-b browser] [--browser=browser]
+         [-d] [--debug] [--debug=level] filename
+         [-v] [--version]
+         [-h] [--help]
 .fi
 .SH OPTIONS
 \*(Su may be invoked with the following command-line option:
 .TP
-.B -nw
-Do not create a new netscape window to show the URL, rather use an
-existing Netscape window, chosen seemingly at random.
-.PP
-If the argument to \*(su names a readable file, then the contents
-of that file are used as the URL.  If not, the argument is assumed to
-be the URL itself.
+.B -b \fIbrowser\fP
+.TP
+.BI --browser= browser
+Override the value of the BROWSER environment variable.  See
+DESCRIPTION below for details.
+.TP
+.B -d
+.TP
+.B --debug
+.TP
+.BI --debug= level
+Set the debug level.  Without a level, this will increase the
+debugging level by one.
+.TP
+.B -v
+.TP
+.B --version
+Print out the show-url version and exit.
+.B -h
+.TP
+.B --help
+Print a usage message briefly summarizing these command-line options
+and then exit.
 .SH DESCRIPTION
-\*(Su is meant to be a handler for the x-elvin/url MIME type.  It
-attempts to send a URL to a running netscape, and if there is no such
-netscape it then starts one and points it at the URL.
+\*(Su is deigned to be a handler for the text/uri-list MIME type.  It
+attempts to display the URL listed in the first line of \fIfilename\fP
+in a web browser.
+.PP
+The command used to invoke the web browser is specified by the BROWSER
+environment variable, which is a colon-separated list of Bourne shell
+expressions.  Each expression may optionally contain `%s' which will
+be replaced with the URL when executing the expression.  `%\fIc\fP'
+where \fIc\fP is not `s' will be replaced simply by \fIc\fP, thus the
+expression may use `%%s' to generate a literal `%s' and `%:' for a
+literal `:'.  If the expression does not contain a `%s' then the URL
+is appended to the end of the expression.
+.PP
+Shell expressions are executed until one exits with a zero status
+code.
+.PP
+Characters in the URL which
+are meaningful to the shell are escaped to prevent malicious URLs from
+doing naughty things.
+.SH EXAMPLES
+Here are some example values for the BROWSER variable:
+.TP 10
+.SB w3m
+This will open the URL in w3m in the current terminal window.
+.TP
+.SB mozilla -raise -remote "openURL(%s,new-window)"
+Requests that the running mozilla process open the URL in a new
+window.
+.TP
+.SB mozilla -raise -remote "openURL(%s,new-window)":w3m
+A combination of the above two.  If mozilla cannot open the window
+because it isn't running or there's not even an X session, then w3m is
+invoked to display the URL.
 .SH ENVIRONMENT
 .TP 10
-.SB NETSCAPE
-The pathname of the netscape executable to use.  If not set, the first 
-occurrence of `netscape' in your path will be used.
+.SB BROWSER
+See DESCRIPTION above for an explanation of this variable.
+.SH SEE ALSO
+.BR xtickertape (1),
+.na
+http://tuxedo.org/~esr/BROWSER/index.html
 .SH BUGS
 E-mail bug reports to
 .BR phelps@pobox.com .
@@ -34,4 +86,6 @@ Be sure to include the word "show-url" somewhere in the "Subject:"
 field.
 .SH AUTHORS
 \*(Su was written by Ted Phelps <phelps@pobox.com>.  Additional help
-was provided by David Arnold <davida@pobox.com>.
+was provided by David Arnold <davida@pobox.com>.  Eric S. Raymond
+<esr@thyrsus.com> is responsible for the BROWSER environment variable
+format.
