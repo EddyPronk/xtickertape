@@ -1,9 +1,11 @@
-/* $Id: main.c,v 1.36 1998/12/18 07:56:46 phelps Exp $ */
+/* $Id: main.c,v 1.37 1998/12/18 15:35:50 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #include <pwd.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
@@ -274,6 +276,24 @@ static Window CreateIcon(Widget shell)
     return window;
 }
 
+
+#ifndef HAVE_STRDUP
+/* Define strdup if it's not in the standard C library */
+char *strdup(char *string)
+{
+    char *result;
+
+    /* Allocate some heap memory for the copy of the string */
+    if ((result = (char *)malloc(strlen(string) + 1)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Copy the characters */
+    strcpy(result, string);
+    return result;
+}
+#endif /* HAVE_STRDUP */
 
 /* Parse args and go */
 int main(int argc, char *argv[])
