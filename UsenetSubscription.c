@@ -2,7 +2,6 @@
 
 #include "UsenetSubscription.h"
 #include <stdlib.h>
-#include <alloca.h>
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
 #include "sanity.h"
@@ -458,8 +457,8 @@ static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
 static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 {
     Message message;
+    StringBuffer buffer;
     en_type_t type;
-    char *user;
     char *string;
     char *mimeType;
     char *mimeArgs;
@@ -467,8 +466,6 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
     char *email;
     char *newsgroups;
     char *pointer;
-
-    /* First set up the user name */
 
     /* Get the name from the FROM field (if provided) */
     if ((en_search(notification, "FROM_NAME", &type, (void **)&name) != 0) ||
@@ -502,19 +499,25 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
 	break;
     }
 
+    /* Construct the USER field */
+    buffer = StringBuffer_alloc();
+
     /* If the name and e-mail addresses are identical, just use one as the user name */
     if (strcmp(name, email) == 0)
     {
-	user = (char *)alloca(sizeof(": ") + strlen(name) + strlen(newsgroups));
-	sprintf(user, "%s: %s", name, newsgroups);
+	StringBuffer_append(buffer, name);
+	StringBuffer_append(buffer, ": ");
+	StringBuffer_append(buffer, newsgroups);
     }
     /* Otherwise construct the user name from the name and e-mail field */
     else
     {
-	user = (char *)alloca(sizeof(" <>: ") + strlen(name) + strlen(email) + strlen(newsgroups));
-	sprintf(user, "%s <%s>: %s", name, email, newsgroups);
+	StringBuffer_append(buffer, name);
+	StringBuffer_append(buffer, " <");
+	StringBuffer_append(buffer, email);
+	StringBuffer_append(buffer, ">: ");
+	StringBuffer_append(buffer, newsgroups);
     }
-
 
     /* Construct the text of the Message */
 
@@ -553,10 +556,16 @@ static void HandleNotify(UsenetSubscription self, en_notify_t notification)
     }
 
     /* Construct a Message out of all of that */
-    message = Message_alloc(NULL, "usenet", user, string, 60, mimeType, mimeArgs, 0, 0);
+    message = Message_alloc(
+	NULL,
+	"usenet", StringBuffer_getBuffer(buffer),
+	string, 60,
+	mimeType, mimeArgs,
+	0, 0);
 
     /* Deliver the Message */
     (*self -> callback)(self -> context, message);
+    StringBuffer_free(buffer);
 }
 
 

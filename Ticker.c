@@ -1,15 +1,15 @@
 /*
- * $Id: Ticker.c,v 1.10 1998/10/23 03:32:09 phelps Exp $
+ * $Id: Ticker.c,v 1.11 1998/10/24 04:57:14 phelps Exp $
  * COPYRIGHT!
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Intrinsic.h>
-#include <alloca.h>
 #include "sanity.h"
 #include "Ticker.h"
 #include "Hash.h"
+#include "StringBuffer.h"
 #include "Tickertape.h"
 #include "Control.h"
 #include "Subscription.h"
@@ -290,15 +290,22 @@ static void OrbitCallback(Tickertape self, en_notify_t notification)
 /* Subscribes to the Orbit meta-subscription */
 static void SubscribeToOrbit(Tickertape self)
 {
-    char *buffer;
+    StringBuffer buffer;
     SANITY_CHECK(self);
 
-    buffer = (char *)alloca(
-	sizeof("exists(orbit.view_update) && exists(tickertape) && user == \"\"") +
-	strlen(self -> user));
-    sprintf(buffer, "exists(orbit.view_update) && exists(tickertape) && user == \"%s\"",
-	    self -> user);
-    ElvinConnection_subscribe(self -> connection, buffer, (NotifyCallback)OrbitCallback, self);
+    /* Construct the subscription expression */
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "exists(orbit.view_update) && exists(tickertape) && ");
+    StringBuffer_append(buffer, "user == \"");
+    StringBuffer_append(buffer, self -> user);
+    StringBuffer_append(buffer, "\"");
+
+    /* Subscribe to the meta-subscription */
+    ElvinConnection_subscribe(
+	self -> connection, StringBuffer_getBuffer(buffer),
+	(NotifyCallback)OrbitCallback, self);
+
+    StringBuffer_free(buffer);
 }
 
 #endif /* ORBIT */
