@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.20 2001/07/20 01:09:12 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.21 2001/07/20 01:43:32 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -297,7 +297,7 @@ WidgetClass historyWidgetClass = (WidgetClass) &historyClassRec;
  */
 
 /* Sets the origin of the visible portion of the widget */
-static void set_origin(HistoryWidget self, long x, long y)
+static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars)
 {
     Display *display = XtDisplay((Widget)self);
     Window window = XtWindow((Widget)self);
@@ -328,8 +328,32 @@ static void set_origin(HistoryWidget self, long x, long y)
 	    0, 0);
     }
 
+    /* Update the scrollbars */
+    if (update_scrollbars)
+    {
+	/* Have we moved horizontally? */
+	if (self -> history.x != x)
+	{
+	    XtVaSetValues(
+		self -> history.hscrollbar,
+		XmNvalue, x,
+		NULL);
+	}
+
+	/* Have we moved vertically? */
+	if (self -> history.y != y)
+	{
+	    XtVaSetValues(
+		self -> history.vscrollbar,
+		XmNvalue, y,
+		NULL);
+	}
+    }
+
+    /* Record our new location */
     self -> history.x = x;
     self -> history.y = y;
+
 }
 
 /* Callback for the vertical scrollbar */
@@ -339,7 +363,7 @@ static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_da
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Drag to the new location */
-    set_origin(self, self -> history.x, cbs -> value);
+    set_origin(self, self -> history.x, cbs -> value, 0);
 }
 
 /* Callback for the vertical scrollbar */
@@ -349,7 +373,7 @@ static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dat
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Move up by one pixel for now */
-    set_origin(self, self -> history.x, self -> history.y - 1);
+    set_origin(self, self -> history.x, self -> history.y - 1, 0);
 }
 
 /* Callback for the vertical scrollbar */
@@ -359,7 +383,7 @@ static void vert_inc_cb(Widget widget, XtPointer client_data, XtPointer call_dat
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Move down by one pixel for now */
-    set_origin(self, self -> history.x, self -> history.y + 1);
+    set_origin(self, self -> history.x, self -> history.y + 1, 0);
 }
 
 /* Callback for the vertical scrollbar */
@@ -401,7 +425,7 @@ static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_d
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Drag to the new location */
-    set_origin(self, cbs -> value, self -> history.y);
+    set_origin(self, cbs -> value, self -> history.y, 0);
 }
 
 /* Callback for the horizontal scrollbar */
@@ -411,7 +435,7 @@ static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_da
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Move left by one pixel for now */
-    set_origin(self, self -> history.x - 1, self -> history.y);
+    set_origin(self, self -> history.x - 1, self -> history.y, 0);
 }
 
 /* Callback for the horizontal scrollbar */
@@ -421,7 +445,7 @@ static void horiz_inc_cb(Widget widget, XtPointer client_data, XtPointer call_da
     XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
 
     /* Move right by one pixel for now */
-    set_origin(self, self -> history.x + 1, self -> history.y);
+    set_origin(self, self -> history.x + 1, self -> history.y, 0);
 }
 
 /* Callback for the horizontal scrollbar */
@@ -572,7 +596,7 @@ static void update_scrollbars(Widget widget)
     }
 
     /* Move the origin */
-    set_origin(self, x, y);
+    set_origin(self, x, y, 0);
 
     /* Update the horizontal scrollbar */
     XtVaSetValues(
@@ -930,7 +954,7 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
     /* If it's above then scroll up to it */
     if (y + self -> history.margin_height < self -> history.y)
     {
-	set_origin(self, self -> history.x, y + self -> history.margin_height);
+	set_origin(self, self -> history.x, y + self -> history.margin_height, 1);
 	return;
     }
 
@@ -941,7 +965,7 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
 	set_origin(
 	    self, self -> history.x,
 	    y + self -> history.line_height - self -> core.height +
-	    self -> history.margin_height);
+	    self -> history.margin_height, 1);
 	return;
     }
 }
@@ -1369,7 +1393,6 @@ static void select_next(Widget widget, XEvent *event, String *params, Cardinal *
     /* Select the next item */
     set_selection_index(self, index);
 }
-
 
 
 /*
