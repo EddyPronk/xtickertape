@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.68 2002/04/25 12:14:36 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.69 2002/04/28 08:25:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -964,6 +964,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Start with an empty delta queue */
     self -> history.tqueue = NULL;
+    self -> history.tqueue_end = NULL;
 
     /* Assume we're threaded */
     self -> history.is_threaded = True;
