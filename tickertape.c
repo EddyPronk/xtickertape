@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.29 1999/10/05 05:30:55 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.30 1999/10/05 05:39:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -640,6 +640,7 @@ void tickertape_reload_groups(tickertape_t self)
 void tickertape_reload_usenet(tickertape_t self)
 {
     /* Release the old usenet subscription */
+    usenet_sub_set_connection(self -> usenet_sub, NULL);
     usenet_sub_free(self -> usenet_sub);
     self -> usenet_sub = NULL;
 

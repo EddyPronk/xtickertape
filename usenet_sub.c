@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.3 1999/10/04 11:38:21 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.4 1999/10/05 05:39:22 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -396,6 +396,7 @@ static char *alloc_sub(
 	/* Expand the buffer */
 	if ((result = (char *)realloc(result, new_size)) == NULL)
 	{
+	    free(expr);
 	    return NULL;
 	}
 
@@ -405,7 +406,6 @@ static char *alloc_sub(
 	result[new_size - 2] = ')';
 	result[new_size - 1] = '\0';
 	size = new_size;
-
 	free(expr);
     }
 
