@@ -14,8 +14,8 @@ CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -Wall -DORBIT
 #CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5 -DORBIT -DSANITY -Wall
 
 
-INCLUDES = -I. -I/usr/openwin/include -I/usr/local/dstc/include \
-	-I/usr/local/dstc/include/elvin3
+INCLUDES = -I. -I/usr/dt/include -I/usr/openwin/include \
+	-I/usr/local/dstc/include -I/usr/local/dstc/include/elvin3
 
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
