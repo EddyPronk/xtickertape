@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.5 1997/02/10 08:07:36 phelps Exp $ */
+/* $Id: main.c,v 1.6 1997/02/10 13:31:58 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -261,11 +261,13 @@ int main(int argc, char *argv[])
     Widget top;
     XtAppContext context;
 
+    /* Create the toplevel widget */
     top = XtVaAppInitialize(
 	&context, "Tickertape",
 	NULL, 0, &argc, argv,
 	NULL, NULL);
 
+    /* Create the tickertape widget */
     XtVaCreateManagedWidget(
 	"ticker", tickertapeWidgetClass, top,
 	NULL, 0);

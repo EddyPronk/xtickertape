@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.4 1997/02/10 08:07:35 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.5 1997/02/10 13:31:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +50,7 @@ static XtResource resources[] =
     /* Dimension fadeLevels */
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
-	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)8
+	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
     }
 };
 #undef offset
@@ -149,6 +149,65 @@ WidgetClass tickertapeWidgetClass = (WidgetClass)&tickertapeClassRec;
 /*
  * Private Methods
  */
+
+/* Bloody kludge? */
+typedef struct ViewHolder_t
+{
+    MessageView view;
+    unsigned int width;
+} *ViewHolder;
+
+static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
+/*static void ViewHolder_free(ViewHolder self);*/
+static void ViewHolder_redisplay(ViewHolder self, void *context[]);
+
+static void CreateGC(TickertapeWidget self);
+static Pixel *CreateFadedColors(Display *display, Colormap colormap,
+				XColor *first, XColor *last, unsigned int levels);
+static void StartClock(TickertapeWidget self);
+/*static void StopClock(TickertapeWidget self);*/
+static void Tick(XtPointer widget, XtIntervalId *interval);
+
+
+/* Allocates a new ViewHolder */
+static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width)
+{
+    ViewHolder self = (ViewHolder) malloc(sizeof(struct ViewHolder_t));
+    self -> view = view;
+    self -> width = width;
+    return self;
+}
+
+/* Frees a ViewHolder */
+/*static void ViewHolder_free(ViewHolder self)
+{
+    if (self -> view)
+    {
+	MessageView_freeReference(view);
+    }
+
+    free(self);
+}*/
+
+/* Displays a ViewHolder */
+static void ViewHolder_redisplay(ViewHolder self, void *context[])
+{
+    Drawable drawable = (Drawable)context[0];
+    int x = (int)context[1];
+    int y = (int)context[2];
+
+    if (self -> view)
+    {
+	MessageView_redisplay(self -> view, drawable, x, y);
+    }
+
+    context[1] = (void *)(x + self -> width);
+}
+
+
+
+
+/* Answers a GC with the right background color and font */
 static void CreateGC(TickertapeWidget self)
 {
     XGCValues values;
@@ -160,6 +219,7 @@ static void CreateGC(TickertapeWidget self)
 	GCFont | GCBackground, &values);
 }
 
+/* Answers an array of colors fading from first to last */
 static Pixel *CreateFadedColors(
     Display *display, Colormap colormap,
     XColor *first, XColor *last, unsigned int levels)
@@ -168,7 +228,7 @@ static Pixel *CreateFadedColors(
     long redNumerator = (long)last -> red - first -> red;
     long greenNumerator = (long)last -> green - first -> green;
     long blueNumerator = (long)last -> blue - first -> blue;
-    long denominator = levels + 1;
+    long denominator = levels;
     long index;
 
     for (index = 0; index < levels; index++)
@@ -186,6 +246,39 @@ static Pixel *CreateFadedColors(
     return result;
 }
 
+
+
+
+
+/* Sets the clock */
+static void StartClock(TickertapeWidget self)
+{
+    self -> tickertape.timer = TtStartTimer(self, 41, Tick, self);
+}
+
+/* Stops the clock */
+/*
+static void StopClock(TickertapeWidget self)
+{
+    XtRemoveTimeOut(self -> tickertape.timer);
+}
+*/
+
+/* One interval has passed */
+static void Tick(XtPointer widget, XtIntervalId *interval)
+{
+    TickertapeWidget self = (TickertapeWidget) widget;
+
+    Redisplay(self, NULL, 0);
+    StartClock(self);
+}
+
+
+/* Adds a MessageView to the receiver */
+static void AddMessageView(TickertapeWidget self, MessageView view)
+{
+    List_addLast(self -> tickertape.messages, view);
+}
 
 
 /*
@@ -232,6 +325,16 @@ GC TtGCForSeparator(TickertapeWidget self, int level)
     return self -> tickertape.gc;
 }
 
+/* Answers a GC to be used to draw things in the background color */
+GC TtGCForBackground(TickertapeWidget self)
+{
+    XGCValues values;
+
+    values.foreground = self -> core.background_pixel;
+    XChangeGC(XtDisplay(self), self -> tickertape.gc, GCForeground, &values);
+    return self -> tickertape.gc;
+}
+
 /* Answers the XFontStruct to be use for displaying the group */
 XFontStruct *TtFontForGroup(TickertapeWidget self)
 {
@@ -262,13 +365,29 @@ XFontStruct *TtFontForSeparator(TickertapeWidget self)
 }
 
 
+/* Answers the number of fade levels */
+Dimension TtGetFadeLevels(TickertapeWidget self)
+{
+    return self -> tickertape.fadeLevels;
+}
+
 /* Answers a Pixmap of the given width */
 Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width)
 {
-    return XCreatePixmap(
+    Pixmap pixmap;
+    pixmap = XCreatePixmap(
 	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
 	width, self -> core.height,
 	DefaultDepthOfScreen(XtScreen(self)));
+    XFillRectangle(XtDisplay(self), pixmap, TtGCForBackground(self), 0, 0, width, self -> core.height);
+    return pixmap;
+}
+
+/* Sets a timer to go off in interval milliseconds */
+XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
+			  XtTimerCallbackProc proc, XtPointer client_data)
+{
+    return XtAppAddTimeOut(XtWidgetToApplicationContext((Widget)self), interval, proc, client_data);
 }
 
 
@@ -283,6 +402,10 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     Display *display = XtDisplay(self);
     Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
     XColor colors[5];
+
+    self -> tickertape.messages = List_alloc();
+    self -> tickertape.holders = List_alloc();
+    self -> tickertape.offset = 0;
 
     CreateGC(self);
     self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
@@ -305,35 +428,37 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> tickertape.separatorPixels = CreateFadedColors(
 	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
 
-    /* give us a message to play with */
+    List_addLast(self -> tickertape.holders, ViewHolder_alloc(NULL, self -> core.width));
+
     {
-	Message message = Message_alloc("Tickertape", "internal", "startup", 60);
-	self -> tickertape.view = MessageView_alloc(self, message);
-	MessageView_debug(self -> tickertape.view);
+	Message message = Message_alloc("this", "is", "a test", 30);
+	MessageView view = MessageView_alloc(self, message);
+	ViewHolder holder = ViewHolder_alloc(view, MessageView_getWidth(view));
+
+	MessageView_debug(view);
+	List_addLast(self -> tickertape.holders, holder);
     }
+
+    StartClock(self);
 }
 
 /* ARGSUSED */
 static void Redisplay(Widget widget, XEvent *event, Region region)
 {
     TickertapeWidget self = (TickertapeWidget)widget;
-    Display *display = event -> xany.display;
-    Window window = event -> xany.window;
-    unsigned int index;
-    unsigned width = self -> core.width / self -> tickertape.fadeLevels;
+    ViewHolder holder = List_first(self -> tickertape.holders);
+    void *context[3];
 
-    fprintf(stderr, "Redisplay 0x%p\n", widget);
-    for (index = 0; index < self -> tickertape.fadeLevels; index++)
+    context[0] = (void *)XtWindow(self);
+    context[1] = (void *)(0 - self -> tickertape.offset++);
+    context[2] = (void *)0;
+    List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
+
+    /* see if it's time to pop a view off the front */
+    if (holder -> width <= self -> tickertape.offset)
     {
-	GC gc = TtGCForSeparator(self, index);
-	XFillRectangle(display, window, gc,
-		       width * index, 0,
-		       self -> core.width, self -> core.height);
+	exit(0);
     }
-
-    /* Paint the message view */
-    MessageView_redisplay(self -> tickertape.view, self, XtWindow(self),
-			  0, self -> tickertape.font -> ascent);
 }
 
 static void Destroy(Widget widget)
@@ -368,5 +493,19 @@ static XtGeometryResult QueryGeometry(
 /* Action definitions */
 void Click(Widget widget, XEvent event)
 {
-    fprintf(stderr, "Click 0x%p\n", widget);
+    TickertapeWidget self = (TickertapeWidget) widget;
+
+    fprintf(stderr, "Click 0x%p\n", self);
 }
+
+/*
+ *Public methods
+ */
+
+/* Adds a Message to the receiver */
+void TtAddMessage(TickertapeWidget self, Message message)
+{
+    AddMessageView(self, MessageView_alloc(self, message));
+}
+
+

@@ -1,9 +1,10 @@
-/* $Id: Tickertape.h,v 1.3 1997/02/10 08:07:35 phelps Exp $ */
+/* $Id: Tickertape.h,v 1.4 1997/02/10 13:31:30 phelps Exp $ */
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
 
 #include <X11/Xaw/Simple.h>
+#include "Message.h"
 
 /*
  A Tickertape scroller widget
@@ -59,6 +60,12 @@ typedef struct _TickertapeRec *TickertapeWidget;
 extern WidgetClass tickertapeWidgetClass;
 
 
+/*
+ *Public methods
+ */
+
+/* Adds a Message to the receiver */
+void TtAddMessage(TickertapeWidget self, Message message);
 
 
 #endif /* TICKERTAPE_H */

@@ -1,9 +1,11 @@
-/* $Id: TickertapeP.h,v 1.3 1997/02/10 08:07:36 phelps Exp $ */
+/* $Id: TickertapeP.h,v 1.4 1997/02/10 13:31:58 phelps Exp $ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
 
 /* Tickertape Widget Private Data */
+
+#include "List.h"
 
 #include <X11/Xaw/SimpleP.h>
 #include "Tickertape.h"
@@ -37,14 +39,15 @@ typedef struct
     Dimension fadeLevels;
 
     /* Private state */
+    List messages;
+    List holders;
+    long offset;
     GC gc;
+    XtIntervalId timer;
     Pixel *groupPixels;
     Pixel *userPixels;
     Pixel *stringPixels;
     Pixel *separatorPixels;
-
-    /* Broken */
-    MessageView view;
 } TickertapePart;
 
 
@@ -58,20 +61,44 @@ typedef struct _TickertapeRec
 
 
 
-/* Private methods */
+/* Semi-private methods */
+
+/* Answers a GC to be used for displaying the group */
 GC TtGCForGroup(TickertapeWidget self, int level);
+
+/* Answers a GC to be used for displaying the user */
+GC TtGCForUser(TickertapeWidget self, int level);
+
+/* Answers a GC to be used for displaying the string */
+GC TtGCForString(TickertapeWidget self, int level);
+
+/* Answers a GC to be used for displaying the separators */
+GC TtGCForSeparator(TickertapeWidget self, int level);
+
+/* Answers a GC to be used to draw things in the background color */
+GC TtGCForBackground(TickertapeWidget self);
+
+/* Answers the font to use for displaying the group */
 XFontStruct *TtFontForGroup(TickertapeWidget self);
 
-GC TtGCForUser(TickertapeWidget self, int level);
+/* Answers the font to use for displaying the user */
 XFontStruct *TtFontForUser(TickertapeWidget self);
 
-GC TtGCForString(TickertapeWidget self, int level);
+/* Answers the font to use for displaying the string */
 XFontStruct *TtFontForString(TickertapeWidget self);
 
-GC TtGCForSeparator(TickertapeWidget self, int level);
+/* Answers the font to use for displaying the separators */
 XFontStruct *TtFontForSeparator(TickertapeWidget self);
 
+
+/* Answers the number of fade levels messages should go through */
+Dimension TtGetFadeLevels(TickertapeWidget self);
+
+/* Answers a new Pixmap of the given width */
 Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width);
 
+/* Sets a timer to go off in interval milliseconds */
+XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
+			  XtTimerCallbackProc proc, XtPointer client_data);
 
 #endif /* TickertapeP_H */
