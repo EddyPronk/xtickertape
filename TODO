@@ -1,7 +1,7 @@
 Things that would be nice to have in future versions of xtickertape:
 
-- Better parsers for the groups and usenet files which can provide
-  useful error messages and perhaps even carry on in spite of errors
+- Better parser for the usenet file which can provide useful error
+  messages and perhaps even carry on in spite of errors
 
 - A way of sending a message without closing the control panel
 

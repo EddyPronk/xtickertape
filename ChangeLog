@@ -1,4 +1,10 @@
+1999-10-03  Ted Phelps  <phelps@pobox.com>
+
+	* List.c: fixed an ancient bug with inserting at the end of the list 
+
 1999-10-02  Ted Phelps  <phelps@pobox.com>
+
+	* tickertape.c: renamed OrbitSubscription to orbit_sub_t
 
 	* Control.c: fixed the miscount of the number of digits in the
 		  year portion of the message-id.  This will break again

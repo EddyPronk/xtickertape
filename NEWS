@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-1.6.4
 
+* Rebuilt the groups file parser with an eye towards providing useful
+  error messages when the parser fails.
+
 * Now specifying minimum width and height for the control panel and
   about box based on their initial sizes.  The control panel may be
   shrunk until the history window disappears but no shorter.
