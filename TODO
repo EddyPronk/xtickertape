@@ -2,12 +2,6 @@ Things that would be nice to have in future versions of xtickertape:
 
 - A way of sending a message without closing the control panel
 
-- Mostly consistent naming -- Scroller* will need to remain uppercase
-  to be consistent with the Xt widget naming scheme, but all other
-  files should switch the more C-friendly this_is_a_name style
-
-- Get rid of Hash.[hc] and List.[hc] and use the stuff in libdstc instead
-
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program
 
@@ -17,3 +11,8 @@ Things that would be nice to have in future versions of xtickertape:
 
 - Support for message replacement (useful for monitoring automated
   stuff like cricket scores).
+
+- Get the history to behave properly when the control panel is
+  resized.  It seems to think that it's more important to keep the
+  first list item in place than the last one, even if this means
+  leaving a gaping white space at the bottom of the list.  Bizarre.
