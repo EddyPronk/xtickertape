@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.47 1999/08/25 09:46:58 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.48 1999/08/26 01:38:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -514,7 +514,7 @@ void history_selection_callback(Widget widget, ControlPanel self, XmListCallback
 /* Constructs the history list */
 static void CreateHistoryBox(ControlPanel self, Widget parent)
 {
-    Arg args[7];
+    Arg args[8];
 
     XtSetArg(args[0], XmNleftAttachment, XmATTACH_FORM);
     XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
@@ -523,7 +523,8 @@ static void CreateHistoryBox(ControlPanel self, Widget parent)
     XtSetArg(args[4], XmNselectionPolicy, XmBROWSE_SELECT);
     XtSetArg(args[5], XmNitemCount, 0);
     XtSetArg(args[6], XmNvisibleItemCount, 3);
-    self -> history = XmCreateScrolledList(parent, "history", args, 7);
+    XtSetArg(args[7], XmNlistSizePolicy, XmRESIZE_IF_POSSIBLE);
+    self -> history = XmCreateScrolledList(parent, "history", args, 8);
 
     /* Add callbacks for interesting things */
     XtAddCallback(
