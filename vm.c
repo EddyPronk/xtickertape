@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.14 2000/11/24 06:50:26 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.15 2000/11/28 00:34:15 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -1285,6 +1285,28 @@ int vm_eval(vm_t self, elvin_error_t error)
     return run(self, sp, error);
 }
 
+/* Catch non-local returns */
+int vm_catch(vm_t self, elvin_error_t error)
+{
+    uint32_t fp = self -> fp;
+
+    /* Rotate the body to the top of the stack */
+    if (! vm_unroll(self, 1, error))
+    {
+	return 0;
+    }
+
+    /* If eval goes well then just drop out */
+    if (vm_eval(self, error))
+    {
+	return 1;
+    }
+
+    /* DO MAGIC HERE */
+    printf("CATCH NOT YET IMPLEMENTED\n");
+    exit(1);
+}
+
 
 /* Migrate an object into a new heap */
 static void migrate(vm_t self, object_t *heap, object_t **end, object_t *object)
@@ -1339,7 +1361,6 @@ int vm_gc(vm_t self, elvin_error_t error)
     /* Use the current VM state to migrate the root set */
     migrate(self, heap, &end, &self -> env);
     migrate(self, heap, &end, &self -> expr);
-
 
     /* Migrate the stack */
     for (i = 0; i < self -> sp; i++)
