@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.43 1999/08/19 07:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.44 1999/08/22 06:22:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -138,8 +138,8 @@ struct ControlPanel_t
     /* The receiver's history list widget */
     Widget history;
 
-    /* The number of messages in the history list */
-    int history_count;
+    /* The uuid counter */
+    int uuid_count;
 
     /* The receiver's about box widget */
     Widget aboutBox;
@@ -154,7 +154,7 @@ struct ControlPanel_t
     char **timeouts;
 
     /* The message to which we are replying (0 if none) */
-    unsigned long messageId;
+    char *messageId;
 };
 
 
@@ -831,7 +831,12 @@ static void SelectGroup(Widget widget, MenuItemTuple tuple, XtPointer ignored)
 	XmListDeselectAllItems(self -> history);
     }
 
-    self -> messageId = 0;
+    /* Changing the group prevents a reply */
+    if (self -> messageId != NULL)
+    {
+	free(self -> messageId);
+	self -> messageId = NULL;
+    }
 }
 
 /* Programmatically sets the selection in the Group option */
@@ -960,17 +965,48 @@ static char *GetMimeType(ControlPanel self)
 }
 
 
+/* Generates a universally unique identifier for a message */
+char *GenerateUUID(ControlPanel self)
+{
+    char *buffer = (char *)malloc(sizeof("YYYYMMDDHHMMSS-11223344-1234-12"));
+    time_t now;
+    struct tm *tm_gmt;
+
+    /* Get the time -- we'll fix this if time() ever fails */
+    if (time(&now) == (time_t) -1)
+    {
+	perror("unable to determine current time");
+	exit(1);
+    }
+
+    /* Look up what that means in GMT */
+    tm_gmt = gmtime(&now);
+
+    /* Construct the UUID */
+    sprintf(buffer, "%04x%02x%02x%02x%02x%02x-%08lx-%04x-%02x",
+	    tm_gmt -> tm_year + 1900, tm_gmt -> tm_mon + 1, tm_gmt -> tm_mday,
+	    tm_gmt -> tm_hour, tm_gmt -> tm_min, tm_gmt -> tm_sec,
+	    (long)gethostid(),
+	    (int)getpid(),
+	    self -> uuid_count);
+
+    self -> uuid_count = (self -> uuid_count + 1) % 256;
+    return buffer;
+}
+
 /* Answers a message based on the receiver's current state */
 Message ConstructMessage(ControlPanel self)
 {
     char *mimeType;
     char *mimeArgs;
+    char *uuid;
     Message message;
     SANITY_CHECK(self);
 
     /* Determine our MIME args */
     mimeType = GetMimeType(self);
     mimeArgs = GetMimeArgs(self);
+    uuid = GenerateUUID(self);
 
     /* Construct a message */
     message = Message_alloc(
@@ -981,7 +1017,7 @@ Message ConstructMessage(ControlPanel self)
 	GetTimeout(self),
 	(mimeArgs == NULL) ? NULL : mimeType,
 	mimeArgs,
-	random(),
+	uuid,
 	self -> messageId);
 
     if (mimeType != NULL)
@@ -989,6 +1025,7 @@ Message ConstructMessage(ControlPanel self)
 	XtFree(mimeType);
     }
 
+    free(uuid);
     return message;
 }
 
@@ -1084,11 +1121,11 @@ ControlPanel ControlPanel_alloc(tickertape_t tickertape, Widget parent)
     self -> text = NULL;
     self -> send = NULL;
     self -> history = NULL;
-    self -> history_count = 0;
+    self -> uuid_count = 0;
     self -> selection = NULL;
     self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
-    self -> messageId = 0;
+    self -> messageId = NULL;
 
     /* Initialize the UI */
     InitializeUserInterface(self, parent);
@@ -1282,11 +1319,11 @@ static void prepare_reply(ControlPanel self, Message message)
 	    SetGroupSelection(self, tuple);
 	}
 
-	self -> messageId = Message_getId(message);
+	self -> messageId = strdup(Message_getId(message));
     }
     else
     {
-	self -> messageId = 0;
+	self -> messageId = NULL;
     }
 }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.8 1999/08/22 04:58:03 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.9 1999/08/22 06:22:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -243,12 +243,12 @@ void history_free(history_t self)
 }
 
 /* Finds the node whose Message has the given id */
-static history_node_t find_by_id(history_t self, long id)
+static history_node_t find_by_id(history_t self, char *id)
 {
     history_node_t node;
 
-    /* Assume id 0 means no id */
-    if (id == 0)
+    /* Watch for the no-id case */
+    if (id == NULL)
     {
 	return NULL;
     }
@@ -257,7 +257,7 @@ static history_node_t find_by_id(history_t self, long id)
     for (node = self -> last; node != NULL; node = node -> previous)
     {
 	/* Return if we have a match */
-	if (Message_getId(node -> message) == id)
+	if (strcmp(Message_getId(node -> message), id) == 0)
 	{
 	    return node;
 	}

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.19 1999/08/19 05:04:57 phelps Exp $";
+static const char cvsid[] = "$Id: Message.c,v 1.20 1999/08/22 06:22:40 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -74,10 +74,10 @@ struct Message_t
     unsigned long timeout;
 
     /* The identifier for this message */
-    long id;
+    char *id;
 
     /* The identifier for the message for which this is a reply */
-    long replyId;
+    char *replyId;
 };
 
 
@@ -90,8 +90,8 @@ Message Message_alloc(
     unsigned int timeout,
     char *mimeType,
     char *mimeArgs,
-    long id,
-    long replyId)
+    char *id,
+    char *replyId)
 {
     Message self = (Message) malloc(sizeof(struct Message_t));
 
@@ -123,8 +123,24 @@ Message Message_alloc(
     }
 
     self -> timeout = timeout;
-    self -> id = id;
-    self -> replyId = replyId;
+
+    if (id != NULL)
+    {
+	self -> id = strdup(id);
+    }
+    else
+    {
+	self -> id = NULL;
+    }
+
+    if (replyId != NULL)
+    {
+	self -> replyId = strdup(replyId);
+    }
+    else
+    {
+	self -> replyId = NULL;
+    }
 
     return self;
 }
@@ -148,29 +164,46 @@ void Message_free(Message self)
     }
 
     /* Out of references -- release the hounds! */
-    if (self -> group)
+    if (self -> group != NULL)
     {
 	free(self -> group);
+	self -> group = NULL;
     }
 
-    if (self -> user)
+    if (self -> user != NULL)
     {
 	free(self -> user);
+	self -> user = NULL;
     }
 
-    if (self -> string)
+    if (self -> string != NULL)
     {
 	free(self -> string);
+	self -> string = NULL;
     }
 
-    if (self -> mimeType)
+    if (self -> mimeType != NULL)
     {
 	free(self -> mimeType);
+	self -> mimeType = NULL;
     }
 
-    if (self -> mimeArgs)
+    if (self -> mimeArgs != NULL)
     {
 	free(self -> mimeArgs);
+	self -> mimeArgs = NULL;
+    }
+
+    if (self -> id != NULL)
+    {
+	free(self -> id);
+	self -> id = NULL;
+    }
+
+    if (self -> replyId != NULL)
+    {
+	free(self -> replyId);
+	self -> replyId = NULL;
     }
 
 #ifdef SANITY
@@ -197,8 +230,8 @@ void Message_debug(Message self)
     printf("  mimeType = \"%s\"\n", (self -> mimeType == NULL) ? "<null>" : self -> mimeType);
     printf("  mimeArgs = \"%s\"\n", (self -> mimeArgs == NULL) ? "<null>" : self -> mimeArgs);
     printf("  timeout = %ld\n", self -> timeout);
-    printf("  id = %ld\n", self -> id);
-    printf("  replyId = %ld\n", self -> replyId);
+    printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
+    printf("  replyId = \"%s\"\n", (self -> replyId == NULL) ? "<null>" : self -> replyId);
 }
 
 
@@ -267,14 +300,14 @@ char *Message_getMimeArgs(Message self)
 }
 
 /* Answers the receiver's id */
-unsigned long Message_getId(Message self)
+char *Message_getId(Message self)
 {
     SANITY_CHECK(self);
     return self -> id;
 }
 
 /* Answers the id of the message for which this is a reply */
-unsigned long Message_getReplyId(Message self)
+char *Message_getReplyId(Message self)
 {
     SANITY_CHECK(self);
     return self -> replyId;

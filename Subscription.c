@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.31 1999/08/19 05:04:58 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.32 1999/08/22 06:22:42 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -332,10 +332,8 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     int32 timeout;
     char *mimeType;
     char *mimeArgs;
-    int32 *messageId_p;
-    int32 messageId;
-    int32 *replyId_p;
-    int32 replyId;
+    char *messageId;
+    char *replyId;
     SANITY_CHECK(self);
 
     /* If we don't have a callback then just quit now */
@@ -425,19 +423,17 @@ static void HandleNotify(Subscription self, en_notify_t notification)
     }
 
     /* Get the message id (if provided) */
-    if ((en_search(notification, "Message-Id", &type, (void **)&messageId_p) != 0) ||
-	(type != EN_INT32))
+    if ((en_search(notification, "Message-Id", &type, (void **)&messageId) != 0) ||
+	(type != EN_STRING))
     {
-	messageId = 0;
-	messageId_p = &messageId;
+	messageId = NULL;
     }
 
     /* Get the reply id (if provided) */
-    if ((en_search(notification, "In-Reply-To", &type, (void **)&replyId_p) != 0) ||
-	(type != EN_INT32))
+    if ((en_search(notification, "In-Reply-To", &type, (void **)&replyId) != 0) ||
+	(type != EN_STRING))
     {
-	replyId = 0;
-	replyId_p = &replyId;
+	replyId = NULL;
     }
 
     /* Construct a message */
@@ -445,7 +441,7 @@ static void HandleNotify(Subscription self, en_notify_t notification)
 	self -> controlPanelInfo, self -> group,
 	user, text, (unsigned long) timeout,
 	mimeType, mimeArgs,
-	*messageId_p, *replyId_p);
+	messageId, replyId);
 
     /* Deliver the message */
     (*self -> callback)(self -> context, message);
@@ -459,8 +455,8 @@ static void SendMessage(Subscription self, Message message)
 {
     en_notify_t notification;
     int32 timeout;
-    int32 messageId;
-    int32 replyId;
+    char *messageId;
+    char *replyId;
     char *mimeArgs;
     char *mimeType;
     
@@ -480,11 +476,11 @@ static void SendMessage(Subscription self, Message message)
     en_add_string(notification, "USER", Message_getUser(message));
     en_add_int32(notification, "TIMEOUT", timeout);
     en_add_string(notification, "TICKERTEXT", Message_getString(message));
-    en_add_int32(notification, "Message-Id", messageId);
+    en_add_string(notification, "Message-Id", messageId);
 
-    if (replyId != 0)
+    if (replyId != NULL)
     {
-	en_add_int32(notification, "In-Reply-To", replyId);
+	en_add_string(notification, "In-Reply-To", replyId);
     }
 
     /* Add mime information if both mimeArgs and mimeType are provided */
