@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.48 1999/08/26 01:38:14 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.49 1999/08/29 14:16:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -511,6 +511,21 @@ void history_selection_callback(Widget widget, ControlPanel self, XmListCallback
     prepare_reply(self, message);
 }
 
+/* This is called when an item in the history is double-clicked */
+void history_action_callback(Widget widget, ControlPanel self, XmListCallbackStruct *info)
+{
+    Message message;
+
+    /* Figure out which message was selected */
+    if ((message = history_get(tickertape_history(self -> tickertape), info -> item_position)) == NULL)
+    {
+	return;
+    }
+
+    /* Display its attachment */
+    tickertape_show_attachment(self -> tickertape, message);
+}
+
 /* Constructs the history list */
 static void CreateHistoryBox(ControlPanel self, Widget parent)
 {
@@ -530,6 +545,9 @@ static void CreateHistoryBox(ControlPanel self, Widget parent)
     XtAddCallback(
 	self -> history, XmNbrowseSelectionCallback,
 	(XtCallbackProc)history_selection_callback, (XtPointer)self);
+    XtAddCallback(
+	self -> history, XmNdefaultActionCallback,
+	(XtCallbackProc)history_action_callback, (XtPointer)self);
 
     XtManageChild(self -> history);
 
