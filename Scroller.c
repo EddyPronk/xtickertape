@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.71 1999/09/15 06:41:20 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.72 1999/10/04 12:47:34 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1064,7 +1064,6 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 	XtDisplay(self), self -> scroller.pixmap,
 	XtWindow(self), self -> scroller.backgroundGC,
 	0, 0, self -> core.width, self -> core.height, 0, 0);
-    XFlush(XtDisplay(widget));
 }
 
 /* FIX THIS: should actually do something? */
