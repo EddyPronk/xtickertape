@@ -5,10 +5,11 @@
  *
  * This code is mostly stolen from rcvstore.c
  *
- * $Id: estore.c,v 1.2 1999/10/11 04:44:55 phelps Exp $
+ * $Id: estore.c,v 1.3 2000/03/21 11:47:23 phelps Exp $
  */
 
-#include <elvin3/elvin.h>
+#include <elvin/elvin.h>
+#include <elvin/sync_api.h>
 #include <h/mh.h>
 #include <fcntl.h>
 #include <h/signals.h>
@@ -17,8 +18,8 @@
 #include <pwd.h>
 
 /* Default elvin server */
-#define HOST "elvin"
-#define PORT 5678
+#define ELVIN "elvin:/tcp,none,xdr/sequoia"
+
 
 static struct swit switches[] =
 {
@@ -54,14 +55,6 @@ static struct swit switches[] =
 };
 
 
-/* No quench callback */
-static void (*QuenchCallback)(elvin_t elvin, void *data, char *quench) = NULL;
-
-/* No error callback */
-static void (*ErrorCallback)(
-    elvin_t elvin, void *data,
-    elvin_error_code_t code, char *message) = NULL;
-
 /* The states of the lexer */
 typedef enum
 {
@@ -93,7 +86,7 @@ static char *field_body_pointer = NULL;
 static char *field_body_end;
 
 /* The elvin notification */
-en_notify_t notification = NULL;
+elvin_notification_t notification = NULL;
 
 
 /* Appends a character to the input buffer */
@@ -162,13 +155,27 @@ static void FieldBodyClear()
 /* Update the state of the Lexer according to the input character */
 static void Lex(int ch)
 {
+    elvin_error_t error;
+
+    /* Initialize the sync client library */
+    if ((error = elvin_sync_init_default()) == NULL || elvin_error_is_error(error))
+    {
+	done(0);
+    }
+
+    /* Check for errors during initialization */
+    if (elvin_error_is_error(error))
+    {
+	done
+    }
+
     switch (lexer_state)
     {
 	/* Start state */
 	case StartState:
 	{
 	    /* Initialize the buffers and notification */
-	    notification = en_new();
+	    notification = elvin_notification_alloc(error);
 	    FieldNameClear();
 	    FieldBodyClear();
 
@@ -234,7 +241,7 @@ static void Lex(int ch)
 
 	    /* SPECIAL CASE: If we've encounter a space on the first
 	     * field name and it's "From", then permit it */
-	    if ((ch == ' ') && (en_count(notification) == 0))
+	    if ((ch == ' ') && (elvin_notification_count(notification, error) == 0))
 	    {
 		FieldNameAppend('\0');
 		if (strcmp(field_name_buffer, "From") != 0)
@@ -281,7 +288,7 @@ static void Lex(int ch)
 
 	    /* Add the field's name and body to the notification */
 	    FieldBodyAppend('\0');
-	    en_add_string(notification, field_name_buffer, field_body_buffer);
+	    elvin_notification_add_string(notification, field_name_buffer, field_body_buffer, error);
 	    FieldBodyClear();
 
 	    /* A linefeed means that we're at the end of the headers */
@@ -706,23 +713,60 @@ int main(int argc, char *argv[])
     /* If we have successfully parsed the headers, then send the notification */
     if (lexer_state == EndState)
     {
-	elvin_t elvin;
+	elvin_handle_t handle;
 
-	/* Add some useful fields */
-	en_add_string(notification, "elvinmail", "1.0");
-	en_add_string(notification, "folder", folder);
-	en_add_int32(notification, "index", msgnum);
-	en_add_string(notification, "user", user);
-
-	/* Try to send the notification */
-	if ((elvin = elvin_connect(
-	    EC_NAMEDHOST, host, port,
-	    QuenchCallback, NULL, ErrorCallback, NULL, 1)) != NULL)
+	/* Create an elvin connection handle */
+	if ((handle = elvin_hdl_alloc(error)) == NULL)
 	{
-	    elvin_notify(elvin, notification);
-	    en_free(notification);
-	    elvin_disconnect(elvin);
+	    done(0);
 	}
+
+	/* Insert the default elvin server URL */
+	if (elvin_hdl_insert_server(handle, -1, ELVIN, error) == 0)
+	{
+	    done(0);
+	}
+
+	/* Add some useful fields to the notification */
+	if (elvin_notification_add_string(notification, "elvinmail", "1.0", error) == 0)
+	{
+	    done(0);
+	}
+
+	if (elvin_notification_add_string(notification, "folder", folder, error) == 0)
+	{
+	    done(0);
+	}
+
+	if (elvin_notification_add_int32(notification, "index", msgnum, error) == 0)
+	{
+	    done(0);
+	}
+
+	if (elvin_notification_add_string(notification, "user", user, error) == 0)
+	{
+	    done(0);
+	}
+
+	/* Try to connect to the elvin server */
+	if (elvin_sync_connect(handle, error) == 0)
+	{
+	    done(0);
+	}
+
+	/* Send the notification */
+	if (elvin_sync_notify(handle, notification, NULL, error) == 0)
+	{
+	    done(0);
+	}
+
+	/* Disconnect */
+	elvin_sync_disconnect(handle, error);
+
+	/* Clean up */
+	elvin_notification_free(notification, error);
+	elvin_hdl_free(handle, error);
+	elvin_sync_cleanup(1, error);
     }
 
     done(0);
