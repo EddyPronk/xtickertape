@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.7 1999/06/20 14:45:14 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.8 1999/06/21 04:45:12 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -183,8 +183,8 @@ void ScStopTimer(ScrollerWidget self, XtIntervalId timer);
 /* Repaints the given MessageView (if visible */
 void ScRepaintMessageView(ScrollerWidget self, MessageView view);
 
-/* Callback for when a message_view_t expires */
-void ScMessageViewExpired(ScrollerWidget self, glyph_t view);
+/* Callback for when a glyph_t expires */
+void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
 
 /* Answers the width of the gap glyph */
 int ScGapWidth(ScrollerWidget self);
