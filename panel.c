@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.35 2000/10/25 07:21:27 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.36 2000/10/25 07:25:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -917,12 +917,17 @@ static void history_motion_callback(
 	}
 
 	case EnterNotify:
-	case LeaveNotify:
 	{
 	    XCrossingEvent *crossing_event = (XCrossingEvent *)event;
 	    x = crossing_event -> x;
 	    y = crossing_event -> y;
 	    break;
+	}
+
+	case LeaveNotify:
+	{
+	    show_status(self, " ");
+	    return;
 	}
 
 	default:
@@ -937,12 +942,14 @@ static void history_motion_callback(
     /* Make sure there is a message */
     if (message == NULL)
     {
+	show_status(self, " ");
 	return;
     }
 
     /* See if it has mime args attached */
     if ((mime_args = message_get_mime_args(message)) == NULL)
     {
+	show_status(self, " ");
 	return;
     }
 
@@ -1004,7 +1011,7 @@ static void create_status_line(control_panel_t self, Widget parent)
 	NULL);
 
     /* Create an empty string for the status line */
-    string = XmStringCreateSimple(PACKAGE "" VERSION);
+    string = XmStringCreateSimple(PACKAGE "-" VERSION);
     self -> status_line = XtVaCreateManagedWidget(
 	"statusLabel", xmLabelWidgetClass, frame,
 	XmNalignment, XmALIGNMENT_BEGINNING,
