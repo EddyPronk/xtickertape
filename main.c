@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.40 1998/12/23 11:33:27 phelps Exp $ */
+/* $Id: main.c,v 1.41 1998/12/23 11:34:59 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -25,7 +25,7 @@
 #define PORT 5678
 
 /* The list of long options */
-#ifdef HAVE_LIBIBERTY
+#ifdef HAVE_GETOPT_H
 static struct option long_options[] =
 {
     { "host", required_argument, NULL, 'h' },
@@ -37,7 +37,7 @@ static struct option long_options[] =
     { "help", no_argument, NULL, 'e' },
     { NULL, no_argument, NULL, '\0' }
 };
-#endif /* HAVE_LIBIBERTY */
+#endif /* HAVE_GETOPT_H */
 
 
 /* Static function headers */
@@ -109,11 +109,11 @@ static void ParseArgs(
     *port_return = PORT;
 
     /* Read each argument using getopt */
-#ifdef HAVE_LIBIBERTY
+#ifdef HAVE_GETOPT_H
     while ((choice = getopt(argc, argv, "h:p:u:g:n:v")) > 0)
 #else
     while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) > 0)
-#endif /* HAVE_LIBIBERTY */
+#endif /* HAVE_GETOPT_H */
     {
 	switch (choice)
 	{
