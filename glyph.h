@@ -31,7 +31,7 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.1 1999/06/20 12:36:01 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.2 1999/07/27 07:51:22 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
@@ -59,13 +59,14 @@ typedef Message (*message_method_t)(glyph_t glyph);
 typedef unsigned int (*width_method_t)(glyph_t glyph);
 
 /*
- * The signature of a function which paints the glyph onto the given
- * drawable at the given offset.  Any portion of the glyph outside the 
- * bounding box of [x, y, width, height] need not be drawn
+ * The signature of a function which paints the glyph with width w
+ * onto the given drawable at the given offset.  Any portion of the
+ * glyph outside the bounding box of [x, y, width, height] need not be
+ * drawn 
  */
 typedef void (*paint_method_t)(
-    glyph_t glyph, Display *display, Drawable drawable, int offset,
-    int x, int y, unsigned int width, unsigned int height);
+    glyph_t glyph, Display *display, Drawable drawable,
+    int offset, int w, int x, int y, unsigned int width, unsigned int height);
 
 /*
  * The signature of a function which answers True if the glyph has

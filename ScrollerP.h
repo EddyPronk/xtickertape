@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.14 1999/06/24 08:00:08 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.15 1999/07/27 07:51:21 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -105,9 +105,6 @@ typedef struct
     /* The width of the unexpired glyphs in the circular queue the
      * last time that a gap was added */
     int last_width;
-
-    /* A queue of glyphs which are waiting to be added to glyphs */
-    glyph_t pending;
 
     /* The width of the widget before the last resize */
     int width;

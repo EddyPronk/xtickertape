@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.37 1999/06/24 08:00:08 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.38 1999/07/27 07:51:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -228,12 +228,15 @@ struct glyph_holder
     /* The next glyph_holder_t in the list */
     glyph_holder_t next;
 
+    /* The width (in pixels) of this holder's glyph */
+    int width;
+
     /* This holder's glyph */
     glyph_t glyph;
 };
 
 /* Allocates and initializes a new glyph_holder */
-glyph_holder_t glyph_holder_alloc(glyph_t glyph)
+glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
 {
     glyph_holder_t self;
 
@@ -246,6 +249,7 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph)
     /* Initialize its contents to sane values */
     self -> previous = NULL;
     self -> next = NULL;
+    self -> width = width;
     self -> glyph = glyph;
     return self;
 }
@@ -262,7 +266,7 @@ void glyph_holder_free(glyph_holder_t self)
 /* Answers the width of the holder's glyph */
 int glyph_holder_width(glyph_holder_t self)
 {
-    return self -> glyph -> get_width(self -> glyph);
+    return self -> width;
 }
 
 /* Paints the holder's glyph */
@@ -272,7 +276,7 @@ void glyph_holder_paint(
 {
     self -> glyph -> paint(
 	self -> glyph, display, drawable,
-	offset, x, y, width, height);
+	offset, self -> width, x, y, width, height);
 }
 
 
@@ -394,6 +398,7 @@ static int gap_width(ScrollerWidget self, int last_width)
 }
 
 /* Answers the width of the next gap */
+#if 0
 static int next_gap_width(ScrollerWidget self)
 {
     glyph_t glyph;
@@ -414,6 +419,7 @@ static int next_gap_width(ScrollerWidget self)
     /* Otherwise return the width of the glyph */
     return gap_width(self, glyph -> get_width(glyph));
 }
+#endif /* 0 */
 
 
 
@@ -473,12 +479,13 @@ static void queue_append_queue(glyph_t head, glyph_t queue)
     queue -> next = queue;
 }
 
-
+#if 0
 /* Returns the next glyph_holder to the right in the queue */
 static glyph_holder_t next_glyph_holder_right(ScrollerWidget self)
 {
     glyph_holder_t holder;
     glyph_t next;
+    int width;
 
     /* Insert the pending glyphs if the next rightmost glyph is the gap */
     next = self -> scroller.right_glyph -> next;
@@ -488,9 +495,23 @@ static glyph_holder_t next_glyph_holder_right(ScrollerWidget self)
 	next = self -> scroller.right_glyph -> next;
     }
 
+    /* Determine the width of the new glyph */
+    if (next == self -> scroller.gap)
+    {
+	width = self -> scroller.width - glyph_holder_width(self -> scroller.right_holder);
+	if (width < END_SPACING)
+	{
+	    width = END_SPACING;
+	}
+    }
+    else
+    {
+	width = next -> get_width(next);
+    }
+
     /* Append the glyph to the end of the queue */
     self -> scroller.right_glyph = next;
-    holder = glyph_holder_alloc(next);
+    holder = glyph_holder_alloc(next, width);
     self -> scroller.right_holder -> next = holder;
     holder -> previous = self -> scroller.right_holder;
     self -> scroller.right_holder = holder;
@@ -499,6 +520,7 @@ static glyph_holder_t next_glyph_holder_right(ScrollerWidget self)
 
     return holder;
 }
+#endif /* 0 */
 
 
 
@@ -637,21 +659,8 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t gap = gap_alloc(self);
-    glyph_holder_t holder = glyph_holder_alloc(gap);
-
-    /* Initialize the queue to only contain the gap with 0 offsets */
-    self -> scroller.is_stopped = True;
-    self -> scroller.left_holder = holder;
-    self -> scroller.right_holder = holder;
-    self -> scroller.holder_count = 1;
-    self -> scroller.left_offset = 0;
-    self -> scroller.right_offset = 0;
-    self -> scroller.gap = gap;
-    self -> scroller.left_glyph = gap;
-    self -> scroller.right_glyph = gap;
-    self -> scroller.last_width = 0;
-    self -> scroller.pending = gap_alloc(self);
+    glyph_t gap;
+    glyph_holder_t holder;
 
     /* Make sure we have a width */
     if (self -> core.width == 0)
@@ -667,6 +676,21 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     {
 	self -> core.height = self -> scroller.font -> ascent + self -> scroller.font -> descent;
     }
+
+    gap = gap_alloc(self);
+    holder = glyph_holder_alloc(gap, self -> core.width);
+
+    /* Initialize the queue to only contain the gap with 0 offsets */
+    self -> scroller.is_stopped = True;
+    self -> scroller.left_holder = holder;
+    self -> scroller.right_holder = holder;
+    self -> scroller.holder_count = 1;
+    self -> scroller.left_offset = 0;
+    self -> scroller.right_offset = 0;
+    self -> scroller.gap = gap;
+    self -> scroller.left_glyph = gap;
+    self -> scroller.right_glyph = gap;
+    self -> scroller.last_width = 0;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -710,6 +734,7 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 }
 
 
+#if 0
 /* Increases the size of the gap by amount and updates the last_width, 
  * left_offset and right_offset so that everything still adds up.
  * Negative amounts are permitted */
@@ -732,6 +757,7 @@ static void resize_gap(ScrollerWidget self, int amount)
     /* Update the width of the gap */
     self -> scroller.last_width -= amount;
 }
+#endif /* 0 */
 
 #if 0
 /* Adds the next unexpired glyph to the right end of the visible array */
@@ -768,8 +794,107 @@ static void append_right(ScrollerWidget self)
 #endif /* 0 */
 
 
+/* Add glyph_holders to the right edge if necessary */
+static void adjust_left_right(ScrollerWidget self)
+{
+    /* Keep going until we've plugged the hole */
+    while (self -> scroller.right_offset < 0)
+    {
+	glyph_t glyph;
+	glyph_holder_t holder;
+	int width;
+
+	printf("R is too far left!\n");
+
+	/* Find the next glyph to show */
+	self -> scroller.right_glyph = self -> scroller.right_glyph -> next;
+	glyph = self -> scroller.right_glyph;
+
+	/* We need to do magic for the gap */
+	if (glyph == self -> scroller.gap)
+	{
+	    glyph_holder_t right = self -> scroller.right_holder;
+	    width = gap_width(self, glyph_holder_width(right));
+
+	    /* If the previous glyph is also the gap then just expand it */
+	    if (right -> glyph == self -> scroller.gap)
+	    {
+		printf("extending existing gap (%d holders)\n", self -> scroller.holder_count);
+		right -> width += width;
+		self -> scroller.right_offset += width;
+		continue;
+	    }
+	    else
+	    {
+		holder = glyph_holder_alloc(glyph, width);
+	    }
+	}
+	else
+	{
+	    width = glyph -> get_width(glyph);
+	    holder = glyph_holder_alloc(glyph, width);
+	}
+
+	self -> scroller.right_holder -> next = holder;
+	holder -> previous = self -> scroller.right_holder;
+	self -> scroller.right_holder = holder;
+
+	self -> scroller.right_offset += width;
+	self -> scroller.holder_count++;
+    }
+}
 
 
+/* Remove glyph_holders from the left edge if appropriate */
+static void adjust_left_left(ScrollerWidget self)
+{
+    /* Keep going until we can do no more damage */
+    while (self -> scroller.left_offset > glyph_holder_width(self -> scroller.left_holder))
+    {
+	glyph_holder_t holder;
+
+	printf("L is too far left! (%d, %d)\n",
+	       self -> scroller.left_offset,
+	       glyph_holder_width(self -> scroller.left_holder));
+
+	holder = self -> scroller.left_holder;
+	self -> scroller.left_holder = holder -> next;
+	self -> scroller.left_holder -> previous = NULL;
+	self -> scroller.left_offset -= glyph_holder_width(holder);
+
+	self -> scroller.holder_count--;
+	glyph_holder_free(holder);
+    }
+}
+
+
+/* Updates the state of the scroller after a shift of zero or more
+ * pixels to the left. */
+static void adjust_left(ScrollerWidget self)
+{
+    /* Add new glyph holders if we don't have enough to get to the
+     * right edge */
+    adjust_left_right(self);
+
+    /* Remove glyph holders that have scrolled off the left edge */
+    adjust_left_left(self);
+
+    /* Check for the magical stop condition */
+    if ((self -> scroller.holder_count == 1) &&
+	(self -> scroller.left_holder -> glyph == self -> scroller.gap) &&
+	(queue_is_empty(self -> scroller.gap)))
+    {
+	/* Tidy up and stop */
+	self -> scroller.left_offset = 0;
+	self -> scroller.right_offset = 0;
+	self -> scroller.left_holder -> width = self -> core.width;
+	StopClock(self);
+    }
+}
+
+
+
+#if 0
 /* Updates the state of the scroller's left edge after a shift of zero 
  * or more pixels to the left has been performed.  This should be
  * called *after* a call to adjust_left_right() */
@@ -783,7 +908,6 @@ static void adjust_left_left(ScrollerWidget self)
     {
 	glyph_holder_t left = self -> scroller.left_holder;
 	int width = glyph_holder_width(left);
-	int next_width;
 
 	/* If left_glyph is still the left glyph then we're done */
 	if (self -> scroller.left_offset < width)
@@ -796,14 +920,6 @@ static void adjust_left_left(ScrollerWidget self)
 	/* Update the left_holder */
 	self -> scroller.left_holder = left -> next;
 	self -> scroller.left_offset -= width;
-
-	/* If we've just scrolled the gap off the left side then now
-	 * is a good time to shrink it */
-	next_width = next_gap_width(self);
-	if ((left -> glyph == self -> scroller.gap) && (width > next_width))
-	{
-	    resize_gap(self, next_width - width);
-	}
 
 	/* Free the old holder and update the count */
 	self -> scroller.left_holder -> previous = NULL;
@@ -832,7 +948,6 @@ static void adjust_left_right(ScrollerWidget self)
 	glyph_holder_t right = self -> scroller.right_holder;
 	glyph_holder_t holder;
 	int width = glyph_holder_width(right);
-	int next_width;
 
 	/* If right_glyph is still the right glyph then we're done */
 	if (0 <= self -> scroller.right_offset)
@@ -842,6 +957,7 @@ static void adjust_left_right(ScrollerWidget self)
 
 	printf("R is too far left\n");
 
+#if 0
 	/* If the right_holder is the gap and it needs to grow then
 	 * now is a good time to do so */
 	next_width = next_gap_width(self);
@@ -850,11 +966,13 @@ static void adjust_left_right(ScrollerWidget self)
 	    resize_gap(self, next_width - width);
 	    continue;
 	}
+#endif /* 0 */
 
 	/* Construct a holder for the next glyph and add it to the queue */
 	next_glyph_holder_right(self);
     }
 }
+#endif /* 0 */
 
 
 
@@ -1119,8 +1237,7 @@ static void scroll_left(ScrollerWidget self, int offset)
     self -> scroller.right_offset -= offset;
 
     /* Update the glyph_holders list */
-    adjust_left_right(self);
-    adjust_left_left(self);
+    adjust_left(self);
 
     /* Scroll the pixmap */
     XCopyArea(
@@ -1644,8 +1761,8 @@ void ScAddMessage(ScrollerWidget self, Message message)
 	return;
     }
 
-    /* Add it to the list of pending glyphs */
-    queue_add(self -> scroller.pending, glyph);
+    /* Add it to the list of viable glyphs */
+    queue_add(self -> scroller.gap, glyph);
 
     /* Make sure the clock is running */
     StartClock(self);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.1 1999/06/20 12:36:00 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.2 1999/07/27 07:51:22 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -53,21 +53,15 @@ static Message get_message(gap_t self)
     return NULL;
 }
 
-/* The receiver's width is based on the ScrollerWidget */
-static unsigned int get_width(gap_t self)
-{
-    return ScGapWidth(self -> widget);
-}
-
 /* Simply erase the relevant bit of the widget */
 static void do_paint(
-    gap_t self, Display *display, Drawable drawable, int offset,
-    int x, int y, unsigned int width, unsigned int height)
+    gap_t self, Display *display, Drawable drawable, 
+    int offset, int w, int x, int y, unsigned int width, unsigned int height)
 {
     XFillRectangle(
 	display, drawable, 
 	ScGCForBackground(self -> widget),
-	offset, y, get_width(self), height);
+	offset, y, w, height);
 }
 
 /* The gap will never expire */
@@ -98,7 +92,6 @@ glyph_t gap_alloc(ScrollerWidget widget)
     self -> next = (glyph_t)self;
     self -> free = (free_method_t)free;
     self -> get_message = (message_method_t)get_message;
-    self -> get_width = (width_method_t)get_width;
     self -> paint = (paint_method_t)do_paint;
     self -> is_expired = (is_expired_method_t)get_is_expired;
     self -> expire = (expire_method_t)do_expire;

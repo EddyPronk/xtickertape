@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.4 1999/06/23 08:29:37 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.5 1999/07/27 07:51:23 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -61,9 +61,6 @@ struct message_glyph
 
     /* The ascent of the tallest font used by the receiver */
     int ascent;
-
-    /* The total width of the Message */
-    unsigned int width;
 
     /* The width of the receiver's separator string */
     unsigned int separator_width;
@@ -158,7 +155,13 @@ static Message get_message(message_glyph_t self)
 /* Answers the receiver's width */
 static unsigned int get_width(message_glyph_t self)
 {
-    return self -> width;
+    return
+	self -> group_width +
+	self -> separator_width +
+	self -> user_width +
+	self -> separator_width +
+	self -> string_width +
+	SPACING;
 }
 
 /* Draws a String with an optional underline */
@@ -179,8 +182,8 @@ static void paint_string(
 
 /* Draw the receiver */
 static void do_paint(
-    message_glyph_t self, Display *display, Drawable drawable, int offset,
-    int x, int y, unsigned int width, unsigned int height)
+    message_glyph_t self, Display *display, Drawable drawable,
+    int offset, int w, int x, int y, unsigned int width, unsigned int height)
 {
     int do_underline = Message_hasAttachment(self -> message);
     int max = x + width;
@@ -342,14 +345,6 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     font = ScFontForString(self -> widget);
     self -> string_width = measure_string(font, Message_getString(self -> message));
     self -> ascent = MAX(self -> ascent, font -> ascent);
-
-    self -> width = 
-	self -> group_width +
-	self -> separator_width +
-	self -> user_width +
-	self -> separator_width +
-	self -> string_width +
-	SPACING;
 
     set_clock(self);
 
