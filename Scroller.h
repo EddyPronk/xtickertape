@@ -1,4 +1,4 @@
-/* $Id: Scroller.h,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: Scroller.h,v 1.2 1997/02/09 07:02:37 phelps Exp $ */
 
 #ifndef SCROLLER_H
 #define SCROLLER_H
@@ -7,6 +7,9 @@ typedef struct Scroller_t *Scroller;
 
 #include "Graphics.h"
 #include "Message.h"
+
+
+
 
 #ifndef FREQUENCY
 # define FREQUENCY 24 /* Hz */
