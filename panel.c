@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.20 1999/11/25 08:46:55 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.21 1999/11/27 05:05:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -388,7 +388,6 @@ static Widget create_about_box(control_panel_t self, Widget parent)
     Widget button;
     Atom wm_delete_window;
     XmString string;
-    char buffer[sizeof(PACKAGE) + sizeof(VERSION)];
 
     /* Create the shell widget */
     /* FIX THIS: we should be able to use XmUNMAP it breaks lesstif */
@@ -422,8 +421,7 @@ static Widget create_about_box(control_panel_t self, Widget parent)
 	NULL);
 
     /* Create the title label */
-    sprintf(buffer, "%s %s", PACKAGE, VERSION);
-    string = XmStringCreateSimple(buffer);
+    XmStringCreateSimple(PACKAGE " " VERSION);
     title = XtVaCreateManagedWidget(
 	"titleLabel", xmLabelWidgetClass, info_form,
 	XmNlabelString, string,
