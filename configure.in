@@ -65,6 +65,11 @@ if test "$ok" = "no" ; then
 	fi
 fi
 
+dnl See if we can find getopt.h and libiberty to use the GNU long
+dnl argument parsing version of getopt
+AC_CHECK_HEADERS(getopt.h)
+AC_CHECK_LIB(iberty, getopt_long)
+
 dnl Check to see if we need -lnsl -lsocket to use sockets
 dnl (If we can't find them then we don't need them)
 AC_CHECK_LIB(socket, connect)
