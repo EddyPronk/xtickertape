@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.33 2002/04/09 17:06:58 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.34 2002/04/09 22:07:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -569,54 +569,58 @@ static void notify_cb(
 	    exit(1);
 	}
 
-	header_length = sizeof(ATTACHMENT_HEADER_FMT) - 3 + strlen(mime_type);
-
-	/* Try the backward compatible `MIME_ARGS' field */
-	if (! elvin_notification_get(
-		notification,
-		F2_MIME_ARGS,
-		&found, &type, &value,
-		error))
+	/* Look for mime args if we have a mime type */
+	if (mime_type != NULL)
 	{
-	    elvin_error_fprintf(stderr, error);
-	    exit(1);
-	}
+	    header_length = sizeof(ATTACHMENT_HEADER_FMT) - 3 + strlen(mime_type);
 
-	/* Accept string attachments */
-	if (mime_type != NULL && found && type == ELVIN_STRING)
-	{
-	    length = header_length + strlen(value.s);
-	    if ((buffer = malloc(length + 1)) == NULL)
+	    /* Try the backward compatible `MIME_ARGS' field */
+	    if (! elvin_notification_get(
+		    notification,
+		    F2_MIME_ARGS,
+		    &found, &type, &value,
+		    error))
 	    {
-		length = 0;
+		elvin_error_fprintf(stderr, error);
+		exit(1);
 	    }
+
+	    /* Accept string attachments */
+	    if (mime_type != NULL && found && type == ELVIN_STRING)
+	    {
+		length = header_length + strlen(value.s);
+		if ((buffer = malloc(length + 1)) == NULL)
+		{
+		    length = 0;
+		}
+		else
+		{
+		    attachment = buffer;
+		    snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		    strcpy(buffer + header_length, value.s);
+		}
+	    }
+	    /* And accept opaque attachments */
+	    else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
+	    {
+		length = header_length + value.o.length;
+		if ((buffer = malloc(length + 1)) == NULL)
+		{
+		    length = 0;
+		}
+		else
+		{
+		    attachment = buffer;
+		    snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
+		    memcpy(buffer + header_length, value.o.data, value.o.length);
+		}
+	    }
+	    /* But not other kinds */
 	    else
 	    {
-		attachment = buffer;
-		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
-		strcpy(buffer + header_length, value.s);
+		mime_args.data = NULL;
+		mime_args.length = 0;
 	    }
-	}
-	/* And accept opaque attachments */
-	else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
-	{
-	    length = header_length + value.o.length;
-	    if ((buffer = malloc(length + 1)) == NULL)
-	    {
-		length = 0;
-	    }
-	    else
-	    {
-		attachment = buffer;
-		snprintf(buffer, header_length + 1, ATTACHMENT_HEADER_FMT, mime_type);
-		memcpy(buffer + header_length, value.o.data, value.o.length);
-	    }
-	}
-	/* But not other kinds */
-	else
-	{
-	    mime_args.data = NULL;
-	    mime_args.length = 0;
 	}
     }
 
