@@ -1,5 +1,7 @@
 Overview of changes in xtickertape-2.0a7
 
+* The path to metamail is now an X resource.
+
 * The application now refuses to run if the app-defaults isn't found
   or has a different version number than the executable, and prints an
   error message which should hopefully help the user to address the

@@ -8,10 +8,6 @@ Documentation
 
 Configuration
 
-- It should be possible to specify the location of `metamail' at
-  both configure-time and run-time.  Perhaps both a command-line
-  option and an environment variable would be useful.
-
 - Errors in the configuration files should be reported to somewhere
   other than the terminal which started the program.  A message in the
   scroller is probably the most appropriate place. [Thanks Clinton Roy]
