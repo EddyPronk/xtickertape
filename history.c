@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.11 1999/08/22 08:14:31 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.12 1999/08/22 12:40:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -301,24 +301,45 @@ void history_set_list(history_t self, Widget list)
 
 
 /* Constructs a threaded version of the history */
-static void history_node_get_strings_threaded(history_node_t self, XmString *items, int max)
+static void history_node_get_strings_threaded(history_node_t self, XmString *items, int count)
 {
-    int index;
+    int max = count;
+    history_node_t node = self;
 
-    for (index = 0; index < max; index++)
+    /* Go through each thread until we run out of room */
+    while ((node != NULL) && (max >= 0))
     {
-	items[index] = XmStringCreateSimple("not yet implemented");
+	int index;
+
+	/* Add the start of the thread to the table */
+	if ((index = max - (node -> child_count + 1)) >= 0)
+	{
+	    items[index] = history_node_string(node, True);
+	}
+
+	/* Recursively add its children */
+	history_node_get_strings_threaded(node -> last_response, items, max);
+
+	/* Go on to the next thread */
+	node = node -> previous_response;
+	max = index;
     }
 }
 
 /* Constructs an unthreaded version of the history */
-static void history_node_get_strings_unthreaded(history_node_t self, XmString *items, int max)
+static void history_get_strings_unthreaded(history_t self, XmString *items, int max)
 {
-    int index;
+    history_node_t node;
+    int index = max;
 
-    for (index = 0; index < max; index++)
+    for (node = self -> last; node != NULL; node = node -> previous)
     {
-	items[index] = XmStringCreateSimple("not yet implemented");
+	if (index < 0)
+	{
+	    return;
+	}
+
+	items[--index] = history_node_string(node, False);
     }
 }
 
@@ -334,7 +355,7 @@ static XmString *history_get_strings(history_t self, int count)
     }
     else
     {
-	history_node_get_strings_unthreaded(self -> last, items, count);
+	history_get_strings_unthreaded(self, items, count);
 	return items;
     }
 }
@@ -362,7 +383,6 @@ void history_set_threaded(history_t self, int is_threaded)
     }
 
     /* Update the list */
-    /* FIX THIS: this can be much more efficient */
     count = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
     items = history_get_strings(self, count);
 
@@ -431,7 +451,7 @@ int history_add(history_t self, Message message)
 }
 
 /* Answers the Message at the given index */
-static Message history_unthreaded_get(history_t self, int index)
+static Message history_get_unthreaded(history_t self, int index)
 {
     history_node_t probe;
     int i = self -> count;
@@ -452,7 +472,7 @@ static Message history_unthreaded_get(history_t self, int index)
 
 
 /* Answers the Message at the given index */
-static Message history_threaded_get(history_t self, int index)
+static Message history_get_threaded(history_t self, int index)
 {
     history_node_t node = self -> last_thread;
     int max = self -> count + 1;
@@ -509,16 +529,16 @@ Message history_get(history_t self, int index)
     /* Locate the node */
     if (self -> is_threaded)
     {
-	return history_threaded_get(self, i);
+	return history_get_threaded(self, i);
     }
     else
     {
-	return history_unthreaded_get(self, i);
+	return history_get_unthreaded(self, i);
     }
 }
 
 /* Answers the index of given Message in the history */
-static int history_unthreaded_index(history_t self, Message message)
+static int history_index_unthreaded(history_t self, Message message)
 {
     history_node_t probe;
     int index;
@@ -560,7 +580,7 @@ static int history_node_threaded_index(history_node_t self)
 }
 
 /* Answers the absolute index of the given Message in the history */
-static int history_threaded_index(history_t self, Message message)
+static int history_index_threaded(history_t self, Message message)
 {
     history_node_t node;
 
@@ -583,11 +603,11 @@ int history_index(history_t self, Message message)
 
     if (self -> is_threaded)
     {
-	index = history_threaded_index(self, message);
+	index = history_index_threaded(self, message);
     }
     else
     {
-	index = history_unthreaded_index(self, message);
+	index = history_index_unthreaded(self, message);
     }
 
     if (self -> count > MAX_LIST_COUNT)
