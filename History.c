@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.40 2002/04/03 23:06:18 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.41 2002/04/03 23:17:58 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -308,6 +308,8 @@ static void node_add(node_t *self,
     /* Traverse all of our siblings */
     while (*self != NULL)
     {
+	char *id;
+
 	/* Check with the descendents */
 	if ((*self) -> child)
 	{
@@ -318,7 +320,9 @@ static void node_add(node_t *self,
 	}
 
 	/* If no match yet, then check for one here */
-	if (parent_id && *child != NULL && strcmp(node_get_id(*self), parent_id) == 0)
+	if (parent_id && *child != NULL &&
+	    (id = node_get_id(*self)) != NULL &&
+	    strcmp(id, parent_id) == 0)
 	{
 	    /* Match!  Add the child to this node */
 	    (*child) -> sibling = (*self) -> child;
