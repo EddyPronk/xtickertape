@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.28 1998/10/25 07:15:59 phelps Exp $ */
+/* $Id: MessageView.c,v 1.29 1998/10/26 02:28:37 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +65,7 @@ struct MessageView_t
 static void Paint(MessageView self, Drawable drawable, int x, int y)
 {
     Display *display;
+    int hasAttachment;
     int xpos;
     int level;
     char *string;
@@ -72,6 +73,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
 
     SANITY_CHECK(self);
     display = XtDisplay(self -> widget);
+    hasAttachment = Message_hasAttachment(self -> message);
     xpos = x;
     level = self -> fadeLevel;
 
@@ -79,24 +81,52 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     gc = TtGCForGroup(self -> widget, level);
     string = Message_getGroup(self -> message);
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+    /* Underline the group string if there's a MIME attachment */
+    if (hasAttachment)
+    {
+	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> groupWidth, y + 1);
+    }
+
     xpos += self -> groupWidth;
 
     /* Draw the separator */
     gc = TtGCForSeparator(self -> widget, level);
     string = SEPARATOR;
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+    /* Underline the separator if there's a MIME attachment */
+    if (hasAttachment)
+    {
+	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> separatorWidth, y + 1);
+    }
+
     xpos += self -> separatorWidth;
 
     /* Draw the user string */
     gc = TtGCForUser(self -> widget, level);
     string = Message_getUser(self -> message);
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+    /* Underline the user if there's a MIME attachment */
+    if (hasAttachment)
+    {
+	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> userWidth, y + 1);
+    }
+
     xpos += self -> userWidth;
 
     /* Draw the separator */
     gc = TtGCForSeparator(self -> widget, level);
     string = SEPARATOR;
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
+
+    /* Underline the separator if there's a MIME attachment */
+    if (hasAttachment)
+    {
+	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> separatorWidth, y + 1);
+    }
+
     xpos += self -> separatorWidth;
 
     /* Draw the text string */
@@ -105,7 +135,7 @@ static void Paint(MessageView self, Drawable drawable, int x, int y)
     XDrawString(display, drawable, gc, xpos, y, string, strlen(string));
 
     /* Underline the text string if it's got a MIME attachment */
-    if (Message_hasAttachment(self -> message))
+    if (hasAttachment)
     {
 	XDrawLine(display, drawable, gc, xpos, y + 1, xpos + self -> stringWidth, y + 1);
     }
