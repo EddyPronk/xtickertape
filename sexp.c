@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.5 2000/11/09 05:30:34 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.6 2000/11/09 06:33:14 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -626,7 +626,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_SYMBOL:
 	{
-	    printf("%s<%p>", sexp -> value.s, sexp);
+	    printf("%s", sexp -> value.s);
 	    return 1;
 	}
 
@@ -825,8 +825,6 @@ int env_get(env_t env, sexp_t symbol, sexp_t *result, elvin_error_t error)
 /* Sets a symbol's value in the environment */
 int env_set(env_t env, sexp_t symbol, sexp_t value, elvin_error_t error)
 {
-    char *name;
-
     /* Make sure it isn't in the hashtable */
     elvin_hash_delete(env -> map, (elvin_hashkey_t)symbol, error);
 
