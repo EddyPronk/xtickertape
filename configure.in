@@ -12,6 +12,24 @@ AC_PATH_PROG(MCGEN, mcgen, false)
 
 dnl Checks for libraries.
 
+# See if we're supposed to use libiconv
+AC_ARG_WITH(libiconv, [  --with-libiconv[=DIR]     use libiconv's iconv() implementation])
+
+if test "x$with_libiconv" != xno ; then
+    # If DIR was specified then set up the environment to look there
+    if test "x$with_libiconv" != x -a "x$with_libiconv" != xyes ; then
+	LDFLAGS="$LDFLAGS -L$with_libiconv/lib"
+	CPPFLAGS="$CPPFLAGS -I$with_libiconv/include"
+    fi
+
+    # See if we can find the library
+    AC_CHECK_LIB(iconv, iconv_open, LIBS="-liconv $LIBS", [
+	if test "x$with_libiconv" != x ; then
+	    AC_MSG_ERROR([libiconv not found])
+	    exit 1
+	fi])
+fi
+
 # Figure out where X11 lives.
 AC_PATH_XTRA
 if test "$no_x" = yes ; then
@@ -89,8 +107,7 @@ if test "$ok" = "no" ; then
 fi
 
 dnl Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h netdb.h pwd.h string.h strings.h signal.h sys/time.h sys/utsname.h time.h unistd.h])
+AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h iconv.h netdb.h pwd.h stdio.h stdlib.h string.h strings.h signal.h sys/time.h sys/utsname.h time.h unistd.h])
 
 # See if we can track down Motif/LessTif
 AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
@@ -149,7 +166,7 @@ dnl =============================
 # then the cache value will be set to no, even if it was then found in
 # -lnsl.  By clearing the cache, we can force it to be checked again.
 unset ac_cv_func_gethostbyname
-AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
+AC_CHECK_FUNCS([dup2 gethostbyname getopt_long iconv iconv_close iconv_open memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
 
 
 dnl Checks for misc features
