@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.24 1999/09/29 15:26:20 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.25 1999/11/08 08:17:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -208,11 +208,12 @@ static message_t get_message(message_glyph_t self)
 static unsigned int get_width(message_glyph_t self)
 {
     return
+	-self -> group_lbearing +
 	self -> group_width +
 	self -> separator_width +
 	self -> user_width +
 	self -> separator_width +
-	self -> string_width +
+	self -> string_rbearing +
 	self -> spacing;
 }
 
@@ -243,10 +244,9 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
 {
     unsigned char *pointer;
     XCharStruct *char_info;
-    unsigned int width;
-    int min;
-    int max;
-
+    long width;
+    int left;
+    int right;
 
     /* Shortcut for empty strings that makes sure everything gets set */
     if (*string == '\0')
@@ -268,30 +268,31 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
     pointer = (unsigned char *)string;
     char_info = per_char(font, *(pointer++));
     width = char_info -> width;
-    min = char_info -> lbearing;
-    max = char_info -> rbearing;
+    left = char_info -> lbearing;
+    right = char_info -> rbearing;
 
     /* Measure the rest of the characters */
     while (*pointer != '\0')
     {
 	char_info = per_char(font, *(pointer++));
-	min = (min < width + char_info -> lbearing) ? min : width + char_info -> lbearing;
-	max = (max > width + char_info -> rbearing) ? max : width + char_info -> rbearing;
+	left = (left < (width + char_info -> lbearing)) ? left : (width + char_info -> lbearing);
+	right = (right > (width + char_info -> rbearing)) ? right : (width + char_info -> rbearing);
 	width += char_info -> width;
     }
 
     /* Update the lbearing and rbearing */
     if (lbearing != NULL)
     {
-	*lbearing = min;
+	printf("final left=%d\n", left);
+	*lbearing = left;
     }
 
     if (rbearing != NULL)
     {
-	*rbearing = max;
+	*rbearing = right;
     }
 
-    return width;
+    return (unsigned int)width;
 }
 
 /* Draws a String with an optional underline */
@@ -359,7 +360,7 @@ static void do_paint(
     int do_underline = message_has_attachment(self -> message);
     int level = self -> fade_level;
     int baseline = y + self -> ascent;
-    int left = offset;
+    int left = offset - self -> group_lbearing;
 
     /* Draw the group string if appropriate */
     if (((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width)) ||
