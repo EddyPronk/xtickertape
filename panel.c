@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.64 2002/04/12 13:22:34 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.65 2002/04/16 15:49:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -51,6 +51,9 @@ static const char cvsid[] = "$Id: panel.c,v 1.64 2002/04/12 13:22:34 phelps Exp 
 #if ! defined(ELVIN_VERSION_AT_LEAST)
 #define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
 #endif
+
+/* The UUIDs we generate will need this many bytes */
+#define UUID_SIZE (ELVIN_SHA1DIGESTLEN * 2 + 1)
 
 #define BUFFER_SIZE 1024
 #define ATTACHMENT_FMT \
@@ -263,7 +266,7 @@ static void set_mime_args(control_panel_t self, char *args);
 static char *get_mime_type(control_panel_t self);
 static char *get_mime_args(control_panel_t self);
 
-static char *create_uuid(control_panel_t self);
+static void create_uuid(control_panel_t self, char *uuid);
 static message_t construct_message(control_panel_t self);
 
 static void action_send(Widget button, control_panel_t self, XtPointer ignored);
@@ -1230,14 +1233,14 @@ static char *get_mime_args(control_panel_t self)
     return args;
 }
 
-/* Generates a universally unique identifier for a message */
-char *create_uuid(control_panel_t self)
+/* Generates a universally unique identifier for a message.  Result
+ * should point to a buffer of UUID_SIZE bytes. */
+void create_uuid(control_panel_t self, char *result)
 {
     char buffer[32];
     time_t now;
     struct tm *tm_gmt;
     char digest[ELVIN_SHA1DIGESTLEN];
-    char result[ELVIN_SHA1DIGESTLEN * 2 + 1];
     int index;
 
     /* Get the time */
@@ -1269,7 +1272,7 @@ char *create_uuid(control_panel_t self)
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     if (! elvin_sha1digest(buffer, 31, digest, NULL))
     {
-	return NULL;
+	abort();
     }
 #endif
 
@@ -1281,8 +1284,6 @@ char *create_uuid(control_panel_t self)
 	result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
     result[ELVIN_SHA1DIGESTLEN * 2] = '\0';
-
-    return strdup(result);
 }
 
 
@@ -1293,7 +1294,7 @@ static message_t construct_message(control_panel_t self)
     char *text;
     char *mime_type;
     char *mime_args;
-    char *uuid;
+    char uuid[UUID_SIZE];
     size_t length = 0;
     char *attachment = NULL;
     message_t message;
@@ -1305,7 +1306,7 @@ static message_t construct_message(control_panel_t self)
     /* Determine our MIME args */
     mime_type = get_mime_type(self);
     mime_args = get_mime_args(self);
-    uuid = create_uuid(self);
+    create_uuid(self, uuid);
 
     /* Construct an RFC2045-compliant MIME message */
     if (mime_type != NULL && mime_args != NULL)
@@ -1345,7 +1346,6 @@ static message_t construct_message(control_panel_t self)
 	free(attachment);
     }
 
-    free(uuid);
     return message;
 }
 
