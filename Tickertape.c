@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.17 1998/02/10 23:42:00 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.18 1998/02/16 06:22:35 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -747,7 +747,19 @@ static void DecodeMime(Widget widget, XEvent event)
 
 static void Delete(Widget widget, XEvent event)
 {
-    fprintf(stderr, "delete()\n");
+    TickertapeWidget self = (TickertapeWidget) widget;
+    MessageView view = messageAtEvent(self, event);
+
+    if (view)
+    {
+	MessageView_expire(view);
+    }
+    else
+    {
+#ifdef DEBUG       
+	printf("missed\n");
+#endif /* DEBUG */
+    }
 }
 
 /*

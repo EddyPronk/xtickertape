@@ -1,4 +1,4 @@
-/* $Id: MessageView.h,v 1.5 1998/02/10 23:41:45 phelps Exp $ */
+/* $Id: MessageView.h,v 1.6 1998/02/16 06:21:32 phelps Exp $ */
 
 #ifndef MESSAGEVIEW_H
 #define MESSAGEVIEW_H
@@ -34,5 +34,8 @@ int MessageView_isTimedOut(MessageView self);
 
 /* MIME-decodes the receiver's message */
 void MessageView_decodeMime(MessageView self);
+
+/* Convice a MessageView that time as run out */
+void MessageView_expire(MessageView self);
 
 #endif /* MESSAGEVIEW_H */
