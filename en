@@ -9,3 +9,5 @@ OVERFLOW	%1:%2: numeric constant overflow: %3
 TYPE_MISMATCH	%1:%2: type mismatch: `%3' is not a %4
 TOO_FEW_ARGS	%1:%2: too few arguments to function `%3'
 TOO_MANY_ARGS	%1:%2: too many arguments to function `%3'
+
+NOT_YET_IMPL	Function not yet implemented: %1

@@ -13,3 +13,6 @@ facility xtickertape 42
 00406	TYPE_MISMATCH	string(tag) int32(line) string(exp) string(type)
 00407	TOO_FEW_ARGS	string(tag) int32(line) string(function)
 00408	TOO_MANY_ARGS	string(tag) int32(line) string(function)
+
+# Internal stuff
+00900	NOT_YET_IMPL	string(function)
