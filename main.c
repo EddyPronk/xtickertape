@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.17 1997/02/25 06:41:16 phelps Exp $ */
+/* $Id: main.c,v 1.18 1997/03/18 05:52:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,11 +194,6 @@ int main(int argc, char *argv[])
     XtOverrideTranslations(top, XtParseTranslationTable("<Message>WM_PROTOCOLS: quit()"));
     deleteAtom = XInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", FALSE);
     XSetWMProtocols(XtDisplay(top), XtWindow(top), &deleteAtom, 1);
-
-    {
-	Message message = Message_alloc("tickertape", "internal", "nevermind", 30);
-	TtAddMessage(tickertape, message);
-    }
 
     /* Let 'er rip! */
     XtAppMainLoop(context);
