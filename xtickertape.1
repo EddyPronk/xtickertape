@@ -1,4 +1,4 @@
-.TH XTICKERTAPE 1 "1998 December 23"
+.TH XTICKERTAPE 1 "2002 April 2002"
 .ds xt \fIxtickertape\fP
 .ds Xt \fIXTickertape\fP
 .UC 4
@@ -100,17 +100,17 @@ right mouse button (or by placing the pointer over them and pressing
 the `d' key), causing them to quickly fade out.  If you wish for a
 message to go away instantly, you can delete it by pressing the `x'
 key.  If you find that this isn't vindictive enough, you may kill the
-the message with the 'k' key.  This not only deletes the message but
-also all present and future replies to it.
+message with the 'k' key.  This not only deletes the message but also
+all present and future replies to it.
 .PP
-In addition to these four attributes, notifications may also include
+In addition to these four attributes, notifications may also include a
 MIME attachment (often an URL).  If they do, they will be underlined
 so that you can identify them, and you may click on them with the
 middle mouse button to view the attachment.  \*(Xt delegates the
 problem of attachment display to \fImetamail\fP, so you should make
 sure it is installed if you want to use this feature.  The
 \fIshow-url\fP script is included in the \*(xt distribution as a
-viewer for URL attachements.  We reommend that you specify it as your
+viewer for URL attachements.  We recommend that you specify it as your
 \fBtext/uri-list\fP viewer and, for backwards compatibility, as your
 \fBx-elvin/url\fP viewer in your \fI.mailcap\fP file.  If you are so
 inclined, you may specify in your \fIgroups\fP file that any
@@ -126,8 +126,8 @@ scrolls the text slightly more quickly to the left (or slightly less
 quickly to the right) and the '.' key does the same except to the
 right.  Additionally, each number key sets the scroll speed to exactly
 that speed ('0' will make the scroller stop).  Direct control of the
-tickertape position may be obtained by dragging the pointer with the
-left mouse button pressed.
+tickertape position may be obtained by dragging and scrolling the text
+with left mouse button.
 .PP
 To send a notification you should bring up the \fIcontrol panel\fP
 window.  This is done by clicking in the \*(xt window with the left
@@ -142,8 +142,8 @@ from this menu (or by pressing 'M-q' in the scroller window).
 The 'Options' menu allows you to specify whether the messages in the
 history should be displayed in chronological order or grouped into
 threads, whether a timestamp should be displayed to the left of each
-message, and whether or not the contrl panel should be closed whenever
-a message is sent.
+message, and whether or not the control panel should be closed
+whenever a message is sent.
 .PP
 The history window at the bottom of the control panel shows the last
 few messages received, helping you to catch up if you've missed the
@@ -154,13 +154,15 @@ attachment will view the attachment.
 .SH RESOURCES
 \*(Xt understands all of the core X Toolkit and Motif resource names
 and classes.  Additionally, the Scroller and History widgets define
-some new resources.  The Scroller widget understands the following:
+some new resources.
+.PP
+The Scroller widget understands the following:
 .TP
 .B "groupPixel (\fPclass\fB GroupPixel)"
 Specifies the color to use when displaying the group attribute of a
 notification. 
 .TP
-.B "userPixel (\fPclass\fB UsrPixel)"
+.B "userPixel (\fPclass\fB UserPixel)"
 Specifies the color to use when displaying the user attribute of a
 notification.
 .TP
@@ -244,7 +246,9 @@ history in response to the pointer being dragged outside of the bounds
 of the widget.
 .SH ACTIONS
 You can also customize the keystrokes and mouse clicks which control
-\*(xt.  The Scroller widget recognizes the following actions:
+\*(xt.
+.PP
+The Scroller widget recognizes the following actions:
 .TP
 .B start-drag()
 Records the current pointer position for reference during an ensuing
@@ -327,7 +331,7 @@ Scroll the history window to the right.
 If
 .B TICKERDIR
 exists in the environment, then \*(xt will look in the directory it
-names for the files \fBgroups\fP, \fBusenet\fP and \fIkeys\fP.  If it
+names for the files \fBgroups\fP, \fBusenet\fP and \fBkeys\fP.  If it
 is not set, it defaults to \fB$HOME/.ticker\fP.
 .PP
 If no user name is specified on the command-line then the environment
