@@ -1,0 +1,33 @@
+#
+# Makefile for Tickertape
+#
+
+TICKERTAPE = xtickertape
+CONNECTION = ElvinConnection.o
+
+ALL = $(TICKERTAPE) 
+
+OBJS = $(CONNECTION) \
+	Control.o Tickertape.o \
+	MessageView.o Message.o Subscription.o List.o main.o
+
+CDEBUGFLAGS = -g -D__SPARC_SUN_SOLARIS2_5
+#CDEBUGFLAGS = -g
+
+INCLUDES = -I/usr/openwin/include -I/usr/local/dstc/include \
+	-I/usr/local/dstc/include/elvin3
+
+CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
+
+LIBDIRS = -L/usr/openwin/lib
+LIBS = -lXaw -lXt -lXmu -lX11 -lvin -lpthread
+
+all: $(ALL)
+
+$(TICKERTAPE): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBDIRS) $(LIBS) $(EXTRALIBS)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+
