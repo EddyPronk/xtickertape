@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.24 1998/08/26 06:02:53 phelps Exp $ */
+/* $Id: main.c,v 1.25 1998/10/15 04:11:23 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,25 +10,11 @@
 
 #include "Message.h"
 #include "Subscription.h"
-#ifdef USE_BRIDGE
-# include "BridgeConnection.h"
-# define CONNECTION BridgeConnection
-# define CONNECTION_ALLOC BridgeConnection_alloc
-# define CONNECTION_SEND BridgeConnection_send
-# define CONNECTION_GETFD BridgeConnection_getFD
-# define CONNECTION_READ BridgeConnection_read
-# define PORT 8800
-#else /* USE_BRIDGE */
-# include "ElvinConnection.h"
-# define CONNECTION ElvinConnection
-# define CONNECTION_ALLOC ElvinConnection_alloc
-# define CONNECTION_SEND ElvinConnection_send
-# define CONNECTION_GETFD ElvinConnection_getFD
-# define CONNECTION_READ ElvinConnection_read
-# define PORT 5678
-#endif /* USE_BRIDGE */
+#include "ElvinConnection.h"
 #include "Control.h"
 #include "Tickertape.h"
+
+# define PORT 5678
 
 #ifdef ELVIN_HOSTNAME
 #define HOSTNAME ELVIN_HOSTNAME
@@ -91,9 +77,9 @@ static void Click(Widget widget, XtPointer ignored, XtPointer context)
 /* Callback for message to send from control panel */
 static void sendMessage(Message message, void *context)
 {
-    CONNECTION connection = (CONNECTION)context;
+    ElvinConnection connection = (ElvinConnection)context;
 
-    CONNECTION_SEND(connection, message);
+    ElvinConnection_send(connection, message);
     Message_free(message);
 }
 
@@ -130,7 +116,7 @@ static FILE *getGroupFile()
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
-    CONNECTION connection;
+    ElvinConnection connection;
     FILE *file;
     List subscriptions;
     XtAppContext context;
@@ -182,13 +168,13 @@ int main(int argc, char *argv[])
 
 
     /* listen for messages from the bridge */
-    connection = CONNECTION_ALLOC(hostname, port, subscriptions);
+    connection = ElvinConnection_alloc(hostname, port, subscriptions);
 
-      XtAppAddInput(
+    XtAppAddInput(
 	context,
-	CONNECTION_GETFD(connection),
+	ElvinConnection_getFD(connection),
 	(XtPointer) XtInputReadMask,
-	(XtInputCallbackProc) CONNECTION_READ,
+	(XtInputCallbackProc) ElvinConnection_read,
 	connection);
 
     /* Build the widget */
