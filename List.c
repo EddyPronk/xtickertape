@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: List.c,v 1.11 1999/05/06 00:34:31 phelps Exp $";
+static const char cvsid[] = "$Id: List.c,v 1.12 1999/10/02 15:58:36 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -183,15 +183,15 @@ void List_insert(List self, int index, void *value)
     link = self -> head -> next;
     for (i = 1; i < index; i++)
     {
-	/* If we reach the end of the list then use addLast to do the insert */
-	if (link == NULL)
-	{
-	    List_addLast(self, value);
-	    return;
-	}
-
 	prev = link;
 	link = prev -> next;
+    }
+
+    /* If we reach the end of the list then use addLast to do the insert */
+    if (link == NULL)
+    {
+	List_addLast(self, value);
+	return;
     }
 
     /* Neither head nor tail */
