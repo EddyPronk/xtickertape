@@ -1,5 +1,10 @@
 Overview of changes in xtickertape-2.0
 
+* Created a new widget (class History) to display the last few
+  messages.  The length of the history can be specified by setting
+  the XTickertape.history.messageCapacity X resource.  See the man
+  page for additional History widget resources.
+
 * Changed the application class from `Tickertape' to `XTickertape'.
 
 * No longer redirecting the output of `metamail' to /dev/null, and
@@ -24,7 +29,7 @@ Overview of changes in xtickertape-2.0
   client library.
 
 * Using elvin's sha1digest function instead of crypt, and encrypting
-  the entire message id instead of just the host id to make it
+  the entire message-id instead of just the host id to make it
   reasonably difficult to subvert the sender's anonymity.
   [Thanks Ian Lister]
 
