@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.1 1999/09/12 07:32:04 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.2 1999/09/13 13:45:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -78,8 +78,8 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
 	/* Split the user name from her address.  Note: this modifies from! */
 	if ((mbox_parser_parse(self -> parser, from)) == 0)
 	{
-	    /* Get the name field if there was one */
-	    if ((from = mbox_parser_get_name(self -> parser)) == NULL)
+	    from = mbox_parser_get_name(self -> parser);
+	    if (*from == '\0')
 	    {
 		/* Otherwise resort to email address */
 		from = mbox_parser_get_email(self -> parser);
