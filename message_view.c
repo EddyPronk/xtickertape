@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.6 2001/07/06 07:03:51 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.7 2001/07/08 23:51:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -206,13 +206,13 @@ struct message_view
 static int rect_overlaps(XRectangle *rect, long left, long top, long right, long bottom)
 {
     /* Check the vertical */
-    if (bottom < rect -> y || rect -> y + (long)rect -> height < top)
+    if (bottom < rect -> y || rect -> y + (long)rect -> height <= top)
     {
 	return 0;
     }
 
     /* Check the horizontal */
-    if (right < rect -> x || rect -> x + (long)rect -> width < left)
+    if (right < rect -> x || rect -> x + (long)rect -> width <= left)
     {
 	return 0;
     }
@@ -257,7 +257,7 @@ static void paint_string(
     }
 
     /* Is the underline visible? */
-    if (rect_overlaps(bbox, x, y + 2, x + sizes -> width, y + 2))
+    if (rect_overlaps(bbox, x, y + 2, x + sizes -> width, y + 1 + underline_height))
     {
 	/* Set the foreground color */
 	values.foreground = pixel;
