@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 2001-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.73 2003/01/14 16:56:55 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.74 2003/01/22 13:34:02 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -79,20 +79,20 @@ static XtResource resources[] =
 {
     /* XtCallbackProc callback */
     {
-	XtNcallback, XtCCallback, XtRCallback, sizeof(XtPointer),
-	offset(history.callbacks), XtRCallback, (XtPointer)NULL
+	XtNcallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+	offset(history.callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XtCallbackList attachment_callbacks */
     {
-	XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
-	offset(history.attachment_callbacks), XtRCallback, (XtPointer)NULL
+	XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+	offset(history.attachment_callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XtCallbackList motion_callbacks */
     {
-	XtNmotionCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
-	offset(history.motion_callbacks), XtRCallback, (XtPointer)NULL
+	XtNmotionCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+	offset(history.motion_callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XFontStruct *font */
