@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.75 2000/12/09 09:03:48 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.76 2001/01/05 04:22:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1226,6 +1226,78 @@ static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_make_cons(vm, error);
 }
 
+/* The `define' special form */
+static int prim_define(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    object_type_t type;
+
+    if (argc < 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
+	return 0;
+    }
+
+    /* Get the first argument */
+    if (! vm_unroll(vm, argc - 1, error) || ! vm_type(vm, &type, error))
+    {
+	return 0;
+    }
+
+    switch (type)
+    {
+	/* A list indicates a function definition */
+	case SEXP_CONS:
+	{
+	    /* Grab the car of the list to use as the function name */
+	    if (! vm_dup(vm, error) ||
+		! vm_car(vm, error) ||
+		! vm_type(vm, &type, error))
+	    {
+		return 0;
+	    }
+
+	    /* Make sure that we've got a symbol */
+	    if (type != SEXP_SYMBOL)
+	    {
+		ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
+		return 0;
+	    }
+
+	    /* Roll it to the top of the stack, create a lambda and assign */
+	    return
+		vm_roll(vm, argc, error) &&
+		vm_cdr(vm, error) &&
+		vm_roll(vm, argc - 1, error) &&
+		vm_push_symbol(vm, "progn", error) &&
+		vm_roll(vm, argc - 1, error) &&
+		vm_make_list(vm, argc, error) &&
+		vm_make_lambda(vm, error) &&
+		vm_assign(vm, error);
+	}
+
+	/* A symbol is a simple assignment */
+	case SEXP_SYMBOL:
+	{
+	    /* Complain if there are too many args */
+	    if (argc > 2)
+	    {
+		ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
+		return 0;
+	    }
+
+	    /* Evaluate the value and assign it */
+	    return vm_swap(vm, error) && vm_eval(vm, error) && vm_assign(vm, error);
+	}
+
+	/* Anything else is an error */
+	default:
+	{
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
+	    return 0;
+	}
+    }
+}
+
 /* The `defun' special form */
 static int prim_defun(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -1550,6 +1622,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 	define_subr(vm, "cdr", prim_cdr, error) &&
 	define_special(vm, "cond", prim_cond, error) &&
 	define_subr(vm, "cons", prim_cons, error) &&
+	define_special(vm, "define", prim_define, error) &&
 	define_special(vm, "defun", prim_defun, error) &&
 	define_subr(vm, "eq", prim_eq, error) &&
 	define_special(vm, "if", prim_if, error) &&
