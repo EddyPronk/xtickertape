@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.56 2002/04/11 11:34:03 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.57 2002/04/11 15:30:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -462,7 +462,7 @@ static void node_populate(node_t self,
 	}
 
 	/* Bail if the index goes negative */
-	if (index < 0)
+	if (*index < 0)
 	{
 	    printf("bailing out!\n");
 	    return;
@@ -481,7 +481,6 @@ static void node_populate(node_t self,
 	self = self -> sibling;
     }
 }
-		     
 
 
 /*
