@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.31 2000/12/08 04:09:41 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.32 2001/05/06 23:07:03 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1307,7 +1307,7 @@ parser_t parser_alloc(
 /* Frees the resources consumed by the parser */
 int parser_free(parser_t self, elvin_error_t error)
 {
-    int result;
+    int result = 1;
 
     if (self -> token != NULL)
     {
