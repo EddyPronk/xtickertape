@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.97 2000/04/28 08:41:53 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.98 2000/04/28 08:43:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1264,7 +1264,6 @@ static void overflow_recover(ScrollerWidget self)
     glyph_holder_t holder;
     int offset = 0 - self -> scroller.left_offset;
 
-    printf("overflow recovery\n");
     if (self -> scroller.state == SS_READY)
     {
 	/* Update any glyphs which need to be repainted */
