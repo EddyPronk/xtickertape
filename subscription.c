@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: subscription.c,v 2.7 2001/08/25 14:04:45 phelps Exp $";
+static const char cvsid[] = "$Id: subscription.c,v 2.8 2001/10/16 16:18:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -635,10 +635,11 @@ int subscription_free(subscription_t self, elvin_error_t error)
 #if 0
 /* Helper function for notification_to_env */
 static int update_env(
-    void *rock,
     char *name,
     elvin_basetypes_t type,
     elvin_value_t value,
+    int *continue_traversal,
+    void *rock,
     elvin_error_t error)
 {
     env_t env = (env_t)rock;
@@ -702,6 +703,7 @@ static int update_env(
 /* Constructs an environment out of a notification */
 static env_t notification_to_env(elvin_notification_t notification, elvin_error_t error)
 {
+    int continue_traversal;
     env_t env;
 
     /* Allocate a new environment */
@@ -711,7 +713,8 @@ static env_t notification_to_env(elvin_notification_t notification, elvin_error_
     }
 
     /* Traverse the notification and copy fields */
-    if (! elvin_notification_traverse(notification, update_env, env, error))
+    continue_traversal = 1;
+    if (! elvin_notification_traverse(notification, update_env, &continue_traversal, env, error))
     {
 	env_free(env, NULL);
 	return NULL;
