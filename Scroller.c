@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.16 1999/06/15 01:53:08 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.17 1999/06/15 06:03:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -741,6 +741,7 @@ static void InWithTheNew(ScrollerWidget self)
 	    holder = view_holder_alloc(NULL, width);
 	    holder -> previous_width = lastWidth;
 	    EnqueueViewHolder(self, holder);
+	    self -> scroller.spacer = holder;
 	}
 	else
 	{
@@ -788,7 +789,7 @@ static void Paint(ScrollerWidget self)
 	    MessageView_redisplay(holder -> view, self -> scroller.pixmap, x, 0);
 	}
 
-/* HACKERY *//*
+#ifdef DEBUG
 	if (self -> scroller.separatorPixels != NULL)
 	{
 	    ScGCForSeparator(self, 0);
@@ -797,7 +798,7 @@ static void Paint(ScrollerWidget self)
 	XDrawRectangle(
 	    XtDisplay(widget), self -> scroller.pixmap, self -> scroller.gc,
 	    x, 0, holder -> width - 1, self -> core.height - 1);
-*//* END HACKERY */
+#endif /* DEBUG */
 	x += holder -> width;
     }
 }
@@ -851,7 +852,7 @@ static void Resize(Widget widget)
 	self -> core.depth);
 
     /* Update the size of the spacer (and our visible width) */
-    if ((self -> scroller.spacer) != NULL)
+    if ((spacer = self -> scroller.spacer) != NULL)
     {
 	long width = self -> core.width - spacer -> previous_width;
 
