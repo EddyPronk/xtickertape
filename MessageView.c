@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.1 1997/02/05 06:24:13 phelps Exp $ */
+/* $Id: MessageView.c,v 1.2 1997/02/05 09:21:40 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,9 +100,15 @@ MessageView MessageView_allocReference(MessageView self)
 /* Removes a reference from the count */
 void MessageView_freeReference(MessageView self)
 {
-    if (self -> refcount > 0)
+    if (self -> refcount > 1)
     {
 	self -> refcount--;
+    }
+    else
+    {
+	printf("MessageView_free: ");
+	MessageView_debug(self);
+	MessageView_free(self);
     }
 }
 
@@ -226,6 +232,12 @@ void MessageView_tick(MessageView self)
 
     /* Watch out for the spacer */
     if (self == NULL)
+    {
+	return;
+    }
+
+    /* If we haven't been displayed yet then don't tick */
+    if (self -> pixmap == 0)
     {
 	return;
     }
