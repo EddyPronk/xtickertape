@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.35 1999/05/06 00:34:34 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.36 1999/05/21 05:29:09 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -159,7 +159,6 @@ static void ReceiveMessage(Tickertape self, Message message)
  * successful, NULL otherwise */
 static List ReadGroupsFile(Tickertape self)
 {
-    FILE *file;
     List subscriptions;
     
     /* No groups file, no subscriptions list */
@@ -169,16 +168,9 @@ static List ReadGroupsFile(Tickertape self)
     }
 
     /* Open the groups file and read */
-    if ((file = fopen(self -> groupsFile, "r")) == NULL)
-    {
-	fprintf(stderr, "*** unable to open groups file %s\n", self -> groupsFile);
-	return List_alloc();
-    }
-
-    /* Read the subscriptions */
     subscriptions = Subscription_readFromGroupFile(
-	file, (SubscriptionCallback)ReceiveMessage, self);
-    fclose(file);
+	self -> groupsFile, self -> user,
+	(SubscriptionCallback)ReceiveMessage, self);
 
     return subscriptions;
 }
