@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.11 1998/10/15 04:18:32 phelps Exp $ */
+/* $Id: Control.c,v 1.12 1998/10/15 06:15:06 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,9 +37,33 @@ char *timeouts[] =
 };
 
 
-/*
- * Prototypes for actions
- */
+/* Prototypes for static functions */
+static char *GetUsername();
+static void SetLabel(Widget widget, char *label);
+static char *GetLabel(Widget widget);
+static void SetString(Widget widget, char *string);
+static char *GetString(Widget widget);
+static void SetMBValue(Widget item, XtPointer context, XtPointer ignored);
+static Widget CreateUserBox(ControlPanel self, Widget parent);
+static void CreateGroupMenuItem(Subscription subscription, Widget context[]);
+static Widget CreateGroupMenu(ControlPanel self, Widget parent);
+static Widget CreateGroupBox(ControlPanel self, Widget parent, Widget left);
+static Widget CreateTimeoutMenu(ControlPanel self, Widget parent);
+static Widget CreateTimeoutBox(ControlPanel self, Widget parent, Widget left);
+static Widget CreateTopBox(ControlPanel self, Widget parent);
+static Widget CreateTextBox(ControlPanel self, Widget parent);
+static Widget CreateBottomBox(ControlPanel self, Widget parent);
+static Widget CreateControlPanelPopup(ControlPanel self, Widget parent);
+static char *GetGroup(ControlPanel self);
+static void SetGroup(ControlPanel self, char *group);
+static char *GetUser(ControlPanel self);
+static void SetUser(ControlPanel self, char *user);
+static char *GetText(ControlPanel self);
+static void SetText(ControlPanel self, char *text);
+static int GetTimeout(ControlPanel self);
+static void SetTimeout(ControlPanel self, int timeout);
+static void MatchSubscription(Subscription self, char *group, Subscription *result);
+static Subscription SubscriptionForGroup(ControlPanel self, char *group);
 static void ActionOK(Widget button, XtPointer context, XtPointer ignored);
 static void ActionClear(Widget button, XtPointer context, XtPointer ignored);
 static void ActionCancel(Widget button, XtPointer context, XtPointer ignored);
