@@ -20,10 +20,6 @@ Control Panel:
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program.
 
-- We need to translate from the current locale to UTF-8 before sending
-  messages or the server will dump us when we try to send any
-  non-ASCII characters.
-
 - Add an Edit menu with Cut, Paste and Copy options which apply to the
   widget with focus.  This should allow us to cut and paste messages
   from the history into another application. [Thanks David Arnold]
@@ -37,9 +33,6 @@ Scroller:
 - Deletion has less than satisfactory results on the scroller's state.
   It is not entirely clear what the `correct' behavior is in certain
   circumstances.
-
-- Messages containing non-ASCII characters appear garbled because we
-  don't do anything intelligent with the UTF-8 encoding.
 
 
 History Widget
@@ -70,9 +63,6 @@ History Widget
   make the margin visible in up to but not more than the size of a
   line at a time for the cases where the margin is actually larger
   than a single line.
-
-- Messages containing non-ASCII characters appear garbled because we
-  don't do anything intelligent with the UTF-8 encoding.
 
 - Check the max ascent and descent rather than blindly trusting the
   font description since it's known to have incorrect values for some
