@@ -1,17 +1,13 @@
-/* $Id: Tickertape.c,v 1.28 1998/08/26 06:02:18 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.29 1998/11/05 01:54:54 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
-#include <X11/Xresource.h>
 #include <X11/StringDefs.h>
-#include <X11/CoreP.h>
-#include <X11/Xaw/SimpleP.h>
 
 #include "TickertapeP.h"
 #include "MessageView.h"
-
 
 
 #define END_SPACING 30
@@ -20,9 +16,10 @@
  * Resources
  */
 #define offset(field) XtOffsetOf(TickertapeRec, field)
+
 static XtResource resources[] =
 {
-    /* XtCallbackProc callback */
+    /* XtCallbackList callbacks */
     {
 	XtNcallback, XtCCallback, XtRCallback, sizeof(XtPointer),
 	offset(tickertape.callbacks), XtRCallback, (XtPointer)NULL
@@ -70,7 +67,7 @@ static XtResource resources[] =
 	offset(tickertape.frequency), XtRImmediate, (XtPointer)24
     },
 
-    /* Dimension stepSize (in pixels) */
+    /* Dimension step (in pixels) */
     {
 	XtNstepSize, XtCStepSize, XtRDimension, sizeof(Dimension),
 	offset(tickertape.step), XtRImmediate, (XtPointer)1
@@ -110,15 +107,22 @@ static char defaultTranslations[] =
 /*
  * Method declarations
  */
-static void Initialize();
-static void Realize();
-static void Rotate();
-static void Redisplay();
-static void Destroy();
-static void Resize();
-static Boolean SetValues();
-static XtGeometryResult QueryGeometry();
-
+static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
+static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
+static void Rotate(TickertapeWidget self);
+static void Redisplay(Widget widget, XEvent *event, Region region);
+static void Destroy(Widget widget);
+static void Resize(Widget widget);
+static Boolean SetValues(
+    Widget current,
+    Widget request,
+    Widget new,
+    ArgList args,
+    Cardinal *num_args);
+static XtGeometryResult QueryGeometry(
+    Widget widget,
+    XtWidgetGeometry *intended,
+    XtWidgetGeometry *preferred);
 
 /*
  * Class record initialization
@@ -127,12 +131,12 @@ TickertapeClassRec tickertapeClassRec =
 {
     /* core_class fields */
     {
-	(WidgetClass) &simpleClassRec, /* superclass */
+	(WidgetClass) &widgetClassRec, /* superclass */
 	"Tickertape", /* class_name */
 	sizeof(TickertapeRec), /* widget_size */
 	NULL, /* class_initialize */
 	NULL, /* class_part_initialize */
-	FALSE, /* class_inited */
+	False, /* class_inited */
 	Initialize, /* initialize */
 	NULL, /* initialize_hook */
 	Realize, /* realize */
@@ -141,10 +145,10 @@ TickertapeClassRec tickertapeClassRec =
 	resources, /* resources */
 	XtNumber(resources), /* num_resources */
 	NULLQUARK, /* xrm_class */
-	TRUE, /* compress_motion */
-	TRUE, /* compress_exposure */
-	TRUE, /* compress_enterleave */
-	FALSE, /* visible_interest */
+	True, /* compress_motion */
+	True, /* compress_exposure */
+	True, /* compress_enterleave */
+	False, /* visible_interest */
 	Destroy, /* destroy */
 	Resize, /* resize */
 	Redisplay, /* expose */
@@ -159,12 +163,6 @@ TickertapeClassRec tickertapeClassRec =
 	QueryGeometry, /* query_geometry */
 	XtInheritDisplayAccelerator, /* display_accelerator */
 	NULL /* extension */
-    },
-
-    /* FIX THIS: should be capable of being a Motif widget as well */
-    /* Simple class fields initialization */
-    {
-	XtInheritChangeSensitive /* change_sensitive */
     },
 
     /* Tickertape class fields initialization */
@@ -252,6 +250,7 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
     }
 
     context[2] = (void *)(x + self -> width);
+    XFlush(XtDisplay(widget));
 }
 
 /* Locates the Message at the given offset */
@@ -328,7 +327,7 @@ static void StartClock(TickertapeWidget self)
 	fprintf(stderr, "restarting\n");
 #endif /* DEBUG */
 	fflush(stderr);
-	self -> tickertape.isStopped = FALSE;
+	self -> tickertape.isStopped = False;
 	SetClock(self);
     }
 }
@@ -340,7 +339,7 @@ static void StopClock(TickertapeWidget self)
     fprintf(stderr, "stalling\n");
 #endif /* DEBUG */
     fflush(stderr);
-    self -> tickertape.isStopped = TRUE;
+    self -> tickertape.isStopped = True;
 }
 
 /* Sets the timer if the clock isn't stopped */
@@ -359,7 +358,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     TickertapeWidget self = (TickertapeWidget) widget;
 
     Rotate(self);
-    Redisplay(self, NULL, 0);
+    Redisplay((Widget)self, NULL, 0);
     SetClock(self);
 }
 
@@ -373,7 +372,7 @@ static void AddMessageView(TickertapeWidget self, MessageView view)
     List_addLast(self -> tickertape.messages, view);
     MessageView_allocReference(view);
 #ifdef DEBUG
-    printf("Added message view %p\n", view);
+    fprintf(stderr, "Added message view %p\n", view);
 #endif /* DEBUG */
 
     /* Make sure the clock is running */
@@ -527,7 +526,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 {
     TickertapeWidget self = (TickertapeWidget) widget;
 
-    self -> tickertape.isStopped = TRUE;
+    self -> tickertape.isStopped = True;
     self -> tickertape.messages = List_alloc();
     self -> tickertape.holders = List_alloc();
     self -> tickertape.offset = 0;
@@ -744,7 +743,7 @@ static void Resize(Widget widget)
     TickertapeWidget self = (TickertapeWidget) widget;
     long x = 0 - self -> tickertape.offset;
 
-#ifdef DEBUG
+#if DEBUG
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
 
@@ -763,6 +762,9 @@ static Boolean SetValues(
     ArgList args,
     Cardinal *num_args)
 {
+#ifdef DEBUG
+    fprintf(stderr, "SetValues\n");
+#endif /* DEBUG */
     return False;
 }
 
@@ -772,6 +774,10 @@ static XtGeometryResult QueryGeometry(
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred)
 {
+#ifdef DEBUG
+    fprintf(stderr, "QueryGeometry\n");
+#endif /* DEBUG */
+
     return XtGeometryYes;
 }
 
@@ -836,7 +842,7 @@ static void DecodeMime(Widget widget, XEvent *event)
     else
     {
 #ifdef DEBUG
-	printf("none\n");
+	fprintf(stderr, "none\n");
 #endif /* DEBUG */
     }
 }
@@ -853,7 +859,7 @@ static void Delete(Widget widget, XEvent *event)
     else
     {
 #ifdef DEBUG       
-	printf("missed\n");
+	fprintf(stderr, "missed\n");
 #endif /* DEBUG */
     }
 }

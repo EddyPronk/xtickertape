@@ -1,17 +1,14 @@
-/* $Id: Tickertape.h,v 1.5 1997/02/14 16:33:15 phelps Exp $ */
+/* $Id: Tickertape.h,v 1.6 1998/11/05 01:54:57 phelps Exp $ */
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
-
-#include <X11/Xaw/Simple.h>
-#include "Message.h"
 
 /*
  A Tickertape scroller widget
 
  Class:		tickertapeWidgetClass
  Class Name:	Tickertape
- Superclass:	Simple
+ Superclass:	Core
 
  Resources added by the Tickertape widget:
 
@@ -69,6 +66,8 @@ extern WidgetClass tickertapeWidgetClass;
 /*
  *Public methods
  */
+
+#include "Message.h"
 
 /* Adds a Message to the receiver */
 void TtAddMessage(TickertapeWidget self, Message message);

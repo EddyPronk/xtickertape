@@ -1,15 +1,18 @@
-/* $Id: TickertapeP.h,v 1.10 1998/05/13 07:17:22 phelps Exp $ */
+/*
+ * $Id: TickertapeP.h,v 1.11 1998/11/05 01:54:57 phelps Exp $
+ * COPYRIGHT!
+ * 
+ * Tickertape Widget Private Data
+ */
 
 #ifndef TickertapeP_H
 #define TickertapeP_H
 
-/* Tickertape Widget Private Data */
+#include <X11/CoreP.h>
 
-#include "List.h"
-
-#include <X11/Xaw/SimpleP.h>
 #include "Tickertape.h"
 #include "MessageView.h"
+#include "List.h"
 
 /* New fields for the Tickertape widget record */
 typedef struct
@@ -22,7 +25,6 @@ typedef struct
 typedef struct _TickertapeClassRec
 {
     CoreClassPart core_class;
-    SimpleClassPart simple_class;
     TickertapeClassPart tickertape_class;
 } TickertapeClassRec;
 
@@ -62,7 +64,6 @@ typedef struct
 typedef struct _TickertapeRec
 {
     CorePart core;
-    SimplePart simple;
     TickertapePart tickertape;
 } TickertapeRec;
 
