@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.3 1999/10/03 03:22:22 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.4 1999/10/04 12:04:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -618,7 +618,7 @@ void groups_parser_free(groups_parser_t self)
 /* Parses the given buffer, calling callbacks for each subscription
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
-int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length)
+int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
 {
     char *pointer;
 
