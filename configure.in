@@ -42,21 +42,31 @@ AC_DEFINE_UNQUOTED($systypedef)
 dnl AC_SUBST($systypedef)
 
 
-dnl Checks for libraries.
+dnl Checks for headers and libraries.
 dnl =====================
 
+dnl Look in the places where X11 and Motif live
+for inc_dir in "/usr/openwin/include" "/usr/dt/include" "/usr/X11R6/include" ; do
+	if test -d "$inc_dir" ; then
+		CPPFLAGS="-I$inc_dir $CPPFLAGS"
+	fi
+done
+
+dnl Configure the X path
+AC_PATH_X
+
 dnl The elvin C library requires pthreads
-dnl See if the compiler accepts the -threads flag (likely DEC OSF)
+dnl See if the compiler accepts the -threads flag (DEC cc, egcs)
 AC_MSG_CHECKING(whether $CC accepts -threads)
 ac_save_LIBS="$LIBS"
 LIBS="$LIBS -threads"
-AC_TRY_LINK(, "/* Test */\nint main() { pthread_create(); return 0; }", ok=yes, ok=no)
+AC_TRY_LINK(, pthread_create();, ok=yes, ok=no)
 AC_MSG_RESULT($ok)
 
 dnl If we didn't succeed, then revert LIBS back to what it used to be
+dnl If -threads didn't work, then revert LIBS back to what it used to be
 dnl and see if we can find the pthreads library
 if test "$ok" = "no" ; then
-	echo "bar"
 	LIBS="$ac_save_LIBS"
 	AC_CHECK_LIB(pthread, pthread_create, LIBS="-lpthread $LIBS" ; ok=yes , ok=no)
 	if test "$ok" = "no" ; then
@@ -91,6 +101,8 @@ if test $ok = "no" ; then
 	exit 1
 fi
 
+
+
 dnl Look for the core X11 library
 AC_CHECK_LIB(X11, XOpenDisplay, LIBS="-lX11 $LIBS" ; ok=yes, ok=no)
 if test $ok = "no" ; then
@@ -99,8 +111,7 @@ if test $ok = "no" ; then
 	exit 1
 fi
 
-dnl Check for the X11 extensions library to see if we can make
-dnl a shaped icon
+dnl Check for the X11 extensions library to see if we can make a shaped icon
 AC_CHECK_LIB(Xext, XShapeCombineMask)
 
 dnl Check for the X11 miscellaneous utilities library to see if
@@ -121,7 +132,7 @@ fi
 dnl Check for the Motif headers
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
 if test $ok = "no" ; then
-	echo "ERROR: \`libXm' is missing on your system.  You may obtain"
+	echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
 	echo "       a free Motif implementation from the Hungry Programmers"
 	echo "       at http://www.lesstif.org/"
 	exit 1
@@ -139,7 +150,6 @@ fi
 
 dnl Checks for header files.
 dnl ========================
-AC_PATH_X
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h)
 
