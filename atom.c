@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.12 2000/11/08 12:38:25 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.13 2000/11/08 23:48:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -360,6 +360,23 @@ atom_t builtin_alloc(builtin_t value, elvin_error_t error)
     return atom;
 }
 
+/* Allocates and initializes a new lambda atom */
+atom_t lambda_alloc(atom_t arg_list, atom_t body, elvin_error_t error)
+{
+    atom_t atom;
+
+    /* Allocate an atom */
+    if ((atom = atom_alloc(ATOM_LAMBDA, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Record the arg list and body in a cons cell */
+    atom -> value.c.car = arg_list;
+    atom -> value.c.cdr = body;
+    return atom;
+}
+
 
 /* Returns an atom's type */
 atom_type_t atom_get_type(atom_t atom)
@@ -402,18 +419,13 @@ int atom_free(atom_t atom, elvin_error_t error)
 	}
 
 	case ATOM_CONS:
+	case ATOM_LAMBDA:
 	{
 	    int result;
 
 	    result = atom_free(atom -> value.c.car, error);
 	    result = atom_free(atom -> value.c.cdr, result ? error : NULL) && result;
 	    return ELVIN_FREE(atom, error);
-	}
-
-	case ATOM_LAMBDA:
-	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_free");
-	    return 0;
 	}
 
 	default:
@@ -492,6 +504,15 @@ int atom_print(atom_t atom)
 	case ATOM_CONS:
 	{
 	    fputc('(', stdout);
+	    atom_print(atom -> value.c.car);
+	    print_cdrs(atom -> value.c.cdr);
+	    fputc(')', stdout);
+	    return 1;
+	}
+
+	case ATOM_LAMBDA:
+	{
+	    printf("(lambda ");
 	    atom_print(atom -> value.c.car);
 	    print_cdrs(atom -> value.c.cdr);
 	    fputc(')', stdout);
