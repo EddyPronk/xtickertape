@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.54 2000/04/12 05:33:09 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.55 2000/06/02 06:52:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1378,11 +1378,13 @@ static char *tickertape_usenet_filename(tickertape_t self)
 int tickertape_show_attachment(tickertape_t self, message_t message)
 {
 #ifdef METAMAIL
+    char filename[L_tmpnam];
     char *mime_type;
     char *mime_args;
-    char *filename;
+    char *pointer;
+    char *end;
     char *buffer;
-    FILE *file;
+    int fd;
 
     /* If the message has no attachment then we're done */
     if (((mime_type = message_get_mime_type(message)) == NULL) ||
@@ -1399,15 +1401,49 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 #endif /* DEBUG */
 
     /* Open up a temp file in which to write the args */
-    filename = tmpnam(NULL);
-    if ((file = fopen(filename, "wb")) == NULL)
+    fd = -1;
+    while (fd < 0)
     {
-	perror("unable to open a temporary file");
-	return -1;
+	if (tmpnam(filename) == NULL)
+	{
+	    perror("Unable to construct an unique name for a temporary file");
+	    return -1;
+	}
+
+	if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, 0600)) < 0)
+	{
+	    /* Did we encounter a real problem? */
+	    if (errno != EEXIST)
+	    {
+		perror("unable to open a temporary file");
+		return -1;
+	    }
+	}
     }
 
-    fputs(mime_args, file);
-    fclose(file);
+    /* Write the mime args into the temporary file */
+    end = mime_args + strlen(mime_args);
+    pointer = mime_args;
+    while (pointer < end)
+    {
+	ssize_t length;
+
+	/* Write as much as we can */
+	if ((length = write(fd, pointer, end - pointer)) < 0)
+	{
+	    perror("unable to write to temporary file");
+	    return -1;
+	}
+
+	pointer += length;
+    }
+
+    /* Make sure it gets written */
+    if (close(fd) < 0)
+    {
+	perror("unable to close temporary file");
+	return -1;
+    }
 
     /* Invoke metamail to display the attachment */
     if ((buffer = (char *) malloc(
