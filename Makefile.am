@@ -25,7 +25,7 @@ xtickertape_SOURCES = \
 	main.c
 
 # Indicate what the man pages are
-man_MANS = xtickertape.1 groups.5 usenet.5
+man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
 # and also the show-url script
