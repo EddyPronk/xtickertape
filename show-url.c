@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.7 2002/10/16 04:16:12 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.8 2002/10/16 23:20:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -250,8 +250,10 @@ char *invoke(char *browser, char *url)
 {
     int did_subst = 0;
     char *point = browser;
-    cmd_index = 0;
     int quote_count = 0;
+
+    /* Reset the buffer */
+    cmd_index = 0;
 
     /* Copy from the browser string */
     while (1)
