@@ -36,3 +36,8 @@
 /* package version */
 #undef VERSION
 
+/* Define if you want lots of debugging information */
+#undef DEBUG
+
+/* Define to enable glyph debugging code */
+#undef DEBUG_GLYPH
