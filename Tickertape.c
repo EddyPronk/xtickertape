@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.22 1998/05/16 05:49:12 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.23 1998/05/19 06:47:51 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -184,6 +184,7 @@ typedef struct ViewHolder_t
 {
     MessageView view;
     unsigned int width;
+    unsigned int previous_width;
 } *ViewHolder;
 
 static ViewHolder ViewHolder_alloc(MessageView view, unsigned int width);
@@ -606,6 +607,7 @@ static void InWithTheNew(TickertapeWidget self)
 	if (next == NULL)
 	{
 	    ViewHolder last = List_last(self -> tickertape.holders);
+	    ViewHolder holder;
 	    unsigned long width;
 
 	    if (self -> core.width < last -> width + END_SPACING)
@@ -617,7 +619,9 @@ static void InWithTheNew(TickertapeWidget self)
 		width = self -> core.width - last -> width;
 	    }
 	    self -> tickertape.nextVisible = 0;
-	    EnqueueViewHolder(self, ViewHolder_alloc(NULL, width));
+	    holder = ViewHolder_alloc(NULL, width);
+	    holder -> previous_width = last -> width;
+	    EnqueueViewHolder(self, holder);
 	}
 	/* otherwise add message */
 	else
@@ -666,12 +670,36 @@ static void Destroy(Widget widget)
 #endif /* DEBUG */
 }
 
-/* Nothing to do */
+
+
+/* Update the widget of the blank view */
+static void ViewHolder_Resize(ViewHolder self, TickertapeWidget tickertape)
+{
+    /* Skip any holders with actual views */
+    if (self -> view)
+    {
+	return;
+    }
+
+    /* Ok, we've got the blank one.  Update its size */
+    if (tickertape -> core.width < self -> previous_width + END_SPACING)
+    {
+	self -> width = END_SPACING;
+    }
+    else
+    {
+	self -> width = tickertape -> core.width - self -> previous_width;
+    }
+}
+
+/* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
+    TickertapeWidget self = (TickertapeWidget) widget;
 #ifdef DEBUG
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
+    List_doWith(self -> tickertape.holders, ViewHolder_Resize, self);
 }
 
 /* What should this do? */
