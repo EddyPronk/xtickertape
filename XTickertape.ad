@@ -14,7 +14,7 @@
 
 *History.marginWidth: 5
 *History.marginHeight: 5
-*History.messageCapacity: 32
+*History.messageCapacity: 64
 *History.dragDelay: 100
 
 !
@@ -28,14 +28,15 @@
 *history.background: White
 *scroller.background: White
 
+*history.timestampPixel: Gray40
 *scroller.groupPixel: BlueViolet
 *history.groupPixel: BlueViolet
 *scroller.userPixel: ForestGreen
 *history.userPixel: ForestGreen
 *scroller.stringPixel: IndianRed
 *history.stringPixel: IndianRed
-*history.separatorPixel: Black
-*scroller.separatorPixel: Black
+*history.separatorPixel: Gray40
+*scroller.separatorPixel: Gray40
 
 *history.selectionPixel: Gray80
 
