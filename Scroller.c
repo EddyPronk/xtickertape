@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.61 1999/08/29 14:27:51 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.62 1999/08/29 14:35:26 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1602,8 +1602,8 @@ static void drag(Widget widget, XEvent *event)
     /* If we're more than DELTA pixels from the position of the mouse
      * down event, then we must be dragging */
     if ((! self -> scroller.is_dragging) &&
-	(motion_event -> x + DRAG_DELTA > self -> scroller.start_drag_x) &&
-	(motion_event -> x - DRAG_DELTA < self -> scroller.start_drag_x))
+	(self -> scroller.start_drag_x - DRAG_DELTA < motion_event -> x) &&
+	(motion_event -> x < self -> scroller.start_drag_x + DRAG_DELTA))
     {
 	return;
     }
