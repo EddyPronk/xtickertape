@@ -2,6 +2,9 @@
 bin_PROGRAMS = xtickertape test-parser
 bin_SCRIPTS = show-url
 
+# Automatically generated sources
+BUILT_SOURCES = errors.h
+
 # xtickertape has many sources
 xtickertape_SOURCES = \
 	glyph.h gap.c message_glyph.c \
