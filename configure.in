@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 2.0a2)
+AM_INIT_AUTOMAKE(xtickertape, 2.0a3)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -41,8 +41,18 @@ AC_CHECK_LIB(Xmu, _XEditResCheckMessages)
 # Check for the X11 extensions library to see if we can make a shaped icon.
 AC_CHECK_LIB(Xext, XShapeCombineMask)
 
+# Check for the Xp (printing?!) library used by open motif.
+AC_CHECK_LIB(Xp, XpCreateContext)
+
 # Check for the Motif library
-AC_CHECK_LIB(Xm, XmCreatePulldownMenu)
+AC_CHECK_LIB(Xm, XmCreatePulldownMenu, ok=yes, ok=no)
+if test "$ok" = no; then
+    echo "ERROR: \`libXm' is missing on your system.  You may obtain"
+    echo "       a free Motif implementation from the Hungry Programmers"
+    echo "       at http://www.lesstif.org/"
+    exit 1
+fi
+LIBS="-lXm $LIBS"
 
 # See if the elvin libraries look healthy
 AC_ARG_WITH(elvin, [  --with-elvin=DIR       specify the elvin4 installation directory])
@@ -56,10 +66,10 @@ fi
 # Locate the elvin-config script
 AC_PATH_PROG(ELVIN_CONFIG, elvin-config, not found, $withval/bin:$PATH)
 if test "$ELVIN_CONFIG" = "not found" ; then
-	echo "WARNING: \`elvin-config' is missing on your system.  It"
-	echo "         is normally installed as part of the elvin4 libraries,"
-	echo "         which is available from http://elvin.dstc.edu.au/"
-	exit 1
+    echo "WARNING: \`elvin-config' is missing on your system.  It"
+    echo "         is normally installed as part of the elvin4 libraries,"
+    echo "         which is available from http://elvin.dstc.edu.au/"
+    exit 1
 fi
 
 # Update our flags to pick up the elvin includes and libraries
@@ -76,20 +86,20 @@ AC_CHECK_HEADERS(sys/time.h unistd.h crypt.h)
 
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
 if test "$ok" = "no" ; then
-	echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
-	echo "       a free Motif implementation from the Hungry Programmers"
-	echo "       at http://www.lesstif.org/"
-	exit 1
+    echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
+    echo "       a free Motif implementation from the Hungry Programmers"
+    echo "       at http://www.lesstif.org/"
+    exit 1
 fi
 
 dnl Check for the metamail program
 AC_PATH_PROG(METAMAIL, metamail, not found, $DSTCDIR/script:$PATH)
 if test "$METAMAIL" = "not found" ; then
-	echo "WARNING: \`metamail\' is missing on your system. Without it,"
-	echo "          xtickertape will be unable to decode MIME messages"
-	echo "Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
+    echo "WARNING: \`metamail\' is missing on your system. Without it,"
+    echo "          xtickertape will be unable to decode MIME messages"
+    echo "Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
 else
-	AC_DEFINE_UNQUOTED(METAMAIL, "$METAMAIL")
+    AC_DEFINE_UNQUOTED(METAMAIL, "$METAMAIL")
 fi
 
 dnl Checks for header files.
