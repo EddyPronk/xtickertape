@@ -34,6 +34,7 @@
 !
 ! Labels
 !
+*controlPanel.title: Xtickertape Control Panel
 *userLabel.labelString: User
 *group.labelString: Group
 *timeout.labelString: Timeout
@@ -59,6 +60,15 @@
 *menuBar.helpMenu.mnemonic: H
 
 *menuBar*about.labelString: About Xtickertape
+
+! About box labels
+*aboutBox.title: About Xtickertape
+! titleLabel.labelString is set in the Control.c from the PACKAGE and
+! VERSION compile-time variables
+*titleLabel.fontList: -adobe-helvetica-bold-r-normal--18-180-75-75-p-*-iso8859-1
+*copyrightLabel.labelString: Copyright © 1999 DSTC Pty Ltd
+*authorLabel.labelString: Ted Phelps (phelps@dstc.edu.au)
+*dismiss.labelString: Dismiss
 
 !
 ! Scrolling parameters

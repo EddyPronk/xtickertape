@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.32 1999/04/25 02:02:53 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.33 1999/04/27 03:56:29 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -132,6 +132,9 @@ struct ControlPanel_t
     /* The receiver's "Send" button widget */
     Widget send;
 
+    /* The receiver's about box widget */
+    Widget aboutBox;
+
     /* The currently selected subscription (group) */
     MenuItemTuple selection;
 
@@ -171,6 +174,7 @@ static void FileUsenet(Widget widget, ControlPanel self, XtPointer unused);
 static void FileExit(Widget widget, ControlPanel self, XtPointer unused);
 static void HelpAbout(Widget widget, ControlPanel self, XtPointer unused);
 static void CreateFileMenu(ControlPanel self, Widget parent);
+static Widget CreateAboutBox(ControlPanel self, Widget parent);
 static void CreateHelpMenu(ControlPanel self, Widget parent);
 static Widget CreateGroupMenu(ControlPanel self, Widget parent);
 static Widget CreateTimeoutMenu(ControlPanel self, Widget parent);
@@ -194,6 +198,7 @@ static void ActionSend(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionClear(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruct *cbs);
+static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored);
 
 
 /* This gets called when the user selects the "reloadGroups" menu item */
@@ -254,11 +259,111 @@ static void CreateFileMenu(ControlPanel self, Widget parent)
 	NULL);
 }
 
+/* Creates the About box */
+static Widget CreateAboutBox(ControlPanel self, Widget parent)
+{
+    Widget top;
+    Widget form;
+    Widget infoForm;
+    Widget title;
+    Widget copyright;
+    Widget buttonForm;
+    Widget button;
+    XmString string;
+    char buffer[sizeof(PACKAGE) + sizeof(VERSION)];
+
+    /* Create the shell widget */
+    top = XtVaCreatePopupShell(
+	"aboutBox", topLevelShellWidgetClass, parent,
+	XmNdeleteResponse, XmUNMAP,
+	XmNbackground, 0,
+	NULL);
+
+    /* Create a Form widget to manage the dialog box's children */
+    form = XtVaCreateWidget(
+	"aboutBoxForm", xmFormWidgetClass, top,
+	NULL);
+
+    /* Create a Form widget to manage the Labels */
+    infoForm = XtVaCreateWidget(
+	"infoForm", xmFormWidgetClass, form,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_FORM,
+	NULL);
+
+    /* Create the title label */
+    sprintf(buffer, "%s %s", PACKAGE, VERSION);
+    string = XmStringCreateSimple(buffer);
+    title = XtVaCreateManagedWidget(
+	"titleLabel", xmLabelWidgetClass, infoForm,
+	XmNlabelString, string,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_FORM,
+	NULL);
+    XmStringFree(string);
+
+    /* Create the copyright label */
+    copyright = XtVaCreateManagedWidget(
+	"copyrightLabel", xmLabelWidgetClass, infoForm,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_WIDGET,
+	XmNtopWidget, title,
+	NULL);
+
+    /* Create the author label */
+    XtVaCreateManagedWidget(
+	"authorLabel", xmLabelWidgetClass, infoForm,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_WIDGET,
+	XmNtopWidget, copyright,
+	NULL);
+
+    XtManageChild(infoForm);
+
+    /* Create a Form widget to manage the button */
+    buttonForm = XtVaCreateWidget(
+	"buttonForm", xmFormWidgetClass, form,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_WIDGET,
+	XmNbottomAttachment, XmATTACH_FORM,
+	XmNtopWidget, infoForm,
+	NULL);
+
+    /* Create the dismiss button */
+    button = XtVaCreateManagedWidget(
+	"dismiss", xmPushButtonWidgetClass, buttonForm,
+	XmNsensitive, True,
+	XmNshowAsDefault, True,
+	XmNbottomAttachment, XmATTACH_FORM,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	NULL);
+    XtAddCallback(
+	button, XmNactivateCallback,
+	(XtCallbackProc)ActionDismiss, (XtPointer)self);
+
+    XtManageChild(buttonForm);
+
+    /* Manage all of the widgets */
+    XtManageChild(form);
+    return top;
+}
+
 
 /* Pop up an about box */
 static void HelpAbout(Widget widget, ControlPanel self, XtPointer unused)
 {
-    fprintf(stderr, "*** Hello sailor\n");
+    if (self -> aboutBox == NULL)
+    {
+	self -> aboutBox = CreateAboutBox(self, XtParent(self -> top));
+    }
+
+    XtPopup(self -> aboutBox, XtGrabNone);
 }
 
 /* Construct the Help menu widget */
@@ -580,10 +685,12 @@ static void InitializeUserInterface(ControlPanel self, Widget parent)
     Widget buttonForm;
     SANITY_CHECK(self);
 
+    /* Set some variables to sane values */
+    self -> aboutBox = NULL;
+
     /* Create a popup shell for the receiver */
     self -> top = XtVaCreatePopupShell(
 	"controlPanel", topLevelShellWidgetClass, parent,
-	XmNtitle, "Tickertape Control Panel",
 	XmNdeleteResponse, XmUNMAP,
 	NULL);
 
@@ -840,7 +947,7 @@ Message ConstructMessage(ControlPanel self)
  *
  */
 
-/* Callback for Send button */
+/* Callback for `Send' button */
 static void ActionSend(Widget button, ControlPanel self, XtPointer ignored)
 {
     SANITY_CHECK(self);
@@ -855,7 +962,7 @@ static void ActionSend(Widget button, ControlPanel self, XtPointer ignored)
     XtPopdown(self -> top);
 }
 
-/* Callback for Clear button */
+/* Callback for `Clear' button */
 static void ActionClear(Widget button, ControlPanel self, XtPointer ignored)
 {
     SANITY_CHECK(self);
@@ -866,13 +973,14 @@ static void ActionClear(Widget button, ControlPanel self, XtPointer ignored)
     ResetTimeout(self);
 }
 
-/* Callback for Cancel button */
+/* Callback for `Cancel' button */
 static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored)
 {
     SANITY_CHECK(self);
 
     XtPopdown(self -> top);
 }
+
 
 /* Call back for the Return key in the text and mimeArgs fields */
 static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruct *cbs)
@@ -882,6 +990,18 @@ static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruc
     XtCallActionProc(
 	self -> send, "ArmAndActivate", cbs -> event, 
 	NULL, 0);
+}
+
+/* Callback for the `Dismiss' button on the about box */
+static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored)
+{
+    SANITY_CHECK(self);
+
+    /* This check is probably a bit paranoid, but it doesn't hurt... */
+    if (self -> aboutBox != NULL)
+    {
+	XtPopdown(self -> aboutBox);
+    }
 }
 
 
