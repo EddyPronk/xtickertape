@@ -18,6 +18,23 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(crypt, crypt)
 
+dnl See if the elvin directory was specified with --with-elvin
+AC_MSG_CHECKING(for --with-elvin)
+AC_ARG_WITH(elvin, [  --with-elvin=DIR        look for elvin stuff here], [
+	case $withval in
+		yes)
+			# ignore a gratuitous `yes'
+			;;
+		no)
+			# ignore a useless `no'
+			;;
+		*)
+			# Look for elvin stuff in the specified place
+			CPPFLAGS="-I$withval/include $CPPFLAGS"
+			LDFLAGS="-L$withval/lib $LDFLAGS"
+			;;
+	esac])
+
 dnl Make sure that the elvin headers can be found
 AC_CHECK_HEADER(elvin/elvin.h, ok=yes, ok=no)
 if test "$ok" = "no" ; then
