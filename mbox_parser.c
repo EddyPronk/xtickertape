@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.3 1999/09/13 13:45:32 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.4 1999/10/02 13:29:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -463,6 +463,7 @@ void mbox_parser_free(mbox_parser_t self)
     free(self);
 }
 
+#ifdef DEBUG
 /* Prints out debugging information about the receiver */
 void mbox_parser_debug(mbox_parser_t self, FILE *out)
 {
@@ -470,6 +471,7 @@ void mbox_parser_debug(mbox_parser_t self, FILE *out)
     fprintf(out, "  lexer_state = %p\n", self -> lexer_state);
     fprintf(out, "  parser_state = %d\n", self -> parser_state);
 }
+#endif /* DEBUG */
 
 /* Parses `mailbox' as an RFC 822 mailbox, separating out the name and
  * e-mail address portions which can subsequently be accessed with the 

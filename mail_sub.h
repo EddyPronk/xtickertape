@@ -35,7 +35,7 @@
 #define MAIL_SUB_H
 
 #ifndef lint
-static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.2 1999/09/26 14:05:14 phelps Exp $";
+static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.3 1999/10/02 13:29:07 phelps Exp $";
 #endif /* lint */
 
 /* The mail_sub_t data type */
@@ -44,13 +44,13 @@ typedef struct mail_sub *mail_sub_t;
 #include "message.h"
 #include "connect.h"
 
-/* The MailSubscription callback type */
+/* The mail_sub callback type */
 typedef void (*mail_sub_callback_t)(void *rock, message_t message);
 
 
 /* Exported functions */
 
-/* Answers a new MailSubscription */
+/* Answers a new mail_sub */
 mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock);
 
 /* Releases the resources consumed by the receiver */
