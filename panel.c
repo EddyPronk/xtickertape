@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.46 2001/05/01 13:12:32 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.47 2001/07/04 11:51:23 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -45,6 +45,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.46 2001/05/01 13:12:32 phelps Exp 
 
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
+#include "History.h"
 
 
 /*
@@ -310,7 +311,7 @@ static void options_threaded(Widget widget, XtPointer rock, XtPointer data)
     control_panel_t self = (control_panel_t)rock;
     XmToggleButtonCallbackStruct *info = (XmToggleButtonCallbackStruct *)data;
 
-    history_set_threaded(tickertape_history(self -> tickertape), info -> set);
+    HistorySetThreaded(self -> history, info -> set);
 }
 
 /* This is called when the `show time' toggle button is changed */
@@ -319,7 +320,7 @@ static void options_show_time(Widget widget, XtPointer rock, XtPointer data)
     control_panel_t self = (control_panel_t)rock;
     XmToggleButtonCallbackStruct *info = (XmToggleButtonCallbackStruct *)data;
 
-    history_show_timestamp(tickertape_history(self -> tickertape), info -> set);
+    HistorySetShowTimestamps(self -> history, info -> set);
 }
 
 /* This is called when the `close policy' toggle button is changed */
@@ -343,12 +344,12 @@ static void create_options_menu(control_panel_t self, Widget parent)
     /* Create the `threaded' menu item */
     item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNvalueChangedCallback, options_threaded, (XtPointer)self);
-    history_set_threaded(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
+    HistorySetThreaded(self -> history, XmToggleButtonGetState(item));
 
     /* Create the `show time' menu item */
     item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNvalueChangedCallback, options_show_time, (XtPointer)self);
-    history_show_timestamp(tickertape_history(self -> tickertape), XmToggleButtonGetState(item));
+    HistorySetShowTimestamps(self -> history, XmToggleButtonGetState(item));
 
     /* Create a `close policy' menu item */
     item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass, menu, NULL);
@@ -720,6 +721,31 @@ static void history_motion_callback(
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
 {
+    Widget scroll_window;
+
+#if 1
+    /* Create a scrolled window to enclose History widget */
+    scroll_window = XtVaCreateWidget(
+	"historySW", xmScrolledWindowWidgetClass, parent,
+	XmNleftAttachment, XmATTACH_FORM,
+	XmNrightAttachment, XmATTACH_FORM,
+	XmNtopAttachment, XmATTACH_FORM,
+	XmNbottomAttachment, XmATTACH_WIDGET,
+	XmNbottomWidget, XtParent(self -> status_line),
+	XmNscrollingPolicy, XmAPPLICATION_DEFINED,
+	XmNvisualPolicy, XmVARIABLE,
+	XmNscrollBarDisplayPolicy, XmSTATIC,
+	XmNshadowThickness, 0,
+	NULL);
+
+    self -> history = XtVaCreateManagedWidget(
+	"history", historyWidgetClass, scroll_window,
+	NULL);
+
+    /* Tell the scroller what its work window is */
+    XtVaSetValues(scroll_window, XmNworkWindow, self -> history, NULL);
+    XtManageChild(scroll_window);
+#else
     Arg args[10];
 
     XtSetArg(args[0], XmNleftAttachment, XmATTACH_FORM);
@@ -741,6 +767,7 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtAddCallback(
 	self -> history, XmNdefaultActionCallback,
 	(XtCallbackProc)history_action_callback, (XtPointer)self);
+
     XtAddEventHandler(
  	self -> history,
 	KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
@@ -753,6 +780,7 @@ static void create_history_box(control_panel_t self, Widget parent)
 
     /* Tell the tickertape's history to use this XmList widget */
     history_set_list(tickertape_history(self -> tickertape), self -> history);
+#endif
 }
 
 /* Constructs the status line */
@@ -1129,19 +1157,6 @@ static void init_ui(control_panel_t self, Widget parent)
     /* Manage the form widget */
     XtManageChild(form);
 
-
-    /* Create the tool-tip widget */
-    self -> tool_tip = XtVaCreatePopupShell(
-	"toolTipShell", transientShellWidgetClass, self -> top,
-	XmNoverrideRedirect, True,
-	XmNallowShellResize, True,
-	NULL);
-
-    /* And set its child widget to be a label */
-    self -> tool_tip_label = XtVaCreateManagedWidget(
-	"toolTip", xmLabelWidgetClass, self -> tool_tip,
-	NULL);
-
     /* Make sure that we can use Editres */
     XtAddEventHandler(self -> top, (EventMask)0, True, _XEditResCheckMessages, NULL);
 }
@@ -1157,7 +1172,7 @@ static void select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignor
     if (self -> selection != tuple)
     {
 	self -> selection = tuple;
-	XmListDeselectAllItems(self -> history);
+/*	XmListDeselectAllItems(self -> history); */
     }
 
     /* Changing the group prevents a reply */
@@ -1811,6 +1826,9 @@ void control_panel_select(control_panel_t self, message_t message)
     /* Set up to reply */
     prepare_reply(self, message);
 
+#if 1
+    HistorySelect(self -> history, message);
+#else
     /* Unselect everything */
     XmListDeselectAllItems(self -> history);
 
@@ -1823,6 +1841,7 @@ void control_panel_select(control_panel_t self, message_t message)
     /* Select the item and make sure it is visible */
     make_index_visible(self -> history, index);
     XmListSelectPos(self -> history, index, False);
+#endif
 }
 
 /* Makes the control panel window visible */
