@@ -29,7 +29,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.28 2003/01/23 09:47:11 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.29 2003/02/10 01:51:16 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -65,8 +65,8 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.28 2003/01/23 09:47:11 phe
 
 
 /* libvin 4.0 has a poorly named macro */
-#if ! defined(ELVIN_SHA1DIGESTLEN)
-#define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
+#if ! defined(ELVIN_SHA1_DIGESTLEN)
+#define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
 #endif
 
 /* The type of a lexer state */
@@ -376,7 +376,7 @@ static int accept_key(groups_parser_t self, char *name)
     int is_private;
     void *new_names;
     void *new_lengths;
-    char public_key[ELVIN_SHA1DIGESTLEN];
+    char public_key[ELVIN_SHA1_DIGESTLEN];
 
     /* Look up the key in the table */
     if (key_table_lookup(
@@ -436,7 +436,7 @@ static int accept_key(groups_parser_t self, char *name)
 	}
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 	/* Calculate the public key */
-	if (! elvin_sha1digest(client, data, length, public_key, NULL))
+	if (! elvin_sha1_digest(client, data, length, public_key, NULL))
 	{
 	    return -1;
 	}
@@ -444,7 +444,7 @@ static int accept_key(groups_parser_t self, char *name)
 #error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
-	length = ELVIN_SHA1DIGESTLEN;
+	length = ELVIN_SHA1_DIGESTLEN;
 	data = public_key;
     }
 

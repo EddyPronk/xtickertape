@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.81 2003/01/27 21:15:32 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.82 2003/02/10 01:51:17 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -59,13 +59,13 @@ static const char cvsid[] = "$Id: panel.c,v 1.81 2003/01/27 21:15:32 phelps Exp 
 #include "panel.h"
 #include "History.h"
 
-/* Make sure ELVIN_SHA1DIGESTLEN is defined */
+/* Make sure ELVIN_SHA1_DIGESTLEN is defined */
 #if ! defined(ELVIN_VERSION_AT_LEAST)
-#define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
+#define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
 #endif
 
 /* The UUIDs we generate will need this many bytes */
-#define UUID_SIZE (ELVIN_SHA1DIGESTLEN * 2 + 1)
+#define UUID_SIZE (ELVIN_SHA1_DIGESTLEN * 2 + 1)
 
 /* The maximum size of the message-id pre-digested string */
 #define PREDIGEST_ID_SIZE 32
@@ -1448,7 +1448,7 @@ void create_uuid(control_panel_t self, char *result)
     char buffer[PREDIGEST_ID_SIZE];
     time_t now;
     struct tm *tm_gmt;
-    char digest[ELVIN_SHA1DIGESTLEN];
+    char digest[ELVIN_SHA1_DIGESTLEN];
     int index;
 
     /* Get the time */
@@ -1474,12 +1474,12 @@ void create_uuid(control_panel_t self, char *result)
     /* Construct a SHA1 digest of the UUID, which should be just as
      * unique but should make it much harder to track down the sender */
 #if ! defined(ELVIN_VERSION_AT_LEAST)
-    if (! elvin_sha1digest(buffer, 31, digest))
+    if (! elvin_sha1_digest(buffer, 31, digest))
     {
 	abort();
     }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-    if (! elvin_sha1digest(client, buffer, 31, digest, NULL))
+    if (! elvin_sha1_digest(client, buffer, 31, digest, NULL))
     {
 	abort();
     }
@@ -1488,14 +1488,14 @@ void create_uuid(control_panel_t self, char *result)
 #endif
 
     /* Convert those digits into bytes */
-    for (index = 0; index < ELVIN_SHA1DIGESTLEN; index++)
+    for (index = 0; index < ELVIN_SHA1_DIGESTLEN; index++)
     {
 	int ch = (uchar)digest[index];
 	result[index * 2] = hex_chars[ch >> 4];
 	result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
 
-    result[ELVIN_SHA1DIGESTLEN * 2] = '\0';
+    result[ELVIN_SHA1_DIGESTLEN * 2] = '\0';
 }
 
 
