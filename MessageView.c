@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.7 1997/02/12 05:49:22 phelps Exp $ */
+/* $Id: MessageView.c,v 1.8 1997/02/12 07:33:31 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,8 +117,7 @@ static void tick(MessageView self, XtIntervalId *ignored)
     }
 
     paint(self, self -> pixmap, 0, self -> ascent);
-    printf(":");
-    fflush(stdout);
+    /* printf(":"); fflush(stdout); */
     setClock(self);
 }
 
@@ -220,7 +219,7 @@ static void computeWidths(MessageView self)
 void MessageView_debug(MessageView self)
 {
     SanityCheck(self);
-    printf("MessageView (0x%p)", self);
+    printf("MessageView (0x%p)\n", self);
     printf("  refcount = %u\n", self -> refcount);
     printf("  widget = 0x%p\n", self -> widget);
     printf("  fadeLevel = %d\n", self -> fadeLevel);
@@ -265,7 +264,6 @@ void MessageView_free(MessageView self)
 {
     if (self -> timer)
     {
-	printf("saved that one!\n"); fflush(stdout);
 	TtStopTimer(self -> widget, self -> timer);
     }
 
