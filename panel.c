@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.70 2002/07/02 15:19:22 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.71 2002/10/04 14:06:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1154,18 +1154,8 @@ static void select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignor
 {
     control_panel_t self = tuple -> control_panel;
 
-    if (self -> selection != tuple)
-    {
-	self -> selection = tuple;
-	HistorySelect(self -> history, NULL);
-    }
-
-    /* Changing the group prevents a reply */
-    if (self -> message_id != NULL)
-    {
-	free(self -> message_id);
-	self -> message_id = NULL;
-    }
+    /* Record the tuple for later use */
+    self -> selection = tuple;
 }
 
 /* Programmatically sets the selection in the Group option */
