@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.21 1999/11/27 05:05:29 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.22 1999/11/29 03:59:06 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1026,7 +1026,7 @@ static void create_bottom_box(control_panel_t self, Widget parent)
     /* Create the "Send" button */
     self -> send = XtVaCreateManagedWidget(
 	"send", xmPushButtonWidgetClass, parent,
-	XtNsensitive, True,
+	XtNsensitive, False,
 	XmNshowAsDefault, True,
 	XmNleftAttachment, XmATTACH_POSITION,
 	XmNrightAttachment, XmATTACH_POSITION,
@@ -1527,9 +1527,13 @@ static void action_cancel(Widget button, control_panel_t self, XtPointer ignored
 /* Call back for the Return key in the text and mime_args fields */
 static void action_return(Widget textField, control_panel_t self, XmAnyCallbackStruct *cbs)
 {
-    XtCallActionProc(
-	self -> send, "ArmAndActivate", cbs -> event, 
-	NULL, 0);
+    /* If the `Send' button is enabled then tickle it */
+    if (XtIsSensitive(self -> send))
+    {
+	XtCallActionProc(
+	    self -> send, "ArmAndActivate", cbs -> event, 
+	    NULL, 0);
+    }
 }
 
 /* Callback for the `Dismiss' button on the about box */
@@ -1592,6 +1596,15 @@ void control_panel_free(control_panel_t self)
     free(self);
 }
 
+
+/* This is called when the elvin connection status changes */
+control_panel_t control_panel_set_connected(
+    control_panel_t self,
+    int is_connected)
+{
+    /* Enable/disable the `Send' button as appropriate */
+    XtSetSensitive(self -> send, is_connected);
+}
 
 
 /* Adds a subscription to the receiver at the end of the groups list */

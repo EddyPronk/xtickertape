@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.41 1999/11/29 03:44:18 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.42 1999/11/29 03:59:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1005,6 +1005,9 @@ static void connect_cb(
 
     /* Record the elvin_handle */
     self -> handle = handle;
+
+    /* Tell the control panel that we're connected */
+    control_panel_set_connected(self -> control_panel, 1);
 
     /* Subscribe to the groups */
     for (index = 0; index < self -> groups_count; index++)
