@@ -36,7 +36,10 @@ Overview of changes in xtickertape-1.6.0
 
 * The scroller now uses a single off-screen pixmap instead of one for
   each message.  This should reduce the amount of memory that
-  tickertape uses in the X server, especially for *huge* fonts.
+  tickertape uses in the X server, especially for *huge* fonts.  It's
+  also somewhat smarter about which portion of the scroller needs to
+  be updated.  This means that really long messages in huge fonts
+  shouldn't kill the X server anymore.
 
 * Fixed the way the WM_DELETE_WINDOW protocol is handled so that it
   works properly with both lesstif and Motif.
