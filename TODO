@@ -16,3 +16,9 @@ Things that would be nice to have in future versions of xtickertape:
   resized.  It seems to think that it's more important to keep the
   first list item in place than the last one, even if this means
   leaving a gaping white space at the bottom of the list.  Bizarre.
+
+- Perhaps the control panel should resize in increments corresponding
+  to a complete line in the history?
+
+- The length of the history should be configurable.
+
