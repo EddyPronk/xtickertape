@@ -28,12 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.59 2002/04/09 17:06:59 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.60 2002/04/09 17:20:58 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
@@ -51,11 +52,13 @@ static const char cvsid[] = "$Id: panel.c,v 1.59 2002/04/09 17:06:59 phelps Exp 
 #define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
 #endif
 
+#define BUFFER_SIZE 1024
 #define ATTACHMENT_FMT \
     "MIME-Version: 1.0\n" \
     "Content-Type: %s; charset=us-ascii\n" \
     "\n" \
     "%s\n"
+
 
 /*
  *
@@ -648,6 +651,79 @@ static void history_attachment_callback(
     tickertape_show_attachment(self -> tickertape, message);
 }
 
+/* Copies from the attachment into the buffer */
+static void decode_attachment(
+    char *attachment, size_t length,
+    char *buffer, size_t buflen)
+{
+    char *end = attachment + length;
+    char *point;
+    char *out = buffer;
+    int state = 0;
+    int ch;
+
+    /* Find the start of the body */
+    for (point = attachment; point < end; point++)
+    {
+	ch = *point;
+
+	/* Decide how to treat the character depending on our state */
+	switch (state)
+	{
+	    /* Skipping the MIME header */
+	    case 0:
+	    {
+		if (ch == '\n')
+		{
+		    state = 1;
+		    break;
+		}
+
+		break;
+	    }
+
+	    /* Looking at the ch after a linefeed in the header */
+	    case 1:
+	    {
+		if (ch == '\n')
+		{
+		    state = 2;
+		    break;
+		}
+
+		state = 0;
+		break;
+	    }
+
+	    /* Looking at a character in the body */
+	    case 2:
+	    {
+		if (isprint(ch))
+		{
+		    if (out < buffer + buflen)
+		    {
+			*(out++) = ch;
+		    }
+		    else
+		    {
+			*(buffer + buflen - 1) = '\0';
+			return;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		abort();
+	    }
+	}
+    }
+
+    *out = '\0';
+}
+
 /* This is called when the mouse has moved in the history widget */
 static void history_motion_callback(
     Widget widget,
@@ -656,13 +732,19 @@ static void history_motion_callback(
 {
     control_panel_t self = (control_panel_t)closure;
     message_t message = (message_t)call_data;
+    char buffer[BUFFER_SIZE];
     char *string = NULL;
+    size_t length;
 
     /* If the message has an URL then show it in the status bar */
     if (message && message_has_attachment(message))
     {
-	/* FIX THIS: show the first few bytes of the attachment body */
-	/* message_get_mime_args(message, &string); */
+	/* Get the attachment */
+	length = message_get_attachment(message, &string);
+
+	/* Decode it */
+	decode_attachment(string, length, buffer, BUFFER_SIZE);
+	string = buffer;
     }
 
     control_panel_show_status(self, string);
