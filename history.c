@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.22 1999/09/09 14:29:49 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.23 1999/09/19 08:18:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -44,9 +44,6 @@ static const char cvsid[] = "$Id: history.c,v 1.22 1999/09/09 14:29:49 phelps Ex
 #else /* DEBUG */
 #define MAX_LIST_COUNT 30
 #endif /* DEBUG */
-
-/* Helpful macro */
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 
 /* The structure of a node in a message history */
@@ -469,10 +466,34 @@ static XmString *history_get_strings(history_t self, int count)
     }
 }
 
+/* Answers the number of messages in the visible portion of the receiver */
+static int history_count(history_t self)
+{
+    /* Cheat -- the threaded_count will be the answer until we have at
+     * least MAX_LIST_COUNT messages in the history */
+    return self -> threaded_count < MAX_LIST_COUNT ? 
+	self -> threaded_count : MAX_LIST_COUNT;
+}
+
+/* Answers the index of the currently selected item */
+static int history_get_selection_index(history_t self)
+{
+    int *selection_positions;
+    int count;
+
+    /* Ask the widget */
+    if (XmListGetSelectedPos(self -> list, &selection_positions, &count))
+    {
+	return selection_positions[0];
+    }
+
+    /* No selection */
+    return 0;
+}
+
 /* Sets the history's threadedness */
 void history_set_threaded(history_t self, int is_threaded)
 {
-    int *selection_positions;
     message_t selection;
     int count;
     XmString *items;
@@ -492,20 +513,20 @@ void history_set_threaded(history_t self, int is_threaded)
     }
 
     /* Remember the current selection (if any) */
-    if (XmListGetSelectedPos(self -> list, &selection_positions, &count))
+    if ((index = history_get_selection_index(self)) == 0)
     {
-	selection = history_get(self, selection_positions[0]);
+	selection = NULL;
     }
     else
     {
-	selection = NULL;
+	selection = history_get(self, index);
     }
 
     /* Switch our `threadedness' */
     self -> is_threaded = is_threaded;
 
     /* Update the list */
-    count = MIN(self -> threaded_count, MAX_LIST_COUNT);
+    count = history_count(self);
     items = history_get_strings(self, count);
 
     /* Replace the old list with the new one */
@@ -531,7 +552,7 @@ void history_set_threaded(history_t self, int is_threaded)
 static history_node_t history_get_node_threaded(history_t self, int index)
 {
     history_node_t node = self -> last_response;
-    int max = MIN(self -> threaded_count, MAX_LIST_COUNT) + 1;
+    int max = history_count(self) + 1;
 
     /* Keep looking until we run out of nodes */
     while (node != NULL)
@@ -563,7 +584,7 @@ static history_node_t history_get_node_threaded(history_t self, int index)
 static history_node_t history_get_node_unthreaded(history_t self, int index)
 {
     history_node_t probe;
-    int i = MIN(self -> threaded_count, MAX_LIST_COUNT);
+    int i = history_count(self);
 
     /* Search for our victim */
     for (probe = self -> last; probe != NULL; probe = probe -> previous)
@@ -652,6 +673,15 @@ static void history_remove_old(history_t self)
 int history_add(history_t self, message_t message)
 {
     history_node_t node;
+    int top;
+    int count;
+
+    /* Figure out what's visible before we add this message */
+    XtVaGetValues(
+	self -> list,
+	XmNtopItemPosition, &top,
+	XmNvisibleItemCount, &count,
+	NULL);
 
     /* Allocate a node to hold the message */
     if ((node = history_node_alloc(message)) == NULL)
@@ -672,9 +702,16 @@ int history_add(history_t self, message_t message)
     /* Update the List widget */
     if (self -> list != NULL)
     {
+	/* Add the item to the List widget */
 	XmString string = history_node_string(node, self -> is_threaded);
 	XmListAddItem(self -> list, string, history_index(self, node -> message));
 	XmStringFree(string);
+
+	/* If the bottom was visible before then make sure it remains so */
+	if (top + count >= history_count(self))
+	{
+	    XmListSetBottomPos(self -> list, history_count(self));
+	}
     }
 
     return node -> is_killed;
@@ -688,7 +725,7 @@ static int history_index_unthreaded(history_t self, message_t message)
     history_node_t probe;
     int index;
 
-    index = MIN(self -> threaded_count, MAX_LIST_COUNT);
+    index = history_count(self);
     for (probe = self -> last; probe != NULL; probe = probe -> previous)
     {
 	if (probe -> message == message)
@@ -735,8 +772,7 @@ static int history_index_threaded(history_t self, message_t message)
     {
 	if (node -> message == message)
 	{
-	    int before_index = MIN(self -> threaded_count, MAX_LIST_COUNT) -
-		self -> threaded_count;
+	    int before_index = history_count(self) - self -> threaded_count;
 	    return history_node_index_threaded(node, before_index);
 	}
     }
