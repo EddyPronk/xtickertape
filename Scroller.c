@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.144 2003/01/27 15:20:26 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.145 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -429,7 +429,7 @@ static void glyph_set_clock(glyph_t self, int level_count)
     {
 	/* No: fade according to the timeout of the message */
 	message_t message = message_view_get_message(self -> message_view);
-	duration = 60 * 1000 * message_get_timeout(message) / level_count;
+	duration = 1000 * message_get_timeout(message) / level_count;
     }
 
     self -> timeout = XtAppAddTimeOut(

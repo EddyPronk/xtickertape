@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.37 2003/01/27 00:14:08 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.38 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -163,7 +163,7 @@ static void notify_cb(
 
     /* Construct a message_t out of all of that */
     message = message_alloc(
-	NULL, folder, from, subject, 60,
+	NULL, folder, from, subject, 600,
 	NULL, 0,
 	NULL, NULL, NULL, NULL);
 

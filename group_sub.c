@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.54 2004/08/02 16:51:11 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.55 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -51,6 +51,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.54 2004/08/02 16:51:11 phelps 
 #include "key_table.h"
 #include "group_sub.h"
 
+#define F3_VERSION "org.tickertape.message"
 #define F3_USER_AGENT "User-Agent"
 #define F3_GROUP "Group"
 #define F2_TICKERTAPE "TICKERTAPE"
@@ -186,11 +187,23 @@ static void notify_cb(
     char *reply_id;
     char *thread_id;
     int found;
+    int version;
 
     /* If we don't have a callback then just quit now */
     if (self -> callback == NULL)
     {
 	return;
+    }
+
+    /* See if there's a version number */
+    if (elvin_notification_get(notification, F3_VERSION, &type, &value, error) &&
+        type == ELVIN_INT32)
+    {
+        version = (int32_t)value.i;
+    }
+    else
+    {
+        version = -1;
     }
     
     /* Get the user from the notification (if provided) */
@@ -233,25 +246,54 @@ static void notify_cb(
 	{
 	    case ELVIN_INT32:
 	    {
-		timeout = value.i;
+                if (version < 3001 && value.i <= 60) 
+                {
+                    timeout = value.i * 60;
+                }
+                else
+                {
+                    timeout = value.i;
+                }
+
 		break;
 	    }
 
 	    case ELVIN_INT64:
 	    {
-		timeout = (int)value.h;
+                if (version < 3001 && value.h <= 60)
+                {
+                    timeout = (int)value.h * 60;
+                }
+                else
+                {
+                    timeout = (int)value.h;
+                }
+
 		break;
 	    }
 
 	    case ELVIN_REAL64:
 	    {
-		timeout = (int)(0.5 + value.d);
+                if (version < 3001 && value.d <= 60)
+                {
+                    timeout = (int)(0.5 + 60 * value.d);
+                }
+                else
+                {
+                    timeout = (int)(0.5 + value.d);
+                }
+
 		break;
 	    }
 
 	    case ELVIN_STRING:
 	    {
-		timeout = atoi((char *)value.s);
+                timeout = atoi((char *)value.s);
+                if (version < 3001 && timeout <= 60)
+                {
+                    timeout *= 60;
+                }
+
 		break;
 	    }
 
@@ -267,25 +309,25 @@ static void notify_cb(
 	{
 	    case ELVIN_INT32:
 	    {
-		timeout = value.i;
+		timeout = value.i * 60;
 		break;
 	    }
 
 	    case ELVIN_INT64:
 	    {
-		timeout = (int)value.h;
+		timeout = (int)value.h * 60;
 		break;
 	    }
 
 	    case ELVIN_REAL64:
 	    {
-		timeout = (int)(0.5 + value.d);
+		timeout = (int)(0.5 + value.d * 60);
 		break;
 	    }
 
 	    case ELVIN_STRING:
 	    {
-		timeout = atoi((char *)value.s);
+		timeout = atoi((char *)value.s) * 60;
 		break;
 	    }
 
@@ -297,7 +339,7 @@ static void notify_cb(
     }
 
     /* If the timeout was illegible, then set it to 10 minutes */
-    timeout = (timeout == 0) ? 10 : timeout;
+    timeout = (timeout == 0) ? 10 * 60 : timeout;
 
     /* Make sure the timeout conforms */
     if (timeout < self -> min_time)
@@ -458,6 +500,7 @@ static int notify_cb(
     elvin_value_t value;
     char *user;
     char *text;
+    int32_t version = -1;
     int timeout = 0;
     char *attachment;
     uint32_t length;
@@ -477,10 +520,18 @@ static int notify_cb(
 	return 1;
     }
 
+    /* Get the 'org.tickertape.message' field */
+    if (! elvin_notification_get_int32(notification, F3_VERSION, &found, &version, error))
+    {
+        fprintf(stderr, "elvin_notification_get_int32(): failed\n");
+        elvin_error_fprintf(stderr, error);
+        exit(1);
+    }
+
     /* Get the `From' field from the notification */
     if (! elvin_notification_get_string(notification, F3_FROM, &found, &user, error))
     {
-	fprintf(stderr, "elvin_notification_get_string(): failed");
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
@@ -552,25 +603,54 @@ static int notify_cb(
 	{
 	    case ELVIN_INT32:
 	    {
-		timeout = value.i;
+                if (version < 3001 && value.i <= 60)
+                {
+                    timeout = value.i * 60;
+                }
+                else
+                {
+                    timeout = value.i;
+                }
+
 		break;
 	    }
 
 	    case ELVIN_INT64:
 	    {
-		timeout = (int)value.h;
+                if (version < 3001 && value.h <= 60)
+                {
+                    timeout = (int)value.h * 60;
+                }
+                else
+                {
+                    timeout = (int)value.h;
+                }
+
 		break;
 	    }
 
 	    case ELVIN_REAL64:
 	    {
-		timeout = (int)(0.5 + value.d);
+                if (version < 3001 && value.d <= 60)
+                {
+                    timeout = (int)(0.5 + 60 * value.d);
+                }
+                else
+                {
+                    timeout = (int)(0.5 + value.d);
+                }
+
 		break;
 	    }
 
 	    case ELVIN_STRING:
 	    {
 		timeout = atoi(value.s);
+                if (version < 3001 && timeout < 60)
+                {
+                    timeout *= 60;
+                }
+
 		break;
 	    }
 
@@ -582,7 +662,7 @@ static int notify_cb(
     }
 
     /* If the timeout was zero, then set it to 10 minutes */
-    timeout = (timeout == 0) ? 10 : timeout;
+    timeout = (timeout == 0) ? 600 : timeout;
 
     /* Make sure the timeout conforms */
     if (timeout < self -> min_time)
@@ -774,6 +854,18 @@ static void send_message(group_sub_t self, message_t message)
 	exit(1);
     }
 
+    /* Add the xtickertape version number */
+    if (elvin_notification_add_int32(
+            notification,
+            F3_VERSION,
+            3001,
+            self -> error) == 0)
+    {
+        fprintf(stderr, "elvin_notification_add_int32(): failed\n");
+        elvin_error_fprintf(stderr, self -> error);
+        exit(1);
+    }
+
     /* Add an xtickertape user agent tag */
     if (elvin_notification_add_string(
 	    notification,
@@ -845,12 +937,12 @@ static void send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_int32(
 	    notification,
 	    F3_TIMEOUT,
-	    timeout,
+	    timeout == 60 ? 61 : timeout,
 	    self -> error) == 0 ||
 	elvin_notification_add_int32(
 	    notification,
 	    F2_TIMEOUT,
-	    timeout,
+	    timeout / 60,
 	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_int32(): failed\n");

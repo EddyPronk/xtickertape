@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.113 2004/08/02 19:00:27 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.114 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -527,7 +527,7 @@ static int parse_groups_callback(
     if ((subscription = group_sub_alloc(
 	    name, expression,
 	    in_menu, has_nazi,
-	    min_time, max_time,
+	    min_time * 60, max_time * 60,
             self -> keys, key_names, key_count,
 	    receive_callback, self)) == NULL)
     {

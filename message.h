@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.11 2003/01/27 17:50:43 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.12 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -80,10 +80,10 @@ char *message_get_user(message_t self);
 /* Answers the receiver's string */
 char *message_get_string(message_t self);
 
-/* Answers the receiver's timout in minutes */
+/* Answers the receiver's timout in seconds */
 unsigned long message_get_timeout(message_t self);
 
-/* Sets the receiver's timeout in minutes*/
+/* Sets the receiver's timeout in seconds*/
 void message_set_timeout(message_t self, unsigned long timeout);
 
 /* Answers non-zero if the receiver has a MIME attachment */

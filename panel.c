@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2003.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.86 2004/08/02 16:52:16 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.87 2004/08/02 20:54:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1361,7 +1361,7 @@ static int get_timeout(control_panel_t self)
     XtVaGetValues(XmOptionButtonGadget(self -> timeout), XmNlabelString, &string, NULL);
     if (XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &timeout))
     {
-	result = atoi(timeout);
+	result = 60 * atoi(timeout);
 	XtFree(timeout);
     }
     else
