@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.92 2000/10/31 04:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.93 2000/10/31 05:37:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
     /* Tell the handle to keep trying to connect forever */
     if (elvin_handle_set_connection_retries(handle, 0, error) == 0)
     {
-	fprintf(stderr, PACKAGE ": elvin_handle_set_connect_retries(): failed\n");
+	fprintf(stderr, PACKAGE ": elvin_handle_set_connection_retries(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
