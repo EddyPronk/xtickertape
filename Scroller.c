@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.51 1999/08/09 06:35:13 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.52 1999/08/09 08:59:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -886,7 +886,7 @@ static void adjust_right(ScrollerWidget self)
 }
 
 
-
+/* Scrolls the glyphs in the widget to the left */
 static void scroll_left(ScrollerWidget self, int offset)
 {
     self -> scroller.left_offset += offset;
@@ -903,7 +903,6 @@ static void scroll_left(ScrollerWidget self, int offset)
 
     /* Scroll the display and paint in the missing bits */
     Paint(self, self -> core.width - offset, 0, offset, self -> core.height);
-/*    Paint(self, 0, 0, self -> core.width, self -> core.height);*/
 }
 
 /* Scrolls the glyphs in the widget to the right */
