@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.8 2001/08/25 14:04:42 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.9 2002/04/08 14:54:30 phelps Exp $";
 #endif /* lint */
 
 
@@ -78,6 +78,9 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.8 2001/08/25 14:04:42 ph
 
 #ifndef XtNattachmentCallback
 # define XtNattachmentCallback "attachmentCallback"
+#endif
+#ifndef XtNmotionCallback
+# define XtNmotionCallback "motionCallback"
 #endif
 #ifndef XtNtimestampPixel
 # define XtNtimestampPixel "timestampPixel"

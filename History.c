@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.52 2002/04/08 13:35:52 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.53 2002/04/08 14:54:29 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -86,6 +86,12 @@ static XtResource resources[] =
     {
 	XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
 	offset(history.attachment_callbacks), XtRCallback, (XtPointer)NULL
+    },
+
+    /* XtCallbackList motion_callbacks */
+    {
+	XtNmotionCallback, XtCCallback, XtRCallback, sizeof(XtPointer),
+	offset(history.motion_callbacks), XtRCallback, (XtPointer)NULL
     },
 
     /* XFontStruct *font */
@@ -490,6 +496,7 @@ static void realize(
     XtValueMask *value_mask,
     XSetWindowAttributes *attributes);
 static void redisplay(Widget self, XEvent *event, Region region);
+static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void destroy(Widget self);
 static void resize(Widget self);
@@ -751,6 +758,27 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.vscrollbar = scrollbar;
 }
 
+/* Returns the message index corresponding to the given y coordinate */
+static unsigned int index_of_y(HistoryWidget self, long y)
+{
+    unsigned int index;
+
+    /* Is y in the top margin? */
+    if (self -> history.y + y < self -> history.margin_height)
+    {
+	/* Pretend its in the first message */
+	index = 0;
+    }
+    else
+    {
+	/* Otherwise compute the position */
+	index = (self -> history.y + y - self -> history.margin_height) /
+	    self -> history.line_height;
+    }
+
+    return index;
+}
+
 /* Updates the scrollbars after either the widget or the data it is
  * displaying is resized */
 static void update_scrollbars(Widget widget)
@@ -831,6 +859,9 @@ static void realize(
 
     /* Register to receive GraphicsExpose events */
     XtAddEventHandler(widget, 0, True, gexpose, NULL);
+
+    /* Register to receive motion callbacks */
+    XtAddEventHandler(widget, PointerMotionMask, False, motion_cb, NULL);
 }
 
 /* Translate the bounding box to compensate for unprocessed CopyArea
@@ -1064,6 +1095,37 @@ static void redisplay_index(HistoryWidget self, unsigned int index)
 
     /* Paint it */
     paint(self, &bbox);
+}
+
+/* This is called in response to pointer motion */
+static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    XMotionEvent *mevent;
+    unsigned int index;
+    message_t message;
+
+    /* Sanity check */
+    assert(event->type == MotionNotify);
+    mevent = (XMotionEvent *)event;
+
+    /* Assume that nothing is under the pointer */
+    message = NULL;
+
+    /* Make sure the pointer is within the bounds of the widget */
+    if (0 <= mevent -> y && mevent -> y < self -> core.height)
+    {
+	index = index_of_y(self, mevent -> y);
+
+	/* Make sure it's over a message */
+	if (index < self -> history.message_count)
+	{
+	    message = self -> history.messages[index];
+	}
+    }
+
+    /* Call the callbacks */
+    XtCallCallbackList(widget, self -> history.motion_callbacks, (XtPointer)message);
 }
 
 /* Repaint the bits of the widget that didn't get copied */
@@ -1607,32 +1669,6 @@ static void border_unhighlight(Widget widget)
  *
  */
 
-/* Returns the message index corresponding to the given y coordinate */
-static unsigned int index_of_y(HistoryWidget self, long y)
-{
-    unsigned int index;
-
-    /* Is y in the top margin? */
-    if (self -> history.y + y < self -> history.margin_height)
-    {
-	/* Pretend its in the first message */
-	index = 0;
-    }
-    else
-    {
-	/* Otherwise compute the position */
-	index = (self -> history.y + y - self -> history.margin_height) / self -> history.line_height;
-    }
-
-    /* Anything outside of bounds becomes the last item (or -1 if we have no last item) */
-    if (! (index < self -> history.message_count))
-    {
-	index = self -> history.message_count - 1;
-    }
-
-    return index;
-}
-
 /* Scroll up or down, wait and repeat */
 static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 {
@@ -1699,6 +1735,14 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 	{
 	    /* We're within the widget's bounds */
 	    index = index_of_y(self, y);
+
+	    /* Don't go past the last message */
+	    if (! (index < self -> history.message_count))
+	    {
+		index = self -> history.message_count - 1;
+	    }
+
+	    /* Select */
 	    set_selection_index(self, index);
 	}
     }
@@ -1798,8 +1842,16 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
     /* This widget now gets keyboard input */
     XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
 
-    /* Convert the y coordinate into an index and select it */
+    /* Convert the y coordinate into an index */
     index = index_of_y(self, button_event -> y);
+
+    /* Anything past the last message is considered part of that
+     * message for our purposes here */
+    if (! (index < self -> history.message_count))
+    {
+	index = self -> history.message_count - 1;
+    }
+
     set_selection_index(self, index);
 }
 

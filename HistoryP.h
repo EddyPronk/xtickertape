@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.21 2002/04/04 14:21:08 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.22 2002/04/08 14:54:30 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -79,6 +79,9 @@ typedef struct
 
     /* The functions to call when an attachment is to be displayed */
     XtCallbackList attachment_callbacks;
+
+    /* The functions to call in response to a motion event */
+    XtCallbackList motion_callbacks;
 
     /* The font to use when displaying the history messages */
     XFontStruct *font;
