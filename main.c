@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.108 2002/05/29 10:19:49 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.109 2002/06/07 11:45:38 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -487,6 +487,44 @@ static RETSIGTYPE reload_subs(int signum)
     tickertape_reload_usenet(tickertape);
 }
 
+/* Make sure the app-default's file version number is correct */
+static void assert_app_defaults_version(Widget top)
+{
+    char *string;
+    XtResource resources[] = {
+	{
+	    "versionTag", XtCString, XtRString, sizeof(char *),
+	    0, XtRString, (XtPointer)NULL
+	}
+    };
+    
+    /* Get the About Box's title string */
+    XtGetApplicationResources(top, &string, resources, 1, NULL, 0);
+
+    /* Make sure it matches the PACKAGE and VERSION */
+    if (string == NULL)
+    {
+	fprintf(stderr, PACKAGE ": app-defaults file not found or out of date\n\n");
+    }
+    else if (strcmp(string, PACKAGE " " VERSION) != 0)
+    {
+	fprintf(stderr, PACKAGE ": app-defaults file has the wrong version number\n\n");
+    }
+    else
+    {
+	return;
+    }
+
+    /* Refuse to run if the version number doesn't match */
+    fprintf(stderr,
+	    "This probably because the app-defaults file (XTickertape) is not installed in\n"
+	    "the X11 directory tree.  This may be fixed either by moving the app-defaults\n"
+	    "file to the correct location or by setting your XFILESEARCHPATH environment\n"
+	    "variable to something like /usr/local/lib/X11/%%T/%%N:%%D.  See the man page for\n"
+	    "XtResolvePathname for more information.\n");
+    exit(1);
+}
+
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
@@ -510,6 +548,9 @@ int main(int argc, char *argv[])
 	applicationShellWidgetClass,
 	XtNborderWidth, 0,
 	NULL);
+
+    /* Make sure the right application defaults were loaded */
+    assert_app_defaults_version(top);
 
     /* Add a calback for when it gets destroyed */
     XtAppAddActions(context, actions, XtNumber(actions));
