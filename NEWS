@@ -28,6 +28,10 @@ Overview of changes in xtickertape-2.0
   reasonably difficult to subvert the sender's anonymity.
   [Thanks Ian Lister]
 
+* Using the elvin-4 `opaque' type to represent an attachment rather
+  than a `string'.  This makes it possible to display images, play
+  sounds or view anything else you have a decoder for via tickertape.
+  Of course, getting those things attached is somewhat tricky.
 
 Overview of changes in xtickertape-1.6.6
 
