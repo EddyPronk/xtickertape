@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.6 2001/07/06 06:48:47 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.7 2001/07/10 02:19:09 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -226,7 +226,7 @@ WidgetClass historyWidgetClass = (WidgetClass) &historyClassRec;
  */
 
 /* Sets the origin of the visible portion of the widget */
-static void set_origin(HistoryWidget self, Position x, Position y)
+static void set_origin(HistoryWidget self, long x, long y)
 {
     Display *display = XtDisplay((Widget)self);
     GC gc = self -> history.gc;
@@ -320,12 +320,6 @@ message_t HistoryGetSelection(Widget widget)
 
 
 /* Callback for the vertical scrollbar */
-static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
-{
-    dprintf(("vert_dec_cb(): not yet implemented\n"));
-}
-
-/* Callback for the vertical scrollbar */
 static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)client_data;
@@ -336,48 +330,56 @@ static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_da
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_inc_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
-    dprintf(("vert_inc_cb(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Move up by one pixel for now */
+    set_origin(self, self -> history.x, self -> history.y - 1);
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
+{
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Move down by one pixel for now */
+    set_origin(self, self -> history.x, self -> history.y + 1);
+}
+
+/* Callback for the vertical scrollbar */
+static void vert_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("vert_page_dec_cb(): not yet implemented\n"));
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("vert_page_inc_cb(): not yet implemented\n"));
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("vert_to_top_cb(): not yet implemented\n"));
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("vert_to_bottom_cb(): not yet implemented\n"));
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("vert_val_changed_cb(): not yet implemented\n"));
 }
 
 
-
-/* Callback for the horizontal scrollbar */
-static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
-{
-    dprintf(("horiz_dec_cb(): not yet implemented\n"));
-}
 
 /* Callback for the horizontal scrollbar */
 static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
@@ -390,37 +392,51 @@ static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_d
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_inc_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
-    dprintf(("horiz_inc_cb(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Move left by one pixel for now */
+    set_origin(self, self -> history.x - 1, self -> history.y);
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
+{
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Move right by one pixel for now */
+    set_origin(self, self -> history.x + 1, self -> history.y);
+}
+
+/* Callback for the horizontal scrollbar */
+static void horiz_page_dec_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("horiz_page_dec_cb(): not yet implemented\n"));
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_page_inc_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("horiz_page_inc_cb(): not yet implemented\n"));
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_to_top_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("horiz_to_top_cb(): not yet implemented\n"));
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_to_bottom_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("horiz_to_bottom_cb(): not yet implemented\n"));
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_val_changed_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
     dprintf(("horiz_val_changed_cb(): not yet implemented\n"));
 }
@@ -600,7 +616,7 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     /* Set that as our bounding box */
     XSetClipRectangles(display, self -> history.gc, 0, 0, bbox, 1, YXSorted);
 
-#if 1
+#if 0
     /* Fill the background */
     {
 	XGCValues values;

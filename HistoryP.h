@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.5 2001/07/06 04:55:19 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.6 2001/07/10 02:19:10 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -79,16 +79,16 @@ typedef struct
     Widget hscrollbar;
 
     /* The x coordinate of the origin of the visible region */
-    Position x;
+    long x;
 
     /* The y coordinate of the origin of the visible region */
-    Position y;
+    long y;
 
     /* The width of the longest string in the history widget */
-    Dimension width;
+    unsigned long width;
 
     /* The height of the strings in the history widget */
-    Dimension height;
+    unsigned long height;
 
     /* A message view for playing with */
     message_view_t mv;
