@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.40 1999/08/13 13:25:27 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.41 1999/08/17 17:51:03 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -48,9 +48,6 @@ static const char cvsid[] = "$Id: Control.c,v 1.40 1999/08/13 13:25:27 phelps Ex
 static char *sanity_value = "ControlPanel";
 static char *sanity_freed = "Freed ControlPanel";
 #endif /* SANITY */
-
-/* Size of the history list */
-#define MAX_HISTORY_COUNT 30
 
 
 /*
@@ -1060,7 +1057,7 @@ static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored)
 
 /* Constructs the Tickertape Control Panel */
 ControlPanel ControlPanel_alloc(
-    Widget parent, char *user,
+    Widget parent, char *user, history_t history,
     ReloadCallback groupsCallback, void *groupsContext,
     ReloadCallback usenetCallback, void *usenetContext)
 {
@@ -1095,6 +1092,9 @@ ControlPanel ControlPanel_alloc(
 
     /* Initialize the UI */
     InitializeUserInterface(self, parent);
+
+    /* Tell the history_t about our List */
+    history_set_list(history, self -> history);
 
     /* Set the various fields to their default values */
     ActionClear(self -> top, self, NULL);
@@ -1263,34 +1263,6 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
 	SetGroupSelection(self, tuple);
     }
 }
-
-/* Adds a Message to the receiver's history list */
-void ControlPanel_addHistoryMessage(ControlPanel self, Message message)
-{
-    XmString entry;
-    char *group = Message_getGroup(message);
-    char *user = Message_getUser(message);
-    char *string = Message_getString(message);
-    char *buffer = (char *) alloca(strlen(group) + strlen(user) + strlen(string) + 3);
-
-    /* Update the number of messages in the history */
-    if (self -> history_count < MAX_HISTORY_COUNT)
-    {
-	self -> history_count++;
-    }
-    else
-    {
-	/* Delete the first message if we have too many */
-	XmListDeletePos(self -> history, 1);
-    }
-
-    /* Add a string to the end of the list */
-    sprintf(buffer, "%s:%s:%s", group, user, string);
-    entry = XmStringCreateSimple(buffer);
-    XmListAddItem(self -> history, entry, 0);
-    XmStringFree(entry);
-}
-
 
 /* Makes the ControlPanel window visible */
 void ControlPanel_show(ControlPanel self, Message message)
