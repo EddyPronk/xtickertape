@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.71 2000/12/08 07:45:20 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.72 2000/12/09 01:42:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1165,6 +1165,24 @@ static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_make_cons(vm, error);
 }
 
+/* The `defun' special form */
+static int prim_defun(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc < 2)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "defun", argc);
+	return 0;
+    }
+
+    /* Turn the body forms into a progn */
+    return
+	vm_push_symbol(vm, "progn", error) &&
+	vm_roll(vm, argc - 2, error) &&
+	vm_make_list(vm, argc - 1, error) &&
+	vm_make_lambda(vm, error) &&
+	vm_assign(vm, error);
+}
+
 /* The `eq' subroutine */
 static int prim_eq(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -1259,6 +1277,24 @@ static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 	vm_roll(vm, argc - 1, error) &&
 	vm_make_list(vm, argc, error) &&
 	vm_make_lambda(vm, error);
+}
+
+/* The `let' special form */
+static int prim_let(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* Make sure we at least have the bindings */
+    if (argc < 1)
+    {
+	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "let", argc);
+	return 0;
+    }
+
+    /* Turn the body forms into a big progn */
+    return
+	vm_push_symbol(vm, "progn", error) &&
+	vm_roll(vm, argc - 1, error) &&
+	vm_make_list(vm, argc, error) &&
+	vm_let(vm, error);
 }
 
 /* The `list' subroutine */
@@ -1452,6 +1488,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 #endif
 	define_subr(vm, "cdr", prim_cdr, error) &&
 	define_subr(vm, "cons", prim_cons, error) &&
+	define_special(vm, "defun", prim_defun, error) &&
 	define_subr(vm, "eq", prim_eq, error) &&
 	define_special(vm, "if", prim_if, error) &&
 #if 0
@@ -1459,6 +1496,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 #endif
 	define_subr(vm, "gc", prim_gc, error) &&
 	define_special(vm, "lambda", prim_lambda, error) &&
+	define_special(vm, "let", prim_let, error) &&
 	define_subr(vm, "list", prim_list, error) &&
 	define_special(vm, "or", prim_or, error) &&
 	define_subr(vm, "+", prim_plus, error) &&
