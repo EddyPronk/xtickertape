@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.25 1998/10/21 05:36:52 phelps Exp $ */
+/* $Id: MessageView.c,v 1.26 1998/10/24 04:54:00 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +12,7 @@
 #include "sanity.h"
 #include "TickertapeP.h"
 #include "MessageView.h"
+#include "StringBuffer.h"
 
 /* Sanity checking strings */
 #ifdef SANITY
@@ -414,8 +415,8 @@ void MessageView_decodeMime(MessageView self)
 {
     char *mimeType;
     char *mimeArgs;
-    char filename[sizeof("/tmp/ticker") + 10];
-    char *buffer;
+    StringBuffer buffer;
+    char *filename;
     FILE *file;
 
     SANITY_CHECK(self);
@@ -433,20 +434,28 @@ void MessageView_decodeMime(MessageView self)
 #endif /* DEBUG */
 
     /* Write the mimeArgs to a file */
-    sprintf(filename, "/tmp/ticker%lu", getpid());
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "/tmp/ticker");
+    StringBuffer_appendInt(buffer, getpid());
+    filename = (char *)alloca(StringBuffer_length(buffer) + 1);
+    strcpy(filename, StringBuffer_getBuffer(buffer));
+
     file = fopen(filename, "wb");
     fputs(mimeArgs, file);
     fclose(file);
 
     /* Send it off to metamail to display */
-    buffer = (char *)alloca(
-	strlen(mimeType) + strlen(filename) +
-	sizeof("metamail -B -q -b -c   > /dev/null 2>&1"));
-    sprintf(buffer, "metamail -B -q -b -c %s %s > /dev/null 2>&1", mimeType, filename);
-    system(buffer);
+    StringBuffer_clear(buffer);
+    StringBuffer_append(buffer, "metamail -B -q -b -c ");
+    StringBuffer_append(buffer, mimeType);
+    StringBuffer_appendChar(buffer, ' ');
+    StringBuffer_append(buffer, filename);
+    StringBuffer_append(buffer, " > /dev/null 2>&1");
+    system(StringBuffer_getBuffer(buffer));
 
     /* Remove the temporary file */
     unlink(filename);
+    StringBuffer_free(buffer);
 }
 
 
