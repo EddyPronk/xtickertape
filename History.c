@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.25 2001/07/21 01:12:35 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.26 2001/07/22 02:31:57 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -248,7 +248,7 @@ HistoryClassRec historyClassRec =
 	XtNumber(resources), /* num_resources */
 	NULLQUARK, /* xrm_class */
 	True, /* compress_motion */
-	True, /* compress_exposure */
+	XtExposeCompressMultiple, /* compress_exposure */
 	True, /* compress_enterleave */
 	False, /* visible_interest */
 	destroy, /* destroy */
@@ -514,6 +514,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.selection = NULL;
     self -> history.selection_index = (unsigned int)-1;
     self -> history.drag_timeout = None;
+    self -> history.drag_direction = DRAG_NONE;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
@@ -1157,45 +1158,82 @@ static XtGeometryResult query_geometry(
     return XtGeometryYes;
 }
 
-
 /*
  *
  *  Action definitions
  *
  */
 
+/* Returns the message index corresponding to the given y coordinate */
+static unsigned int index_of_y(HistoryWidget self, long y)
+{
+    unsigned int index;
+
+    /* Is y in the top margin? */
+    if (self -> history.y + y < self -> history.margin_height)
+    {
+	/* Pretend its in the first message */
+	index = 0;
+    }
+    else
+    {
+	/* Otherwise compute the position */
+	index = (self -> history.y + y - self -> history.margin_height) / self -> history.line_height;
+    }
+
+    /* Anything outside of bounds becomes the last item (or -1 if we have no last item) */
+    if (! (index < self -> history.message_count))
+    {
+	index = self -> history.message_count - 1;
+    }
+
+    return index;
+}
+
 /* Scroll up or down, wait and repeat */
 static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 {
     HistoryWidget self = (HistoryWidget)closure;
+    Window root, child;
+    int root_x, root_y, x, y;
+    unsigned int mask;
+    unsigned int index;
 
-    /* Scroll in the appropriate direction */
-    switch (self -> history.drag_direction)
+    /* Sanity check */
+    assert(self -> history.drag_timeout == *id);
+
+    /* Clear our status */
+    self -> history.drag_direction = DRAG_NONE;
+    self -> history.drag_timeout = None;
+
+    /* Determine the current position of the pointer */
+    if (XQueryPointer(
+	    XtDisplay((Widget)self), XtWindow((Widget)self),
+	    &root, &child,
+	    &root_x, &root_y, &x, &y, &mask))
     {
-	/* We're dragging upwards */
-	case DRAG_UP:
+	/* Figure out what's happening */
+	if (y < 0)
 	{
-	    select_previous((Widget)self, NULL, NULL, NULL);
-	    break;
+	    /* We're being dragged up. */
+	    index = index_of_y(self, - 1);
+	    set_selection_index(self, index);
 	}
-
-	/* We're dragging downwards */
-	case DRAG_DOWN:
+	else if (self -> core.height < y)
 	{
-	    select_next((Widget)self, NULL, NULL, NULL);
-	    break;
+	    /* We're being dragged down */
+	    index = index_of_y(self, self -> core.height + 1);
+	    set_selection_index(self, index);
 	}
-
-	/* We're in trouble */
-	default:
+	else
 	{
-	    printf("unlikely drag direction: %d\n", self -> history.drag_direction);
-	    abort();
+	    /* We're within the widget's bounds */
+	    index = index_of_y(self, y);
+	    set_selection_index(self, index);
 	}
     }
 
     /* Arrange to scroll again after a judicious pause */
-    /* FIX THIS: use a resource to specify the delay */
     self -> history.drag_timeout = XtAppAddTimeOut(
 	XtWidgetToApplicationContext((Widget)self), self -> history.drag_delay,
 	drag_timeout_cb, (XtPointer)self);
@@ -1208,11 +1246,10 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     XButtonEvent *button_event = (XButtonEvent *)event;
     unsigned int index;
 
-
-    /* Is the pointer above the widget? */
+    /* FIgure out what's going on */
     if (button_event -> y < 0)
     {
-	/* Is a timeout already registered? */
+	/* We should be dragging up.  Is a timeout already registered? */
 	if (self -> history.drag_timeout != None)
 	{
 	    /* Bail if we're already scrolling up */
@@ -1221,23 +1258,17 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 		return;
 	    }
 
-	    /* Otherwise we're scrolling the wrong way!  Cancel the
-	     * timeout! */
-	    printf("*\n");
+	    /* Otherwise we're scrolling the wrong way! */
 	    XtRemoveTimeOut(self -> history.drag_timeout);
 	    self -> history.drag_timeout = None;
 	}
 
-	/* Call the timeout callback to scroll up and set a timeout */
+	/* We're dragging up */
 	self -> history.drag_direction = DRAG_UP;
-	drag_timeout_cb((XtPointer)self, &self -> history.drag_timeout);
-	return;
     }
-
-    /* Is the pointer below the widget? */
-    if (self -> core.height < button_event -> y)
+    else if (self -> core.height < button_event -> y)
     {
-	/* Is a timeout already registered? */
+	/* We should be dragging down.  Is a timeout already registered? */
 	if (self -> history.drag_timeout != None)
 	{
 	    /* Bail if we're already scrolling down */
@@ -1246,39 +1277,30 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 		return;
 	    }
 
-	    /* Otherwise we're scrolling the wrong way!  Cancel the
-	     * timeout. */
-	    printf("*\n");
+	    /* Otherwise we're scrolling the wrong way! */
 	    XtRemoveTimeOut(self -> history.drag_timeout);
 	    self -> history.drag_timeout = None;
 	}
 
 	/* Call the timeout callback to scroll down and set a timeout */
 	self -> history.drag_direction = DRAG_DOWN;
-	drag_timeout_cb((XtPointer)self, &self -> history.drag_timeout);
-	return;
     }
-
-    /* The y coordinate is within the bounds of the widget.  Cancel
-     * any outstanding callbacks */
-    if (self -> history.drag_timeout)
+    else
     {
-	XtRemoveTimeOut(self -> history.drag_timeout);
-	self -> history.drag_timeout = None;
+	/* We're within the bounds of the widget.  Is a timeout registered? */
+	if (self -> history.drag_timeout != None)
+	{
+	    /* Cancel the timeout */
+	    XtRemoveTimeOut(self -> history.drag_timeout);
+	    self -> history.drag_timeout = None;
+	}
+
+	/* We're not dragging the window around */
+	self -> history.drag_direction = DRAG_NONE;
     }
 
-    /* Find the index of the message to select */
-    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
-	self -> history.line_height;
-
-    /* Do we have that many messages? */
-    if (! (index < self -> history.message_count))
-    {
-	index = self -> history.message_count - 1;
-    }
-
-    /* Select it */
-    set_selection_index(self, index);
+    /* Call the drag timeout callback to update the selection and set a timeout */
+    drag_timeout_cb((XtPointer)self, &self -> history.drag_timeout);
 }
 
 /* End of the dragging */
@@ -1301,17 +1323,8 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
     XButtonEvent *button_event = (XButtonEvent *)event;
     unsigned int index;
 
-    /* Convert the y coordinate into an index */
-    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
-	self -> history.line_height;
-
-    /* Are we selecting past the end of the list? */
-    if (! (index < self -> history.message_count))
-    {
-	index = self -> history.message_count - 1;
-    }
-
-    /* Set the selection */
+    /* Convert the y coordinate into an index and select it */
+    index = index_of_y(self, button_event -> y);
     set_selection_index(self, index);
 }
 
