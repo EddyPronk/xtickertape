@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.58 2002/04/11 15:59:03 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.59 2002/04/12 13:21:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -318,6 +318,12 @@ static void node_add1(node_t *self,
 	    (*self) -> child = *child;
 	    *child = NULL;
 
+	    /* Kill the child node it its parent was killed */
+	    if (message_is_killed((*self) -> message))
+	    {
+		message_set_killed((*self) -> child -> message, True);
+	    }
+
 	    /* Record output information */
 	    *index_out = *index;
 	    *depth_out = depth + 1;
@@ -412,6 +418,61 @@ static void node_add(node_t *self,
 	(*self) = child;
 	*index_out = count - 1;
 	*depth_out = 0;
+    }
+}
+
+/* Finds the node which wraps message */
+node_t node_find(node_t self, message_t message)
+{
+    node_t result;
+
+    /* Traverse the siblings until an answer is found */
+    while (self != NULL)
+    {
+	/* Is it this node? */
+	if (self -> message == message)
+	{
+	    return self;
+	}
+
+	/* Is it one of our children? */
+	if (self -> child)
+	{
+	    if (! (result = node_find(self -> child, message)))
+	    {
+		return result;
+	    }
+	}
+
+	/* Try the next sibling */
+	self = self -> sibling;
+    }
+
+    /* Not here */
+    return NULL;
+}
+
+/* Kills a node and its children */
+void node_kill(node_t self)
+{
+    node_t child;
+
+    /* Sanity check */
+    assert(self != NULL);
+
+    /* If the node has already been killed then don't kill it again */
+    if (message_is_killed(self -> message))
+    {
+	return;
+    }
+
+    /* Mark the node as killed */
+    message_set_killed(self -> message, True);
+
+    /* Kill its children */
+    for (child = self -> child; child != NULL; child = child -> sibling)
+    {
+	node_kill(child);
     }
 }
 
@@ -2211,14 +2272,26 @@ void HistoryAddMessage(Widget widget, message_t message)
 /* Kills the thread of the given message */
 void HistoryKillThread(Widget widget, message_t message)
 {
-    dprintf(("HistoryKillThread(): not yet implemented\n"));
-}
+    HistoryWidget self = (HistoryWidget)widget;
+    node_t node;
 
-/* Returns whether or not a given message is in a killed thread */
-Boolean HistoryIsMessageKilled(Widget widget, message_t message)
-{
-    dprintf(("HistoryIsMessageKilled(): not yet implemented\n"));
-    return False;
+    /* Bail if the message has already been killed */
+    if (message_is_killed(message))
+    {
+	return;
+    }
+
+    /* Look for the node which wraps the message */
+    if (! (node = node_find(self -> history.nodes, message)))
+    {
+	/* The message is killed now */
+	message_set_killed(message, True);
+    }
+    else
+    {
+	/* Kill the node and its children */
+	node_kill(node);
+    }
 }
 
 /* Selects a message in the history */
