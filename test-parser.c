@@ -55,24 +55,29 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
     }
 }
 
-/* The `setq' special form */
-static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
+/* The `lambda' special form */
+static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 {
-    /* FIX THIS: setq should allow multiple args */
+    /* FIX THIS: we should allow lambdas with complex bodies */
     if (argc != 2)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
 	return 0;
     }
 
-    /* Evaluate the top of the stack and assign it */
-    return vm_eval(vm, error) && vm_assign(vm, error);
+    return vm_make_lambda(vm, error);
 }
 
 /* The `+' subroutine */
 static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     uint32_t i;
+
+    /* Special case: no args -> 0 */
+    if (argc == 0)
+    {
+	return vm_push_integer(vm, 0, error);
+    }
 
     /* Add up all of the args */
     for (i = 1; i < argc; i++)
@@ -99,6 +104,22 @@ static int prim_print_state(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_print_state(vm, error) && vm_push_nil(vm, error);
 }
 
+/* The `setq' special form */
+static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* FIX THIS: setq should allow multiple args */
+    if (argc != 2)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* Evaluate the top of the stack and assign it */
+    return vm_eval(vm, error) && vm_assign(vm, error);
+}
+
+
+
 /* For testing purposes */
 int main(int argc, char *argv[])
 {
@@ -122,9 +143,21 @@ int main(int argc, char *argv[])
     }
 
     /* Populate the root environment */
-    if (! vm_push_string(vm, "pi", error) ||
+    if (! vm_push_string(vm, "nil", error) ||
 	! vm_make_symbol(vm, error) ||
-	! vm_push_float(vm, M_PI, error) ||
+	! vm_push_nil(vm, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error) ||
+
+	! vm_push_string(vm, "t", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_dup(vm, error) ||
+	! vm_assign(vm, error) ||
+	! vm_pop(vm, NULL, error) ||
+
+	! vm_push_string(vm, "lambda", error) ||
+	! vm_make_symbol(vm, error) ||
+	! vm_push_special_form(vm, prim_lambda, error) ||
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error) ||
 
