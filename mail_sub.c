@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.19 2000/04/17 00:45:06 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.20 2000/10/06 08:25:01 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,7 +42,7 @@ static const char cvsid[] = "$Id: mail_sub.c,v 1.19 2000/04/17 00:45:06 phelps E
 #include "mbox_parser.h"
 #include "mail_sub.h"
 
-#define MAIL_SUB "exists(elvinmail) && user == \"%s\""
+#define MAIL_SUB "require(elvinmail) && user == \"%s\""
 #define FOLDER_FMT "+%s"
 
 /* The fields in the notification which we access */
