@@ -35,7 +35,7 @@ bin_PROGRAMS = xtickertape show-url
 SUBDIRS = packages m4
 
 # Automatically generated sources
-BUILT_SOURCES = errors.h XTickertape.ad
+BUILT_SOURCES = XTickertape.ad
 
 # xtickertape has many sources
 xtickertape_SOURCES = \
@@ -53,7 +53,7 @@ xtickertape_SOURCES = \
 	key_table.h key_table.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	mask.xbm red.xbm white.xbm \
-	errors.h replace.h replace.c \
+	replace.h replace.c \
 	utf8.h utf8.c \
 	globals.h main.c
 
@@ -77,8 +77,8 @@ grammar.h: lisp.pcg
 	@TPC@ -o $@ $<
 
 # How to construct the error macros
-errors.h: index en
-	@MCGEN@ -c -i $(srcdir)/index -l $(srcdir)/en -o $@
+#errors.h: index en
+#	@MCGEN@ -c -i $(srcdir)/index -l $(srcdir)/en -o $@
 
 # Construct XTickertape from XTickertape.ad
 install-data-local:
