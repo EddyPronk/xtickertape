@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.4 1999/10/04 03:17:34 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.5 1999/10/04 07:04:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -56,8 +56,8 @@ typedef int (*lexer_state_t)(usenet_parser_t self, int ch);
 #define T_NEQ "!="
 #define T_LT "<"
 #define T_GT ">"
-#define T_LTEQ "<="
-#define T_GTEQ ">="
+#define T_LE "<="
+#define T_GE ">="
 
 /* The structure of a usenet_parser */
 struct usenet_parser
@@ -132,14 +132,14 @@ static void parse_error(usenet_parser_t self, char *message)
 }
 
 /* This is called when a complete group entry has been read */
-static int accept_group(usenet_parser_t self, char *group)
+static int accept_group(usenet_parser_t self, int has_not, char *group)
 {
     int result;
     struct usenet_expr *pointer;
 
     /* Call the callback */
     result = (self -> callback)(
-	self -> rock, group, self -> expressions,
+	self -> rock, has_not, group, self -> expressions,
 	self -> expr_pointer - self -> expressions);
 
     /* Clean up */
@@ -314,9 +314,9 @@ static op_name_t translate_op(char *operator)
 		return O_LT;
 	    }
 
-	    if (strcmp(operator, T_LTEQ) == 0)
+	    if (strcmp(operator, T_LE) == 0)
 	    {
-		return O_LTEQ;
+		return O_LE;
 	    }
 	}
 
@@ -339,9 +339,9 @@ static op_name_t translate_op(char *operator)
 		return O_GT;
 	    }
 
-	    if (strcmp(operator, T_GTEQ) == 0)
+	    if (strcmp(operator, T_GE) == 0)
 	    {
-		return O_GTEQ;
+		return O_GE;
 	    }
 
 	    break;
@@ -380,7 +380,6 @@ static int lex_start(usenet_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	printf("<EOF>\n");
 	self -> state = lex_start;
 	return 0;
     }
@@ -448,7 +447,7 @@ static int lex_group(usenet_parser_t self, int ch)
 	}
 
 	/* This is a nice, short group entry */
-	if (accept_group(self, self -> token) < 0)
+	if (accept_group(self, self -> has_not, self -> token) < 0)
 	{
 	    return -1;
 	}
@@ -494,7 +493,7 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     if ((ch == EOF) || (ch == '\n'))
     {
 	/* This is a nice, short group entry */
-	if (accept_group(self, self -> token) < 0)
+	if (accept_group(self, self -> has_not, self -> token) < 0)
 	{
 	    return -1;
 	}
@@ -694,7 +693,7 @@ static int lex_pattern(usenet_parser_t self, int ch)
 	}
 
 	/* This is also the end of the group entry */
-	if (accept_group(self, self -> group) < 0)
+	if (accept_group(self, self -> has_not, self -> group) < 0)
 	{
 	    return -1;
 	}
@@ -749,7 +748,7 @@ static int lex_pattern_ws(usenet_parser_t self, int ch)
 	}
 
 	/* This is also the end of the group entry */
-	if (accept_group(self, self -> group) < 0)
+	if (accept_group(self, self -> has_not, self -> group) < 0)
 	{
 	    return -1;
 	}

@@ -35,7 +35,7 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.3 1999/10/04 03:17:34 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.4 1999/10/04 07:04:41 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
@@ -66,8 +66,8 @@ enum op_name
     O_NEQ,
     O_LT,
     O_GT,
-    O_LTEQ,
-    O_GTEQ
+    O_LE,
+    O_GE
 };
 
 typedef enum op_name op_name_t;
@@ -89,7 +89,7 @@ struct usenet_expr
 
 /* The usenet parser callback type */
 typedef int (*usenet_parser_callback_t)(
-    void *rock, char *pattern,
+    void *rock, int has_not, char *pattern,
     struct usenet_expr *expressions, size_t expr_count);
 
 /* Allocates and initializes a new usenet subscription parser */
