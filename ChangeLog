@@ -1,3 +1,12 @@
+1999-09-22  Ted Phelps  <phelps@pobox.com>
+
+	* message_glyph.c: being more pedantic about the calculation of
+		  the lbearing and rbearing of a string.
+
+	* Control.c: added a workaround for a lesstif bug.  Now it should
+		  be impossible to get multiple selected messages in the
+		  history box.
+
 1999-09-19  Ted Phelps  <phelps@pobox.com>
 
 	* history.c: keeping the bottom item of the history in view as new 
