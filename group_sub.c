@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.7 1999/11/22 21:32:34 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.8 1999/12/09 12:56:11 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -560,7 +560,7 @@ void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel
 	return;
     }
 
-    if (self -> control_panel != NULL)
+    if ((self -> control_panel != NULL) && (self -> control_panel_rock != NULL))
     {
 	control_panel_remove_subscription(self -> control_panel, self -> control_panel_rock);
 	self -> control_panel_rock = NULL;
