@@ -28,14 +28,15 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.12 2001/05/06 23:06:49 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.13 2001/05/07 13:25:20 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
 #include "message.h"
 
 
