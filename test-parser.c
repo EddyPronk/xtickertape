@@ -55,6 +55,43 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
     }
 }
 
+/* The `car' subroutine */
+static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_car(vm, error);
+}
+
+/* The `cdr' subroutine */
+static int prim_cdr(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    return vm_cdr(vm, error);
+}
+
+/* The `cons' subroutine */
+static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 2)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* Make a cons cell out of the top two elements on the stack */
+    return vm_make_cons(vm, error);
+}
+
 /* The `lambda' special form */
 static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -91,6 +128,19 @@ static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
     return 1;
 }
 
+/* Quotes its arg */
+static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    if (argc != 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong number of args");
+	return 0;
+    }
+
+    /* Our result is what's on the stack */
+    return 1;
+}
+
 /* Prints out the stack */
 static int prim_print_state(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -119,6 +169,28 @@ static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 }
 
 
+
+/* Defines a subroutine in the root environment */
+static int define_subr(vm_t vm, char *name, prim_t func, elvin_error_t error)
+{
+    return
+	vm_push_string(vm, name, error) &&
+	vm_make_symbol(vm, error) &&
+	vm_push_subr(vm, func, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error);
+}
+
+/* Defines a special form in the root environment */
+static int define_special(vm_t vm, char *name, prim_t func, elvin_error_t error)
+{
+    return
+	vm_push_string(vm, name, error) &&
+	vm_make_symbol(vm, error) &&
+	vm_push_special_form(vm, func, error) &&
+	vm_assign(vm, error) &&
+	vm_pop(vm, NULL, error);
+}
 
 /* For testing purposes */
 int main(int argc, char *argv[])
@@ -155,29 +227,14 @@ int main(int argc, char *argv[])
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error) ||
 
-	! vm_push_string(vm, "lambda", error) ||
-	! vm_make_symbol(vm, error) ||
-	! vm_push_special_form(vm, prim_lambda, error) ||
-	! vm_assign(vm, error) ||
-	! vm_pop(vm, NULL, error) ||
-
-	! vm_push_string(vm, "setq", error) ||
-	! vm_make_symbol(vm, error) ||
-	! vm_push_special_form(vm, prim_setq, error) ||
-	! vm_assign(vm, error) ||
-	! vm_pop(vm, NULL, error) ||
-
-	! vm_push_string(vm, "+", error) ||
-	! vm_make_symbol(vm, error) ||
-	! vm_push_subr(vm, prim_plus, error) ||
-	! vm_assign(vm, error) ||
-	! vm_pop(vm, NULL, error) ||
-
-	! vm_push_string(vm, "print-state", error) ||
-	! vm_make_symbol(vm, error) ||
-	! vm_push_special_form(vm, prim_print_state, error) ||
-	! vm_assign(vm, error) ||
-	! vm_pop(vm, NULL, error))
+	! define_subr(vm, "car", prim_car, error) ||
+	! define_subr(vm, "cdr", prim_cdr, error) ||
+	! define_subr(vm, "cons", prim_cons, error) ||
+	! define_special(vm, "lambda", prim_lambda, error) ||
+	! define_special(vm, "quote", prim_quote, error) ||
+	! define_special(vm, "setq", prim_setq, error) ||
+	! define_subr(vm, "+", prim_plus, error) ||
+	! define_special(vm, "print-state", prim_print_state, error))
     {
 	elvin_error_fprintf(stderr, error);
 	exit(1);
