@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.5 1997/02/24 01:17:11 phelps Exp $ */
+/* $Id: Control.c,v 1.6 1997/05/29 03:40:31 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,7 @@
 char *timeouts[] =
 {
     "1",
+    "5",
     "10",
     "30",
     "60",
