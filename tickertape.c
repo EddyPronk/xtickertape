@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.92 2002/04/23 16:22:25 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.93 2002/04/23 16:59:48 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -243,7 +243,12 @@ static int mkdirhier(char *dirname)
     /* If the directory doesn't exist then try to create it */
     if (errno == ENOENT)
     {
+#if defined(HAVE_MKDIR)
 	return mkdir(dirname, 0777);
+#else
+	fprintf(stderr, "Please create the directory %s\n", dirname);
+	exit(1);
+#endif
     }
 
     return -1;
