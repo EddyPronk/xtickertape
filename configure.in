@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 2.0a6)
+AM_INIT_AUTOMAKE(xtickertape, 2.0a7)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -116,8 +116,8 @@ fi
 
 dnl Check for the metamail program
 AH_TEMPLATE(METAMAIL, [Define to the path to the metamail program])
-AC_PATH_PROG(METAMAIL, metamail, not found, $DSTCDIR/script:$PATH)
-if test "$METAMAIL" = "not found" ; then
+AC_PATH_PROG(METAMAIL, metalmail, , $DSTCDIR/script:$PATH)
+if test x"$METAMAIL" = x ; then
     echo "WARNING: \`metamail' is missing on your system. Without it,"
     echo "          xtickertape will be unable to decode MIME messages"
     echo "          Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
