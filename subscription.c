@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: subscription.c,v 2.3 2000/07/10 12:45:15 phelps Exp $";
+static const char cvsid[] = "$Id: subscription.c,v 2.4 2000/07/11 04:27:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -36,6 +36,7 @@ static const char cvsid[] = "$Id: subscription.c,v 2.3 2000/07/10 12:45:15 phelp
 #include <stdlib.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
+#include "errors.h"
 #include "ast.h"
 #include "subscription.h"
 
@@ -434,4 +435,15 @@ int subscription_free(subscription_t self, elvin_error_t error)
     }
 
     return ELVIN_FREE(self, error);
+}
+
+/* Transforms a notification into a message */
+message_t subscription_transmute(
+    subscription_t self,
+    elvin_notification_t notification,
+    elvin_error_t error)
+{
+    ELVIN_ERROR_XTICKERTAPE_NOT_YET_IMPL(
+	error, (uchar *)"subscription_transmute");
+    return NULL;
 }

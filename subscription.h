@@ -31,13 +31,21 @@
 #define SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_SUBSCRIPTION_H[] = "$Id: subscription.h,v 2.3 2000/07/10 13:45:19 phelps Exp $";
+static const char cvs_SUBSCRIPTION_H[] = "$Id: subscription.h,v 2.4 2000/07/11 04:27:30 phelps Exp $";
 #endif /* lint */
+
+#include <message.h>
 
 /* Allocates and initializes a new subscription */
 subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error);
 
 /* Frees the resources consumed by the subscription */
 int subscription_free(subscription_t self, elvin_error_t error);
+
+/* Transforms a notification into a message */
+message_t subscription_transmute(
+    subscription_t self,
+    elvin_notification_t notification,
+    elvin_error_t error);
 
 #endif /* SUBSCRIPTION_H */
