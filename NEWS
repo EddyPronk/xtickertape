@@ -1,5 +1,12 @@
 Overview of changes in xtickertape-1.6.3
 
+* Fixed a counting error in the e-mail subscription generation code
+  which could result in a coredump depending on the length of the
+  username.
+
+* XTickertape now installs a signal handler for SIGHUP which reloads
+  the groups and usenet subscription files.
+
 * The history now keeps the bottom item in the history visible as new
   items are added (hopefully) without being annoying when the user is
   trying to scroll the history or reply to a message.
