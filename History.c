@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.15 2001/07/19 08:09:08 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.16 2001/07/19 09:11:06 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -148,6 +148,19 @@ static XtResource resources[] =
 #undef offset
 
 
+/* Action declarations */
+static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+
+static XtActionsRec actions[] =
+{
+    { "drag", drag },
+    { "select", do_select },
+    { "show-attachment", show_attachment }
+};
+
+
 /* We move the History window around by calling XCopyArea to move the
  * visible portion of the screen and rely on GraphicsExpose events to
  * tell us what to repaint.  It occasionally happens that we want to
@@ -218,8 +231,8 @@ HistoryClassRec historyClassRec =
 	init, /* initialize */
 	NULL, /* initialize_hook */
 	realize, /* realize */
-	NULL, /* actions */
-	0, /* num_actions */
+	actions, /* actions */
+	XtNumber(actions), /* num_actions */
 	resources, /* resources */
 	XtNumber(resources), /* num_resources */
 	NULLQUARK, /* xrm_class */
@@ -992,6 +1005,25 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     }
 }
 
+/* Selects the message at the given index */
+static void set_selection_index(HistoryWidget self, unsigned int index)
+{
+    message_view_t view;
+
+    /* Locate the message view at that index */
+    if (index < self -> history.message_count)
+    {
+	view = self -> history.message_views[index];
+    }
+    else
+    {
+	index = (unsigned int)-1;
+	view = NULL;
+    }
+
+    /* Select it */
+    set_selection(self, index, view ? message_view_get_message(view) : NULL);
+}
 
 /* Destroy the widget */
 static void destroy(Widget self)
@@ -1029,6 +1061,71 @@ static XtGeometryResult query_geometry(
 {
     dprintf(("History: query_geometry()\n"));
     return XtGeometryYes;
+}
+
+
+/*
+ *
+ *  Action definitions
+ *
+ */
+
+/* Dragging selects */
+static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    XButtonEvent *button_event = (XButtonEvent *)event;
+    unsigned int index;
+
+    /* Is the pointer above the widget? */
+    if (button_event -> y < 0)
+    {
+	/* Yes.  We'll need to scroll somehow... */
+	printf("drag up\n");
+	return;
+    }
+
+    /* Is the pointer below the widget? */
+    if (self -> core.height < button_event -> y)
+    {
+	/* Yes.  We'll need to scroll somehow... */
+	printf("drag down\n");
+	return;
+    }
+
+    /* Find the index of the message to select */
+    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
+	self -> history.line_height;
+
+    /* Select it */
+    set_selection_index(self, index);
+}
+
+/* Select the item under the mouse */
+static void do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    XButtonEvent *button_event = (XButtonEvent *)event;
+    unsigned int index;
+
+    /* Convert the y coordinate into an index */
+    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
+	self -> history.line_height;
+
+    /* Is this our current selection? */
+    if (self -> history.selection_index == index)
+    {
+	/* Yes.  Toggle the selection off */
+	index = (unsigned int)-1;
+    }
+
+    /* Set the selection */
+    set_selection_index(self, index);
+}
+
+static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    printf("action: show-attachment()\n");
 }
 
 

@@ -145,8 +145,8 @@
 	<Btn1Down>: start-drag()\n\
 	<Btn1Motion>: drag()\n\
 	<Btn1Up>: show-menu() \n\
-	<Btn2Down>: show-attachment() \n\
-	<Btn3Down>: expire() \n\
+	<Btn2Up>: show-attachment() \n\
+	<Btn3Up>: expire() \n\
 	<Key>d: expire()\n\
 	<Key>x: delete()\n\
 	<Key>k: kill()\n\
@@ -166,3 +166,11 @@
 	<Key>7: set-speed(7)\n\
 	<Key>8: set-speed(8)\n\
 	<Key>9: set-speed(9)\n
+
+!
+! History action translations
+!
+*.history.translations: #override \n\
+	<Btn1Down>: select()\n\
+	<Btn1Motion>: drag()\n\
+	<Btn2Up>: show-attachment() \n
