@@ -35,7 +35,7 @@
 #define MESSAGEVIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGEVIEW_H[] = "$Id: MessageView.h,v 1.9 1998/12/24 05:48:29 phelps Exp $";
+static const char cvs_MESSAGEVIEW_H[] = "$Id: MessageView.h,v 1.10 1999/01/21 00:43:56 phelps Exp $";
 #endif /* lint */
 
 typedef struct MessageView_t *MessageView;
@@ -73,7 +73,10 @@ int MessageView_isTimedOut(MessageView self);
 /* MIME-decodes the receiver's message */
 void MessageView_decodeMime(MessageView self);
 
-/* Convice a MessageView that time as run out */
+/* Convince a MessageView that time has run out */
 void MessageView_expire(MessageView self);
+
+/* Convince a MessageView that it's time is up */
+void MessageView_expireNow(MessageView self);
 
 #endif /* MESSAGEVIEW_H */

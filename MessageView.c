@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.34 1998/12/24 05:48:29 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.35 1999/01/21 00:43:45 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -547,7 +547,7 @@ void MessageView_decodeMime(MessageView self)
 }
 
 
-/* MIME-decodes the receiver's message */
+/* Convince a MessageView that time has run out */
 void MessageView_expire(MessageView self)
 {
     SANITY_CHECK(self);
@@ -556,5 +556,16 @@ void MessageView_expire(MessageView self)
 	self -> isExpired = TRUE;
 	ClearClock(self);
 	SetClock(self);
+    }
+}
+
+
+/* Convince a MessageView that it's time is up */
+void MessageView_expireNow(MessageView self)
+{
+    SANITY_CHECK(self);
+    if (Message_getTimeout(self -> message) > 0)
+    {
+	self -> isExpired = TRUE;
     }
 }
