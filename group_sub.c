@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.26 2001/02/23 00:42:12 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.27 2001/05/06 23:06:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -234,7 +234,7 @@ static void notify_cb(
 	if (type == ELVIN_STRING)
 	{
 	    mime_args.data = value.s;
-	    mime_args.length = strlen(value.s) + 1;
+	    mime_args.length = strlen(value.s);
 	}
 	else if (type == ELVIN_OPAQUE)
 	{
@@ -378,11 +378,10 @@ static void send_message(group_sub_t self, message_t message)
     /* Add mime information if both mime_args and mime_type are provided */
     if ((mime_length != 0) && (mime_type != NULL))
     {
-	if (elvin_notification_add_opaque(
+	if (elvin_notification_add_string(
 		notification,
 		F_MIME_ARGS,
 		mime_args,
-		mime_length,
 		self -> error) == 0)
 	{
 	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
