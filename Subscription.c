@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.4 1998/05/16 05:49:12 phelps Exp $ */
+/* $Id: Subscription.c,v 1.5 1998/09/30 08:44:09 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,7 @@ struct Subscription_t
     char *sanity_check;
 #endif /* SANITY */
     char *group;
+    char *expression;
     int inMenu;
     int hasNazi;
     int minTime;
@@ -34,6 +35,7 @@ struct Subscription_t
 /* Answers a new Subscription */
 Subscription Subscription_alloc(
     char *group,
+    char *expression,
     int inMenu,
     int autoMime,
     int minTime,
@@ -46,6 +48,7 @@ Subscription Subscription_alloc(
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
     self -> group = strdup(group);
+    self -> expression = strdup(expression);
     self -> inMenu = inMenu;
     self -> hasNazi = autoMime;
     self -> minTime = minTime;
@@ -92,6 +95,7 @@ Subscription getFromGroupFileLine(char *line, SubscriptionCallback callback, voi
 {
     char *group = strtok(line, SEPARATORS);
     char *pointer = strtok(NULL, SEPARATORS);
+    char *expression;
     int inMenu, hasNazi, minTime, maxTime;
 
     if (strcasecmp(pointer, "no menu") == 0)
@@ -139,7 +143,18 @@ Subscription getFromGroupFileLine(char *line, SubscriptionCallback callback, voi
 	maxTime = 60;
     }
 
-    return Subscription_alloc(group, inMenu, hasNazi, minTime, maxTime, callback, context);
+    expression = strtok(NULL, "\n");
+    if (expression == NULL)
+    {
+	char buffer[BUFFERSIZE];
+
+	sprintf(buffer, "TICKERTAPE == \"%s\"", group);
+	return Subscription_alloc(
+	    group, buffer, inMenu, hasNazi, minTime, maxTime, callback, context);
+    }
+
+    return Subscription_alloc(
+	group, expression, inMenu, hasNazi, minTime, maxTime, callback, context);
 }
 
 /* Read the next subscription from file (answers NULL if EOF) */
@@ -185,6 +200,13 @@ char *Subscription_getGroup(Subscription self)
 {
     SANITY_CHECK(self);
     return self -> group;
+}
+
+/* Answers the receiver's subscription expression */
+char *Subscription_getExpression(Subscription self)
+{
+    SANITY_CHECK(self);
+    return self -> expression;
 }
 
 /* Answers if the receiver should appear in the Control Panel menu */

@@ -1,4 +1,4 @@
-/* $Id: Subscription.h,v 1.2 1997/05/31 03:42:29 phelps Exp $ */
+/* $Id: Subscription.h,v 1.3 1998/09/30 08:44:18 phelps Exp $ */
 
 #include <unistd.h>
 #include "List.h"
@@ -17,6 +17,7 @@ typedef void (*SubscriptionCallback)(Message message, void *context);
 /* Answers a new Subscription */
 Subscription Subscription_alloc(
     char *group,
+    char *expression,
     int inMenu,
     int autoMime,
     int minTime,
@@ -31,7 +32,8 @@ void Subscription_free(Subscription self);
 void Subscription_debug(Subscription self);
 
 /* Read Subscriptions from the group file 'groups' and add them to 'list' */
-void Subscription_readFromGroupFile(FILE *groups, List list, SubscriptionCallback callback, void *context);
+void Subscription_readFromGroupFile(
+    FILE *groups, List list, SubscriptionCallback callback, void *context);
 
 
 /*
@@ -40,6 +42,9 @@ void Subscription_readFromGroupFile(FILE *groups, List list, SubscriptionCallbac
 
 /* Answers the receiver's group */
 char *Subscription_getGroup(Subscription self);
+
+/* Answers the receiver's subscription expression */
+char *Subscription_getExpression(Subscription self);
 
 /* Answers true if the receiver should appear in the Control Panel menu */
 int Subscription_isInMenu(Subscription self);
