@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.13 1999/08/22 13:50:21 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.14 1999/08/24 04:12:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -256,8 +256,11 @@ static history_node_t find_by_id(history_t self, char *id)
     /* Search the history from youngest to oldest */
     for (node = self -> last; node != NULL; node = node -> previous)
     {
-	/* Return if we have a match */
-	if (strcmp(Message_getId(node -> message), id) == 0)
+	char *node_id;
+
+	/* Watch for a matching id */
+	if (((node_id = Message_getId(node -> message)) != NULL) &&
+	    (strcmp(id, node_id) == 0))
 	{
 	    return node;
 	}
