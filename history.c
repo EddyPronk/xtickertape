@@ -28,16 +28,17 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.5 1999/08/19 07:29:53 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.6 1999/08/21 07:28:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <Xm/Xm.h>
-#include "Message.h"
+#include <Xm/List.h>
 #include "history.h"
 
-#define MAX_LIST_COUNT 30
+/*#define MAX_LIST_COUNT 30*/
+#define MAX_LIST_COUNT 5
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 /* The structure of a node in a message history */
 typedef struct history_node *history_node_t;
@@ -191,6 +192,9 @@ struct history
     /* The number of nodes in the history */
     int count;
 
+    /* Nonzero if the history is being displayed threaded */
+    int is_threaded;
+
     /* The last node in the history (in receipt order) */
     history_node_t last;
 
@@ -212,6 +216,7 @@ history_t history_alloc()
 
     /* Initialize the fields to sane values */
     self -> count = 0;
+    self -> is_threaded = 1;
     self -> last = NULL;
     self -> list = NULL;
 
@@ -287,6 +292,7 @@ void history_set_list(history_t self, Widget list)
 /* Updates the history's list widget after a message was added */
 static void history_update_list(history_t self, history_node_t node)
 {
+    int index;
     XmString string;
 
     /* Make sure we have a list to play with */
@@ -296,14 +302,16 @@ static void history_update_list(history_t self, history_node_t node)
     }
 
     /* Make sure the list doesn't grow without bound */
-    if (! (self -> count < MAX_LIST_COUNT))
+    if (self -> count > MAX_LIST_COUNT)
     {
 	XmListDeletePos(self -> list, 1);
     }
 
     /* Add the string to the end of the list */
+    index = history_index(self, node -> message);
     string = history_node_get_string(node);
-    XmListAddItem(self -> list, string, 0);
+    XmListAddItem(self -> list, string, index);
+    printf("index=%d\n", index);
     XmStringFree(string);
 }
 
@@ -321,19 +329,19 @@ int history_add(history_t self, Message message)
     /* If the message is part of a thread then deal with it */
     history_thread_node(self, node);
 
-    /* Update the List widget */
-    history_update_list(self, node);
-
     /* Append the node to the end of the history */
     self -> count++;
     node -> previous = self -> last;
     self -> last = node;
 
+    /* Update the List widget */
+    history_update_list(self, node);
+
     return 0;
 }
 
 /* Answers the Message at the given index */
-Message history_get(history_t self, int index)
+static Message unthreaded_get(history_t self, int index)
 {
     history_node_t probe;
     int i;
@@ -345,7 +353,7 @@ Message history_get(history_t self, int index)
     }
 
     /* FIX THIS: will need to do this differently if we're threaded */
-    i = (self -> count < MAX_LIST_COUNT) ? self -> count: MAX_LIST_COUNT;
+    i = MIN(self -> count, MAX_LIST_COUNT);
     for (probe = self -> last; probe != NULL; probe = probe -> previous)
     {
 	if (index == i)
@@ -359,14 +367,25 @@ Message history_get(history_t self, int index)
     return NULL;
 }
 
-/* Answers the index of given Message in the history */
-int history_index(history_t self, Message message)
+/* Answers the Message at the given index */
+static Message threaded_get(history_t self, int index)
 {
-    /* FIX THIS: will need to do this differently if we're threaded */
+    return NULL;
+}
+
+/* Answers the Message at the given index */
+Message history_get(history_t self, int index)
+{
+    return self -> is_threaded ? threaded_get(self, index) : unthreaded_get(self, index);
+}
+
+/* Answers the index of given Message in the history */
+static int history_unthreaded_index(history_t self, Message message)
+{
     history_node_t probe;
     int index;
 
-    index = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
+    index = MIN(self -> count, MAX_LIST_COUNT);
     for (probe = self -> last; probe != NULL; probe = probe -> previous)
     {
 	if (probe -> message == message)
@@ -381,6 +400,108 @@ int history_index(history_t self, Message message)
     return -1;
 }
 
+/* Answers the index of given Message in the history */
+static int history_node_threaded_index2(history_node_t self, Message message, int *index)
+{
+    int result;
+
+    /* Watch for the beginning of the thread */
+    if (self == NULL)
+    {
+	return -1;
+    }
+
+    /* Visit the previous nodes */
+    if ((result = history_node_threaded_index2(self -> previous_response, message, index)) >= 0)
+    {
+	return result;
+    }
+
+    /* Unmark this node */
+    self -> color = 0;
+
+    /* Check for a match */
+    (*index)++;
+    if (self -> message == message)
+    {
+	return *index;
+    }
+
+    /* Check the children */
+    return history_node_threaded_index2(self -> last_response, message, index);
+}
+
+
+/* Answers the index of given Message in the history */
+static int history_node_threaded_index(history_node_t self, Message message, int *index)
+{
+    int result;
+
+    /* Watch out for the beginning of history */
+    if (self == NULL)
+    {
+	return -1;
+    }
+
+    /* Mark ourselves */
+    self -> color = 1;
+
+    /* Visit the previous nodes */
+    (*index)--;
+    if ((result = history_node_threaded_index(self -> previous, message, index)) >= 0)
+    {
+	return result;
+    }
+
+    /* If we haven't yet been marked, then increment the index */
+    if (self -> color == 1)
+    {
+	(*index)++;
+
+	/* Unmark this node */
+	self -> color = 0;
+
+	/* Check for a match */
+	if (self -> message == message)
+	{
+	    return *index;
+	}
+
+	/* Otherwise check our children */
+	return history_node_threaded_index2(self -> last_response, message, index);
+    }
+
+    return -1;
+}
+
+/* Answers the index of given Message in the history */
+static int history_threaded_index(history_t self, Message message)
+{
+    int index = self -> count;
+    int result = history_node_threaded_index(self -> last, message, &index);
+
+    /* Adjust the position to account for a maximum list size */
+    if (self -> count > MAX_LIST_COUNT)
+    {
+	result -= self -> count - MAX_LIST_COUNT;
+    }
+
+    /* Normalize the results */
+    if (result < 1)
+    {
+	return -1;
+    }
+
+    return result;
+}
+
+/* Answers the index of given Message in the history */
+int history_index(history_t self, Message message)
+{
+    return self -> is_threaded ? 
+	history_threaded_index(self, message) :
+	history_unthreaded_index(self, message);
+}
 
 /* Just for debugging */
 void history_print(history_t self, FILE *out)
