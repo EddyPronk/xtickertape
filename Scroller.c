@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.95 2000/04/28 07:41:01 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.96 2000/04/28 08:30:55 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -303,7 +303,7 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     self -> previous = NULL;
     self -> next = NULL;
     self -> width = width;
-    self -> is_pending = 0;
+    self -> is_pending = False;
     self -> glyph = glyph -> alloc(glyph);
     return self;
 }
@@ -713,7 +713,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 		}
 		else
 		{
-		    holder -> is_pending = 1;
+		    holder -> is_pending = True;
 		}
 	    }
 	}
@@ -1265,27 +1265,33 @@ static void overflow_recover(ScrollerWidget self)
     int offset = 0 - self -> scroller.left_offset;
 
     printf("overflow recovery\n");
-
-    /* Update any glyphs which need to be repainted */
-    for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
+    if (self -> scroller.state == SS_READY)
     {
-	if (holder -> is_pending)
+	/* Update any glyphs which need to be repainted */
+	for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
 	{
-	    if (self -> scroller.use_pixmap)
+	    int width = glyph_holder_width(holder);
+
+	    if (holder -> is_pending)
 	    {
-		glyph_holder_paint(
-		    holder, display, self -> scroller.pixmap,
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
-		Redisplay((Widget)self, NULL, 0);
-	    }
-	    else
-	    {
-		glyph_holder_paint(
-		    holder, display, XtWindow((Widget)self),
-		    offset, 0, 0, self -> core.width, self -> scroller.height);
+		if (self -> scroller.use_pixmap)
+		{
+		    glyph_holder_paint(
+			holder, display, self -> scroller.pixmap,
+			offset, 0, 0, self -> core.width, self -> scroller.height);
+		    Redisplay((Widget)self, NULL, 0);
+		}
+		else
+		{
+		    glyph_holder_paint(
+			holder, display, XtWindow((Widget)self),
+			offset, 0, 0, self -> core.width, self -> scroller.height);
+		}
+
+		holder -> is_pending = False;
 	    }
 
-	    holder -> is_pending = 0;
+	    offset += width;
 	}
     }
 
@@ -1293,6 +1299,13 @@ static void overflow_recover(ScrollerWidget self)
     if (self -> scroller.is_dragging)
     {
 	drag_to(self, self -> scroller.overflow_x);
+
+	/* If we received a mouse-up event then restart the scroller */
+	if (self -> scroller.is_dragging < 0)
+	{
+	    self -> scroller.is_dragging = False;
+	    EnableClock(self);
+	}
     }
     else
     {
@@ -1633,10 +1646,19 @@ static int pre_action(ScrollerWidget self, XEvent *event)
     {
 	if (self -> scroller.is_dragging)
 	{
-	    /* Restart the timer */
-	    self -> scroller.is_dragging = False;
-	    EnableClock(self);
-	    return -1;
+	    if (self -> scroller.state == SS_OVERFLOW)
+	    {
+		/* Hideous hack -- use -1 to indicate dragging should stop */
+		self -> scroller.is_dragging = -1;
+		return -1;
+	    }
+	    else
+	    {
+		/* Restart the timer */
+		self -> scroller.is_dragging = False;
+		EnableClock(self);
+		return -1;
+	    }
 	}
     }
 
@@ -2109,7 +2131,7 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	    return;
 	}
 
-	/* Otherwise we're not definitely dragging */
+	/* Otherwise we're definitely dragging */
 	self -> scroller.is_dragging = True;
 
 	/* Disable the timer until the drag is done */
