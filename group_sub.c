@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.17 2000/04/17 00:45:06 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.18 2000/05/31 05:46:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -265,7 +265,7 @@ static void notify_cb(
 
     /* Construct a message */
     message = message_alloc(
-	self -> control_panel_rock,
+	self -> name,
 	self -> name, user, text, (unsigned long) timeout,
 	mime_type, mime_args,
 	tag, message_id, reply_id);
@@ -613,7 +613,7 @@ void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel
 	if (self -> in_menu)
 	{
 	    self -> control_panel_rock = control_panel_add_subscription(
-		control_panel, self -> name,
+		control_panel, self -> name, self -> name,
 		(control_panel_callback_t)send_message, self);
 	}
 	else
@@ -648,7 +648,7 @@ void group_sub_set_control_panel_index(
 	if ((self -> control_panel_rock == NULL) && (self -> in_menu))
 	{
 	    self -> control_panel_rock = control_panel_add_subscription(
-		control_panel, self -> name,
+		control_panel, self -> name, self -> name,
 		(control_panel_callback_t)send_message, self);
 	}
     }

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.30 2000/04/28 00:37:28 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.31 2000/05/31 05:46:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -120,6 +120,9 @@ struct menu_item_tuple
 
     /* The tuple's push-button widget */
     Widget widget;
+
+    /* The tuple's symbolic tag */
+    char *tag;
 
     /* The title of the tuple's push-button widget */
     char *title;
@@ -1483,7 +1486,7 @@ message_t contruct_message(control_panel_t self)
 
     /* Construct a message */
     message = message_alloc(
-	self -> selection,
+	self -> selection -> tag,
 	self -> selection -> title, user, text, get_timeout(self),
 	(mime_args == NULL) ? NULL : mime_type, mime_args,
 	NULL, uuid, self -> message_id);
@@ -1653,7 +1656,7 @@ void control_panel_set_connected(
 
 /* Adds a subscription to the receiver at the end of the groups list */
 void *control_panel_add_subscription(
-    control_panel_t self, char *title,
+    control_panel_t self, char *tag, char *title,
     control_panel_callback_t callback, void *rock)
 {
     XmString string;
@@ -1668,6 +1671,7 @@ void *control_panel_add_subscription(
 
     /* Fill in the values of the tuple */
     tuple -> control_panel = self;
+    tuple -> tag = strdup(tag);
     tuple -> title = strdup(title);
     tuple -> index = self -> group_count++;
     tuple -> callback = callback;
@@ -1851,6 +1855,41 @@ void control_panel_retitle_subscription(control_panel_t self, void *info, char *
     }
 }
 
+/* Locates the tuple with the given tag */
+static menu_item_tuple_t get_tuple_from_tag(control_panel_t self, char *tag)
+{
+    Cardinal num_children;
+    Widget *children;
+    Widget *child;
+
+    /* Sanity check */
+    if (tag == NULL)
+    {
+	return NULL;
+    }
+
+    /* Get the list of children */
+    XtVaGetValues(
+	self -> group_menu,
+	XmNnumChildren, &num_children,
+	XmNchildren, &children,
+	NULL);
+
+    /* Find the matching one */
+    for (child = children; child < children + num_children; child++)
+    {
+	menu_item_tuple_t tuple;
+
+	XtVaGetValues(*child, XmNuserData, &tuple, NULL);
+	if (tuple != NULL && strcmp(tuple -> tag, tag) == 0)
+	{
+	    return tuple;
+	}
+    }
+
+    return NULL;
+}
+
 /* Sets up the receiver to reply to the given message */
 static void prepare_reply(control_panel_t self, message_t message)
 {
@@ -1866,7 +1905,7 @@ static void prepare_reply(control_panel_t self, message_t message)
     {
 	char *id;
 
-	if ((tuple = (menu_item_tuple_t)message_get_info(message)) != NULL)
+	if ((tuple = get_tuple_from_tag(self, message_get_info(message))) != NULL)
 	{
 	    self -> selection = tuple;
 	    set_group_selection(self, tuple);

@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.3 2000/03/16 06:54:38 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.4 2000/05/31 05:46:25 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -43,7 +43,7 @@ typedef struct message *message_t;
 
 /* Creates and returns a new message */
 message_t message_alloc(
-    void *info,
+    char *info,
     char *group,
     char *user,
     char *string,
@@ -65,7 +65,7 @@ void message_debug(message_t self);
 
 
 /* Answers the Subscription info for the receiver's subscription */
-void *message_get_info(message_t self);
+char *message_get_info(message_t self);
 
 /* Answers the receiver's creation time */
 time_t *message_get_creation_time(message_t self);

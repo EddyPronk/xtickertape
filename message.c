@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.6 2000/05/05 03:51:33 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.7 2000/05/31 05:46:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -51,8 +51,8 @@ struct message
     /* The time when the message was created */
     time_t creation_time;
 
-    /* The Subscription which was matched to generate the receiver */
-    void *info;
+    /* A string which identifies the subscription info in the control panel */
+    char *info;
 
     /* The receiver's group */
     char *group;
@@ -85,7 +85,7 @@ struct message
 
 /* Creates and returns a new message */
 message_t message_alloc(
-    void *info,
+    char *info,
     char *group,
     char *user,
     char *string,
@@ -106,7 +106,7 @@ message_t message_alloc(
 
     /* Initialize the contents to sane values */
     self -> ref_count = 1;
-    self -> info = info;
+    self -> info = (info == NULL) ? NULL : strdup(info);
     self -> group = strdup(group);
     self -> user = strdup(user);
     self -> string = strdup(string);
@@ -155,6 +155,12 @@ void message_free(message_t self)
 #endif /* DEBUG */
 
     /* Out of references -- release the hounds! */
+    if (self -> info != NULL)
+    {
+	free(self -> info);
+	self -> info = NULL;
+    }
+
     if (self -> group != NULL)
     {
 	free(self -> group);
@@ -213,7 +219,7 @@ void message_debug(message_t self)
 {
     printf("message_t (%p)\n", self);
     printf("  ref_count=%d\n", self -> ref_count);
-    printf("  info = 0x%p\n", self -> info);
+    printf("  info = \"%s\"\n", self -> info);
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
@@ -227,7 +233,7 @@ void message_debug(message_t self)
 #endif /* DEBUG */
 
 /* Answers the Subscription matched to generate the receiver */
-void *message_get_info(message_t self)
+char *message_get_info(message_t self)
 {
     return self -> info;
 }
