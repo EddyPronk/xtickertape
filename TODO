@@ -27,7 +27,4 @@ Things that would be nice to have in future versions of xtickertape:
   doesn't look like it'll be easy without building a widget...)
 
 - It should be possible to specify the location of `metamail' at
-  both configure-time and run-time.  It should also be possible to
-  *not* redirect its output to /dev/null so that its possible to debug 
-  metamail-related problems without having to recompile.
-
+  both configure-time and run-time.

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.39 1999/11/22 21:32:35 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.40 1999/11/25 08:47:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -61,6 +61,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.39 1999/11/22 21:32:35 phelps
 #define DEFAULT_USENET_FILE "usenet"
 
 #define METAMAIL_OPTIONS "-B -q -b -c"
+#define METAMAIL_FORMAT "%s %s %s %s"
 
 #define BUFFER_SIZE 1024
 
@@ -1073,7 +1074,7 @@ tickertape_t tickertape_alloc(
 	(elvin_add_timeout_func_t)XtAppAddTimeOut,
 	(elvin_del_timeout_func_t)XtRemoveTimeOut)) == NULL)
     {
-	fprintf(stderr, "*** elvin_async_init_default(): failed\n");
+	fprintf(stderr, "*** elvin_async_init(): failed\n");
 	exit(1);
     }
 
@@ -1308,15 +1309,17 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     fclose(file);
 
     /* Invoke metamail to display the attachment */
-    buffer = (char *) malloc(
-	sizeof(METAMAIL) + sizeof(METAMAIL_OPTIONS) + 
-	strlen(mime_type) + strlen(filename) +
-	sizeof("....>./dev/null.2>&1"));
-    sprintf(buffer, "%s %s %s %s > /dev/null 2>&1",
-	    METAMAIL, METAMAIL_OPTIONS,
-	    mime_type, filename);
-    system(buffer);
-    free(buffer);
+    if ((buffer = (char *) malloc(
+	sizeof(METAMAIL_FORMAT) +
+	strlen(METAMAIL) + strlen(METAMAIL_OPTIONS) + 
+	strlen(mime_type) + strlen(filename) - 8)) != NULL)
+    {
+	sprintf(buffer, METAMAIL_FORMAT,
+		METAMAIL, METAMAIL_OPTIONS,
+		mime_type, filename);
+	system(buffer);
+	free(buffer);
+    }
 
     /* Clean up */
     unlink(filename);

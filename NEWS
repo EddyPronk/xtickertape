@@ -1,5 +1,7 @@
 Overview of changes in xtickertape-2.0
 
+* No longer redirecting the output of `metamail' to /dev/null.
+
 * Fixed a bug in the way the icon was created.  Now the big `e' will
   be read even on 8-bit displays.
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.64 1999/11/23 03:21:32 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.65 1999/11/25 08:47:51 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -299,7 +299,7 @@ static Window create_icon(Widget shell)
     /* Create a pixmap from the red bitmap data */
     pixmap = XCreatePixmapFromBitmapData(
 	display, window, red_bits, red_width, red_height,
-	color.pixel ^ BlackPixelOfScreen(screen), 0, depth);
+	color.pixel ^ black, 0, depth);
 
     /* Create a graphics context */
     values.function = GXxor;
@@ -313,11 +313,11 @@ static Window create_icon(Widget shell)
     XFreePixmap(display, mask);
     XFreeGC(display, gc);
 
-    /* Create a shape mask and apply it to the window */
 #ifdef HAVE_LIBXEXT
+    /* Create a shape mask and apply it to the window */
     mask = XCreateBitmapFromData(display, pixmap, mask_bits, mask_width, mask_height);
     XShapeCombineMask(display, window, ShapeBounding, 0, 0, mask, ShapeSet);
-#endif /* HAVE_LIBEXT */
+#endif /* HAVE_LIBXEXT */
 
     /* Set the window's background to be the pixmap */
     XSetWindowBackgroundPixmap(display, window, pixmap);
