@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.12 1998/10/24 15:35:04 phelps Exp $ */
+/* $Id: Message.c,v 1.13 1998/10/25 02:49:44 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,10 +100,6 @@ void Message_free(Message self)
 {
     SANITY_CHECK(self);
 
-#ifdef SANITY
-    self -> sanity_check = sanity_freed;
-#endif /* SANITY */
-
     if (self -> group)
     {
 	free(self -> group);
@@ -129,7 +125,11 @@ void Message_free(Message self)
 	free(self -> mimeArgs);
     }
 
+#ifdef SANITY
+    self -> sanity_check = sanity_freed;
+#else /* SANITY */
     free(self);
+#endif /* SANITY */
 }
 
 
