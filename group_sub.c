@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.51 2004/02/02 22:01:19 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.52 2004/08/02 15:18:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -167,6 +167,7 @@ struct group_sub
  *
  */
 
+#if 0
 /* Adds a subscription key to an elvin_keys_t */
 static void add_named_key(
     elvin_keys_t keys,
@@ -234,16 +235,19 @@ static void add_named_key(
     /* Add it as a normal key too */
     if (! ELVIN_KEYS_ADD(
             keys,
+            is_for_notify ?
+            ELVIN_KEY_SCHEME_SHA1_CONSUMER :
             ELVIN_KEY_SCHEME_SHA1_PRODUCER,
             is_for_notify ?
-            ELVIN_KEY_SHA1_CONSUMER_INDEX :
-            ELVIN_KEY_SHA1_PRODUCER_INDEX,
+            ELVIN_KEY_SHA1_PRODUCER_INDEX :
+            ELVIN_KEY_SHA1_CONSUMER_INDEX,
             data, length, NULL,
             NULL))
     {
         fprintf(stderr, "elvin_keys_add failed for key %s\n", name);
     }
 }
+#endif
 
 #if 0
 static void remove_named_key(
@@ -1113,6 +1117,7 @@ static void send_message(group_sub_t self, message_t message)
 	}
     }
 
+#if 0
     /* Put together the list of keys */
     if (self -> key_count == 0)
     {
@@ -1135,6 +1140,13 @@ static void send_message(group_sub_t self, message_t message)
                 self -> key_table, self -> key_names[i]);
         }
     }
+
+#else
+    key_table_diff(
+        NULL, NULL, 0,
+        self -> key_table, self -> key_names, self -> key_count,
+        1, &keys, NULL);
+#endif
 
     if (!elvin_async_notify(
             self -> handle,
@@ -1182,6 +1194,7 @@ static int key_index(char **key_names, int key_count, char *name)
     return -1;
 }
 
+#if 0
 /* Updates a group sub's keys to match a new list */
 static void group_sub_update_keys(
     group_sub_t self,
@@ -1389,6 +1402,52 @@ static void group_sub_update_keys(
         free(old_keys);
     }
 }
+#else
+/* Updates a group sub's keys to match a new list */
+static void group_sub_update_keys(
+    group_sub_t self,
+    char **key_names,
+    int key_count,
+    elvin_keys_t *keys_to_add_out,
+    elvin_keys_t *keys_to_remove_out)
+{
+    int i;
+
+    /* Compute the required changes */
+    key_table_diff(
+        self -> key_table,
+        self -> key_names,
+        self -> key_count,
+        self -> key_table,
+        key_names,
+        key_count,
+        0,
+        keys_to_add_out,
+        keys_to_remove_out);
+
+    /* Discard the old key names */
+    for (i = 0; i < self -> key_count; i++)
+    {
+        free(self -> key_names[i]);
+    }
+    free(self -> key_names);
+
+    /* Duplicate the new key names */
+    if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL) 
+    {
+        abort();
+    }
+
+    self -> key_count = key_count;
+    for (i = 0; i < key_count; i++)
+    {
+        if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
+        {
+            abort();
+        }
+    }
+}
+#endif
                                  
 
 
@@ -1453,6 +1512,7 @@ group_sub_t group_sub_alloc(
                 abort();
             }
 
+#if 0
             /* Look up the key */
             if (key_table_lookup(key_table, key_names[i], NULL, NULL, &is_private) < 0)
             {
@@ -1462,6 +1522,9 @@ group_sub_t group_sub_alloc(
             {
                 self -> has_private_key |= is_private;
             }
+#else
+            self -> has_private_key = 1;
+#endif
         }
 
         self -> key_count = key_count;
@@ -1668,6 +1731,7 @@ void group_sub_set_connection(
     if (self -> handle != NULL)
     {
         /* Compute the keys */
+#if 0
         if (self -> key_count == 0)
         {
             keys = NULL;
@@ -1687,6 +1751,13 @@ void group_sub_set_connection(
                     self -> key_table, self -> key_names[i]);
             } 
         }
+#else
+        /* Compute the keys */
+        key_table_diff(
+            NULL, NULL, 0,
+            self -> key_table, self -> key_names, self -> key_count,
+            0, &keys, NULL);
+#endif
 
         if (!elvin_async_add_subscription(
                 self -> handle,
