@@ -37,7 +37,6 @@
 *history.stringPixel: IndianRed
 *history.separatorPixel: Gray40
 *scroller.separatorPixel: Gray40
-
 *history.selectionPixel: Gray80
 
 !
@@ -157,7 +156,6 @@
 	<Key>=: faster()\n\
 	<Key>comma: faster()\n\
 	<Key>.: slower()\n\
-	<Key>0: set-speed(0)\n\
 	<Key>0: set-speed(0)\n\
 	<Key>1: set-speed(1)\n\
 	<Key>2: set-speed(2)\n\
