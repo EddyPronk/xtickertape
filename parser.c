@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.3 2000/07/05 07:59:28 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.4 2000/07/05 08:10:19 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,7 +40,7 @@ static const char cvsid[] = "$Id: parser.c,v 2.3 2000/07/05 07:59:28 phelps Exp 
 #include <elvin/memory.h>
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
-#define INITIAL_STACK_DEPTH 10
+#define INITIAL_STACK_DEPTH 16
 
 
 /* Test ch to see if it's valid as a non-initial ID character */
@@ -273,164 +273,201 @@ static int shift_reduce(parser_t self, terminal_t terminal, void *value, elvin_e
 /* Accepts an AND token */
 static int accept_and(parser_t self, elvin_error_t error)
 {
+    printf("AND\n");
     return shift_reduce(self, TT_AND, NULL, error);
 }
 
 /* Accepts an ASSIGN token */
 static int accept_assign(parser_t self, elvin_error_t error)
 {
+    printf("ASSIGN\n");
     return shift_reduce(self, TT_ASSIGN, NULL, error);
 }
 
 /* Accepts a BANG token */
 static int accept_bang(parser_t self, elvin_error_t error)
 {
+    printf("BANG\n");
     return shift_reduce(self, TT_BANG, NULL, error);
 }
 
 /* Accepts a COLON token */
 static int accept_colon(parser_t self, elvin_error_t error)
 {
+    printf("COLON\n");
     return shift_reduce(self, TT_COLON, NULL, error);
 }
 
 /* Accepts an COMMA token */
 static int accept_comma(parser_t self, elvin_error_t error)
 {
+    printf("COMMA\n");
     return shift_reduce(self, TT_COMMA, NULL, error);
 }
 
 /* Accepts an EOF token */
 static int accept_eof(parser_t self, elvin_error_t error)
 {
+    printf("EOF\n");
     return shift_reduce(self, TT_EOF, NULL, error);
 }
 
 /* Accepts an EQ token */
 static int accept_eq(parser_t self, elvin_error_t error)
 {
+    printf("EQ\n");
     return shift_reduce(self, TT_EQ, NULL, error);
 }
 
 /* Accepts an GE token */
 static int accept_ge(parser_t self, elvin_error_t error)
 {
+    printf("GE\n");
     return shift_reduce(self, TT_GE, NULL, error);
 }
 
 /* Accepts an GT token */
 static int accept_gt(parser_t self, elvin_error_t error)
 {
+    printf("GT\n");
     return shift_reduce(self, TT_GT, NULL, error);
 }
 
 /* Accepts an ID token */
 static int accept_id(parser_t self, char *name, elvin_error_t error)
 {
+    printf("ID `%s'\n", name);
     return shift_reduce(self, TT_ID, NULL, error);
 }
 
 /* Accepts an INT32 token */
 static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
 {
+    printf("INT32: %d\n", value);
     return shift_reduce(self, TT_INT32, NULL, error);
 }
 
 /* Accepts a string as an int32 token */
 static int accept_int32_string(parser_t self, char *string, elvin_error_t error)
 {
-    fprintf(stderr, "accept_int32_string(): not yet implemented\n");
-    abort();
+    int32_t value;
+
+    if (! elvin_string_to_int32(string, &value, error))
+    {
+	return 0;
+    }
+
+    return accept_int32(self, value, error);
 }
 
 /* Accepts an INT64 token */
-static int accept_int64(parser_t self, elvin_error_t error)
+static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
 {
+    printf("INT64: %" INT64_PRINT "\n", value);
     return shift_reduce(self, TT_INT64, NULL, error);
 }
 
 /* Accepts a string as an int64 token */
 static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
 {
-    fprintf(stderr, "accept_int64_string(): not yet implemented\n");
-    abort();
+    int64_t value;
+
+    if (! elvin_string_to_int64(string, &value, error))
+    {
+	return 0;
+    }
+
+    return accept_int64(self, value, error);
 }
 
 /* Accepts an LBRACE token */
 static int accept_lbrace(parser_t self, elvin_error_t error)
 {
+    printf("LBRACE\n");
     return shift_reduce(self, TT_LBRACE, NULL, error);
 }
 
 /* Accepts an LBRACKET token */
 static int accept_lbracket(parser_t self, elvin_error_t error)
 {
+    printf("LBRACKET\n");
     return shift_reduce(self, TT_LBRACKET, NULL, error);
 }
 
 /* Accepts an LE token */
 static int accept_le(parser_t self, elvin_error_t error)
 {
+    printf("LE\n");
     return shift_reduce(self, TT_LE, NULL, error);
 }
 
 /* Accepts an LT token */
 static int accept_lt(parser_t self, elvin_error_t error)
 {
+    printf("LT\n");
     return shift_reduce(self, TT_LT, NULL, error);
 }
 
 /* Accepts an LPAREN token */
 static int accept_lparen(parser_t self, elvin_error_t error)
 {
+    printf("LPAREN\n");
     return shift_reduce(self, TT_LPAREN, NULL, error);
 }
 
 /* Accepts an NEQ token */
 static int accept_neq(parser_t self, elvin_error_t error)
 {
+    printf("NEQ\n");
     return shift_reduce(self, TT_NEQ, NULL, error);
 }
 
 /* Accepts an OR token */
 static int accept_or(parser_t self, elvin_error_t error)
 {
+    printf("OR\n");
     return shift_reduce(self, TT_OR, NULL, error);
 }
 
 /* Accepts an RBRACE token */
 static int accept_rbrace(parser_t self, elvin_error_t error)
 {
+    printf("RBRACE\n");
     return shift_reduce(self, TT_RBRACE, NULL, error);
 }
 
 /* Accepts an RBRACKET token */
 static int accept_rbracket(parser_t self, elvin_error_t error)
 {
+    printf("RBRACKET\n");
     return shift_reduce(self, TT_RBRACKET, NULL, error);
 }
 
 /* Accepts an REAL64 token */
 static int accept_real64(parser_t self, elvin_error_t error)
 {
+    printf("REAL64\n");
     return shift_reduce(self, TT_REAL64, NULL, error);
 }
 
 /* Accepts an RPAREN token */
 static int accept_rparen(parser_t self, elvin_error_t error)
 {
+    printf("RPAREN\n");
     return shift_reduce(self, TT_RPAREN, NULL, error);
 }
 
 /* Accepts a SEMI token */
 static int accept_semi(parser_t self, elvin_error_t error)
 {
+    printf("SEMI\n");
     return shift_reduce(self, TT_SEMI, NULL, error);
 }
 
 /* Accepts an STRING token */
 static int accept_string(parser_t self, char *string, elvin_error_t error)
 {
+    printf("STRING: `%s'\n", string);
     return shift_reduce(self, TT_STRING, NULL, error);
 }
 
