@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.4 1999/11/19 03:41:14 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.5 1999/11/19 06:57:35 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -501,13 +501,6 @@ static void subscribe_cb(
     dstc_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
-
-    printf("subscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
-    if (self -> subscription_id != 0)
-    {
-	printf("uh oh... self -> subscription_id = %lld\n", self -> subscription_id);
-    }
-
     self -> subscription_id = subscription_id;
 }
 
