@@ -173,4 +173,5 @@
 *.history.translations: #override \n\
 	<Btn1Down>: select()\n\
 	<Btn1Motion>: drag()\n\
+	<Btn1Up>: drag-done()\n\
 	<Btn2Up>: show-attachment() \n
