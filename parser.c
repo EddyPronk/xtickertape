@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.4 2000/07/05 08:10:19 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.5 2000/07/06 09:24:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -38,6 +38,7 @@ static const char cvsid[] = "$Id: parser.c,v 2.4 2000/07/05 08:10:19 phelps Exp 
 #include <ctype.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
+#include <elvin/convert.h>
 
 #define INITIAL_TOKEN_BUFFER_SIZE 64
 #define INITIAL_STACK_DEPTH 16
@@ -116,9 +117,35 @@ struct parser
 };
 
 
+
 /* Reduction function declarations */
-typedef void *(*reduction_t)(parser_t self, elvin_error_t error);
-static void *function(parser_t self, elvin_error_t error);
+typedef struct ast *ast_t;
+typedef ast_t (*reduction_t)(parser_t self, elvin_error_t error);
+static ast_t identity(parser_t self, elvin_error_t error);
+static ast_t identity2(parser_t self, elvin_error_t error);
+static ast_t extend_sub_list(parser_t self, elvin_error_t error);
+static ast_t make_sub_list(parser_t self, elvin_error_t error);
+static ast_t make_sub(parser_t self, elvin_error_t error);
+static ast_t make_default_sub(parser_t self, elvin_error_t error);
+static ast_t make_tag(parser_t self, elvin_error_t error);
+static ast_t extend_statements(parser_t self, elvin_error_t error);
+static ast_t make_statements(parser_t self, elvin_error_t error);
+static ast_t make_statement(parser_t self, elvin_error_t error);
+static ast_t extend_disjunction(parser_t self, elvin_error_t error);
+static ast_t extend_conjunction(parser_t self, elvin_error_t error);
+static ast_t make_eq(parser_t self, elvin_error_t error);
+static ast_t make_neq(parser_t self, elvin_error_t error);
+static ast_t make_lt(parser_t self, elvin_error_t error);
+static ast_t make_le(parser_t self, elvin_error_t error);
+static ast_t make_gt(parser_t self, elvin_error_t error);
+static ast_t make_ge(parser_t self, elvin_error_t error);
+static ast_t make_not(parser_t self, elvin_error_t error);
+static ast_t extend_values(parser_t self, elvin_error_t error);
+static ast_t make_values(parser_t self, elvin_error_t error);
+static ast_t make_list(parser_t self, elvin_error_t error);
+static ast_t make_empty_list(parser_t self, elvin_error_t error);
+static ast_t make_function(parser_t self, elvin_error_t error);
+static ast_t make_noarg_function(parser_t self, elvin_error_t error);
 
 /* Lexer state function headers */
 static int lex_start(parser_t self, int ch, elvin_error_t error);
@@ -206,10 +233,182 @@ static void clean_stack(parser_t self, elvin_error_t error)
     abort();
 }
 
-/* bogus function */
-static void *function(parser_t self, elvin_error_t error)
+/* Returns the first value */
+static ast_t identity(parser_t self, elvin_error_t error)
 {
-    printf("function() called\n");
+    return self -> value_top[0];
+}
+
+/* Returns the second value */
+static ast_t identity2(parser_t self, elvin_error_t error)
+{
+    return self -> value_top[1];
+}
+
+
+/* <subscription-list> ::= <subscription-list> <subscription> */
+static ast_t extend_sub_list(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "extend_sub_list(): not yet implemented\n");
+    return NULL;
+}
+
+/* <subscription-list> ::= <subscription> */
+static ast_t make_sub_list(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_sub_list(): not yet implemented\n");
+    return NULL;
+}
+
+/* <subscription> ::= <tag> LBRACE <statements> RBRACE SEMI */
+static ast_t make_sub(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_sub(): not yet implemented\n");
+    return NULL;
+}
+
+/* <subscription> ::= <tag> LBRACE RBRACE SEMI */
+static ast_t make_default_sub(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_default_sub(): not yet implemented\n");
+    return NULL;
+}
+
+/* <tag> ::= ID COLON */
+static ast_t make_tag(parser_t self, elvin_error_t error)
+{
+    printf("[make_tag: `%s']\n", (char *)self -> value_top[0]);
+    return (void *)-1;
+}
+
+/* <statements> ::= <statements> <statement> */
+static ast_t extend_statements(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "extend_statements(): not yet implemented\n");
+    return NULL;
+}
+
+/* <statements> ::= <statement> */
+static ast_t make_statements(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_statements(): not yet implemented\n");
+    return NULL;
+}
+
+/* <statement> ::= ID ASSIGN <disjunction> SEMI */
+static ast_t make_statement(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_statement(): not yet implemented\n");
+    return NULL;
+}
+
+
+/* <disjunction> ::= <disjunction> OR <conjunction> */
+static ast_t extend_disjunction(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "extend_disjunction(): not yet implemented\n");
+    return NULL;
+}
+
+/* <conjunction> ::= <conjunction> AND <term> */
+static ast_t extend_conjunction(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "extend_conjunction(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> EQ <value> */
+static ast_t make_eq(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_eq(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> NEQ <value> */
+static ast_t make_neq(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_neq(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> LT <value> */
+static ast_t make_lt(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_lt(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> LE <value> */
+static ast_t make_le(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_le(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> GT <value> */
+static ast_t make_gt(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_gt(): not yet implemented\n");
+    return NULL;
+}
+
+/* <term> ::= <term> GE <value> */
+static ast_t make_ge(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_ge(): not yet implemented\n");
+    return NULL;
+}
+
+/* <value> ::= BANG <value> */
+static ast_t make_not(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_not(): not yet implemented\n");
+    return NULL;
+}
+
+
+/* <values> ::= <values> COMMA <value> */
+static ast_t extend_values(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "extend_values(): not yet implemented\n");
+    return NULL;
+}
+
+/* <values> ::= <value> */
+static ast_t make_values(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_values(): not yet implemented\n");
+    return NULL;
+}
+
+
+/* <value> ::= LBRACKET <values> RBRACKET */
+static ast_t make_list(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_list(): not yet implemented\n");
+    return NULL;
+}
+
+/* <value> ::= LBRACKET RBRACKET */
+static ast_t make_empty_list(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_empty_list(): not yet implemented\n");
+    return NULL;
+}
+
+
+/* <value> ::= ID LPAREN <values> RPAREN */
+static ast_t make_function(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_function(): not yet implemented\n");
+    return NULL;
+}
+
+/* <value> ::= ID LPAREN RPAREN */
+static ast_t make_noarg_function(parser_t self, elvin_error_t error)
+{
+    fprintf(stderr, "make_noarg_function(): not yet implemented\n");
+    return NULL;
 }
 
 
@@ -270,74 +469,24 @@ static int shift_reduce(parser_t self, terminal_t terminal, void *value, elvin_e
     abort();
 }
 
-/* Accepts an AND token */
-static int accept_and(parser_t self, elvin_error_t error)
+/* Accepts token which has no useful value */
+static int accept_token(parser_t self, terminal_t terminal, elvin_error_t error)
 {
-    printf("AND\n");
-    return shift_reduce(self, TT_AND, NULL, error);
-}
-
-/* Accepts an ASSIGN token */
-static int accept_assign(parser_t self, elvin_error_t error)
-{
-    printf("ASSIGN\n");
-    return shift_reduce(self, TT_ASSIGN, NULL, error);
-}
-
-/* Accepts a BANG token */
-static int accept_bang(parser_t self, elvin_error_t error)
-{
-    printf("BANG\n");
-    return shift_reduce(self, TT_BANG, NULL, error);
-}
-
-/* Accepts a COLON token */
-static int accept_colon(parser_t self, elvin_error_t error)
-{
-    printf("COLON\n");
-    return shift_reduce(self, TT_COLON, NULL, error);
-}
-
-/* Accepts an COMMA token */
-static int accept_comma(parser_t self, elvin_error_t error)
-{
-    printf("COMMA\n");
-    return shift_reduce(self, TT_COMMA, NULL, error);
-}
-
-/* Accepts an EOF token */
-static int accept_eof(parser_t self, elvin_error_t error)
-{
-    printf("EOF\n");
-    return shift_reduce(self, TT_EOF, NULL, error);
-}
-
-/* Accepts an EQ token */
-static int accept_eq(parser_t self, elvin_error_t error)
-{
-    printf("EQ\n");
-    return shift_reduce(self, TT_EQ, NULL, error);
-}
-
-/* Accepts an GE token */
-static int accept_ge(parser_t self, elvin_error_t error)
-{
-    printf("GE\n");
-    return shift_reduce(self, TT_GE, NULL, error);
-}
-
-/* Accepts an GT token */
-static int accept_gt(parser_t self, elvin_error_t error)
-{
-    printf("GT\n");
-    return shift_reduce(self, TT_GT, NULL, error);
+    return shift_reduce(self, terminal, NULL, error);
 }
 
 /* Accepts an ID token */
 static int accept_id(parser_t self, char *name, elvin_error_t error)
 {
-    printf("ID `%s'\n", name);
-    return shift_reduce(self, TT_ID, NULL, error);
+    char *copy;
+
+    /* Make a copy of the id string */
+    if (! (copy = ELVIN_STRDUP(name, error)))
+    {
+	return 0;
+    }
+
+    return shift_reduce(self, TT_ID, copy, error);
 }
 
 /* Accepts an INT32 token */
@@ -380,95 +529,18 @@ static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
     return accept_int64(self, value, error);
 }
 
-/* Accepts an LBRACE token */
-static int accept_lbrace(parser_t self, elvin_error_t error)
-{
-    printf("LBRACE\n");
-    return shift_reduce(self, TT_LBRACE, NULL, error);
-}
-
-/* Accepts an LBRACKET token */
-static int accept_lbracket(parser_t self, elvin_error_t error)
-{
-    printf("LBRACKET\n");
-    return shift_reduce(self, TT_LBRACKET, NULL, error);
-}
-
-/* Accepts an LE token */
-static int accept_le(parser_t self, elvin_error_t error)
-{
-    printf("LE\n");
-    return shift_reduce(self, TT_LE, NULL, error);
-}
-
-/* Accepts an LT token */
-static int accept_lt(parser_t self, elvin_error_t error)
-{
-    printf("LT\n");
-    return shift_reduce(self, TT_LT, NULL, error);
-}
-
-/* Accepts an LPAREN token */
-static int accept_lparen(parser_t self, elvin_error_t error)
-{
-    printf("LPAREN\n");
-    return shift_reduce(self, TT_LPAREN, NULL, error);
-}
-
-/* Accepts an NEQ token */
-static int accept_neq(parser_t self, elvin_error_t error)
-{
-    printf("NEQ\n");
-    return shift_reduce(self, TT_NEQ, NULL, error);
-}
-
-/* Accepts an OR token */
-static int accept_or(parser_t self, elvin_error_t error)
-{
-    printf("OR\n");
-    return shift_reduce(self, TT_OR, NULL, error);
-}
-
-/* Accepts an RBRACE token */
-static int accept_rbrace(parser_t self, elvin_error_t error)
-{
-    printf("RBRACE\n");
-    return shift_reduce(self, TT_RBRACE, NULL, error);
-}
-
-/* Accepts an RBRACKET token */
-static int accept_rbracket(parser_t self, elvin_error_t error)
-{
-    printf("RBRACKET\n");
-    return shift_reduce(self, TT_RBRACKET, NULL, error);
-}
-
-/* Accepts an REAL64 token */
-static int accept_real64(parser_t self, elvin_error_t error)
-{
-    printf("REAL64\n");
-    return shift_reduce(self, TT_REAL64, NULL, error);
-}
-
-/* Accepts an RPAREN token */
-static int accept_rparen(parser_t self, elvin_error_t error)
-{
-    printf("RPAREN\n");
-    return shift_reduce(self, TT_RPAREN, NULL, error);
-}
-
-/* Accepts a SEMI token */
-static int accept_semi(parser_t self, elvin_error_t error)
-{
-    printf("SEMI\n");
-    return shift_reduce(self, TT_SEMI, NULL, error);
-}
-
 /* Accepts an STRING token */
 static int accept_string(parser_t self, char *string, elvin_error_t error)
 {
-    printf("STRING: `%s'\n", string);
-    return shift_reduce(self, TT_STRING, NULL, error);
+    char *copy;
+
+    /* Make a copy of the string */
+    if (! (copy = ELVIN_STRDUP(string, error)))
+    {
+	return 0;
+    }
+
+    return shift_reduce(self, TT_STRING, copy, error);
 }
 
 
@@ -516,7 +588,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* The end of the input file */
 	case EOF:
 	{
-	    if (! accept_eof(self, error))
+	    if (! accept_token(self, TT_EOF, error))
 	    {
 		return 0;
 	    }
@@ -566,7 +638,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* LPAREN */
 	case '(':
 	{
-	    if (! accept_lparen(self, error))
+	    if (! accept_token(self, TT_LPAREN, error))
 	    {
 		return 0;
 	    }
@@ -578,7 +650,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* RPAREN */
 	case ')':
 	{
-	    if (! accept_rparen(self, error))
+	    if (! accept_token(self, TT_RPAREN, error))
 	    {
 		return 0;
 	    }
@@ -590,7 +662,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* COMMA */
 	case ',':
 	{
-	    if (! accept_comma(self, error))
+	    if (! accept_token(self, TT_COMMA, error))
 	    {
 		return 0;
 	    }
@@ -615,7 +687,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* COLON */
 	case ':':
 	{
-	    if (! accept_colon(self, error))
+	    if (! accept_token(self, TT_COLON, error))
 	    {
 		return 0;
 	    }
@@ -627,7 +699,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* SEMI */
 	case ';':
 	{
-	    if (! accept_semi(self, error))
+	    if (! accept_token(self, TT_SEMI, error))
 	    {
 		return 0;
 	    }
@@ -660,7 +732,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* LBRACKET */
 	case '[':
 	{
-	    if (! accept_lbracket(self, error))
+	    if (! accept_token(self, TT_LBRACKET, error))
 	    {
 		return 0;
 	    }
@@ -680,7 +752,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* RBRACKET */
 	case ']':
 	{
-	    if (! accept_rbracket(self, error))
+	    if (! accept_token(self, TT_RBRACKET, error))
 	    {
 		return 0;
 	    }
@@ -712,7 +784,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* LBRACE */
 	case '{':
 	{
-	    if (! accept_lbrace(self, error))
+	    if (! accept_token(self, TT_LBRACE, error))
 	    {
 		return 0;
 	    }
@@ -724,7 +796,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	/* RBRACE */
 	case '}':
 	{
-	    if (! accept_rbrace(self, error))
+	    if (! accept_token(self, TT_RBRACE, error))
 	    {
 		return 0;
 	    }
@@ -806,7 +878,7 @@ static int lex_ampersand(parser_t self, int ch, elvin_error_t error)
     /* Another `&' is an AND */
     if (ch == '&')
     {
-	if (! accept_and(self, error))
+	if (! accept_token(self, TT_AND, error))
 	{
 	    return 0;
 	}
@@ -826,7 +898,7 @@ static int lex_eq(parser_t self, int ch, elvin_error_t error)
     /* Is there an other `=' for an EQ token? */
     if (ch == '=')
     {
-	if (! accept_eq(self, error))
+	if (! accept_token(self, TT_EQ, error))
 	{
 	    return 0;
 	}
@@ -836,7 +908,7 @@ static int lex_eq(parser_t self, int ch, elvin_error_t error)
     }
 
     /* Nope.  This must be an ASSIGN. */
-    if (! accept_assign(self, error))
+    if (! accept_token(self, TT_ASSIGN, error))
     {
 	return 0;
     }
@@ -852,7 +924,7 @@ static int lex_lt(parser_t self, int ch, elvin_error_t error)
 	/* LE */
 	case '=':
 	{
-	    if (! accept_le(self, error))
+	    if (! accept_token(self, TT_LE, error))
 	    {
 		return 0;
 	    }
@@ -864,7 +936,7 @@ static int lex_lt(parser_t self, int ch, elvin_error_t error)
 	/* Anything else is the next character */
 	default:
 	{
-	    if (! accept_lt(self, error))
+	    if (! accept_token(self, TT_LT, error))
 	    {
 		return 0;
 	    }
@@ -882,7 +954,7 @@ static int lex_gt(parser_t self, int ch, elvin_error_t error)
 	/* GE */
 	case '=':
 	{
-	    if (! accept_ge(self, error))
+	    if (! accept_token(self, TT_GE, error))
 	    {
 		return 0;
 	    }
@@ -894,7 +966,7 @@ static int lex_gt(parser_t self, int ch, elvin_error_t error)
 	/* GT */
 	default:
 	{
-	    if (! accept_gt(self, error))
+	    if (! accept_token(self, TT_GT, error))
 	    {
 		return 0;
 	    }
@@ -910,7 +982,7 @@ static int lex_vbar(parser_t self, int ch, elvin_error_t error)
     /* Another `|' is an OR token */
     if (ch == '|')
     {
-	if (! accept_or(self, error))
+	if (! accept_token(self, TT_OR, error))
 	{
 	    return 0;
 	}
@@ -1240,7 +1312,6 @@ static int parse_char(parser_t self, int ch, elvin_error_t error)
 int parser_parse(parser_t self, char *buffer, size_t length, elvin_error_t error)
 {
     char *pointer;
-    int ch;
 
     /* Length of 0 is an EOF */
     if (length == 0)
