@@ -6,6 +6,10 @@
 #define MAX_PACKET_SIZE 8192
 #define BUFFER_SIZE 1024
 
+#define UNOTIFY_TYPECODE 1
+#define PROTO_VERSION_MAJOR 4
+#define PROTO_VERSION_MINOR 0
+
 
 typedef int (*lexer_state_t)(int ch);
 
@@ -22,9 +26,27 @@ static int lex_end(int ch);
 
 
 static char buffer[MAX_PACKET_SIZE];
+static char *point = buffer;
 static char *end = buffer + MAX_PACKET_SIZE;
 static lexer_state_t state = lex_start;
 
+
+/* Append an int32 to the outgoing buffer */
+static int append_int32(int value)
+{
+    /* Make sure there's room */
+    if (! (point + 4 < end))
+    {
+	return -1;
+    }
+
+    point[0] = (value >> 24) & 0xff;
+    point[1] = (value >> 16) & 0xff;
+    point[2] = (value >> 8) & 0xff;
+    point[3] = (value >> 0) & 0xff;
+    point += 4;
+    return 0;
+}
 
 
 /* Append a character to the current string */
@@ -34,17 +56,38 @@ static int append_char(int ch)
     return 0;
 }
 
-/* Terminate a string */
-static int terminate_string()
+/* Begin an attribute name */
+static int begin_name()
 {
-    printf("[0]");
+    printf("{");
+    return 0;
+}
+
+/* End an attribute name */
+static int end_name()
+{
+    printf("} ");
+    return 0;
+}
+
+/* Begin an attribute string value */
+static int begin_string_value()
+{
+    printf("[");
+    return 0;
+}
+
+/* End an attribute string value */
+static int end_string_value()
+{
+    printf("]\n");
     return 0;
 }
 
 /* Ignore additional input */
 static int lex_error(int ch)
 {
-    return 0;
+    return -1;
 }
 
 /* Get started */
@@ -57,11 +100,17 @@ static int lex_start(int ch)
 	return -1;
     }
 
-    printf("->");
+    /* Start a name field */
+    if (begin_name() < 0)
+    {
+	state = lex_error;
+	return -1;
+    }
 
     /* Anything else is part of the first field's name */
     if (append_char(toupper(ch)) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -76,13 +125,12 @@ static int lex_first_name(int ch)
      * in which the `From' doesn't end in a colon. */
     if (ch == ' ')
     {
-	if (terminate_string() < 0)
+	/* FIX THIS: Make sure we've read `From' */
+	if (end_name() < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
-
-	/* FIX THIS: Make sure we've read `From' */
-	printf("<-\n");
 
 	state = lex_ws;
 	return 0;
@@ -98,12 +146,12 @@ static int lex_first_name(int ch)
     /* A colon is the end of the field name */
     if (ch == ':')
     {
-	if (terminate_string() < 0)
+	if (end_name() < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
 
-	printf("<-\n");
 	state = lex_ws;
 	return 0;
     }
@@ -111,6 +159,7 @@ static int lex_first_name(int ch)
     /* Anything else is part of the field name */
     if (append_char(tolower(ch)) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -137,12 +186,12 @@ static int lex_name(int ch)
     /* A colon is the end of the field name */
     if (ch == ':')
     {
-	if (terminate_string() < 0)
+	if (end_name() < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
 
-	printf("<-\n");
 	state = lex_ws;
 	return 0;
     }
@@ -150,6 +199,7 @@ static int lex_name(int ch)
     /* Anything else is part of the field name */
     if (append_char(tolower(ch)) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -177,12 +227,12 @@ static int lex_dash(int ch)
     /* A colon indicates the end of the field name */
     if (ch == ':')
     {
-	if (terminate_string() < 0)
+	if (end_name() < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
 
-	printf("<-\n");
 	state = lex_ws;
 	return 0;
     }
@@ -190,6 +240,7 @@ static int lex_dash(int ch)
     /* Anything else is part of the field name */
     if (append_char(toupper(ch)) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -210,7 +261,12 @@ static int lex_ws(int ch)
     /* Try to fold on a LF */
     if (ch == '\n')
     {
-	printf("=>");
+	if (begin_string_value() < 0)
+	{
+	    state = lex_error;
+	    return -1;
+	}
+
 	state = lex_fold;
 	return 0;
     }
@@ -223,7 +279,12 @@ static int lex_ws(int ch)
     }
 
     /* Anything else is part of the body */
-    printf("=>");
+    if (begin_string_value() < 0)
+    {
+	state = lex_error;
+	return -1;
+    }
+
     return lex_body(ch);
 }
 
@@ -240,6 +301,7 @@ static int lex_body(int ch)
     /* Anything else is part of the body */
     if (append_char(ch) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -253,12 +315,12 @@ static int lex_fold(int ch)
     /* A linefeed means that we're out of headers */
     if (ch == '\n')
     {
-	if (terminate_string() < 0)
+	if (end_string_value() < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
 
-	printf("<=\n");
 	state = lex_end;
 	return 0;
     }
@@ -268,6 +330,7 @@ static int lex_fold(int ch)
     {
 	if (append_char(' ') < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
 
@@ -275,12 +338,11 @@ static int lex_fold(int ch)
 	return 0;
     }
 
-    if (terminate_string() < 0)
+    if (end_string_value() < 0)
     {
+	state = lex_error;
 	return -1;
     }
-
-    printf("<=\n");
 
     /* A colon here is an error */
     if (ch == ':')
@@ -290,9 +352,16 @@ static int lex_fold(int ch)
     }
 
     /* Anything else is the start of the next field */
-    printf("->");
+    if (begin_name() < 0)
+    {
+	state = lex_error;
+	return -1;
+    }
+
+    /* Make sure the first letter is always uppercase */
     if (append_char(toupper(ch)) < 0)
     {
+	state = lex_error;
 	return -1;
     }
 
@@ -323,6 +392,7 @@ static int lex(char *in, ssize_t length)
     {
 	if (state(*point) < 0)
 	{
+	    state = lex_error;
 	    return -1;
 	}
     }
@@ -336,9 +406,15 @@ int main(int argc, char *argv[])
     char buffer[BUFFER_SIZE];
     int fd = STDIN_FILENO;
 
+    /* Write the header into the outgoing buffer */
+    append_int32(UNOTIFY_TYPECODE);
+    append_int32(PROTO_VERSION_MAJOR);
+    append_int32(PROTO_VERSION_MINOR);
+
     while (1)
     {
 	ssize_t length;
+	int result;
 
 	/* Read some more */
 	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
@@ -348,14 +424,16 @@ int main(int argc, char *argv[])
 	}
 
 	/* Run it through the lexer */
-	if (lex(buffer, length) < 0)
-	{
-	    exit(1);
-	}
+	result = lex(buffer, length);
 
 	/* Check for end of input */
 	if (length == 0)
 	{
+	    if (result < 0)
+	    {
+		exit(1);
+	    }
+
 	    exit(0);
 	}
     }
