@@ -1,5 +1,7 @@
 Overview of changes in xtickertape-2.0b2
 
+* It is now possible to reply to a message in a 'no menu' group.
+
 * Fixed a bug that prevented the connection status from being updated
   properly.
 
