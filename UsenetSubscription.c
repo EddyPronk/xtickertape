@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.16 1999/05/06 00:34:34 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.17 1999/05/17 12:58:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -317,8 +317,6 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
     char *field;
     Operation operation;
     char *pattern;
-    char *pointer;
-    char *marker;
 
     /* Read the field */
     token = FileStreamTokenizer_next(tokenizer);
