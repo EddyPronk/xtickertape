@@ -34,9 +34,10 @@ Connect to an elvin server advertising \fIscope\fP.
 .TP
 .BI --proxy= http-proxy
 Connect via the proxy server \fIhttp-proxy\fP, which should be of the
-form \fBhost\fR:\fBport\fR, or \fBuser\fR:\fBpassword\fR@\fBhost\fR:\fBport\fR
-if the proxy server requires a password.  This value overrides the
-value of the \fIhttp_proxy\fP environment variable.
+form http://\fBhost\fR:\fBport\fR, or
+http://\fBuser\fR:\fBpassword\fR@\fBhost\fR:\fBport\fR if the proxy
+server requires a password.  This value overrides the value of the
+\fIhttp_proxy\fP environment variable.
 .TP
 .B -u \fIuser\fP
 .TP
@@ -247,33 +248,44 @@ If
 .B TICKERDIR
 exists in the environment, then \*(xt will look in the directory it
 names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
-it defaults to \fB$HOME/.ticker\fP.  If no user name is specified on
-the command-line then the environment variables
-.B USER
-and
-.B LOGNAME
-are consulted (in that order) before resorting to asking the operating
-system directly.  Similarly, if no domain is specified on the
-command-line, the
-.B DOMAIN
+it defaults to \fB$HOME/.ticker\fP.
+.PP
+If no user name is specified on the command-line then the environment
+variables \fBUSER\fR and \fBLOGNAME\fR are consulted (in that order)
+before resorting to asking the operating system directly.  Similarly,
+if no domain is specified on the command-line, the \fBDOMAIN\fR
 environment variable is checked before \*(xt goes mucking about with
-fully-qualified domain names.  The
-.B http_proxy
-variable can be used to specify an http proxy server to connect through
-for those who live behind paranoid firewalls.  See the \fI--proxy\fP
-option above for the format of its value.
+fully-qualified domain names.
+.PP
+The \fBhttp_proxy\fR variable can be used to specify an http proxy
+server to connect through for those who live behind paranoid
+firewalls.  See the \fI--proxy\fP option above for the format of its
+value.  The \fBno_proxy\fR variable may be used to specify domain
+names insed the firewall for which the use of an http proxy would be
+superfluous or even detrimental.  It should be a comma-separated list
+of domain names including the leading dots, such as:
+.nf
+
+    .dstc.com, .cs.uq.edu.au
+.fi
 .SH FILES
 .PP
 .TP
 .B $TICKERDIR/groups
-Specifes which tickertape groups to subscribe to.
+Specifes the tickertape groups to which \*(xt should subscribe.  See
+the
+.BR groups (5)
+man page for details.
 .TP
 .B $TICKERDIR/usenet
-Specifies which usenet news articles to subscribe to.
+Specifies the usenet news articles to which \*(xt should subscribe.
+See the
+.BR usenet (5)
+man page for details.
 .SH SEE ALSO
 .BR groups (5),
 .BR usenet (5),
-.BR elvin (1)
+.BR elvin (7)
 .BR show-url (1),
 .BR metamail (1)
 .na
