@@ -68,3 +68,15 @@ test $RPM_BUILD_ROOT = "/" || rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root)
 %doc README AUTHORS NEWS COPYING TODO
+%{prefix}/bin/show-url
+%{prefix}/bin/xtickertape
+%{prefix}/lib/X11/app-defaults/XTickertape
+%{prefix}/man/man1/show-url.1.gz
+%{prefix}/man/man1/xtickertape.1.gz
+%{prefix}/man/man5/groups.5.gz
+%{prefix}/man/man5/usenet.5.gz
+
+# Our changelog
+%changelog
+* Mon Apr 22 2002 Ted Phelps <phelps@pobox.com>
+- still trying to get the bloody thing install something
