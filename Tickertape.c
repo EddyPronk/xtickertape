@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.23 1998/05/19 06:47:51 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.24 1998/08/19 04:45:27 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,6 +111,7 @@ static char defaultTranslations[] =
  * Method declarations
  */
 static void Initialize();
+static void Realize();
 static void Rotate();
 static void Redisplay();
 static void Destroy();
@@ -132,9 +133,9 @@ TickertapeClassRec tickertapeClassRec =
 	NULL, /* class_initialize */
 	NULL, /* class_part_initialize */
 	FALSE, /* class_inited */
-	Initialize, /* Initialize */
-	NULL, /* Initialize_hook */
-	XtInheritRealize, /* realize */
+	Initialize, /* initialize */
+	NULL, /* initialize_hook */
+	Realize, /* realize */
 	actions, /* actions */
 	XtNumber(actions), /* num_actions */
 	resources, /* resources */
@@ -283,11 +284,9 @@ static void CreateGC(TickertapeWidget self)
     values.background = self -> core.background_pixel;
     values.foreground = self -> core.background_pixel;
     self -> tickertape.backgroundGC = XCreateGC(
-	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
-	GCFont | GCBackground | GCForeground, &values);
+	XtDisplay(self), XtWindow(self), GCFont | GCBackground | GCForeground, &values);
     self -> tickertape.gc = XCreateGC(
-	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
-	GCFont | GCBackground, &values);
+	XtDisplay(self), XtWindow(self), GCFont | GCBackground, &values);
 }
 
 
@@ -500,10 +499,7 @@ Dimension TtGetFadeLevels(TickertapeWidget self)
 Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width, unsigned int height)
 {
     Pixmap pixmap;
-    pixmap = XCreatePixmap(
-	XtDisplay(self), RootWindowOfScreen(XtScreen(self)),
-	width, height,
-	DefaultDepthOfScreen(XtScreen(self)));
+    pixmap = XCreatePixmap(XtDisplay(self), XtWindow(self), width, height, self -> core.depth);
     XFillRectangle(XtDisplay(self), pixmap, TtGCForBackground(self), 0, 0, width, height);
     return pixmap;
 }
@@ -532,9 +528,6 @@ void TtStopTimer(TickertapeWidget self, XtIntervalId timer)
 static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
-    Display *display = XtDisplay(self);
-    Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
-    XColor colors[5];
 
     self -> tickertape.isStopped = TRUE;
     self -> tickertape.messages = List_alloc();
@@ -544,9 +537,26 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> tickertape.nextVisible = 0;
     self -> tickertape.realCount = 0;
 
-    CreateGC(self);
-    self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
-    self -> core.width = 400; /* FIX THIS: should be what? */
+    /* Make sure we have a width */
+    if (self -> core.width == 0)
+    {
+	self -> core.width = 400;
+    }
+
+    /* Make sure we have a height */
+    if (self -> core.height == 0)
+    {
+	self -> core.height = self -> tickertape.font -> ascent + self -> tickertape.font -> descent;
+    }
+}
+
+/* Realize the widget by creating a window in which to display it */
+static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes)
+{
+    TickertapeWidget self = (TickertapeWidget) widget;
+    Display *display = XtDisplay(self);
+    Colormap colormap = XDefaultColormapOfScreen(XtScreen(self));
+    XColor colors[5];
 
     /* Initialize colors */
     colors[0].pixel = self -> core.background_pixel;
@@ -556,6 +566,11 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     colors[4].pixel = self -> tickertape.separatorPixel;
     XQueryColors(display, colormap, colors, 5);
 
+    /* Create a window and couple graphics contexts */
+    XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
+    CreateGC(self);
+
+    /* Allocate colors */
     self -> tickertape.groupPixels = CreateFadedColors(
 	display, colormap, &colors[1], &colors[0], self -> tickertape.fadeLevels);
     self -> tickertape.userPixels = CreateFadedColors(
