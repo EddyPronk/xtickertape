@@ -1,8 +1,10 @@
 # First work out the executables
-bin_PROGRAMS = xtickertape show-url
+bin_PROGRAMS = xtickertape
+bin_SCRIPTS = show-url
 
-# show-url is a script
-show_url_SOURCES = show-url
+# Make sure we include the app-defaults file in the distribution
+# and also the show-url script
+EXTRA_DIST = Tickertape.ad show-url
 
 # xtickertape has many sources
 xtickertape_SOURCES = \
@@ -25,4 +27,12 @@ xtickertape_SOURCES = \
 	mask.xbm red.xbm white.xbm \
 	main.c
 
-# how do we do the app-defaults?
+
+# Put the app-defaults somewhere...
+x11libdir = $(libdir)/X11
+appdefaultsdir = $(x11libdir)/app-defaults
+
+# Construct Tickertape from Tickertape.ad
+install-data-local:
+	$(mkinstalldirs) $(appdefaultsdir)
+	$(INSTALL_DATA) $(srcdir)/Tickertape.ad $(appdefaultsdir)/Tickertape
