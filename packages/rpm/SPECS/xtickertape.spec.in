@@ -75,11 +75,11 @@ test $RPM_BUILD_ROOT = "/" || rm -rf $RPM_BUILD_ROOT
 %{prefix}/bin/show-url
 %{prefix}/bin/xtickertape
 %{prefix}/lib/X11/app-defaults/XTickertape
-%{prefix}/man/man1/show-url.1.gz
-%{prefix}/man/man1/xtickertape.1.gz
-%{prefix}/man/man5/groups.5.gz
-%{prefix}/man/man5/keys.5.gz
-%{prefix}/man/man5/usenet.5.gz
+%{prefix}/man/man1/show-url.1.*
+%{prefix}/man/man1/xtickertape.1.*
+%{prefix}/man/man5/groups.5.*
+%{prefix}/man/man5/keys.5.*
+%{prefix}/man/man5/usenet.5.*
 
 # Our changelog
 %changelog
