@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.22 2000/11/03 09:12:31 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.23 2000/11/04 03:26:18 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -196,6 +196,7 @@ static int lex_start(parser_t self, int ch, elvin_error_t error);
 static int lex_comment(parser_t self, int ch, elvin_error_t error);
 static int lex_string(parser_t self, int ch, elvin_error_t error);
 static int lex_string_esc(parser_t self, int ch, elvin_error_t error);
+static int lex_char(parser_t self, int ch, elvin_error_t error);
 static int lex_signed(parser_t self, int ch, elvin_error_t error);
 static int lex_float_pre(parser_t self, int ch, elvin_error_t error);
 static int lex_dot(parser_t self, int ch, elvin_error_t error);
@@ -420,7 +421,7 @@ static int accept_eof(parser_t self, elvin_error_t error)
     return shift_reduce(self, TT_EOF, NULL, error);
 }
 
-/* Update the parser state to reflect the reading of an EOF token */
+/* Update the parser state to reflect the reading of a STRING token */
 static int accept_string(parser_t self, uchar *string, elvin_error_t error)
 {
     atom_t atom;
@@ -435,13 +436,28 @@ static int accept_string(parser_t self, uchar *string, elvin_error_t error)
     return shift_reduce(self, TT_ATOM, atom, error);
 }
 
-/* Update the parser state to reflect the reading of an EOF token */
+/* Update the parser state to reflect the reading of a CHAR token */
+static int accept_char(parser_t self, int ch, elvin_error_t error)
+{
+    atom_t atom;
+
+    /* Construct a character atom from the character */
+    if ((atom = char_alloc(ch, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Do the parser thing */
+    return shift_reduce(self, TT_ATOM, atom, error);
+}
+
+/* Update the parser state to reflect the reading of a DOT token */
 static int accept_dot(parser_t self, elvin_error_t error)
 {
     return shift_reduce(self, TT_DOT, NULL, error);
 }
 
-/* Update the parser state to reflect the reading of an int32 token */
+/* Update the parser state to reflect the reading of an INT32 token */
 static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
 {
     atom_t atom;
@@ -469,7 +485,7 @@ static int accept_int32_string(parser_t self, uchar *string, elvin_error_t error
     return accept_int32(self, value, error);
 }
 
-/* Update the parser state to reflect the reading of an int64 token */
+/* Update the parser state to reflect the reading of an INT64 token */
 static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
 {
     atom_t atom;
@@ -498,7 +514,7 @@ static int accept_int64_string(parser_t self, uchar *string, elvin_error_t error
 }
 
 
-/* Update the parser state to reflect the reading of an EOF token */
+/* Update the parser state to reflect the reading of an REAL64 token */
 static int accept_real64(parser_t self, double value, elvin_error_t error)
 {
     atom_t atom;
@@ -536,7 +552,7 @@ static int accept_real64_string(parser_t self, uchar *string, elvin_error_t erro
     return accept_real64(self, value, error);
 }
 
-/* Update the parser state to reflect the reading of an EOF token */
+/* Update the parser state to reflect the reading of an SYMBOL token */
 static int accept_symbol(parser_t self, char *string, elvin_error_t error)
 {
     atom_t atom;
@@ -647,27 +663,6 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	    return 1;
 	}
 
-	/* Watch for a semicolon */
-	case ';':
-	{
-	    /* Ignore comments */
-	    self -> state = lex_comment;
-	    return 1;
-	}
-
-	/* Watch for the underscore of an identifier */
-	case '_':
-	{
-	    self -> point = self -> token;
-	    if (append_char(self, ch, error) == 0)
-	    {
-		return 0;
-	    }
-
-	    self -> state = lex_symbol;
-	    return 1;
-	}
-
 	/* Watch for a signed number */
 	case '+':
 	case '-':
@@ -683,6 +678,14 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	    return 1;
 	}
 
+	/* Watch for a semicolon */
+	case ';':
+	{
+	    /* Ignore comments */
+	    self -> state = lex_comment;
+	    return 1;
+	}
+
 	/* Watch for a dot or decimal number */
 	case '.':
 	{
@@ -694,6 +697,13 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	    }
 
 	    self -> state = lex_dot;
+	    return 1;
+	}
+
+	/* Watch for a character */
+	case '?':
+	{
+	    self -> state = lex_char;
 	    return 1;
 	}
 
@@ -739,8 +749,8 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	return 1;
     }
 
-    /* Watch for a symbol */
-    if (isalpha(ch))
+    /* Watch for identifier characters */
+    if (is_id_char(ch))
     {
 	self -> point = self -> token;
 	if (append_char(self, ch, error) == 0)
@@ -861,6 +871,25 @@ static int lex_string_esc(parser_t self, int ch, elvin_error_t error)
     }
 
     self -> state = lex_string;
+    return 1;
+}
+
+/* Reading the character after a `?' */
+static int lex_char(parser_t self, int ch, elvin_error_t error)
+{
+    /* Don't permit `?' at the end of the file */
+    if (ch == EOF)
+    {
+	ELVIN_ERROR_LISP_UNTERM_SYMBOL(error);
+	return 0;
+    }
+
+    if (accept_char(self, ch, error) == 0)
+    {
+	return 0;
+    }
+
+    self -> state = lex_start;
     return 1;
 }
 
