@@ -27,6 +27,7 @@
 *scroller.groupPixel: BlueViolet
 *scroller.userPixel: ForestGreen
 *scroller.stringPixel: IndianRed
+*scroller.separatorPixel: Black
 
 !
 ! Fonts
