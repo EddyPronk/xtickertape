@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.21 2000/11/01 02:07:58 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.22 2000/11/03 09:12:31 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -172,6 +172,7 @@ typedef atom_t (*reduction_t)(parser_t self, elvin_error_t error);
 static atom_t make_list(parser_t self, elvin_error_t error);
 static atom_t make_dot_list(parser_t self, elvin_error_t error);
 static atom_t make_nil(parser_t self, elvin_error_t error);
+static atom_t make_quote(parser_t self, elvin_error_t error);
 static atom_t identity(parser_t self, elvin_error_t error);
 static atom_t extend_cons(parser_t self, elvin_error_t error);
 static atom_t make_cons(parser_t self, elvin_error_t error);
@@ -192,6 +193,7 @@ static uchar *terminal_string(terminal_t terminal)
 
 /* Lexer states */
 static int lex_start(parser_t self, int ch, elvin_error_t error);
+static int lex_comment(parser_t self, int ch, elvin_error_t error);
 static int lex_string(parser_t self, int ch, elvin_error_t error);
 static int lex_string_esc(parser_t self, int ch, elvin_error_t error);
 static int lex_signed(parser_t self, int ch, elvin_error_t error);
@@ -394,6 +396,12 @@ static int shift_reduce(parser_t self, terminal_t terminal, atom_t value, elvin_
 }
 
 
+/* Update the parser state to reflect the reading of a QUOTE token */
+static int accept_quote(parser_t self, elvin_error_t error)
+{
+    return shift_reduce(self, TT_QUOTE, NULL, error);
+}
+
 /* Update the parser state to reflect the reading of a LPAREN token */
 static int accept_lparen(parser_t self, elvin_error_t error)
 {
@@ -594,10 +602,22 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
     switch (ch)
     {
 	/* Watch for a quoted string */
-	case '\"':
+	case '"':
 	{
 	    self -> state = lex_string;
 	    self -> point = self -> token;
+	    return 1;
+	}
+
+	case '\'':
+	{
+	    /* Accept the QUOTE */
+	    if (accept_quote(self, error) == 0)
+	    {
+		return 0;
+	    }
+
+	    self -> state = lex_start;
 	    return 1;
 	}
 
@@ -624,6 +644,14 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 	    }
 
 	    self -> state = lex_start;
+	    return 1;
+	}
+
+	/* Watch for a semicolon */
+	case ';':
+	{
+	    /* Ignore comments */
+	    self -> state = lex_comment;
 	    return 1;
 	}
 
@@ -741,6 +769,25 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
     return 0;
 }
 
+/* Skipping a comment */
+static int lex_comment(parser_t self, int ch, elvin_error_t error)
+{
+    /* Watch for the end of input */
+    if (ch == EOF)
+    {
+	return lex_start(self, ch, error);
+    }
+
+    /* Watch for the end of the line */
+    if (ch == '\n')
+    {
+	self -> state = lex_start;
+	return 1;
+    }
+
+    return 1;
+}
+
 /* Reading string characters */
 static int lex_string(parser_t self, int ch, elvin_error_t error)
 {
@@ -845,14 +892,8 @@ static int lex_signed(parser_t self, int ch, elvin_error_t error)
 	return 1;
     }
 
-    /* Anything else is an error */
-    if (append_char(self, ch, error) == 0)
-    {
-	return 0;
-    }
-
-    ELVIN_ERROR_LISP_INVALID_TOKEN(error, self -> token);
-    return 0;
+    /* Anything else is a symbol */
+    return lex_symbol(self, ch, error);
 }
 
 /* Reading the first character after a signed decimal */
@@ -1213,6 +1254,34 @@ static atom_t make_dot_list(parser_t self, elvin_error_t error)
 static atom_t make_nil(parser_t self, elvin_error_t error)
 {
     return nil_alloc(error);
+}
+
+/* QUOTE <expression> is (quote <expr>) */
+static atom_t make_quote(parser_t self, elvin_error_t error)
+{
+    atom_t quote, nil;
+    atom_t cons;
+
+    /* Grab nil */
+    if ((nil = nil_alloc(error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Wrap the list in an expression */
+    if ((cons = cons_alloc(self -> value_top[1], nil, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Allocate the `quote' symbol */
+    if ((quote = symbol_alloc("quote", error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Prepend it to the list */
+    return cons_alloc(quote, cons, error);
 }
 
 /* No transformation required for this reduction */
