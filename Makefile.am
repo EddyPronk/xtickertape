@@ -26,7 +26,7 @@ xtickertape_SOURCES = \
 	orbit_sub.h orbit_sub.c \
 	mask.xbm red.xbm white.xbm \
 	getopt.h getopt.c getopt1.c \
-	main.c
+	errors.h main.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
@@ -46,7 +46,7 @@ grammar.h: lisp.pcg
 
 # How to construct the error macros
 errors.h: index en
-	@MCGEN@ -c -i index -l en -o $@
+	@MCGEN@ -c -i $(srcdir)/index -l $(srcdir)/en -o $@
 
 # Construct XTickertape from XTickertape.ad
 install-data-local:
