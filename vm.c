@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.20 2000/12/09 03:18:48 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.21 2000/12/09 04:55:36 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -42,7 +42,7 @@ static const char cvsid[] = "$Id: vm.c,v 2.20 2000/12/09 03:18:48 phelps Exp $";
 #include "errors.h"
 
 /* The heap can contain this many pointers */
-#define HEAP_BLOCK_SIZE (1024)
+#define HEAP_BLOCK_SIZE (4096)
 #define STACK_SIZE (1024)
 #define SYMTAB_SIZE (1024)
 #define POINTER_SIZE (sizeof(void *))
