@@ -57,10 +57,9 @@ struct UsenetSubscription_t
  */
 static char *TranslateField(char *field);
 static Operation TranslateOperation(char *operation);
-static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer);
-static void GetFromUsenetFileLine(
-    char *token, FileStreamTokenizer tokenizer, StringBuffer buffer, int *isFirst);
-static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p);
+static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer);
+static void ReadNextLine(FileStreamTokenizer tokenizer, char *token, StringBuffer buffer);
+static void ReadUsenetFile(FILE *file, StringBuffer buffer);
 static void HandleNotify(UsenetSubscription self, en_notify_t notification);
 
 /*
@@ -245,7 +244,7 @@ static Operation TranslateOperation(char *operation)
 }
 
 /* Reads the next tuple from the FileStreamTokenizer into the StringBuffer */
-static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer buffer)
+static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 {
     char *token;
     char *field;
@@ -352,49 +351,25 @@ static void GetTupleFromTokenizer(FileStreamTokenizer tokenizer, StringBuffer bu
 }
 
 
-/* Scans a non-empty, non-comment line of the usenet file and answers
- * a malloc'ed string corresponding to that line's part of the
- * subscription expression */
-static void GetFromUsenetFileLine(
-    char *token, FileStreamTokenizer tokenizer, StringBuffer buffer, int *isFirst)
+/* Scans a non-empty, non-comment line of the usenet file and adds its 
+ * contents to the usenet subscription */
+static void ReadNextLine(FileStreamTokenizer tokenizer, char *token, StringBuffer buffer)
 {
-    int isGroupNegated = 0;
-
     /* Read the group: [not] groupname */
     if (strcmp(token, "not") == 0)
     {
-	isGroupNegated = 1;
 	if ((token = FileStreamTokenizer_next(tokenizer)) == NULL)
 	{
 	    fprintf(stderr, "*** Invalid usenet line containing \"%s\"\n", token);
-	    return;
+	    exit(1);
 	}
 
-	if (*isFirst)
-	{
-	    *isFirst = 0;
-	}
-	else
-	{
-	    StringBuffer_append(buffer, " || ");
-	}
-
-	StringBuffer_append(buffer, "( NEWSGROUPS matches(\"");
-	StringBuffer_append(buffer, "!");
+	StringBuffer_append(buffer, "( !NEWSGROUPS matches(\"");
 	StringBuffer_append(buffer, token);
 	StringBuffer_append(buffer, "\")");
     }
     else
     {
-	if (*isFirst)
-	{
-	    *isFirst = 0;
-	}
-	else
-	{
-	    StringBuffer_append(buffer, " || ");
-	}
-
 	StringBuffer_append(buffer, "( NEWSGROUPS matches(\"");
 	StringBuffer_append(buffer, token);
 	StringBuffer_append(buffer, "\")");
@@ -408,31 +383,30 @@ static void GetFromUsenetFileLine(
 	/* End of file or line? */
 	if ((token == NULL) || (*token == '\n'))
 	{
-	    break;
+	    StringBuffer_append(buffer, " )");
+	    return;
 	}
 
 	/* Look for our tuple separator */
 	if (*token == '/')
 	{
-	    GetTupleFromTokenizer(tokenizer, buffer);
+	    ReadNextTuple(tokenizer, buffer);
 	}
 	else
 	{
-	    fprintf(stderr, "*** Invalid usenet file (%s)\n", token);
+	    fprintf(stderr, "*** Invalid usenet file\n");
 	    exit(1);
 	}
     }
-    
-    StringBuffer_append(buffer, " )");
 }
 
-/* Scans the next line of the usenet file and answers a malloc'ed
- * string corresponding to that line's part of the subscription
- * expression */
-static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
+/* Scans the usenet file to construct a single subscription to cover
+ * all of the usenet news stuff, which is written into buffer */
+static void ReadUsenetFile(FILE *file, StringBuffer buffer)
 {
     FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, " \t", "/\n");
     char *token;
+    int isFirst = 1;
 
     /* Locate a non-empty line which doesn't begin with a '#' */
     while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
@@ -445,7 +419,16 @@ static void GetFromUsenetFile(FILE *file, StringBuffer buffer, int *isFirst_p)
 	/* Useful line? */
 	else if (*token != '\n')
 	{
-	    GetFromUsenetFileLine(token, tokenizer, buffer, isFirst_p);
+	    if (isFirst)
+	    {
+		isFirst = 0;
+	    }
+	    else
+	    {
+		StringBuffer_append(buffer, " || ");
+	    }
+
+	    ReadNextLine(tokenizer, token, buffer);
 	}
     }
 
@@ -585,14 +568,13 @@ UsenetSubscription UsenetSubscription_readFromUsenetFile(
 {
     UsenetSubscription subscription;
     StringBuffer buffer = StringBuffer_alloc();
-    int isFirst = 1;
 
     /* Write the beginning of our expression */
     StringBuffer_append(buffer, "ELVIN_CLASS == \"NEWSWATCHER\" && ");
     StringBuffer_append(buffer, "ELVIN_SUBCLASS == \"MONITOR\" && ( ");
 
     /* Get the subscription expressions for each individual line */
-    GetFromUsenetFile(usenet, buffer, &isFirst);
+    ReadUsenetFile(usenet, buffer);
 
     /* Close off our subscription expression */
     StringBuffer_append(buffer, " )");
