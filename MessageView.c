@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MessageView.c,v 1.37 1999/05/06 00:34:32 phelps Exp $";
+static const char cvsid[] = "$Id: MessageView.c,v 1.38 1999/05/17 12:42:03 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -84,7 +84,6 @@ struct MessageView_t
 
     /* Cache */
     XtIntervalId timer;
-    Pixmap pixmap;
     unsigned int ascent;
     unsigned int height;
     unsigned int groupWidth;
@@ -223,16 +222,14 @@ static void Tick(MessageView self, XtIntervalId *ignored)
     maxLevels = ScGetFadeLevels(self -> widget);
 
     /* Don't get older than we have to */
-    if (++self -> fadeLevel >= maxLevels)
+    if (self -> fadeLevel + 1 < maxLevels)
     {
-	return;
-    }
-
-    Paint(self, self -> pixmap, 0, self -> ascent);
+	self -> fadeLevel++;
+	SetClock(self);
 #ifdef DEBUG    
-    printf(":"); fflush(stdout);
+	printf(":"); fflush(stdout);
 #endif /* DEBUG */
-    SetClock(self);
+    }
 }
 
 /* Answers the offset to the baseline we should use */
@@ -371,7 +368,6 @@ void MessageView_debug(MessageView self)
 	   Message_getTimeout(self -> message)
 	);
     printf("  timer = %lx\n", self -> timer);
-    printf("  pixmap = %lx\n", self -> pixmap);
     printf("  ascent = %u\n", self -> ascent);
     printf("  height = %u\n", self -> height);
     printf("  groupWidth = %u\n", self -> groupWidth);
@@ -397,11 +393,6 @@ MessageView MessageView_alloc(ScrollerWidget widget, Message message)
     self -> height = self -> ascent + GetDescent(self);
     ComputeWidths(self);
     self -> timer = 0;
-    self -> pixmap = ScCreatePixmap(
-	self -> widget,
-	MessageView_getWidth(self),
-	self -> height);
-    Paint(self, self -> pixmap, 0, self -> ascent);
     SetClock(self);
     return self;
 }
@@ -412,7 +403,6 @@ void MessageView_free(MessageView self)
     ClearClock(self);
 
     Message_free(self -> message);
-    XFreePixmap(XtDisplay(self -> widget), self -> pixmap);
 #ifdef SANITY
     self -> sanity_check = sanity_freed;
 #else /* SANITY */
@@ -477,9 +467,7 @@ unsigned int MessageView_getWidth(MessageView self)
 void MessageView_redisplay(MessageView self, Drawable drawable, int x, int y)
 {
     SANITY_CHECK(self);
-    XCopyArea(XtDisplay(self -> widget), self -> pixmap,
-	      drawable, ScGCForBackground(self -> widget),
-	      0, 0, MessageView_getWidth(self), self -> height, x, y);
+    Paint(self, drawable, x, y + self -> ascent);
 }
 
 
