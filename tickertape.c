@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.8 1999/08/19 05:04:59 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.9 1999/08/19 05:11:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -393,27 +393,25 @@ static void init_ui(tickertape_t self)
 /* This is called when we get our elvin connection back */
 static void reconnect_callback(tickertape_t self, ElvinConnection connection)
 {
-    StringBuffer buffer;
+    char *host;
+    int port;
+    char *buffer;
     Message message;
     SANITY_CHECK(self);
 
     /* Construct a reconnect message */
-    buffer = StringBuffer_alloc();
-    StringBuffer_append(buffer, "Connected to elvin server at ");
-    StringBuffer_append(buffer, ElvinConnection_host(connection));
-    StringBuffer_appendChar(buffer, ':');
-    StringBuffer_appendInt(buffer, ElvinConnection_port(connection));
-    StringBuffer_appendChar(buffer, '.');
+    host = ElvinConnection_host(connection);
+    port = ElvinConnection_port(connection);
+    buffer = (char *) malloc(sizeof("Connected to elvin server at :.") + strlen(host) + 5);
+    sprintf(buffer, "Connected to elvin server at %s:%d.", host, port);
 
     /* Display the message on the scroller */
-    message = Message_alloc(
-	NULL,
-	"internal", "tickertape",
-	StringBuffer_getBuffer(buffer), 10,
-	NULL, NULL,
-	0, 0);
+    message = Message_alloc(NULL, "internal", "tickertape", buffer, NULL, NULL, 0, 0);
     receive_callback(self, message);
     Message_free(message);
+
+    /* Release our connect message */
+    free(buffer);
 
     /* Republish the startup notification */
     publish_startup_notification(self);
