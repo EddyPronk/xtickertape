@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.4 2001/07/04 14:27:54 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.5 2001/07/06 04:55:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -47,6 +47,7 @@ static const char cvsid[] = "$Id: History.c,v 1.4 2001/07/04 14:27:54 phelps Exp
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
 #include "message.h"
+#include "message_view.h"
 #include "History.h"
 #include "HistoryP.h"
 
@@ -55,6 +56,14 @@ static const char cvsid[] = "$Id: History.c,v 1.4 2001/07/04 14:27:54 phelps Exp
 #define dprintf(x) printf x
 #else
 #define dprintf(x) ;
+#endif
+
+#if !defined(MIN)
+# define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+
+#if !defined(MAX)
+# define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
 /*
@@ -438,6 +447,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     XtAddCallback(scrollbar, XmNtoTopCallback, vert_to_top_cb, self);
     XtAddCallback(scrollbar, XmNtoBottomCallback, vert_to_bottom_cb, self);
     XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_val_changed_cb, self);
+    self -> history.vscrollbar = scrollbar;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
@@ -453,6 +463,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     XtAddCallback(scrollbar, XmNtoTopCallback, horiz_to_top_cb, self);
     XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_to_bottom_cb, self);
     XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_val_changed_cb, self);
+    self -> history.hscrollbar = scrollbar;
 
     printf("History: init()\n");
 }
@@ -467,6 +478,7 @@ static void realize(
     Display *display = XtDisplay(self);
     XGCValues values;
     message_t message;
+    struct string_sizes sizes;
 
     printf("History: realize() w=%d, h=%d\n", self -> core.width, self -> core.height);
 
@@ -492,102 +504,25 @@ static void realize(
 
     /* Create a mesage view */
     self -> history.mv = message_view_alloc(message, self -> history.font);
-}
+    message_view_get_sizes(self -> history.mv, &sizes);
 
-/* Draws the highlights and shadows */
-static void draw_highlights(Display *display,
-		       Drawable drawable,
-		       GC highlight_gc,
-		       GC shadow_gc,
-		       int x, int y,
-		       int width, int height,
-		       Dimension thickness)
-{
-    XPoint points[5];
+    /* Record our sizes */
+    self -> history.width = sizes.width + 2 * 10;
+    self -> history.height = sizes.ascent + sizes.descent + 2 * 10;
+    printf("height=%u\n", self -> history.height);
 
-    /* Draw the left shadow */
-    points[0].x = x;
-    points[0].y = y;
+    XtVaSetValues(
+	self -> history.hscrollbar,
+	XmNminimum, 0,
+	XmNmaximum, sizes.width + 20,
+	NULL);
 
-    points[1].x = x;
-    points[1].y = y + height;
-
-    points[2].x = x + thickness;
-    points[2].y = y + height - thickness;
-
-    points[3].x = x + thickness;
-    points[3].y = y;
-
-    points[4].x = x;
-    points[4].y = y;
-
-    XFillPolygon(
-	display, drawable,
-	shadow_gc, points, 5,
-	Convex, CoordModeOrigin);
-
-    /* Draw the top shadow */
-    points[0].x = x;
-    points[0].y = y;
-
-    points[1].x = x + width;
-    points[1].y = y;
-
-    points[2].x = x + width - thickness;
-    points[2].y = y + thickness;
-
-    points[3].x = x;
-    points[3].y = y + thickness;
-
-    points[4].x = x;
-    points[4].y = y;
-
-    XFillPolygon(
-	display, drawable,
-	shadow_gc, points, 5,
-	Convex, CoordModeOrigin);
-
-    /* Draw the right highlight */
-    points[0].x = x + width;
-    points[0].y = y + height;
-
-    points[1].x = x + width;
-    points[1].y = y;
-
-    points[2].x = x + width - thickness;
-    points[2].y = y + thickness;
-
-    points[3].x = x + width - thickness;
-    points[3].y = y + height;
-
-    points[4].x = x + width;
-    points[4].y = y + height;
-
-    XFillPolygon(
-	display, drawable,
-	highlight_gc, points, 5,
-	Convex, CoordModeOrigin);
-
-    /* Draw the bottom highlight */
-    points[0].x = x + width;
-    points[0].y = y + height;
-
-    points[1].x = x;
-    points[1].y = y + height;
-
-    points[2].x = x + thickness;
-    points[2].y = y + height - thickness;
-
-    points[3].x = x + width;
-    points[3].y = y + height - thickness;
-
-    points[4].x = x + width;
-    points[4].y = y + height;
-
-    XFillPolygon(
-	display, drawable,
-	highlight_gc, points, 5,
-	Convex, CoordModeOrigin);
+    /* Update the vertical scrollbar */
+    XtVaSetValues(
+	self -> history.vscrollbar,
+	XmNminimum, 0,
+	XmNmaximum, sizes.ascent + sizes.descent,
+	NULL);
 }
 
 /* Repaint the widget */
@@ -599,22 +534,33 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     /* Set that as our bounding box */
     XSetClipRectangles(display, self -> history.gc, 0, 0, bbox, 1, YXSorted);
 
+#if 1
+    /* Fill the background */
+    {
+	XGCValues values;
+
+	values.foreground = 0xc0c0c0;
+	XChangeGC(display, self -> history.gc, GCForeground, &values);
+	XFillRectangle(
+	    display, window, self -> history.gc,
+	    10 - self -> history.x, 10 - self -> history.y,
+	    self -> history.width - 20, self -> history.height - 20);
+
+	values.foreground = 0x000000;
+	XChangeGC(display, self -> history.gc, GCForeground, &values);
+	XDrawRectangle(
+	    display, window, self -> history.gc,
+	    10 - self -> history.x, 10 - self -> history.y,
+	    self -> history.width - 20, self -> history.height - 20);
+    }
+#endif
+
     /* Draw something.  I don't know */
     message_view_paint(
 	self -> history.mv, display, window, self -> history.gc,
 	self -> history.group_pixel, self -> history.user_pixel,
 	self -> history.string_pixel, self -> history.separator_pixel,
-	10 - self -> history.x, self -> history.font -> ascent - self -> history.y, bbox);
-
-#if 0
-    /* Draw the highlights and shadows */
-    draw_highlights(
-	display, window,
-	self -> primitive.top_shadow_GC,
-	self -> primitive.bottom_shadow_GC,
-	0, 0, self -> core.width, self -> core.height,
-	self -> primitive.shadow_thickness);
-#endif
+	10 - self -> history.x, 10 + self -> history.font -> ascent - self -> history.y, bbox);
 }
 
 /* Redisplay the given region */
@@ -689,11 +635,27 @@ static void destroy(Widget self)
 
 
 /* Resize the widget */
-static void resize(Widget self)
+static void resize(Widget widget)
 {
-    dprintf(("History: resize (width=%d, height=%d, x=%d, y=%d)\n",
-	    self -> core.width, self -> core.height,
-	    self -> core.x, self -> core.y));
+    HistoryWidget self = (HistoryWidget)widget;
+    Dimension width, height;
+
+    /* Figure out how big the widget is now */
+    XtVaGetValues(widget, XmNwidth, &width, XmNheight, &height, NULL);
+
+    /* Update the horizontal scrollbar */
+    XtVaSetValues(
+	self -> history.hscrollbar,
+	XmNsliderSize, MIN(width, self -> history.width) + 1,
+	XmNmaximum, self -> history.width + 1,
+	NULL);
+
+    /* Update the vertical scrollbar */
+    XtVaSetValues(
+	self -> history.vscrollbar,
+	XmNsliderSize, MIN(height, self -> history.height) + 1,
+	XmNmaximum, self -> history.height + 1,
+	NULL);
 }
 
 
