@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Control.c,v 1.42 1999/08/19 04:39:09 phelps Exp $";
+static const char cvsid[] = "$Id: Control.c,v 1.43 1999/08/19 07:29:16 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,6 +38,7 @@ static const char cvsid[] = "$Id: Control.c,v 1.42 1999/08/19 04:39:09 phelps Ex
 #endif /* HAVE_UNISTD_H */
 #include <pwd.h>
 #include "sanity.h"
+#include "history.h"
 #include "Control.h"
 #include "List.h"
 
@@ -192,6 +193,7 @@ static void ActionClear(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionCancel(Widget button, ControlPanel self, XtPointer ignored);
 static void ActionReturn(Widget textField, ControlPanel self, XmAnyCallbackStruct *cbs);
 static void ActionDismiss(Widget button, ControlPanel self, XtPointer ignored);
+static void prepare_reply(ControlPanel self, Message message);
 
 
 /* This gets called when the user selects the "reloadGroups" menu item */
@@ -463,6 +465,16 @@ static Widget CreateTimeoutMenu(ControlPanel self, Widget parent)
     return widget;
 }
 
+/* This is called when an item in the history list is selected */
+void history_selection_callback(Widget widget, ControlPanel self, XmListCallbackStruct *info)
+{
+    Message message;
+
+    /* Reconfigure to reply to the selected message (or lack thereof) */
+    message = history_get(tickertape_history(self -> tickertape), info -> item_position);
+    prepare_reply(self, message);
+}
+
 /* Constructs the history list */
 static void CreateHistoryBox(ControlPanel self, Widget parent)
 {
@@ -472,11 +484,20 @@ static void CreateHistoryBox(ControlPanel self, Widget parent)
     XtSetArg(args[1], XmNrightAttachment, XmATTACH_FORM);
     XtSetArg(args[2], XmNtopAttachment, XmATTACH_FORM);
     XtSetArg(args[3], XmNbottomAttachment, XmATTACH_FORM);
-    XtSetArg(args[4], XmNselectionPolicy, XmSINGLE_SELECT);
+    XtSetArg(args[4], XmNselectionPolicy, XmBROWSE_SELECT);
     XtSetArg(args[5], XmNitemCount, 0);
     XtSetArg(args[6], XmNvisibleItemCount, 3);
     self -> history = XmCreateScrolledList(parent, "history", args, 7);
+
+    /* Add callbacks for interesting things */
+    XtAddCallback(
+	self -> history, XmNbrowseSelectionCallback,
+	(XtCallbackProc)history_selection_callback, (XtPointer)self);
+
     XtManageChild(self -> history);
+
+    /* Tell the tickertape's history to use this List widget */
+    history_set_list(tickertape_history(self -> tickertape), self -> history);
 }
 
 /* Constructs the top box of the Control Panel */
@@ -804,7 +825,12 @@ static void SelectGroup(Widget widget, MenuItemTuple tuple, XtPointer ignored)
     ControlPanel self = tuple -> controlPanel;
     SANITY_CHECK(self);
 
-    self -> selection = tuple;
+    if (self -> selection != tuple)
+    {
+	self -> selection = tuple;
+	XmListDeselectAllItems(self -> history);
+    }
+
     self -> messageId = 0;
 }
 
@@ -1238,8 +1264,8 @@ void ControlPanel_retitleSubscription(ControlPanel self, void *info, char *title
     }
 }
 
-/* Makes the ControlPanel window visible */
-void ControlPanel_show(ControlPanel self, Message message)
+/* Sets up the receiver to reply to the given message */
+static void prepare_reply(ControlPanel self, Message message)
 {
     MenuItemTuple tuple;
     SANITY_CHECK(self);
@@ -1252,6 +1278,7 @@ void ControlPanel_show(ControlPanel self, Message message)
 
 	if (tuple != NULL)
 	{
+	    self -> selection = tuple;
 	    SetGroupSelection(self, tuple);
 	}
 
@@ -1261,8 +1288,60 @@ void ControlPanel_show(ControlPanel self, Message message)
     {
 	self -> messageId = 0;
     }
+}
 
-    /* Make the receiver visible */
+/* Ensures that the given list item is visible */
+static void make_index_visible(Widget list, int index)
+{
+    int top;
+    int count;
+
+    /* Figure out what we're looking at */
+    XtVaGetValues(list,
+		  XmNtopItemPosition, &top,
+		  XmNvisibleItemCount, &count,
+		  NULL);
+
+    /* Make the index the top if it's above the top */
+    if (index < top)
+    {
+	XmListSetPos(list, index);
+	return;
+    }
+
+    /* Make the index the bottom if it's below the bottom */
+    if (! (index < top + count))
+    {
+	XmListSetBottomPos(list, index);
+	return;
+    }
+}
+
+/* Makes the ControlPanel window visible */
+void ControlPanel_select(ControlPanel self, Message message)
+{
+    int index;
+
+    /* Set up to reply */
+    prepare_reply(self, message);
+
+    /* Select the appropriate item in the history */
+    if ((index = history_index(tickertape_history(self -> tickertape), message)) < 0)
+    {
+	XmListDeselectAllItems(self -> history);
+	return;
+    }
+
+    /* Select the item and make sure it is visible */
+    make_index_visible(self -> history, index);
+    XmListSelectPos(self -> history, index, False);
+}
+
+/* Makes the ControlPanel window visible */
+void ControlPanel_show(ControlPanel self)
+{
+    SANITY_CHECK(self);
+
     XtPopup(self -> top, XtGrabNone);
 }
 
