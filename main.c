@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.43 1998/12/23 13:58:42 phelps Exp $ */
+/* $Id: main.c,v 1.44 1998/12/23 16:45:54 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -34,7 +34,7 @@ static struct option long_options[] =
     { "groups", required_argument, NULL, 'g' },
     { "news", required_argument, NULL, 'n' },
     { "version", no_argument, NULL, 'v' },
-    { "help", no_argument, NULL, 'e' },
+    { "help", no_argument, NULL, 'z' },
     { NULL, no_argument, NULL, '\0' }
 };
 #endif /* HAVE_GETOPT_H */
@@ -91,7 +91,7 @@ static void Usage(int argc, char *argv[])
     fprintf(stderr, "  -n filename, --news=filename\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
-#else
+#else /* HAVE_GETOPT_H */
     fprintf(stderr, "  -h host\n");
     fprintf(stderr, "  -p port\n");
     fprintf(stderr, "  -u username\n");
@@ -120,7 +120,7 @@ static void ParseArgs(
     /* Read each argument using getopt */
 #ifdef HAVE_GETOPT_H
     while ((choice = getopt_long(argc, argv, "h:p:u:g:n:v", long_options, NULL)) > 0)
-#else
+#else /* HAVE_GETOPT_H */
     while ((choice = getopt(argc, argv, "h:p:u:g:n:v")) > 0)
 #endif /* HAVE_GETOPT_H */
     {
@@ -130,7 +130,6 @@ static void ParseArgs(
 	    case 'h':
 	    {
 		*host_return = optarg;
-		printf("host=%s\n", *host_return);
 		break;
 	    }
 
@@ -138,7 +137,6 @@ static void ParseArgs(
 	    case 'p':
 	    {
 		*port_return = atoi(optarg);
-		printf("port=%d\n", *port_return);
 		break;
 	    }
 
@@ -146,7 +144,6 @@ static void ParseArgs(
 	    case 'u':
 	    {
 		*user_return = optarg;
-		printf("user=%s\n", *user_return);
 		break;
 	    }
 
@@ -172,14 +169,14 @@ static void ParseArgs(
 	    }
 
 	    /* --help */
-	    case 'e':
+	    case 'z':
 	    {
 		Usage(argc, argv);
 		exit(0);
 	    }
 
 	    /* Unknown option */
-	    case '?':
+	    default:
 	    {
 		Usage(argc, argv);
 		exit(1);

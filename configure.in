@@ -43,7 +43,7 @@ dnl AC_SUBST($systypedef)
 
 
 dnl Checks for headers and libraries.
-dnl =====================
+dnl =================================
 
 dnl The elvin C library requires pthreads
 dnl See if the compiler accepts the -threads flag (DEC cc, egcs)
@@ -78,7 +78,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 dnl Make sure that the elvin headers can be found
 CPPFLAGS="-I$DSTCDIR/include $CPPFLAGS"
 AC_CHECK_HEADER(elvin3/elvin.h, ok=yes, ok=no)
-if test $ok = "no" ; then
+if test "$ok" = "no" ; then
 	echo "ERROR: \`elvin.h' is missing on your system.  Try downloading"
 	echo "       and installing the elvin distribution from"
 	echo "       http://www.dstc.edu.au/elvin/"
@@ -89,7 +89,7 @@ dnl Make sure that an elvin library can be found
 elvinlibdir=$DSTCDIR/$systype/lib
 LDFLAGS="-L$elvinlibdir $LDFLAGS"
 AC_CHECK_LIB(vin, elvin_connect, LIBS="-lvin -ldstc_std $LIBS" ; ok=yes, ok=no, -ldstc_std)
-if test $ok = "no" ; then
+if test "$ok" = "no" ; then
 	echo "ERROR: \`libvin' is missing on your system.  Try downloading"
 	echo "       it from http://www.dstc.edu.au/elvin/"
 	exit 1
@@ -127,7 +127,7 @@ if test -d "/usr/dt/include" -a -d "/usr/dt/lib" ; then
 fi
 
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
-if test $ok = "no" ; then
+if test "$ok" = "no" ; then
 	echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
 	echo "       a free Motif implementation from the Hungry Programmers"
 	echo "       at http://www.lesstif.org/"
@@ -136,7 +136,7 @@ fi
 
 dnl Check for the Motif library
 AC_CHECK_LIB(Xm, XmCreatePulldownMenu, LIBS="-lXm $LIBS" ; ok=yes, ok=no)
-if test $ok = "no" ; then
+if test "$ok" = "no" ; then
 	echo "ERROR: \`libXm' is missing on your system.  You may obtain"
 	echo "       a free Motif implementation from the Hungry Programmers"
 	echo "       at http://www.lesstif.org/"
