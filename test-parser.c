@@ -7,6 +7,7 @@
 #include <math.h>
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
+#include <elvin/errors/elvin.h>
 #include "errors.h"
 #include "atom.h"
 #include "parser.h"
@@ -75,6 +76,79 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 }
 
 
+/* A primitive function */
+static int prim_setq(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    atom_t symbol;
+    atom_t value;
+
+    /* Make sure we have at least one arg */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((symbol = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure it's a symbol */
+    if (atom_get_type(symbol) != ATOM_SYMBOL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad symbol");
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure we have at least one more arg left */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((value = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((args = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure we're now out of args */
+    if (atom_get_type(args) != ATOM_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad n args");
+	return 0;
+    }
+
+    /* Evaluate the value */
+    if (! atom_eval(value, env, result, error))
+    {
+	return 0;
+    }
+
+    /* Set it */
+    if (! env_set(env, symbol, *result, error))
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
 /* Initializes the Lisp evaluation engine */
 static env_t root_env_alloc(elvin_error_t error)
 {
@@ -87,6 +161,13 @@ static env_t root_env_alloc(elvin_error_t error)
 
     /* Register the constant `pi' */
     if (env_set_float(env, "pi", M_PI, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `setq' */
+    if (env_set_builtin(env, "setq", prim_setq, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
