@@ -1,4 +1,26 @@
-1999-09-10  Ted Phelps <phelps@pobox.com>
+1999-09-14  Ted Phelps <phelps@pobox.com>
+
+	* Scroller.c: reusing the GC's clip mask whenever possible.
+
+1999-09-13  Ted Phelps <phelps@pobox.com>
+
+	* message_glyph.c: recording the left and right bearing of each
+		  string in a message for a quick and accurate check of
+		  whether or not it should be repainted.  Moved this check 
+		  back into do_paint() so that we aren't needlessly
+		  changing graphics contexts.
+	* MailSubscription.c: renamed to mail_sub.c and corresponding name
+		  reforms.  Reworked the code to use mbox_parser code
+		  stolen from scoop and no longer use StringBuffer.c.
+
+1999-09-12  Ted Phelps <phelps@pobox.com>
+
+	* Scroller.c: width of the gap is now determined from the size of
+		  the Scroller's font
+	* message_glyph.o: width of the gap between messages is now
+		  determined from the size of the Scroller's font
+
+1999-09-09  Ted Phelps <phelps@pobox.com>
 
 	* *.h, *.c: renamed Message to message_t and Message.[hc] to
 		  message.[hc] throughout.  The great name reform has begun!
