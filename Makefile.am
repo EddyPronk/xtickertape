@@ -55,5 +55,5 @@ errors.h: index en
 
 # Construct XTickertape from XTickertape.ad
 install-data-local:
-	$(mkinstalldirs) $(appdefaultsdir)
-	$(INSTALL_DATA) $(srcdir)/XTickertape.ad $(appdefaultsdir)/XTickertape
+	$(mkinstalldirs) $(DESTDIR)$(appdefaultsdir)
+	$(INSTALL_DATA) $(srcdir)/XTickertape.ad $(DESTDIR)$(appdefaultsdir)/XTickertape
