@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.3 2000/11/18 00:57:35 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.4 2000/11/18 01:19:27 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -46,16 +46,16 @@ typedef enum
 {
     /* Atomic types are 0-7 */
     SEXP_NIL = 0,
+    SEXP_CHAR,
     SEXP_INTEGER,
     SEXP_LONG,
     SEXP_FLOAT,
     SEXP_STRING,
-    SEXP_CHAR,
+    SEXP_SYMBOL,
+    SEXP_PRIM,
 
     /* Combined types are 8-15 */
-    SEXP_SYMBOL = 8,
-    SEXP_CONS,
-    SEXP_PRIM,
+    SEXP_CONS = 8,
     SEXP_LAMBDA,
     SEXP_ENV,
     SEXP_ARRAY
