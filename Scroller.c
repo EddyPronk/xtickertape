@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.117 2001/06/07 02:00:00 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.118 2001/06/15 13:09:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -446,7 +446,7 @@ static void glyph_holder_paint(
 {
     self -> glyph -> paint(
 	self -> glyph, display, drawable,
-	offset, self -> width, x, y, width, height);
+	offset, x, y, width, height);
 }
 
 
@@ -546,21 +546,16 @@ static void tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
 
-    /* If we were called in response to the timer going off then clear
-     * the timer so that set_clock() can set it again */
-    if (interval != NULL && *interval == self -> scroller.timer)
-    {
-	self -> scroller.timer = 0;
-    }
+    /* Clear the timer so that set_clock() can set it again */
+    assert(*interval == self -> scroller.timer);
+    self -> scroller.timer = 0;
 
     /* Set the clock now so that we get consistent scrolling speed */
     set_clock(self);
 
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
-    if (self -> scroller.step != 0)
-    {
-	scroll(self, self -> scroller.step);
-    }
+    assert(self -> scroller.step != 0);
+    scroll(self, self -> scroller.step);
 }
 
 
@@ -1107,8 +1102,8 @@ static void scroll(ScrollerWidget self, int offset)
     }
 
     /* Scroll left or right as appropriate */
-    self -> scroller.left_offset -= self -> scroller.target_delta;
-    self -> scroller.right_offset += self -> scroller.target_delta;
+    self -> scroller.left_offset -= delta;
+    self -> scroller.right_offset += delta;
     self -> scroller.local_delta = delta;
     self -> scroller.target_delta = 0;
 
@@ -1694,6 +1689,7 @@ static void delete_left_to_right(ScrollerWidget self, glyph_t glyph)
     adjust_right(self);
 }
 
+#if 1
 /* Delete a message when scrolling right to left (forwards) */
 static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 {
@@ -1782,6 +1778,99 @@ static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
     self -> scroller.right_offset = offset - self -> core.width;
     adjust_left(self);
 }
+#else
+/* Deletes a message when scrolling right to left */
+static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
+{
+    glyph_holder_t holder = self -> scroller.right_holder;
+    int left_of_leading = 0;
+
+    /* If we're deleting the rightmost glyph then we add another now
+     * so that we don't lose our place in the circular queue if we
+     * delete the entire contents of the scroller */
+    if (self -> scroller.right_holder -> glyph == glyph)
+    {
+	add_right_holder(self);
+	assert(self -> scroller.right_holder -> glyph != glyph);
+    }
+
+    /* Go through the visible glyphs and remove the deleted one */
+    while (holder != NULL)
+    {
+	glyph_holder_t previous = holder -> previous;
+
+	/* If this is the gap then we've seen the leading edge */
+	if (holder -> glyph == self -> scroller.gap)
+	{
+	    left_of_leading = 1;
+	}
+	else
+	{
+	    /* Does the holder point to the glyph we're deleting? */
+	    if (holder -> glyph == glyph)
+	    {
+		/* If we've seen the leading edge then pull things in
+		 * from the left */
+		if (left_of_leading)
+		{
+		    self -> scroller.left_offset -= holder -> width;
+		}
+		else
+		{
+		    self -> scroller.right_offset -= holder -> width;
+		}
+
+		/* Remove the holder from the list */
+		assert(holder -> next != NULL);
+		holder -> next -> previous = previous;
+
+		if (previous == NULL)
+		{
+		    self -> scroller.left_holder = holder -> next;
+		}
+		else
+		{
+		    glyph_holder_t next = holder -> next;
+
+		    /* Update the pointer */
+		    previous -> next = next;
+
+		    /* If the glyph was surrounded by gaps then join
+		     * them into a single big one */
+		    if ((next -> glyph == self -> scroller.gap) &&
+			(previous -> glyph == self -> scroller.gap))
+		    {
+			/* Remove the right gap from the list */
+			previous -> next = next -> next;
+			if (next -> next == NULL)
+			{
+			    self -> scroller.right_holder = previous;
+			}
+			else
+			{
+			    next -> next -> previous = previous;
+			}
+
+			/* Free it */
+			glyph_holder_free(next);
+
+			/* Update the width of the left gap */
+			previous -> width = self -> core.width;
+		    }
+		}
+
+		/* Free the glyph holder */
+		glyph_holder_free(holder);
+	    }
+	}
+
+	holder = previous;
+    }
+
+    adjust_left(self);
+    adjust_right(self);
+}
+#endif
 
 /* Delete the given glyph from the scroller */
 static void delete_glyph(ScrollerWidget self, glyph_t glyph)
