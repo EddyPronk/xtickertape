@@ -108,7 +108,7 @@ static struct production productions[34] =
     /* 20: <value> ::= BANG <value> */
     { make_not, 9, 2 },
 
-    /* 21: <values> ::= <values> COMMA <value> */
+    /* 21: <values> ::= <values> COMMA <disjunction> */
     { extend_values, 10, 3 },
 
     /* 22: <values> ::= <disjunction> */
@@ -215,7 +215,7 @@ static unsigned int sr_table[62][25] =
     { ERR, ERR, R(31), R(31), ERR, ERR, ERR, R(31), R(31), R(31), R(31), R(31), R(31), R(31), R(31), ERR, R(31), ERR, ERR, ERR, ERR, ERR, R(31), ERR, R(31) },
     { ERR, ERR, R(32), R(32), ERR, ERR, ERR, R(32), R(32), R(32), R(32), R(32), R(32), R(32), R(32), ERR, R(32), ERR, ERR, ERR, ERR, ERR, R(32), ERR, R(32) },
     { ERR, ERR, R(33), R(33), ERR, ERR, ERR, R(33), R(33), R(33), R(33), R(33), R(33), R(33), R(33), ERR, R(33), ERR, ERR, ERR, ERR, ERR, R(33), ERR, R(33) },
-    { ERR, ERR, R(21), ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, R(21), ERR, ERR, ERR, ERR, ERR, R(21), ERR, ERR },
+    { ERR, ERR, R(21), ERR, ERR, ERR, ERR, S(31), ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, R(21), ERR, ERR, ERR, ERR, ERR, R(21), ERR, ERR },
     { ERR, ERR, R(30), R(30), ERR, ERR, ERR, R(30), R(30), R(30), R(30), R(30), R(30), R(30), R(30), ERR, R(30), ERR, ERR, ERR, ERR, ERR, R(30), ERR, R(30) }
 };
 
@@ -280,7 +280,7 @@ static unsigned int goto_table[62][11] =
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 0 },
+    { 0, 0, 0, 0, 0, 0, 60, 18, 19, 20, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },

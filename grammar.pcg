@@ -92,7 +92,7 @@
 	[make_not]
 
 # And they may be a comma-separated list of values
-<values> ::= <values> COMMA <value>
+<values> ::= <values> COMMA <disjunction>
 	[extend_values]
 <values> ::= <disjunction>
 	[identity]
