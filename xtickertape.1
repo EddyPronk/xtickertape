@@ -7,9 +7,10 @@ xtickertape \- scrolling text chat tool
 .SH SYNOPSIS
 .nf
 xtickertape [-h host] [--host=host] [-p port] [--port=port]
-            [-u user] [--user=user] [-G groups-file]
-            [--groups=groups-file] [-U usenet-file]
-            [--usenet=usenet-file] [-v] [--version] [--help]
+            [-u user] [--user=user] [-D domain] [--domain=domain]
+            [-G groups-file] [--groups=groups-file]
+            [-U usenet-file] [--usenet=usenet-file]
+            [-v] [--version] [--help]
 .fi
 .SH OPTIONS
 In addition to the standard X Toolkit command-line options, \*(xt may
@@ -28,7 +29,14 @@ Connect to the elvin server listening on \fIport\fP.
 .B -u \fIuser\fP
 .TP
 .BI --user= user
-Use \fIuser\fP as the default name when sending messages.
+Use \fIuser\fP (in conjunction with the domain) as the default name
+when sending messages.
+.TP
+.B -D \fIdomain\fP
+.TP
+.BI --domain= domain
+Use \fIdomain\fP (in conjunction with the user) as the default domain
+when sending messages.
 .TP
 .B -G \fIgroups-file\fP
 .TP
@@ -203,7 +211,18 @@ If
 .B TICKERDIR
 exists in the environment, then \*(xt will look in the directory it
 names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
-it defaults to \fB$HOME/.ticker\fP.
+it defaults to \fB$HOME/.ticker\fP.  If no user name is specified on
+the command-line then the environment variables
+.B USER
+and
+.B LOGNAME
+are consulted (in that order) before resorting to asking the operating
+system directly.  Similarly, if no domain is specified on the
+command-line, the
+.B DOMAIN
+environment variable is checked before \*(xt goes mucking about with
+fully-qualified domain names.
+
 .SH FILES
 .PP
 .TP

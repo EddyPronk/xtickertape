@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.32 1999/10/05 08:16:31 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.33 1999/10/06 05:33:05 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,7 +39,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.32 1999/10/05 08:16:31 phelps
 #include <unistd.h>
 #include <errno.h>
 #include <X11/Intrinsic.h>
-#include <sys/utsname.h>
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
@@ -60,7 +59,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.32 1999/10/05 08:16:31 phelps
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
-#define DEFAULT_DOMAIN "no.domain.name"
 
 #define METAMAIL_OPTIONS "-B -q -b -c"
 
@@ -157,33 +155,6 @@ static char *tickertape_usenet_filename(tickertape_t self);
  *
  */
 
-/* Looks up the domain name of the host */
-static char *get_domain()
-{
-    struct utsname name;
-    struct hostent *host;
-    char *pointer;
-
-    /* Grab the node name */
-    if (uname(&name) < 0)
-    {
-	return DEFAULT_DOMAIN;
-    }
-
-    /* Look up the host with gethostbyname */
-    host = gethostbyname(name.nodename);
-
-    /* Skip everything up to and including the first `.' */
-    for (pointer = host -> h_name; *pointer != '\0'; pointer++)
-    {
-	if (*pointer == '.')
-	{
-	    return pointer + 1;
-	}
-    }
-
-    return DEFAULT_DOMAIN;
-}
 
 /* Makes the named directory and any parent directories needed */
 static int mkdirhier(char *dirname)
@@ -943,7 +914,8 @@ static void subscribe_to_orbit(tickertape_t self)
  * her groups file and connecting to the notification service
  * specified by host and port */
 tickertape_t tickertape_alloc(
-    char *user, char *ticker_dir,
+    char *user, char *domain, 
+    char *ticker_dir,
     char *groups_file, char *usenet_file,
     char *host, int port,
     Widget top)
@@ -952,7 +924,7 @@ tickertape_t tickertape_alloc(
     tickertape_t self = (tickertape_t) malloc(sizeof(struct tickertape));
     
     self -> user = strdup(user);
-    self -> domain = strdup(get_domain());
+    self -> domain = strdup(domain);
     self -> ticker_dir = (ticker_dir == NULL) ? NULL : strdup(ticker_dir);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
@@ -1119,6 +1091,12 @@ void tickertape_debug(tickertape_t self)
 char *tickertape_user_name(tickertape_t self)
 {
     return self -> user;
+}
+
+/* Answers the tickertape's domain name */
+char *tickertape_domain_name(tickertape_t self)
+{
+    return self -> domain;
 }
 
 /* Answers the tickertape's history_t */

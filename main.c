@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.58 1999/10/04 05:59:54 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.59 1999/10/06 05:33:03 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,6 +39,8 @@ static const char cvsid[] = "$Id: main.c,v 1.58 1999/10/04 05:59:54 phelps Exp $
 #include <getopt.h>
 #include <pwd.h>
 #include <signal.h>
+#include <netdb.h>
+#include <sys/utsname.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
@@ -52,6 +54,7 @@ static const char cvsid[] = "$Id: main.c,v 1.58 1999/10/04 05:59:54 phelps Exp $
 
 #define HOST "elvin"
 #define PORT 5678
+#define DEFAULT_DOMAIN "no.domain"
 
 /* The list of long options */
 static struct option long_options[] =
@@ -59,6 +62,7 @@ static struct option long_options[] =
     { "host", required_argument, NULL, 'h' },
     { "port", required_argument, NULL, 'p' },
     { "user", required_argument, NULL, 'u' },
+    { "domain" , required_argument, NULL, 'D' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "version", no_argument, NULL, 'v' },
@@ -73,8 +77,9 @@ static void do_quit(
 static void usage(int argc, char *argv[]);
 static void parse_args(
     int argc, char *argv[],
-    char **user_return, char **tickerDir_return,
-    char **groupsFile_return, char **usenetFile_return,
+    char **user_return, char **domain_return,
+    char **ticker_dir_return,
+    char **groups_file_return, char **usenet_file_return,
     char **host_return, int *port_return);
 static Window create_icon(Widget shell);
 static void reload_subs(int signum);
@@ -108,25 +113,81 @@ static void usage(int argc, char *argv[])
     fprintf(stderr, "               --help\n");
 }
 
+/* Returns the name of the user who started this program */
+static char *get_user()
+{
+    char *user;
+
+    /* First try the `USER' environment variable */
+    if ((user = getenv("USER")) != NULL)
+    {
+	return user;
+    }
+
+    /* If that isn't set try `LOGNAME' */
+    if ((user = getenv("LOGNAME")) != NULL)
+    {
+	return user;
+    }
+
+    /* Go straight to the source for an unequivocal answer */
+    return getpwuid(getuid()) -> pw_name;
+}
+
+/* Looks up the domain name of the host */
+static char *get_domain()
+{
+    struct utsname name;
+    struct hostent *host;
+    char *domain;
+
+    /* If the `DOMAIN' environment variable is set then use it */
+    if ((domain = getenv("DOMAIN")) != NULL)
+    {
+	return domain;
+    }
+
+    /* Otherwise look up the node name */
+    if (! (uname(&name) < 0))
+    {
+	/* Use that to get the host entry */
+	host = gethostbyname(name.nodename);
+
+	/* Strip everything up to and including the first `.' */
+	for (domain = host -> h_name; *domain != '\0'; domain++)
+	{
+	    if (*domain == '.')
+	    {
+		return domain + 1;
+	    }
+	}
+    }
+
+    /* No luck.  Resort to a default domain */
+    return DEFAULT_DOMAIN;
+}
+
 /* Parses arguments and sets stuff up */
 static void parse_args(
     int argc, char *argv[],
-    char **user_return, char **tickerDir_return,
-    char **groupsFile_return, char **usenetFile_return,
+    char **user_return, char **domain_return,
+    char **ticker_dir_return,
+    char **groups_file_return, char **usenet_file_return,
     char **host_return, int *port_return)
 {
     int choice;
 
     /* Initialize arguments to sane values */
     *user_return = NULL;
-    *tickerDir_return = NULL;
-    *groupsFile_return = NULL;
-    *usenetFile_return = NULL;
+    *domain_return = NULL;
+    *ticker_dir_return = NULL;
+    *groups_file_return = NULL;
+    *usenet_file_return = NULL;
     *host_return = HOST;
     *port_return = PORT;
 
     /* Read each argument using getopt */
-    while ((choice = getopt_long(argc, argv, "h:p:u:U:G:v", long_options, NULL)) > 0)
+    while ((choice = getopt_long(argc, argv, "h:p:u:D:U:G:v", long_options, NULL)) > 0)
     {
 	switch (choice)
 	{
@@ -151,17 +212,24 @@ static void parse_args(
 		break;
 	    }
 
+	    /* --domain= or -D */
+	    case 'D':
+	    {
+		*domain_return = optarg;
+		break;
+	    }
+
 	    /* --groups= or -G */
 	    case 'G':
 	    {
-		*groupsFile_return = optarg;
+		*groups_file_return = optarg;
 		break;
 	    }
 
 	    /* --usenet= or -U */
 	    case 'U':
 	    {
-		*usenetFile_return = optarg;
+		*usenet_file_return = optarg;
 		break;
 	    }
 
@@ -188,29 +256,17 @@ static void parse_args(
 	}
     }
 
-    /* If the user name was provided on the command-line then we're done */
-    if ((*user_return != NULL) && (**user_return != '\0'))
+    /* Generate a user name if none provided */
+    if (*user_return == NULL)
     {
-	return;
+	*user_return = get_user();
     }
 
-    /* Failing that, try the `USER' environment variable */
-    *user_return = getenv("USER");
-    if ((*user_return != NULL) && (**user_return != '\0'))
+    /* Generate a domain name if none provided */
+    if (*domain_return == NULL)
     {
-	return;
+	*domain_return = get_domain();
     }
-
-    /* Not there either.  How about the `LOGNAME' environment variable? */
-    *user_return = getenv("LOGNAME");
-    if ((*user_return != NULL) && (**user_return != '\0'))
-    {
-	return;
-    }
-
-    /* Not there either.  Pull rank and get the name from the uid */
-    *user_return = getpwuid(getuid()) -> pw_name;
-    return;
 }
 
 
@@ -300,9 +356,10 @@ int main(int argc, char *argv[])
     XtAppContext context;
     Widget top;
     char *user;
-    char *tickerDir;
-    char *groupsFile;
-    char *usenetFile;
+    char *domain;
+    char *ticker_dir;
+    char *groups_file;
+    char *usenet_file;
     char *host;
     int port;
 
@@ -317,13 +374,13 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Scan what's left of the arguments */
-    parse_args(argc, argv, &user, &tickerDir, &groupsFile, &usenetFile, &host, &port);
+    parse_args(argc, argv, &user, &domain, &ticker_dir, &groups_file, &usenet_file, &host, &port);
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);
 
     /* Create a Tickertape */
-    tickertape = tickertape_alloc(user, tickerDir, groupsFile, usenetFile, host, port, top);
+    tickertape = tickertape_alloc(user, domain, ticker_dir, groups_file, usenet_file, host, port, top);
 
     /* Set up SIGHUP to reload the subscriptions */
     signal(SIGHUP, reload_subs);

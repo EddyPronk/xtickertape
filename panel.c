@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.4 1999/10/06 04:21:20 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.5 1999/10/06 05:33:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -78,6 +78,9 @@ char *timeouts[] =
 
 /* The default timeout */
 #define DEFAULT_TIMEOUT "5"
+
+/* The format of the default user field */
+#define USER_FMT "%s@%s"
 
 
 /* Used in callbacks to indicate both a control_panel_t and a callback */
@@ -1195,7 +1198,24 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 /* Callback for `Clear' button */
 static void action_clear(Widget button, control_panel_t self, XtPointer ignored)
 {
-    set_user(self, tickertape_user_name(self -> tickertape));
+    char *user;
+    char *domain;
+    char *buffer;
+
+    /* Set the user to be ``user@domain'' */
+    user = tickertape_user_name(self -> tickertape);
+    domain = tickertape_domain_name(self -> tickertape);
+    if ((buffer = (char *)malloc(strlen(USER_FMT) + strlen(user) + strlen(domain) - 3)) != NULL)
+    {
+	sprintf(buffer, USER_FMT, user, domain);
+	set_user(self, buffer);
+	free(buffer);
+    }
+    else
+    {
+	set_user(self, user);
+    }
+
     set_text(self, "");
     set_mime_args(self, "");
     reset_timeout(self);

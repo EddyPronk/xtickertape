@@ -36,7 +36,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.7 1999/10/05 02:57:30 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.8 1999/10/06 05:33:05 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;
@@ -48,7 +48,8 @@ typedef struct tickertape *tickertape_t;
  * her groups file and connecting to the notification service
  * specified by host and port */
 tickertape_t tickertape_alloc(
-    char *user, char *tickerDir,
+    char *user, char *domain,
+    char *ticker_dir,
     char *groupsFile, char *usenetFile,
     char *host, int port,
     Widget top);
@@ -61,6 +62,9 @@ void tickertape_debug(tickertape_t self);
 
 /* Answers the tickertape's user name */
 char *tickertape_user_name(tickertape_t self);
+
+/* Answers the tickertape's domain name */
+char *tickertape_domain_name(tickertape_t self);
 
 /* Answers the tickertape's history_t */
 history_t tickertape_history(tickertape_t self);
