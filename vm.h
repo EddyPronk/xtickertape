@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.7 2000/11/20 06:24:10 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.8 2000/11/20 12:47:21 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -120,6 +120,9 @@ int vm_unwind_list(vm_t self, elvin_error_t error);
 /* Assigns the value on the top of the stack to the variable up one
  * place, leaving only the value on the stack */
 int vm_assign(vm_t self, elvin_error_t error);
+
+/* Adds the top two elements of the stack together */
+int vm_add(vm_t self, elvin_error_t error);
 
 /* Evaluates the top of the stack, leaving the result in its place */
 int vm_eval(vm_t self, elvin_error_t error);
