@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.c,v 1.4 1998/10/23 17:37:45 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.5 1998/10/24 04:52:56 phelps Exp $ */
 
 #include "FileStreamTokenizer.h"
 #include <stdlib.h>
@@ -121,8 +121,9 @@ void FileStreamTokenizer_debug(FileStreamTokenizer self)
 }
 
 
-/* Answers the receiver's next token (dynamically allocated) or NULL
- * if at the end of the file */
+/* Answers the receiver's next token or NULL if at the end of the file.
+ * NB: this token exists in the receiver's internal buffer and will be
+ * overwritten when the next token is read */
 char *FileStreamTokenizer_nextWithSpec(
     FileStreamTokenizer self, char *whitespace, char *special)
 {
@@ -139,7 +140,7 @@ char *FileStreamTokenizer_nextWithSpec(
     ungetc(ch, self -> file);
 
     /* Skip over whitespace */
-    SkipWhitespace(self, self -> whitespace);
+    SkipWhitespace(self, whitespace);
 
     /* Clear out the StringBuffer */
     StringBuffer_clear(self -> buffer);
@@ -172,8 +173,9 @@ char *FileStreamTokenizer_nextWithSpec(
     return StringBuffer_getBuffer(self -> buffer);
 }
 
-/* Answers the receiver's next token (dynamically allocated) or NULL
- * if at the end of the file */
+/* Answers the receiver's next token or NULL if at the end of the file.
+ * NB: this token exists in the receiver's internal buffer and will be
+ * overwritten when the next token is read */
 char *FileStreamTokenizer_next(FileStreamTokenizer self)
 {
     return FileStreamTokenizer_nextWithSpec(self, self -> whitespace, self -> special);
