@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.3 2000/11/09 02:48:16 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.4 2000/11/09 03:04:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -110,11 +110,56 @@ static struct sexp numbers[] =
     { SEXP_INT32, 1, { 9 } }
 };
 
+/* Hash function for a symbol */
+static uint32_t symbol_hashfunc(elvin_hashtable_t table, elvin_hashkey_t key)
+{
+    char *start = (char *)key;
+    char *pointer;
+    uint32_t hash = 0;
+
+    /* Treat the pointer as a fixed-length byte array */
+    for (pointer = start; pointer < start + sizeof(void *); pointer++)
+    {
+	hash <<= 1;
+	hash ^= *pointer;
+    }
+
+    return hash;
+}
+
+/* Equality function for a symbol */
+static int symbol_hashequal(
+    elvin_hashtable_t table,
+    elvin_hashkey_t key1,
+    elvin_hashkey_t key2)
+{
+    return key1 == key2;
+}
+
+/* Grabs a reference to a symbol */
+static int symbol_hashcopy(
+    elvin_hashtable_t table,
+    elvin_hashkey_t *copy_out,
+    elvin_hashkey_t key,
+    elvin_error_t error)
+{
+    sexp_t sexp = (sexp_t)key;
+    sexp -> ref_count++;
+    *copy_out = key;
+    return 1;
+}
+
+/* Frees a reference to a symbol */
+static int symbol_hashfree(elvin_hashkey_t key, elvin_error_t error)
+{
+    return sexp_free((sexp_t)key, error);
+}
+
 /* Grabs a reference to an sexp */
-static int hashcopy(elvin_hashtable_t table,
-		    elvin_hashdata_t *copy_out,
-		    elvin_hashdata_t data,
-		    elvin_error_t error)
+static int sexp_hashcopy(elvin_hashtable_t table,
+			 elvin_hashdata_t *copy_out,
+			 elvin_hashdata_t data,
+			 elvin_error_t error)
 {
     sexp_t sexp = (sexp_t)data;
     sexp -> ref_count++;
@@ -123,10 +168,35 @@ static int hashcopy(elvin_hashtable_t table,
 }
 
 /* Frees a reference to an sexp */
-static int hashfree(elvin_hashdata_t data, elvin_error_t error)
+static int sexp_hashfree(elvin_hashdata_t data, elvin_error_t error)
 {
     return sexp_free((sexp_t)data, error);
 }
+
+
+
+/* Initialize the interpreter */
+int interp_init(elvin_error_t error)
+{
+    /* No, so create one */
+    if ((symbol_table = elvin_string_hash_create(
+	     INIT_SYMBOL_TABLE_SIZE,
+	     sexp_hashcopy,
+	     sexp_hashfree,
+	     error)) == NULL)
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+/* Shut down the interpreter */
+int interp_close(elvin_error_t error)
+{
+    return elvin_hash_free(symbol_table, error);
+}
+
 
 
 /* Answers the unique nil instance */
@@ -278,20 +348,6 @@ char char_value(sexp_t sexp, elvin_error_t error)
 sexp_t symbol_alloc(char *name, elvin_error_t error)
 {
     sexp_t sexp;
-
-    /* Do we have a symbol table? */
-    if (symbol_table == NULL)
-    {
-	/* No, so create one */
-	if ((symbol_table = elvin_string_hash_create(
-		 INIT_SYMBOL_TABLE_SIZE,
-		 hashcopy,
-		 hashfree,
-		 error)) == NULL)
-	{
-	    return NULL;
-	}
-    }
 
     /* Check for the symbol in the symbol table */
     if ((sexp = elvin_hash_get(symbol_table, (elvin_hashkey_t)name, error)) != NULL)
@@ -564,7 +620,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_SYMBOL:
 	{
-	    printf("%s", sexp -> value.s, sexp);
+	    printf("%s<%p>", sexp -> value.s, sexp);
 	    return 1;
 	}
 
@@ -705,8 +761,15 @@ env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
     }
 
     /* Allocate a hashtable to map symbols to their values */
-    /* FIX THIS: we should use a pointer hash and a symbol table */
-    if ((env -> map = elvin_string_hash_create(size, hashcopy, hashfree, error)) == NULL)
+    if ((env -> map = elvin_hash_alloc(
+	     size,
+	     symbol_hashfunc,
+	     symbol_hashequal,
+	     symbol_hashcopy,
+	     symbol_hashfree,
+	     sexp_hashcopy,
+	     sexp_hashfree,
+	     error)) == NULL)
     {
 	ELVIN_FREE(env, NULL);
 	return NULL;

@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.3 2000/11/09 02:48:16 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.4 2000/11/09 03:04:54 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -57,6 +57,14 @@ typedef struct sexp *sexp_t;
 
 /* The built-in function type */
 typedef int (*builtin_t)(env_t env, sexp_t args, sexp_t *result, elvin_error_t error);
+
+
+/* Initialize the interpreter */
+int interp_init(elvin_error_t error);
+
+/* Shut down the interpreter */
+int interp_close(elvin_error_t error);
+
 
 /* Answers the unique nil instance */
 sexp_t nil_alloc(elvin_error_t error);
