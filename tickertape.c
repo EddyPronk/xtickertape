@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.66 2000/10/16 04:43:34 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.67 2000/10/30 04:04:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -61,9 +61,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.66 2000/10/16 04:43:34 phelps
 #include "usenet_parser.h"
 #include "usenet_sub.h"
 #include "mail_sub.h"
-#ifdef ORBIT
-#include "orbit_sub.h"
-#endif /* ORBIT */
 
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_CONFIG_FILE "xtickertape.conf"
@@ -83,7 +80,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.66 2000/10/16 04:43:34 phelps
 #define DROP_WARN_MSG "One or more packets were dropped"
 
 #define GROUP_SUB "TICKERTAPE == \"%s\""
-#define ORBIT_SUB "exists(orbit.view_update) && exists(tickertape) && user == \"%s\""
 
 #define F_TICKERTAPE_STARTUP "tickertape.startup"
 #define F_USER "user"
@@ -130,14 +126,6 @@ struct tickertape
     /* The receiver's mail subscription */
     mail_sub_t mail_sub;
 
-#ifdef ORBIT
-    /* The receiver's Orbit-related subscriptions */
-    orbit_sub_t *orbit_subs;
-
-    /* The number of subscriptions in orbit_subs */
-    int orbit_sub_count;
-#endif /* ORBIT */
-
     /* The control panel */
     control_panel_t control_panel;
 
@@ -164,10 +152,6 @@ static void publish_startup_notification(tickertape_t self);
 static void disconnect_callback(tickertape_t self, connection_t connection);
 static void reconnect_callback(tickertape_t self, connection_t connection);
 #endif /* 0 */
-#ifdef ORBIT
-static void orbit_callback(tickertape_t self, en_notify_t notification);
-static void subscribe_to_orbit(tickertape_t self);
-#endif /* ORBIT */
 static char *tickertape_ticker_dir(tickertape_t self);
 #if 0
 static char *tickertape_config_filename(tickertape_t self);
@@ -365,7 +349,7 @@ static int open_config_file(
 	return -1;
     }
 
-    /* Write the default subscriptions file */
+    /* Write the default config file */
     if (write_default_file(self, out, template) < 0)
     {
 	fclose(out);
@@ -394,9 +378,10 @@ static int parse_config_callback(
     elvin_error_t error)
 {
     printf("parsed!\n");
-    return 1;
 }
+#endif
 
+#if 0
 /* Reads the configuration file */
 static int read_config_file(tickertape_t self, elvin_error_t error)
 {
@@ -802,7 +787,9 @@ static void publish_startup_notification(tickertape_t self)
     elvin_xt_notify(self -> handle, notification, NULL, self -> error);
     elvin_notification_free(notification, self -> error);
 }
+#endif
 
+#if 0
 /* This is called when we get our elvin connection back */
 static void reconnect_callback(tickertape_t self, connection_t connection)
 {
@@ -883,176 +870,6 @@ static void disconnect_callback(tickertape_t self, connection_t connection)
 
 
 
-#ifdef ORBIT
-/*
- *
- * Orbit-related functions
- *
- */
-
-/* Adds a new orbit_sub_t to the orbit_subs array */
-static void add_orbit_sub(tickertape_t self, orbit_sub_t orbit_sub)
-{
-    /* Expand the array */
-    if ((self -> orbit_subs = (orbit_sub_t *)realloc(
-	self -> orbit_subs,
-	sizeof(orbit_sub_t) * self -> orbit_sub_count)) == NULL)
-    {
-	return;
-    }
-
-    /* Add the subscription at the end */
-    self -> orbit_subs[self -> orbit_sub_count++] = orbit_sub;
-}
-
-/* Removes an orbit_sub_t from the orbit_subs array */
-static orbit_sub_t remove_orbit_sub(tickertape_t self, char *id)
-{
-    orbit_sub_t match = NULL;
-    int index;
-
-    for (index = 0; index < self -> orbit_sub_count; index++)
-    {
-	/* Have we already found a match? */
-	if (match != NULL)
-	{
-	    self -> orbit_subs[index - 1] = self -> orbit_subs[index];
-	}
-	/* Otherwise, do we have a match? */
-	else if (strcmp(orbit_sub_get_id(self -> orbit_subs[index]), id) == 0)
-	{
-	    match = self -> orbit_subs[index];
-	}
-    }
-
-    /* Adjust the number of subscriptions */
-    if (match != NULL)
-    {
-	self -> orbit_sub_count--;
-    }
-
-    return match;
-}
-
-/* Locates the subscription in the orbit_subs array */
-static orbit_sub_t find_orbit_sub(tickertape_t self, char *id)
-{
-    int index;
-
-    for (index = 0; index < self -> orbit_sub_count; index++)
-    {
-	if (strcmp(orbit_sub_get_id(self -> orbit_subs[index]), id) == 0)
-	{
-	    return self -> orbit_subs[index];
-	}
-    }
-
-    return NULL;
-}
-
-/* Callback for when we match the Orbit notification */
-static void orbit_callback(tickertape_t self, en_notify_t notification)
-{
-    en_type_t type;
-    char *id;
-    char *tickertape;
-
-    /* Get the id of the zone (if provided) */
-    if ((en_search(notification, "zone.id", &type, (void **)&id) != 0) || (type != EN_STRING))
-    {
-	/* Can't subscribe without a zone id */
-	return;
-    }
-
-    /* Get the status (if provided) */
-    if ((en_search(notification, "tickertape", &type, (void **)&tickertape) != 0) ||
-	(type != EN_STRING))
-    {
-	/* Not provided or not a string -- can't determine a useful course of action */
-	en_free(notification);
-	return;
-    }
-
-    /* See if we're subscribing */
-    if (strcasecmp(tickertape, "true") == 0)
-    {
-	orbit_sub_t subscription;
-	char *title;
-
-	/* Get the title of the zone (if provided) */
-	if ((en_search(notification, "zone.title", &type, (void **)&title) != 0) ||
-	    (type != EN_STRING))
-	{
-	    title = "Untitled Zone";
-	}
-
-	/* See if we already have a matching subscription */
-	if ((subscription = find_orbit_sub(self, id)) != NULL)
-	{
-	    /* We do.  Update its title and we're done */
-	    orbit_sub_set_title(subscription, title);
-	    en_free(notification);
-	    return;
-	}
-
-	/* Otherwise we need to make a new one */
-	if ((subscription = orbit_sub_alloc(
-	    title, id, receive_callback, self)) == NULL)
-	{
-	    en_free(notification);
-	    return;
-	}
-
-	/* Add the new subscription to the end */
-	add_orbit_sub(self, subscription);
-
-	/* Register the subscription with the connection and the control panel */
-	orbit_sub_set_connection(subscription, self -> connection);
-	orbit_sub_set_control_panel(subscription, self -> control_panel);
-    }
-    /* See if we're unsubscribing */
-    else if (strcasecmp(tickertape, "false") == 0)
-    {
-	orbit_sub_t subscription;
-
-	/* Remove the subscription from the array */
-	if ((subscription = remove_orbit_sub(self, id)) != NULL)
-	{
-	    orbit_sub_set_connection(subscription, NULL);
-	    orbit_sub_set_control_panel(subscription, NULL);
-	    orbit_sub_free(subscription);
-	}
-    }
-
-    en_free(notification);
-}
-
-
-/* Subscribes to the Orbit meta-subscription */
-static void subscribe_to_orbit(tickertape_t self)
-{
-    char *buffer;
-
-    /* Construct the subscription expression */
-    if ((buffer = (char *)malloc(strlen(ORBIT_SUB) + strlen(self -> user) - 1)) == NULL)
-    {
-	return;
-    }
-
-    sprintf(buffer, ORBIT_SUB, self -> user);
-    printf("self -> user = \"%s\"\n", self -> user);
-    printf("orbit subscription is \"%s\"\n", buffer);
-
-    /* Subscribe to the meta-subscription */
-    connection_subscribe(
-	self -> connection, buffer,
-	(notify_callback_t)orbit_callback, self);
-
-    free(buffer);
-}
-
-#endif /* ORBIT */
-
 /* This is called when our connection request is handled */
 static void connect_cb(
     elvin_handle_t handle, int result,
@@ -1063,6 +880,14 @@ static void connect_cb(
 
     /* Record the elvin_handle */
     self -> handle = handle;
+
+    /* Check for a failure to connect */
+    if (result == 0)
+    {
+	fprintf(stderr, "%s: unable to connect\n", PACKAGE);
+	elvin_error_fprintf(stderr, error);
+	exit(1);
+    }
 
     /* Tell the control panel that we're connected */
     control_panel_set_connected(self -> control_panel, 1);
@@ -1084,11 +909,6 @@ static void connect_cb(
     {
 	mail_sub_set_connection(self -> mail_sub, handle, error);
     }
-
-#ifdef ORBIT
-    /* Listen for Orbit-related notifications and alert */
-    subscribe_to_orbit(self);
-#endif /* ORBIT */
 }
 
 
@@ -1107,6 +927,14 @@ static void status_cb(
     /* Construct an appropriate message string */
     switch (event)
     {
+	/* We were unable to (re)connect */
+	case ELVIN_STATUS_CONNECTION_FAILED:
+	{
+	    fprintf(stderr, "%s: unable to connect\n", PACKAGE);
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
 	case ELVIN_STATUS_CONNECTION_FOUND:
 	{
 	    /* Tell the control panel that we're connected */
@@ -1177,9 +1005,20 @@ static void status_cb(
 	    break;
 	}
 
-	case ELVIN_STATUS_CONNECTION_FAILED:
 	case ELVIN_STATUS_IGNORED_ERROR:
+	{
+	    fprintf(stderr, "%s: status ignored\n", PACKAGE);
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
 	case ELVIN_STATUS_CLIENT_ERROR:
+	{
+	    fprintf(stderr, "%s: client error\n", PACKAGE);
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+
 	default:
 	{
 	    buffer = (char *)malloc(sizeof(UNKNOWN_STATUS_MSG) + 11);
@@ -1246,10 +1085,6 @@ tickertape_t tickertape_alloc(
     self -> groups_count = 0;
     self -> usenet_sub = NULL;
     self -> mail_sub = NULL;
-#ifdef ORBIT
-    self -> orbit_subs = NULL;
-    self -> orbit_sub_count = 0;
-#endif /* ORBIT */
     self -> control_panel = NULL;
     self -> scroller = NULL;
     self -> history = history_alloc();
@@ -1344,18 +1179,6 @@ void tickertape_free(tickertape_t self)
 	usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
 	usenet_sub_free(self -> usenet_sub);
     }
-
-#ifdef ORBIT
-    for (index = 0; index < self -> orbit_sub_count; index++)
-    {
-	orbit_sub_free(self -> orbit_subs[index], self -> error);
-    }
-
-    if (self -> orbit_subs != NULL)
-    {
-	free(self -> orbit_subs);
-    }
-#endif /* ORBIT */
 
     if (self -> control_panel)
     {
