@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.82 2003/02/10 01:51:17 croy Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.83 2003/02/10 21:42:53 croy Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1474,7 +1474,7 @@ void create_uuid(control_panel_t self, char *result)
     /* Construct a SHA1 digest of the UUID, which should be just as
      * unique but should make it much harder to track down the sender */
 #if ! defined(ELVIN_VERSION_AT_LEAST)
-    if (! elvin_sha1_digest(buffer, 31, digest))
+    if (! elvin_sha1digest(buffer, 31, digest))
     {
 	abort();
     }
