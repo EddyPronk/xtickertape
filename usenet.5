@@ -1,0 +1,70 @@
+.TH USENET 5 "1998 December 23"
+.ds xt \fIxtickertape\fP
+.ds Xt \fIXtickertape\fP
+.UC 4
+.SH NAME
+usenet \- usenet news subscription file for xtickertape
+.SH DESCRIPTION
+The usenet news subscription file consists of lines containing
+subscription expressions.  Empty lines and those beginning with a hash 
+(#) are ignored.  Subscription expressions are of the form:
+.TP
+.B [not] <group> [ '/' <expr> ]*
+.TP
+.B group
+is a regular expression specifying the group or groups to be
+searched, or if preceded by a \fBnot\fP, the groups or groups not to
+be ignored.
+.TP
+.B expr
+is of the form:
+.br
+.B <field> <op> <pattern>
+.TP
+.B field
+is one of: \fBfrom\fP, \fBemail\fP, \fBsubject\fP, \fBkeywords\fP,
+\fBx-posts\fP
+.TP
+.B op
+is one of:
+.br
+.B matches
+-- matches the regular expression
+.br
+.B not
+-- does not match the regular expression
+.br
+.B =
+-- equals
+.br
+.B !=
+-- does not equal
+.br
+.B <
+-- is less than (x-posts only)
+.br
+.B >
+-- is greater than (x-posts only)
+.br
+.B <=
+-- is less than or equal to (x-posts only)
+.br
+.B >=
+-- is greater than or equal to (x-posts only)
+.br
+.TP
+.B pattern
+can be a number, a word (or words) or a regular expression, depending
+on the operator.
+.PP
+The spaces between the \fBfield\fP, the \fBop\P and the \fBpattern\fP
+\fIare\fP important.  Regular expression matches are \fInot\fP case
+sensitive.  All of the expressions on a single line are AND'ed
+together.
+.SH SEE ALSO
+.BR xtickertape (1),
+.BR elvin (1)
+.SH AUTHORS
+This page was stolen by Ted Phelps <phelps@pobox.com> from the
+original tickertape man page, written by Bill Segall
+<bill@segall.net>.
