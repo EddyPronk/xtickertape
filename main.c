@@ -1,7 +1,8 @@
-/* $Id: main.c,v 1.27 1998/10/15 09:25:26 phelps Exp $ */
+/* $Id: main.c,v 1.28 1998/10/16 01:59:24 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <pwd.h>
 #include <errno.h>
 
 #include <X11/Intrinsic.h>
@@ -14,13 +15,8 @@
 #include "Control.h"
 #include "Tickertape.h"
 
-# define PORT 5678
-
-#ifdef ELVIN_HOSTNAME
-#define HOSTNAME ELVIN_HOSTNAME
-#else /* ELVIN_HOSTNAME */
-#define HOSTNAME "fatcat"
-#endif /* ELVIN_HOSTNAME */
+#define HOST "elvin"
+#define PORT 5678
 #define BUFFERSIZE 8192
 
 /* Static function headers */
@@ -30,6 +26,11 @@ static void Click(Widget widget, XtPointer ignored, XtPointer context);
 static void SendMessage(Message message, void *context);
 static void ReceiveMessage(Message message, void *context);
 static FILE *GetGroupFile();
+static void Usage(char *argv[]);
+static void ParseArgs(
+    int argc, char *argv[],
+    char **host_return, int *port_return,
+    char **user_return);
 
 
 /* The ControlPanel popup */
@@ -134,11 +135,104 @@ static FILE *GetGroupFile()
     {
 	sprintf(buffer, "%s/.ticker/groups", getenv("HOME"));
     }
-#ifdef DEBUG    
-    printf("reading group file \"%s\"\n", buffer);
-#endif /* DEBUG */
+
     return fopen(buffer, "r");
 }
+
+
+/* Print out usage message */
+static void Usage(char *argv[])
+{
+    fprintf(stderr, "usage: %s [-host hostname] [-port port] [-user username]\n", argv[0]);
+}
+
+/* Parses arguments and sets stuff up */
+static void ParseArgs(
+    int argc, char *argv[],
+    char **host_return, int *port_return,
+    char **user_return)
+{
+    int index = 1;
+    *host_return = HOST;
+    *port_return = PORT;
+    *user_return = NULL;
+
+    while (index < argc)
+    {
+	char *arg = argv[index++];
+
+	/* Make sure options begin with '-' */
+	if (arg[0] != '-')
+	{
+	    Usage(argv);
+	    exit(1);
+	}
+
+	/* Make sure the option has an argument */
+	if (index >= argc)
+	{
+	    Usage(argv);
+	    exit(1);
+	}
+
+	/* Deal with the argument */
+	switch (arg[1])
+	{
+	    /* host */
+	    case 'h':
+	    {
+		if (strcmp(arg, "-host") == 0)
+		{
+		    *host_return = argv[index++];
+		    break;
+		}
+
+		Usage(argv);
+		exit(1);
+	    }
+
+	    /* port */
+	    case 'p':
+	    {
+		if (strcmp(arg, "-port") == 0)
+		{
+		    *port_return = atoi(argv[index++]);
+		    break;
+		}
+
+		Usage(argv);
+		exit(1);
+	    }
+
+	    case 'u':
+	    {
+		if (strcmp(arg, "-user") == 0)
+		{
+		    *user_return = argv[index++];
+		    break;
+		}
+
+		Usage(argv);
+		exit(1);
+	    }
+
+	    /* Anything else is bogus */
+	    default:
+	    {
+		Usage(argv);
+		exit(1);
+	    }
+	}
+    }
+
+    /* Set the user name if not specified on the command line */
+    if (*user_return == NULL)
+    {
+	*user_return = getpwuid(getuid()) -> pw_name;
+    }
+}
+
+
 
 
 /* Parse args and go */
@@ -148,8 +242,9 @@ int main(int argc, char *argv[])
     FILE *file;
     List subscriptions;
     Atom deleteAtom;
-    char *hostname = HOSTNAME;
-    int port = PORT;
+    char *host;
+    int port;
+    char *user;
     int index = 1;
 
     /* Create the toplevel widget */
@@ -160,6 +255,9 @@ int main(int argc, char *argv[])
 	XtNborderWidth, 0,
 	NULL);
 
+    /* Parse the arguments list now that Xt has had a look */
+    ParseArgs(argc, argv, &host, &port, &user);
+
     /* Add a calback for when it gets destroyed (?) */
     XtAppAddActions(context, actions, XtNumber(actions));
 
@@ -169,15 +267,6 @@ int main(int argc, char *argv[])
 	NULL);
     XtAddCallback((Widget)tickertape, XtNcallback, Click, NULL);
 
-    /* Read args for hostname and port */
-    if (index < argc)
-    {
-	hostname = argv[index++];
-    }
-    if (index < argc)
-    {
-	port = atoi(argv[index++]);
-    }
 
     /* Read subscriptions from the groups file */
     subscriptions = List_alloc();
@@ -196,11 +285,11 @@ int main(int argc, char *argv[])
 
     /* listen for messages from elvin */
     connection = ElvinConnection_alloc(
-	hostname, port, subscriptions,
+	host, port, subscriptions,
 	Subscription_alloc("tickertape", "", 0, 0, 10, 10, ReceiveMessage, tickertape));
 
     /* Build the widget */
-    controlPanel = ControlPanel_alloc(top, subscriptions, SendMessage, connection);
+    controlPanel = ControlPanel_alloc(top, user, subscriptions, SendMessage, connection);
     XtRealizeWidget(top);
 
     /* Quit when the window is closed */
