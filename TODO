@@ -1,13 +1,5 @@
 Things that would be nice to have in future versions of xtickertape:
 
-Misc
-
-- Avoid adding the same status message to the scroller over and over
-  again.  Perhaps use the tag to just replace the existing status
-  message?  Perhaps messages that don't indicate a change in
-  connection state should only go into the status box?
-
-
 Documentation
 
 - Update the man page to include information on the new History
@@ -31,10 +23,6 @@ Control Panel:
 - We need to translate from the current locale to UTF-8 before sending
   messages or the server will dump us when we try to send any
   non-ASCII characters.
-
-- Get the status line to display connection information when the mouse
-  isn't over a message with an attachment.  Get it to display
-  something useful if it is over such a message.
 
 
 Scroller:
@@ -88,7 +76,7 @@ History Widget
   fonts.
 
 
-Scheme Interpreter [POSTPONED until v2.1]:
+Scheme Interpreter [POSTPONED until v3]:
 
 - This needs to be connected to everything so that we can do
   amusing things.
