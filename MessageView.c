@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.13 1997/05/31 03:42:28 phelps Exp $ */
+/* $Id: MessageView.c,v 1.14 1997/05/31 03:44:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -269,9 +269,9 @@ MessageView MessageView_alloc(TickertapeWidget widget, Message message)
 {
     MessageView self = (MessageView) malloc(sizeof(struct MessageView_t));
 
-#ifdef SANITY_CHECK
+#ifdef SANITY
     self -> sanity_check = sanity_value;
-#endif /* SANITY_CHECK */
+#endif /* SANITY */
     self -> refcount = 0;
     self -> widget = widget;
     self -> message = message;
@@ -297,13 +297,12 @@ void MessageView_free(MessageView self)
 	TtStopTimer(self -> widget, self -> timer);
     }
 
-#ifdef SANITY_CHECK
+#ifdef SANITY
     self -> sanity_check = sanity_freed;
-#else /* SANITY_CHECK */
+#endif /* SANITY */
     Message_free(self -> message);
     XFreePixmap(XtDisplay(self -> widget), self -> pixmap);
     free(self);
-#endif /* SANITY_CHECK */
 }
 
 
