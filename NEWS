@@ -1,3 +1,7 @@
+Overview of changes in xtickertape-1.6.0
+
+* Added a `Help' menu.  Now for the `About' box...
+
 Overview of changes in xtickertape-1.5.10
 
 * Fixed a bug in the reconnect code in which the delay between reconnect
