@@ -74,5 +74,5 @@ rwall:no menu:manual:1:60\n\
 usenet:no menu:manual:60:60\n\
 \n\
 # Your own group so that you can talk to yourself
-%u:menu:manual:1:10\n\
+%u@%d:menu:manual:1:10\n\
 ";
