@@ -35,7 +35,7 @@
 #define USENET_SUB_H
 
 #ifndef lint
-static const char cvs_USENET_SUB_H[] = "$Id: usenet_sub.h,v 1.3 1999/11/18 07:14:54 phelps Exp $";
+static const char cvs_USENET_SUB_H[] = "$Id: usenet_sub.h,v 1.4 1999/12/16 07:32:44 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -59,6 +59,6 @@ int usenet_sub_add(
     struct usenet_expr *expressions, size_t count);
 
 /* Sets the receiver's elvin connection */
-void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, dstc_error_t error);
+void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error);
 
 #endif /* USENET_SUB_H */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.11 1999/11/22 21:32:36 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.12 1999/12/16 07:32:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -94,7 +94,7 @@ static void notify_cb(
     elvin_notification_t notification,
     int is_secure,
     void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
@@ -242,7 +242,6 @@ static void notify_cb(
     }
 
     /* Clean up */
-    elvin_notification_free(notification, error);
     free(newsgroups);
     if (buffer != NULL)
     {
@@ -562,14 +561,14 @@ int usenet_sub_add(
 static void subscribe_cb(
     elvin_handle_t handle, int result,
     int64_t subscription_id, void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     self -> subscription_id = subscription_id;
 }
 
 /* Sets the receiver's elvin connection */
-void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, dstc_error_t error)
+void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error)
 {
     /* Disconnect from the old connection */
     if ((self -> handle != NULL) && (self -> subscription_id != 0))

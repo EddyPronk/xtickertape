@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.8 1999/12/09 12:56:11 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.9 1999/12/16 07:32:42 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -74,7 +74,7 @@ struct group_sub
     elvin_handle_t handle;
 
     /* A convenient error context */
-    dstc_error_t error;
+    elvin_error_t error;
 
     /* The receiver's subscription id (for unsubscribing) */
     int64_t subscription_id;
@@ -109,7 +109,7 @@ static void notify_cb(
     elvin_notification_t notification,
     int is_secure,
     void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
     message_t message;
@@ -269,7 +269,6 @@ static void notify_cb(
 
     /* Clean up */
     message_free(message);
-    elvin_notification_free(notification, error);
 }
 
 /* Sends a message_t using the receiver's information */
@@ -297,46 +296,46 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add an xtickertape version tag */
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_VERSION,
 	VERSION,
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
     /* Add the TICKERTAPE field */
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_TICKERTAPE,
 	self -> name,
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
     /* Add the USER field */
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_USER,
 	message_get_user(message),
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
     /* Add the TICKERTEXT field */
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_TICKERTEXT,
 	message_get_string(message),
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
@@ -354,35 +353,35 @@ static void send_message(group_sub_t self, message_t message)
     /* Add mime information if both mime_args and mime_type are provided */
     if ((mime_args != NULL) && (mime_type != NULL))
     {
-	if (elvin_notification_add_string8(
+	if (elvin_notification_add_string(
 	    notification,
 	    F_MIME_ARGS,
 	    mime_args,
 	    self -> error) == 0)
 	{
-	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    abort();
 	}
 
-	if (elvin_notification_add_string8(
+	if (elvin_notification_add_string(
 	    notification,
 	    F_MIME_TYPE,
 	    mime_type,
 	    self -> error) == 0)
 	{
-	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    abort();
 	}
     }
 
     /* Add the Message-ID field */
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_MESSAGE_ID,
 	message_id,
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
@@ -390,13 +389,13 @@ static void send_message(group_sub_t self, message_t message)
     /* Add the In-Reply-To field if relevant */
     if (reply_id != NULL)
     {
-	if (elvin_notification_add_string8(
+	if (elvin_notification_add_string(
 	    notification,
 	    F_IN_REPLY_TO,
 	    reply_id,
 	    self -> error) == 0)
 	{
-	    fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	    fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	    abort();
 	}
     }
@@ -511,7 +510,7 @@ void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 static void subscribe_cb(
     elvin_handle_t handle, int result,
     int64_t subscription_id, void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     group_sub_t self = (group_sub_t)rock;
     self -> subscription_id = subscription_id;
@@ -519,7 +518,7 @@ static void subscribe_cb(
 
 
 /* Sets the receiver's connection */
-void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, dstc_error_t error)
+void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_error_t error)
 {
     if ((self -> handle != NULL) && (self -> subscription_id != 0))
     {

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.70 1999/12/09 13:27:49 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.71 1999/12/16 07:32:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -162,7 +162,7 @@ static void parse_args(
     char **user_return, char **domain_return,
     char **ticker_dir_return,
     char **groups_file_return, char **usenet_file_return,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     char *url;
     int choice;
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 {
     XtAppContext context;
     elvin_handle_t handle;
-    dstc_error_t error;
+    elvin_error_t error;
     char *user;
     char *domain;
     char *ticker_dir;

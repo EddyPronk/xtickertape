@@ -35,7 +35,7 @@
 #define MAIL_SUB_H
 
 #ifndef lint
-static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.4 1999/11/18 07:14:53 phelps Exp $";
+static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.5 1999/12/16 07:32:43 phelps Exp $";
 #endif /* lint */
 
 /* The mail_sub_t data type */
@@ -57,6 +57,6 @@ void mail_sub_free(mail_sub_t self);
 void mail_sub_debug(mail_sub_t self);
 
 /* Sets the receiver's connection */
-void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, dstc_error_t error);
+void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error_t error);
 
 #endif /* MAIL_SUB_H */

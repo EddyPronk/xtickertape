@@ -44,16 +44,8 @@ if test "$ok" = "no" ; then
 	exit 1
 fi
 
-dnl Make sure the dstc_std library can be found
-AC_CHECK_LIB(dstc_std, dstc_error_free, LIBS="-ldstc_std $LIBS"; ok=yes, ok=no)
-if test "$ok" = "no" ; then
-	echo "ERROR: \`libdstc_std' is missing on your system.  This probably"
-	echo "       means that you need to specify where to go look for it."
-	exit 1
-fi
-
 dnl Make sure that an elvin library can be found
-AC_CHECK_LIB(vin4, elvin_notification_alloc, LIBS="-lvin4 -le4lang -lep $LIBS" ; ok=yes, ok=no, -le4lang -lep)
+AC_CHECK_LIB(vin4c, elvin_async_init, LIBS="-lvin4c -lvin4 $LIBS" ; ok=yes, ok=no, -lvin4)
 if test "$ok" = "no" ; then
 	echo "ERROR: \`libvin4' is missing on your system.  This probably"
 	echo "       means that you need to specify where to go look for it."

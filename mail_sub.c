@@ -28,10 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.12 1999/11/22 21:32:35 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.13 1999/12/16 07:32:43 phelps Exp $";
 #endif /* lint */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <elvin/elvin.h>
 #include "message.h"
 #include "mbox_parser.h"
@@ -76,7 +78,7 @@ static void notify_cb(
     elvin_notification_t notification,
     int is_secure,
     void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
@@ -148,7 +150,6 @@ static void notify_cb(
 
     /* Clean up */
     message_free(message);
-    elvin_notification_free(notification, error);
 
     /* Free the folder name */
     if (buffer != NULL)
@@ -210,14 +211,14 @@ void mail_sub_free(mail_sub_t self)
 static void subscribe_cb(
     elvin_handle_t handle, int result,
     int64_t subscription_id, void *rock,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
     self -> subscription_id = subscription_id;
 }
 
 /* Sets the receiver's connection */
-void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, dstc_error_t error)
+void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error_t error)
 {
     /* Unsubscribe from the old connection */
     if (self -> handle != NULL)

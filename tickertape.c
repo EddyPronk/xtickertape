@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.44 1999/12/12 23:38:24 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.45 1999/12/16 07:32:43 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -83,7 +83,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.44 1999/12/12 23:38:24 phelps
 struct tickertape
 {
     /* A convenient error context */
-    dstc_error_t error;
+    elvin_error_t error;
 
     /* The elvin connection handle */
     elvin_handle_t handle;
@@ -237,23 +237,23 @@ static void publish_startup_notification(tickertape_t self)
 	abort();
     }
 
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_TICKERTAPE_STARTUP,
 	VERSION,
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
-    if (elvin_notification_add_string8(
+    if (elvin_notification_add_string(
 	notification,
 	F_USER,
 	self -> user,
 	self -> error) == 0)
     {
-	fprintf(stderr, "elvin_notification_add_string8(): failed\n");
+	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
@@ -998,7 +998,7 @@ static void connect_timeout(XtPointer rock, XtIntervalId *interval)
 /* This is called when our connection request is handled */
 static void connect_cb(
     elvin_handle_t handle, int result,
-    void *rock, dstc_error_t error)
+    void *rock, elvin_error_t error)
 {
     tickertape_t self = (tickertape_t)rock;
     int index;
@@ -1047,7 +1047,7 @@ tickertape_t tickertape_alloc(
     char *ticker_dir,
     char *groups_file, char *usenet_file,
     Widget top,
-    dstc_error_t error)
+    elvin_error_t error)
 {
     tickertape_t self;
 
