@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.103 2002/04/23 16:22:24 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.104 2002/04/23 16:38:56 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -37,6 +37,9 @@ static const char cvsid[] = "$Id: main.c,v 1.103 2002/04/23 16:22:24 phelps Exp 
 #include <stdio.h> /* fprintf */
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h> /* exit, getenv */
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h> /* strdup */
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> /* getopt */
@@ -183,36 +186,51 @@ static char *get_user()
 static char *get_domain()
 {
     struct utsname name;
+#ifdef HAVE_GETHOSTBYNAME
     struct hostent *host;
+#endif
     char *domain;
+    char *point;
+    int ch;
 
     /* If the `DOMAIN' environment variable is set then use it */
     if ((domain = getenv("DOMAIN")) != NULL)
     {
-	return domain;
+	return strdup(domain);
     }
 
-    /* Otherwise look up the node name */
-    if (! (uname(&name) < 0))
+    /* Look up the node name */
+    if (uname(&name) < 0)
     {
-	/* And use that to look up the host entry */
-	if ((host = gethostbyname(name.nodename)) == NULL)
-	{
-	    return DEFAULT_DOMAIN;
-	}
+	return strdup(DEFAULT_DOMAIN);
+    }
 
-	/* Strip everything up to and including the first `.' */
-	for (domain = host -> h_name; *domain != '\0'; domain++)
+#ifdef HAVE_GETHOSTBYNAME
+    /* Use that to get the canonical name */
+    if ((host = gethostbyname(name.nodename)) == NULL)
+    {
+	domain = name.nodename;
+    }
+    else
+    {
+	domain = host -> h_name;
+    }
+#else
+    domain = name.nodename;
+#endif
+
+    /* Strip everything up to and including the first `.' */
+    point = domain;
+    while ((ch = *(point++)) != 0)
+    {
+	if (ch == '.')
 	{
-	    if (*domain == '.')
-	    {
-		return domain + 1;
-	    }
+	    return strdup(point);
 	}
     }
 
-    /* No luck.  Resort to a default domain */
-    return DEFAULT_DOMAIN;
+    /* No dots; just use what we have */
+    return strdup(domain);
 }
 
 #if defined(ENABLE_LISP_INTERPRETER)
@@ -306,7 +324,7 @@ static void parse_args(
 	    /* --domain= or -D */
 	    case 'D':
 	    {
-		*domain_return = optarg;
+		*domain_return = strdup(optarg);
 		break;
 	    }
 
@@ -378,7 +396,7 @@ static void parse_args(
     {
 	elvin_handle_set_property(handle, "http.proxy", http_proxy, NULL);
     }
-
+    
     return;
 }
 
