@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.10 1999/11/19 07:44:08 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.11 1999/11/21 12:04:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -80,20 +80,21 @@ static void notify_cb(
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
-    av_tuple_t tuple;
+    elvin_basetypes_t type;
+    elvin_value_t value;
     char *from;
     char *folder;
     char *subject;
     char *buffer = NULL;
 
     /* Get the name from the `From' field */
-    tuple = elvin_notification_lookup(notification, F_FROM, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	from = tuple -> value.s;
+	from = value.s;
 
 	/* Split the user name from the address. */
-	if ((mbox_parser_parse(self -> parser, tuple -> value.s)) == 0)
+	if ((mbox_parser_parse(self -> parser, from)) == 0)
 	{
 	    from = mbox_parser_get_name(self -> parser);
 	    if (*from == '\0')
@@ -109,10 +110,10 @@ static void notify_cb(
     }
 
     /* Get the folder field */
-    tuple = elvin_notification_lookup(notification, F_FOLDER, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_FOLDER, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	folder = tuple -> value.s;
+	folder = value.s;
 
 	/* Format the folder name to use as the group */
 	if ((buffer = (char *)malloc(strlen(FOLDER_FMT) + strlen(folder) - 1)) != NULL)
@@ -127,10 +128,10 @@ static void notify_cb(
     }
 
     /* Get the subject field */
-    tuple = elvin_notification_lookup(notification, F_SUBJECT, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_SUBJECT, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	subject = tuple -> value.s;
+	subject = value.s;
     }
     else
     {

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.9 1999/11/19 06:57:35 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.10 1999/11/21 12:04:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -98,7 +98,8 @@ static void notify_cb(
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
-    av_tuple_t tuple;
+    elvin_basetypes_t type;
+    elvin_value_t value;
     char *string;
     char *newsgroups;
     char *name;
@@ -114,10 +115,10 @@ static void notify_cb(
     }
 
     /* Get the newsgroups to which the message was posted */
-    tuple = elvin_notification_lookup(notification, NEWSGROUPS, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, NEWSGROUPS, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	string = tuple -> value.s;
+	string = value.s;
     }
     else
     {
@@ -133,24 +134,24 @@ static void notify_cb(
     sprintf(newsgroups, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
-    tuple = elvin_notification_lookup(notification, FROM_NAME, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, FROM_NAME, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	name = tuple -> value.s;
+	name = value.s;
     }
     else
     {
-	tuple = elvin_notification_lookup(notification, FROM_EMAIL, error);
-	if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	if (elvin_notification_get(notification, FROM_EMAIL, &type, &value, error) &&
+	    type == ELVIN_STRING)
 	{
-	    name = tuple -> value.s;
+	    name = value.s;
 	}
 	else
 	{
-	    tuple = elvin_notification_lookup(notification, FROM, error);
-	    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	    if (elvin_notification_get(notification, FROM, &type, &value, error) &&
+		type == ELVIN_STRING)
 	    {
-		name = tuple -> value.s;
+		name = value.s;
 	    }
 	    else
 	    {
@@ -160,10 +161,10 @@ static void notify_cb(
     }
 
     /* Get the SUBJECT field (if provided) */
-    tuple = elvin_notification_lookup(notification, SUBJECT, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, SUBJECT, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	subject = tuple -> value.s;
+	subject = value.s;
     }
     else
     {
@@ -171,16 +172,16 @@ static void notify_cb(
     }
 
     /* Get the MIME_ARGS field (if provided) */
-    tuple = elvin_notification_lookup(notification, MIME_ARGS, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, MIME_ARGS, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	mime_args = tuple -> value.s;
+	mime_args = value.s;
 
 	/* Get the MIME_TYPE field (if provided) */
-	tuple = elvin_notification_lookup(notification, MIME_TYPE, error);
-	if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	if (elvin_notification_get(notification, MIME_TYPE, &type, &value, error) &&
+	    type == ELVIN_STRING)
 	{
-	    mime_type = tuple -> value.s;
+	    mime_type = value.s;
 	}
 	else
 	{
@@ -190,16 +191,16 @@ static void notify_cb(
     /* No MIME_ARGS provided.  Construct one using the Message-ID field */
     else
     {
-	tuple = elvin_notification_lookup(notification, MESSAGE_ID, error);
-	if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	if (elvin_notification_get(notification, MESSAGE_ID, &type, &value, error) &&
+	    type == ELVIN_STRING)
 	{
-	    char *message_id = tuple -> value.s;
+	    char *message_id = value.s;
 	    char *news_host;
 
-	    tuple = elvin_notification_lookup(notification, X_NNTP_HOST, error);
-	    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+	    if (elvin_notification_get(notification, X_NNTP_HOST, &type, &value, error) &&
+		type == ELVIN_STRING)
 	    {
-		news_host = tuple -> value.s;
+		news_host = value.s;
 	    }
 	    else
 	    {

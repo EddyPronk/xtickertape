@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.5 1999/11/19 06:57:35 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.6 1999/11/21 12:04:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -112,7 +112,8 @@ static void notify_cb(
 {
     group_sub_t self = (group_sub_t)rock;
     message_t message;
-    av_tuple_t tuple;
+    elvin_basetypes_t type;
+    elvin_value_t value;
     char *user;
     char *text;
     int timeout;
@@ -128,10 +129,10 @@ static void notify_cb(
     }
     
     /* Get the user from the notification (if provided) */
-    tuple = elvin_notification_lookup(notification, F_USER, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_USER, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	user = tuple -> value.s;
+	user = value.s;
     }
     else
     {
@@ -139,10 +140,10 @@ static void notify_cb(
     }
 
     /* Get the text of the notification (if provided) */
-    tuple = elvin_notification_lookup(notification, F_TICKERTEXT, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_TICKERTEXT, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	text = tuple -> value.s;
+	text = value.s;
     }
     else
     {
@@ -151,32 +152,31 @@ static void notify_cb(
 
     /* Get the timeout for the notification (if provided) */
     timeout = 0;
-    tuple = elvin_notification_lookup(notification, F_TIMEOUT, error);
-    if (tuple != NULL)
+    if (elvin_notification_get(notification, F_TIMEOUT, &type, &value, error))
     {
-	switch (tuple -> type)
+	switch (type)
 	{
 	    case ELVIN_INT32:
 	    {
-		timeout = (int)tuple -> value.i;
+		timeout = value.i;
 		break;
 	    }
 
 	    case ELVIN_INT64:
 	    {
-		timeout = (int)tuple -> value.h;
+		timeout = (int)value.h;
 		break;
 	    }
 
 	    case ELVIN_REAL64:
 	    {
-		timeout = (int)(0.5 + tuple -> value.d);
+		timeout = (int)(0.5 + value.d);
 		break;
 	    }
 
 	    case ELVIN_STRING:
 	    {
-		timeout = atoi(tuple -> value.s);
+		timeout = atoi(value.s);
 		break;
 	    }
 
@@ -201,10 +201,10 @@ static void notify_cb(
     }
 
     /* Get the MIME type (if provided) */
-    tuple = elvin_notification_lookup(notification, F_MIME_TYPE, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_MIME_TYPE, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	mime_type = tuple -> value.s;
+	mime_type = value.s;
     }
     else
     {
@@ -212,10 +212,10 @@ static void notify_cb(
     }
 
     /* Get the MIME args (if provided) */
-    tuple = elvin_notification_lookup(notification, F_MIME_ARGS, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	mime_args = tuple -> value.s;
+	mime_args = value.s;
     }
     else
     {
@@ -223,10 +223,10 @@ static void notify_cb(
     }
 
     /* Get the message id (if provided) */
-    tuple = elvin_notification_lookup(notification, F_MESSAGE_ID, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	message_id = tuple -> value.s;
+	message_id = value.s;
     }
     else 
     {
@@ -234,10 +234,10 @@ static void notify_cb(
     }
 
     /* Get the reply id (if provided) */
-    tuple = elvin_notification_lookup(notification, F_IN_REPLY_TO, error);
-    if (tuple != NULL && tuple -> type == ELVIN_STRING)
+    if (elvin_notification_get(notification, F_IN_REPLY_TO, &type, &value, error) &&
+	type == ELVIN_STRING)
     {
-	reply_id = tuple -> value.s;
+	reply_id = value.s;
     }
     else
     {
