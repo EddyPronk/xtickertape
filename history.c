@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.27 2000/03/27 00:44:55 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.28 2000/04/28 01:02:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -529,16 +529,17 @@ static int history_count(history_t self)
 static int history_get_selection_index(history_t self)
 {
     int *selection_positions;
+    int result = 0;
     int count;
 
     /* Ask the widget */
     if (XmListGetSelectedPos(self -> list, &selection_positions, &count))
     {
-	return selection_positions[0];
+	result = selection_positions[0];
+	free(selection_positions);
     }
 
-    /* No selection */
-    return 0;
+    return result;
 }
 
 /* Sets the history's threadedness */
