@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.82 2002/02/14 18:29:37 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.83 2002/04/05 12:23:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -51,8 +51,10 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.82 2002/02/14 18:29:37 phelps
 #include "Scroller.h"
 #include "panel.h"
 
+#ifdef ENABLE_LISP_INTERPRETER
 #include "vm.h"
 #include "parser.h"
+#endif /* ENABLE_LISP_INTERPRETER */
 
 #include "groups.h"
 #include "groups_parser.h"
@@ -93,11 +95,13 @@ struct tickertape
     /* The elvin connection handle */
     elvin_handle_t handle;
 
+#ifdef ENABLE_LISP_INTERPRETER
     /* The interpreter's virtual machine */
     vm_t vm;
 
     /* The interpreter's parser */
     parser_t parser;
+#endif /* ENABLE_LISP_INTERPRETER */
 
     /* The user's name */
     char *user;
@@ -1084,7 +1088,7 @@ static void status_cb(
     }
 }
 
-
+#ifdef ENABLE_LISP_INTERPRETER
 /* The callback from the parser */
 static int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
 {
@@ -1672,7 +1676,7 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 	define_special(vm, "quote", prim_quote, error) &&
 	define_special(vm, "setq", prim_setq, error);
 }
-
+#endif /* ENABLE_LISP_INTERPRETER */
 
 /*
  *
@@ -1736,6 +1740,7 @@ tickertape_t tickertape_alloc(
     /* Draw the user interface */
     init_ui(self);
 
+#ifdef ENABLE_LISP_INTERPRETER
     /* Initialize the scheme virtual machine */
     if ((self -> vm = vm_alloc(error)) == NULL)
     {
@@ -1764,6 +1769,7 @@ tickertape_t tickertape_alloc(
 	(XtPointer)XtInputReadMask,
 	interp_cb, self);
     printf("> "); fflush(stdout);
+#endif /* ENABLE_LISP_INTERPRETER */
 
     /* Set the handle's status callback */
     handle -> status_cb = status_cb;
