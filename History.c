@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.61 2002/04/12 21:48:30 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.62 2002/04/12 21:51:29 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -556,6 +556,7 @@ static void realize(
     XSetWindowAttributes *attributes);
 static void redisplay(Widget self, XEvent *event, Region region);
 static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
+static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void destroy(Widget self);
 static void resize(Widget self);
 static Boolean set_values(
@@ -1755,10 +1756,8 @@ static void border_unhighlight(Widget widget)
 static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
 {
     HistoryWidget self = (HistoryWidget)closure;
-    Window root, child;
-    int root_x, root_y, x, y;
-    unsigned int mask;
     unsigned int index;
+    int x, y;
 
     /* Sanity check */
     assert(self -> history.drag_timeout == *id);
