@@ -28,99 +28,99 @@
 ###############################################################
 
 <config-file> ::= <subscription-list>
-	[function]
+	[identity]
 
 
 # A subscription list is one or more subscriptions
 <subscription-list> ::= <subscription-list> <subscription>
-	[function]
+	[extend_sub_list]
 <subscription-list> ::= <subscription>
-	[function]
+	[make_sub_list]
 
 # Subscriptions are a tagged sub definition
 <subscription> ::= <tag> LBRACE <statements> RBRACE SEMI
-	[function]
+	[make_sub]
 <subscription> ::= <tag> LBRACE RBRACE SEMI
-	[function]
+	[make_default_sub]
 
 # A tag is simply an ID followed by a COLON
 <tag> ::= ID COLON
-	[function]
+	[make_tag]
 
 # A list of statements
 <statements> ::= <statements> <statement>
-	[function]
+	[extend_statements]
 <statements> ::= <statement>
-	[function]
+	[make_statements]
 
 
 # So far we only support assignment statements
 <statement> ::= ID ASSIGN <disjunction> SEMI
-	[function]
+	[make_statement]
 
 
 # Disjunctions have the lowest precedence
 <disjunction> ::= <disjunction> OR <conjunction>
-	[function]
+	[extend_disjunction]
 <disjunction> ::= <conjunction>
-	[function]
+	[identity]
 
 # Conjunctions have the next highest precedence
 <conjunction> ::= <conjunction> AND <term>
-	[function]
+	[extend_conjunction]
 <conjunction> ::= <term>
-	[function]
+	[identity]
 
 # A value may be a comparsion
 <term> ::= <term> EQ <value>
-	[function]
+	[make_eq]
 <term> ::= <term> NEQ <value>
-	[function]
+	[make_neq]
 <term> ::= <term> LT <value>
-	[function]
+	[make_lt]
 <term> ::= <term> LE <value>
-	[function]
+	[make_le]
 <term> ::= <term> GT <value>
-	[function]
+	[make_gt]
 <term> ::= <term> GE <value>
-	[function]
+	[make_ge]
 <term> ::= <value>
-	[function]
+	[identity]
 
 # A value may be negated
 <value> ::= BANG <value>
-	[function]
+	[make_not]
 
 # And they may be a comma-separated list of values
 <values> ::= <values> COMMA <value>
-	[function]
+	[extend_values]
 <values> ::= <value>
-	[function]
+	[make_values]
 
 # A value can be many things, including basetypes
 <value> ::= ID
-	[function]
+	[identity]
 <value> ::= STRING
-	[function]
+	[identity]
 <value> ::= INT32
-	[function]
+	[identity]
 <value> ::= INT64
-	[function]
+	[identity]
 <value> ::= REAL64
-	[function]
+	[identity]
 
 # Values can be lists
 <value> ::= LBRACKET <values> RBRACKET
-	[function]
+	[make_list]
 <value> ::= LBRACKET RBRACKET
-	[function]
+	[make_empty_list]
 
 # Values are also returned from functions
 <value> ::= ID LPAREN <values> RPAREN
-	[function]
+	[make_function]
 <value> ::= ID LPAREN RPAREN
-	[function]
+	[make_noarg_function]
 
 # And any disjunction becomes a value in parenthesis
 <value> ::= LPAREN <disjunction> RPAREN
-	[function]
+	[identity2]
