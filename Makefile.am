@@ -25,7 +25,6 @@ xtickertape_SOURCES = \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	orbit_sub.h orbit_sub.c \
 	mask.xbm red.xbm white.xbm \
-	getopt.h getopt.c getopt1.c \
 	errors.h main.c
 
 # Indicate what the man pages are
