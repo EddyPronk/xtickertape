@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.9 1999/08/19 05:11:49 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.10 1999/08/19 05:26:05 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -406,7 +406,7 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
     sprintf(buffer, "Connected to elvin server at %s:%d.", host, port);
 
     /* Display the message on the scroller */
-    message = Message_alloc(NULL, "internal", "tickertape", buffer, NULL, NULL, 0, 0);
+    message = Message_alloc(NULL, "internal", "tickertape", buffer, 30, NULL, NULL, 0, 0);
     receive_callback(self, message);
     Message_free(message);
 
