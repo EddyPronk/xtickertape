@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.9 2000/11/20 12:46:55 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.10 2000/11/20 14:45:28 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -49,6 +49,8 @@ static const char cvsid[] = "$Id: vm.c,v 2.9 2000/11/20 12:46:55 phelps Exp $";
 #define LENGTH_MASK 0xFFFF0000
 #define TYPE_MASK 0x0000FF00
 #define FLAGS_MASK 0x000000FF
+
+#define OBJECT_SIZE(obj) ((((uint32_t)obj[0]) >> 16) & 0xFFFF)
 
 
 
@@ -172,17 +174,23 @@ static object_type_t object_type(object_t object)
     return (header >> 8) & 0xFF;
 }
 
-/* Returns the object on the top of the stack */
-int vm_top(vm_t self, object_t *result, elvin_error_t error)
+/* Returns the object n places back on the stack */
+int vm_peek(vm_t self, uint32_t count, object_t *result, elvin_error_t error)
 {
-    if (self -> sp < 1)
+    if (self -> sp < count + 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
 	return 0;
     }
 
-    *result = self -> stack[self -> sp - 1];
+    *result = self -> stack[self -> sp - count - 1];
     return 1;
+}
+
+/* Returns the object on the top of the stack */
+int vm_top(vm_t self, object_t *result, elvin_error_t error)
+{
+    return vm_peek(self, 0, result, error);
 }
 
 /* Pops and returns the top of the stack */
@@ -522,6 +530,13 @@ int vm_set_car(vm_t self, elvin_error_t error)
     return 1;
 }
 
+/* Pops a cons cell off the top of the stack and pushes its car on instead */
+int vm_cdr(vm_t self, elvin_error_t error)
+{
+    object_t cons;
+    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[2], error);
+}
+
 /* Sets the cdr of a cons cell */
 int vm_set_cdr(vm_t self, elvin_error_t error)
 {
@@ -536,14 +551,6 @@ int vm_set_cdr(vm_t self, elvin_error_t error)
     /* Assign */
     cons[2] = cdr;
     return 1;
-}
-
-
-/* Pops a cons cell off the top of the stack and pushes its car on instead */
-int vm_cdr(vm_t self, elvin_error_t error)
-{
-    object_t cons;
-    return vm_pop(self, &cons, error) && vm_push(self, (object_t)cons[2], error);
 }
 
 /* Reverses the pointers in a list that was constructed upside-down */
@@ -578,25 +585,187 @@ int vm_unwind_list(vm_t self, elvin_error_t error)
     return vm_push(self, cdr, error);
 }
 
+/* Makes a lambda out of the current environment and stack */
+int vm_make_lambda(vm_t self, elvin_error_t error)
+{
+    object_t object;
+    uint32_t count = 0;
 
+    /* Move the arg list to the top of the stack and look at it */
+    if (! vm_swap(self, error) ||
+	! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Unroll the arg list onto the stack */
+    while (object_type(object) == SEXP_CONS)
+    {
+	count++;
+
+	/* Extract the car of the arg list */
+	if (! vm_dup(self, error) ||
+	    ! vm_car(self, error) ||
+	    ! vm_top(self, &object, error))
+	{
+	    return 0;
+	}
+
+	/* Complain if we're not given symbols */
+	if (object_type(object) != SEXP_SYMBOL)
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg name");
+	    return 0;
+	}
+
+	/* Extract the cdr */
+	if (! vm_swap(self, error) ||
+	    ! vm_cdr(self, error) ||
+	    ! vm_top(self, &object, error))
+	{
+	    return 0;
+	}
+    }
+
+    /* Make sure we've ended well */
+    if (object_type(object) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	return 0;
+    }
+
+    /* Pop off the nil */
+    if (! vm_pop(self, NULL, error))
+    {
+	return 0;
+    }
+
+    /* Create an object big enough for the args plus an environment and body */
+    if (! vm_new(self, 2 + count, SEXP_LAMBDA, 0, error))
+    {
+	return 0;
+    }
+
+    /* Grab the object off the top of the stack */
+    if (! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Record the environment */
+    object[1] = self -> env;
+
+    /* Record the body and arg list */
+    memcpy(
+	object + 2,
+	self -> stack + self -> sp - count - 2,
+	POINTER_SIZE * (count + 1));
+
+    /* Fix the stack so that only the lambda is on top */
+    self -> stack[self -> sp - count - 2] = object;
+    self -> sp -= count + 1;
+
+    return 1;
+}
+
+/* Locates a cons cell in an alist */
+static int do_assoc(vm_t self, object_t alist, object_t symbol, elvin_error_t error)
+{
+    object_t cons = alist;
+
+    while (object_type(cons) == SEXP_CONS)
+    {
+	object_t car = (object_t)cons[1];
+
+	/* Make sure we have a cons cell */
+	if (object_type(car) == SEXP_CONS)
+	{
+	    /* Do we have a match? */
+	    if (symbol == (object_t)car[1])
+	    {
+		return vm_push(self, car, error);
+	    }
+	}
+
+	cons = (object_t)cons[2];
+    }
+
+    /* Not found */
+    return 0;
+}
+
+
+/* Looks up the value of the symbol on the top of the stack in the
+ * current environment */
+static int lookup(vm_t self, elvin_error_t error)
+{
+    object_t symbol;
+    object_t env = self -> env;
+
+    /* Get the symbol from the stack */
+    if (! vm_pop(self, &symbol, error))
+    {
+	return 0;
+    }
+
+    /* Look for it in this environment */
+    while (env)
+    {
+	if (do_assoc(self, (object_t)env[1], symbol, error))
+	{
+	    return vm_cdr(self, error);
+	}
+
+	env = (object_t)env[2];
+    }
+
+    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "undefined symbol()");
+    return 0;
+}
 
 /* Assigns the value on the top of the stack to the variable up one
  * place, leaving only the value on the stack */
 int vm_assign(vm_t self, elvin_error_t error)
 {
-    /* FIX THIS: this is wrong for non-root environments */
-    /* Duplicate the value and roll it up before the symbol */
-    return
-	vm_dup(self, error) &&
-	vm_roll(self, 2, error) &&
-	vm_make_cons(self, error) &&
-	vm_push(self, self -> env, error) &&
-	vm_car(self, error) &&
-	vm_make_cons(self, error) &&
-	vm_push(self, self -> env, error) &&
-	vm_swap(self, error) &&
-	vm_set_car(self, error) &&
-	vm_pop(self, NULL, error);
+    object_t symbol;
+    object_t env = self -> env;
+
+    /* Get the symbol */
+    if (! vm_peek(self, 1, &symbol, error))
+    {
+	return 0;
+    }
+
+    /* If we already have an entry for it then just change its value */
+    while (1)
+    {
+	/* Look in the current environment for its value */
+	if (do_assoc(self, (object_t)env[1], symbol, error))
+	{
+	    return
+		vm_swap(self, error) &&
+		vm_set_cdr(self, error) &&
+		vm_cdr(self, error);
+	}
+
+	/* If this is the root environment then just set the variable */
+	if (env[2] == NULL)
+	{
+	    return
+		vm_dup(self, error) &&
+		vm_roll(self, 2, error) &&
+		vm_make_cons(self, error) &&
+		vm_push(self, self -> env, error) &&
+		vm_car(self, error) &&
+		vm_make_cons(self, error) &&
+		vm_push(self, self -> env, error) &&
+		vm_swap(self, error) &&
+		vm_set_car(self, error) &&
+		vm_pop(self, NULL, error);
+	}
+
+	env = (object_t)env[2];
+    }
 }
 
 /* Adds the top two elements of the stack together */
@@ -687,61 +856,6 @@ int vm_add(vm_t self, elvin_error_t error)
 	}
     }
 }
-
-/* Locates a cons cell in an alist */
-static int do_assoc(vm_t self, object_t alist, object_t symbol, elvin_error_t error)
-{
-    object_t cons = alist;
-
-    while (object_type(cons) == SEXP_CONS)
-    {
-	object_t car = (object_t)cons[1];
-
-	/* Make sure we have a cons cell */
-	if (object_type(car) == SEXP_CONS)
-	{
-	    /* Do we have a match? */
-	    if (symbol == (object_t)car[1])
-	    {
-		return vm_push(self, car, error);
-	    }
-	}
-
-	cons = (object_t)cons[2];
-    }
-
-    /* Not found */
-    return 0;
-}
-
-/* Looks up the value of the symbol on the top of the stack in the
- * current environment */
-static int lookup(vm_t self, elvin_error_t error)
-{
-    object_t symbol;
-    object_t env = self -> env;
-
-    /* Get the symbol from the stack */
-    if (! vm_pop(self, &symbol, error))
-    {
-	return 0;
-    }
-
-    /* Look for it in this environment */
-    while (env)
-    {
-	if (do_assoc(self, (object_t)env[1], symbol, error))
-	{
-	    return vm_cdr(self, error);
-	}
-
-	env = (object_t)env[2];
-    }
-
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "undefined symbol()");
-    return 0;
-}
-
 
 /* Gets the top of the stack evaluated */
 static int eval_setup(vm_t self, elvin_error_t error)
@@ -842,18 +956,13 @@ static int funcall(vm_t self, elvin_error_t error)
 {
     object_t object;
 
-    /* Roll the function to the top of the stack */
-    if (! vm_unroll(self, self -> pc - 1, error))
+    /* Peek at the stack to get the function */
+    if (! vm_peek(self, self -> pc - 1, &object, error))
     {
 	return 0;
     }
 
-    /* Pop it */
-    if (! vm_pop(self, &object, error))
-    {
-	return 0;
-    }
-
+    /* Decide what to do based on its type */
     switch (object_type(object))
     {
 	case SEXP_SPECIAL:
@@ -871,8 +980,48 @@ static int funcall(vm_t self, elvin_error_t error)
 
 	case SEXP_LAMBDA:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda");
-	    return 0;
+	    uint32_t count, i;
+
+	    /* Check number of args */
+	    count = OBJECT_SIZE(object) - 2;
+	    if (count != self -> pc - 1)
+	    {
+		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong argc");
+		return 0;
+	    }
+
+	    /* Start with an empty alist */
+	    if (! vm_push_nil(self, error))
+	    {
+		return 0;
+	    }
+
+	    /* Add a cons pair for each item */
+	    for (i = count; 0 < i; i--)
+	    {
+		/* Make a cons cell out of the arg name and value and add it to the alist */
+		if (! vm_push(self, object[i + 2], error) ||
+		    ! vm_unroll(self, 2, error) ||
+		    ! vm_make_cons(self, error) ||
+		    ! vm_swap(self, error) ||
+		    ! vm_make_cons(self, error))
+		{
+		    return 0;
+		}
+	    }
+
+	    /* Add the parent environment and make it the current environment */
+	    if (! vm_push(self, object[1], error) ||
+		! vm_make_cons(self, error) ||
+		! vm_pop(self, &self -> env, error))
+	    {
+		return 0;
+	    }
+	
+	    /* Make the body be the current expression and reset the pc */
+	    self -> expr = object[2];
+	    self -> pc = 0;
+	    return 1;
 	}
 
 	default:
