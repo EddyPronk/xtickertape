@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.11 1999/06/21 14:27:11 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.12 1999/06/22 08:18:57 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -92,7 +92,7 @@ typedef struct
     glyph_t right_glyph;
 
     /* The width of the `effective' last glyph on the queue */
-    unsigned long last_width;
+    int last_width;
 
     /* The queue containing glyphs which need to be added */
     glyph_t pending;

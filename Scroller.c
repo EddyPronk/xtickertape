@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.33 1999/06/21 14:50:31 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.34 1999/06/22 08:18:56 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -326,7 +326,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
  * Answers the width of the gap for the given scroller width and sum
  * of the widths of all glyphs
  */
-static int gap_width(unsigned int scroller_width, unsigned int last_width)
+static int gap_width(int scroller_width, int last_width)
 {
     return (scroller_width < last_width + END_SPACING) ?
 	END_SPACING : scroller_width - last_width;
