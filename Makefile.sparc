@@ -20,7 +20,7 @@ INCLUDES = -I/usr/openwin/include -I/usr/local/dstc/include \
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
 LIBDIRS = -R/usr/local/dstc/sparc-sun-solaris2.5/lib:/usr/local/lib:/usr/openwin/lib -L/usr/local/dstc/sparc-sun-solaris2.5/lib -L/usr/local/lib -L/usr/openwin/lib
-LIBS = -lXaw3d -lXt -lXmu -lX11 -lvin -ldstc_std -lpthread
+LIBS = -lXaw3d -lXt -lXmu -lXext -lX11 -lvin -ldstc_std -lpthread
 
 all: $(ALL)
 
@@ -49,4 +49,4 @@ Hash.o: Hash.c Hash.h sanity.h
 List.o: List.c List.h sanity.h
 StringBuffer.o: StringBuffer.c StringBuffer.h sanity.h
 FileStreamTokenizer.o: FileStreamTokenizer.c FileStreamTokenizer.h StringBuffer.h sanity.h
-main.o: main.c Ticker.h
+main.o: main.c Ticker.h red.xbm white.xbm mask.xbm
