@@ -1,13 +1,13 @@
-/* $Id: ElvinConnection.c,v 1.25 1998/10/22 07:06:27 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.26 1998/10/24 04:52:22 phelps Exp $ */
 
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <alloca.h>
 
 #include "sanity.h"
 #include "ElvinConnection.h"
 #include "List.h"
+#include "StringBuffer.h"
 
 #define INITIAL_PAUSE 1000 /* 1 second */
 #define MAX_PAUSE (5 * 60 * 1000) /* 5 minutes */
@@ -145,17 +145,15 @@ static void Connect(ElvinConnection self)
 	/* Is this the first time we've tried to connect? */
 	if (self -> state == NeverConnected)
 	{
-	    char *buffer;
+	    StringBuffer buffer = StringBuffer_alloc();
 
-	    buffer = (char *)alloca(
-		strlen(self -> host) + 10 +
-		sizeof("Unable to connect to elvin server :"));
-	    sprintf(
-		buffer,
-		"Unable to connect to elvin server %s:%d",
-		self -> host, self -> port);
+	    StringBuffer_append(buffer, "Unable to connect to elvin server at ");
+	    StringBuffer_append(buffer, self -> host);
+	    StringBuffer_appendChar(buffer, ':');
+	    StringBuffer_appendInt(buffer, self -> port);
 
-	    (*self -> callback)(self -> context, buffer);
+	    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+	    StringBuffer_free(buffer);
 	}
 
 	XtAppAddTimeOut(
@@ -168,14 +166,18 @@ static void Connect(ElvinConnection self)
     {
 	if (self -> state != NeverConnected)
 	{
-	    char *buffer;
+	    StringBuffer buffer;
 
 	    self -> retryPause = INITIAL_PAUSE;
-	    buffer = (char *)alloca(
-		strlen(self -> host) + 10 +
-		sizeof("Connected to %s:%d"));
-	    sprintf(buffer, "Connected to %s:%d", self -> host, self -> port);
-	    (*self -> callback)(self -> context, buffer);
+
+	    buffer = StringBuffer_alloc();
+	    StringBuffer_append(buffer, "Connected to ");
+	    StringBuffer_append(buffer, self -> host);
+	    StringBuffer_appendChar(buffer, ':');
+	    StringBuffer_appendInt(buffer, self -> port);
+
+	    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+	    StringBuffer_free(buffer);
 	}
 	self -> state = Connected;
 
@@ -191,7 +193,7 @@ static void Connect(ElvinConnection self)
 static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *message)
 {
     ElvinConnection self = (ElvinConnection) arg;
-    char *buffer;
+    StringBuffer buffer;
     SANITY_CHECK(self);
 
     /* Unregister our file descriptor */
@@ -203,12 +205,16 @@ static void Error(elvin_t elvin, void *arg, elvin_error_code_t code, char *messa
 
     /* Notify the user that we've lost our connection */
     self -> state = LostConnection;
-    buffer = (char *)alloca(
-	strlen(self -> host) + 10 +
-	sizeof("Lost connection to elvin server :.  Attempting to reconnect"));
-    sprintf(buffer, "Lost connection to elvin server %s:%d.  Attempting to reconnect",
-	    self -> host, self -> port);
-    (*self -> callback)(self -> context, buffer);
+
+    buffer = StringBuffer_alloc();
+    StringBuffer_append(buffer, "Lost connection to elvin server ");
+    StringBuffer_append(buffer, self -> host);
+    StringBuffer_appendChar(buffer, ':');
+    StringBuffer_appendInt(buffer, self -> port);
+    StringBuffer_append(buffer, ".  Attempting to reconnect.");
+
+    (*self -> callback)(self -> context, StringBuffer_getBuffer(buffer));
+    StringBuffer_free(buffer);
 
     /* Try to reconnect */
     Connect(self);

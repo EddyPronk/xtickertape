@@ -1,9 +1,9 @@
-/* $Id: OrbitSubscription.c,v 1.9 1998/10/22 07:06:27 phelps Exp $ */
+/* $Id: OrbitSubscription.c,v 1.10 1998/10/24 04:54:26 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <alloca.h>
 #include "OrbitSubscription.h"
+#include "StringBuffer.h"
 #include "sanity.h"
 
 #ifdef SANITY
@@ -317,12 +317,14 @@ void OrbitSubscription_setConnection(OrbitSubscription self, ElvinConnection con
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
-	char *buffer = (char *)
-	    alloca(strlen(self -> id) + sizeof("exists(TICKERTEXT) && zone.id == \"\""));
-	sprintf(buffer, "exists(TICKERTEXT) && zone.id == \"%s\"\n", self -> id);
+	StringBuffer buffer = StringBuffer_alloc();
+	StringBuffer_append(buffer, "exists(TICKERTEXT) && zone.id == \"");
+	StringBuffer_append(buffer, self -> id);
+	StringBuffer_append(buffer, "\"");
 	self -> connectionInfo = ElvinConnection_subscribe(
-	    self -> connection, buffer,
+	    self -> connection, StringBuffer_getBuffer(buffer),
 	    (NotifyCallback)HandleNotify, self);
+	StringBuffer_free(buffer);
     }
 }
 
