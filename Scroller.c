@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.140 2003/01/14 16:56:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.141 2003/01/24 11:09:09 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1059,7 +1059,7 @@ static void add_left_holder(ScrollerWidget self)
 	/* Determine the width of the tail glyph */
 	if (tail == self -> scroller.gap)
 	{
-	    width = gap_width(self, self -> core.width);
+	    width = gap_width(self, left -> width);
 	}
 	else
 	{
@@ -1155,69 +1155,45 @@ static void remove_right_holder(ScrollerWidget self)
     glyph_holder_free(holder);
 }
 
-/* Remove glyph_holders from the left edge if appropriate */
-static void adjust_left_left(ScrollerWidget self)
-{
-    /* Keep going until we can do no more damage */
-    while (self -> scroller.left_offset >= self -> scroller.left_holder -> width)
-    {
-	remove_left_holder(self);
-    }
-}
-
-/* Add glyph_holders to the right edge if necessary */
-static void adjust_left_right(ScrollerWidget self)
-{
-    /* Keep going until we've plugged the hole */
-    while (self -> scroller.right_offset < 0)
-    {
-	add_right_holder(self);
-    }
-}
-
-/* Add glyph_holders to the left edge if necessary */
-static void adjust_right_left(ScrollerWidget self)
-{
-    /* Keep going until we've plugged the hole */
-    while (self -> scroller.left_offset < 0)
-    {
-	add_left_holder(self);
-    }
-}
-
-/* Remove glyph_holders from the right edge if appropriate */
-static void adjust_right_right(ScrollerWidget self)
-{
-    /* Keep going until we can do no more damage */
-    while (self -> scroller.right_offset >= self -> scroller.right_holder -> width)
-    {
-	remove_right_holder(self);
-    }
-}
-
 
 /* Updates the state of the scroller after a shift of zero or more
  * pixels to the left. */
 static void adjust_left(ScrollerWidget self)
 {
-    /* Add new glyph_holders if we don't have enough to get to the
-     * right edge */
-    adjust_left_right(self);
+    int done = 0;
 
-    /* Remove glyph holders that have scrolled off the left edge */
-    adjust_left_left(self);
-
-    /* Check for the magical stop condition */
-    if ((self -> scroller.left_holder == self -> scroller.right_holder) &&
-	(self -> scroller.left_holder -> glyph == self -> scroller.gap) &&
-	(queue_is_empty(self -> scroller.gap)))
+    /* Add and remove glyphs until we reach a stable state */
+    while (! done)
     {
-	/* Tidy up and stop */
-	self -> scroller.left_offset = 0;
-	self -> scroller.right_offset = 0;
-	self -> scroller.left_holder -> width = self -> core.width;
-	self -> scroller.is_stopped = True;
-	disable_clock(self);
+	done = 1;
+
+	/* Add glyphs to the right if there's room */
+	if (self -> scroller.right_offset < 0)
+	{
+	    add_right_holder(self);
+	    done = 0;
+	}
+
+	/* Remove glyphs from the left if they're no longer visible */
+	if (self -> scroller.left_offset >= self -> scroller.left_holder -> width)
+	{
+	    remove_left_holder(self);
+	    done = 0;
+	}
+
+	/* Check for the magical stop condition */
+	if ((self -> scroller.left_holder == self -> scroller.right_holder) &&
+	    (self -> scroller.left_holder -> glyph == self -> scroller.gap) &&
+	    (queue_is_empty(self -> scroller.gap)))
+	{
+	    /* Tidy up and stop */
+	    self -> scroller.left_offset = 0;
+	    self -> scroller.right_offset = 0;
+	    self -> scroller.left_holder -> width = self -> core.width;
+	    self -> scroller.is_stopped = True;
+	    disable_clock(self);
+	    return;
+	}
     }
 }
 
@@ -1225,24 +1201,40 @@ static void adjust_left(ScrollerWidget self)
  * pixels to the right */
 static void adjust_right(ScrollerWidget self)
 {
-    /* Add new glyph_holders if we don't have enough to get to the
-     * left edge */
-    adjust_right_left(self);
+    int done = 0;
 
-    /* Remove glyph holders that have scrolled off the right edge */
-    adjust_right_right(self);
-
-    /* Check for the magical stop condition */
-    if ((self -> scroller.left_holder == self -> scroller.right_holder) &&
-	(self -> scroller.right_holder -> glyph == self -> scroller.gap) &&
-	(queue_is_empty(self -> scroller.gap)))
+    /* Add and remove glyphs until we reach a stable state */
+    while (! done)
     {
-	/* Tidy up and stop */
-	self -> scroller.left_offset = 0;
-	self -> scroller.right_offset = 0;
-	self -> scroller.right_holder -> width = self -> core.width;
-	self -> scroller.is_stopped = True;
-	disable_clock(self);
+	done = 1;
+
+	/* Add glyphs to the left it needed */
+	if (self -> scroller.left_offset < 0)
+	{
+	    add_left_holder(self);
+	    done = 0;
+	}
+
+	/* Remove glyphs from the right if they're no longer visible */
+	if (self -> scroller.right_offset >= self -> scroller.right_holder -> width)
+	{
+	    remove_right_holder(self);
+	    done = 0;
+	}
+
+	/* Check for the magical stop condition */
+	if ((self -> scroller.left_holder == self -> scroller.right_holder) &&
+	    (self -> scroller.right_holder -> glyph == self -> scroller.gap) &&
+	    (queue_is_empty(self -> scroller.gap)))
+	{
+	    /* Tidy up and stop */
+	    self -> scroller.left_offset = 0;
+	    self -> scroller.right_offset = 0;
+	    self -> scroller.right_holder -> width = self -> core.width;
+	    self -> scroller.is_stopped = True;
+	    disable_clock(self);
+	    return;
+	}
     }
 }
 
@@ -1578,8 +1570,8 @@ static void resize(Widget widget)
 
 	/* Adjust the left offset and update the edges */
 	self -> scroller.left_offset = offset - self -> core.width;
-	adjust_left_left(self);
-	adjust_right_left(self);
+	adjust_left(self);
+	adjust_right(self);
     }
     else
     {
@@ -1602,8 +1594,8 @@ static void resize(Widget widget)
 
 	/* Adjust the right offset and update the edges */
 	self -> scroller.right_offset = offset - self -> core.width;
-	adjust_right_right(self);
-	adjust_left_right(self);
+	adjust_right(self);
+	adjust_left(self);
     }
 
     if (self -> scroller.use_pixmap)
