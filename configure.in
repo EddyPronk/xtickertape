@@ -107,7 +107,7 @@ if test "$ok" = "no" ; then
 fi
 
 dnl Checks for header files.
-AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h iconv.h netdb.h pwd.h stdio.h stdlib.h string.h strings.h signal.h sys/time.h sys/utsname.h time.h unistd.h])
+AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h iconv.h netdb.h pwd.h stdio.h stdlib.h string.h strings.h signal.h stdarg.h sys/time.h sys/types.h sys/utsname.h time.h unistd.h])
 
 # See if we can track down Motif/LessTif
 AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
