@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.3 1997/02/13 08:13:41 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.4 1997/02/14 10:52:32 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -16,7 +16,7 @@ struct ElvinConnection_t
 #ifdef ELVIN
     static elvin_t connection;
 #endif /* ELVIN */
-    ElvinConnectionCallback_t callback;
+    ElvinConnectionCallback callback;
     void *context;
     List subscriptions;
     char buffer[BUFFERSIZE];
@@ -89,7 +89,7 @@ ElvinConnection ElvinConnection_alloc(
     char *hostname,
     int port,
     List subscriptions,
-    ElvinConnectionCallback_t callback,
+    ElvinConnectionCallback callback,
     void *context)
 {
     ElvinConnection self;

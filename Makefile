@@ -5,10 +5,11 @@
 TICKERTAPE = tickertape
 BRIDGE = bridge
 
-ALL = $(TICKERTAPE) $(BRIDGE)
+ALL = $(TICKERTAPE) 
 
 #OBJS = Scroller.o MessageView.o FontInfo.o Graphics.o Message.o Hash.o List.o main.o
-TOBJS = BridgeConnection.o Tickertape.o MessageView.o Message.o List.o tickertape.o
+TOBJS = BridgeConnection.o Control.o Tickertape.o \
+	MessageView.o Message.o List.o tickertape.o
 BOBJS = ElvinConnection.o List.o Message.o bridge.o
 
 CDEBUGFLAGS =

@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.2 1997/02/12 13:53:18 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.3 1997/02/14 10:52:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +52,7 @@ static void sendItemSubscribe(char *name, BridgeConnection self)
     /* Check to see if it's the first item */
     if (name == List_first(self -> subscriptions))
     {
-	fprintf(self -> out, "TICKERTAPE == \"%s\"", name);
+	fprintf(self -> out, "+ TICKERTAPE == \"%s\"", name);
     }
     else
     {
@@ -95,6 +95,7 @@ static int readToSeparator(BridgeConnection self, char *buffer)
 	*buffer++ = ch;
     }
 }
+
 
 
 
@@ -179,6 +180,17 @@ int BridgeConnection_getFD(BridgeConnection self)
 }
 
 
+/* Sends a Message to the bridge */
+void BridgeConnection_send(BridgeConnection self, Message message)
+{
+    fprintf(stderr, "* TICKERTAPE|%s|USER|%s|TICKERTEXT|%s|TIMEOUT|%ld%c",
+	    Message_getGroup(message),
+	    Message_getUser(message),
+	    Message_getString(message),
+	    Message_getTimeout(message),
+	    EOL);
+    fflush(stderr);
+}
 
 /* Call this when the connection has data available */
 void BridgeConnection_read(BridgeConnection self)
@@ -197,7 +209,8 @@ void BridgeConnection_read(BridgeConnection self)
 	result = readToSeparator(self, key);
 	if (result != 0)
 	{
-	    fprintf(stderr, "bummer\n");
+	    fprintf(stderr, "*** read error occurred: exiting...\n");
+	    exit(1);
 	}
 
 	result = readToSeparator(self, value);

@@ -1,4 +1,4 @@
-/* $Id: tickertape.c,v 1.2 1997/02/13 15:08:25 phelps Exp $ */
+/* $Id: tickertape.c,v 1.3 1997/02/14 10:52:35 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,7 @@
 
 #include "Message.h"
 #include "BridgeConnection.h"
+#include "Control.h"
 #include "Tickertape.h"
 
 #define CONNECTING 1
@@ -19,6 +20,9 @@
 
 /* Shuts everything down and go away */
 static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *cparams);
+
+/* The ControlPanel popup */
+static ControlPanel controlPanel;
 
 /* The default application actions table */
 static XtActionsRec actions[] =
@@ -35,9 +39,18 @@ static void QuitAction(Widget widget, XEvent *event, String *params, Cardinal *c
 }
 
 /* Callback for buttonpress in tickertape window */
-static void Click(Widget widget, XtPointer context, XtPointer ignored)
+void Click(Widget widget, XtPointer context, XtPointer ignored)
 {
-    printf("Hello sailor!\n");
+    ControlPanel_show(controlPanel);
+}
+
+/* Callback for message to send from control panel */
+void sendMessage(Message message, void *context)
+{
+    BridgeConnection connection = (BridgeConnection)context;
+
+    BridgeConnection_send(connection, message);
+    Message_free(message);
 }
 
 
@@ -76,8 +89,8 @@ int main(int argc, char *argv[])
     /* Create the tickertape widget */
     tickertape = (TickertapeWidget) XtVaCreateManagedWidget(
 	"ticker", tickertapeWidgetClass, top,
-	NULL, 0);
-    XtAddCallback(tickertape, XtNcallback, Click, NULL);
+	NULL);
+    XtAddCallback((Widget)tickertape, XtNcallback, Click, NULL);
 
     /* listen for messages from the bridge */
     connection = BridgeConnection_alloc(tickertape, "fatcat", 8800, subscriptions);
@@ -89,6 +102,7 @@ int main(int argc, char *argv[])
 	connection);
 
     /* Build the widget */
+    controlPanel = ControlPanel_alloc(top, sendMessage, connection);
     XtRealizeWidget(top);
 
     /* Quit when the window is closed */

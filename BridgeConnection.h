@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.h,v 1.1 1997/02/12 07:34:06 phelps Exp $ */
+/* $Id: BridgeConnection.h,v 1.2 1997/02/14 10:52:29 phelps Exp $ */
 
 #ifndef BRIDGECONNECTION_H
 #define BRIDGECONNECTION_H
@@ -22,6 +22,9 @@ void BridgeConnection_free(BridgeConnection self);
 /* Answers the receiver's file descriptor */
 int BridgeConnection_getFD(BridgeConnection self);
 
+
+/* Sends a Message to the bridge */
+void BridgeConnection_send(BridgeConnection self, Message message);
 
 /* Call this when the connection has data available */
 void BridgeConnection_read(BridgeConnection self);

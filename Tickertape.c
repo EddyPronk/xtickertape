@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.10 1997/02/13 15:08:23 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.11 1997/02/14 10:52:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -317,6 +317,7 @@ static void AddMessageView(TickertapeWidget self, MessageView view)
 {
     List_addLast(self -> tickertape.messages, view);
     MessageView_allocReference(view);
+    printf("Added message view 0x%p\n", view);
 
     /* Make sure the clock is running */
     StartClock(self);
@@ -514,7 +515,6 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 	Message message = Message_alloc("tickertape", "internal", "nevermind", 30);
 	MessageView view = MessageView_alloc(self, message);
 
-	MessageView_debug(view);
 	AddMessageView(self, view);
     }
 
