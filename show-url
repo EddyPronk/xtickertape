@@ -1,0 +1,34 @@
+#!/bin/sh -f
+
+##
+## MIME helper to show a URL
+##
+## $Id: show-url,v 1.1 1998/12/18 07:55:54 phelps Exp $
+##
+
+# Where to find netscape
+NETSCAPE=/usr/local/bin/netscape
+
+# Assert that we have exactly one argument
+# and it is the name of the file containing the URL
+if [ $# -ne "1" ] ; then
+    echo "usage: $0 file"
+    exit 1
+fi
+
+# If $1 is a filename, then read its contents as a URL
+# otherwise, assume that $1 *IS* the URL
+if [ -r $1 ] ; then
+    URL=`cat $1`
+else
+    URL=$1
+fi
+
+# Try to get netscape to open the URL
+$NETSCAPE -noraise -remote "openURL($URL,new-window)" > /dev/null 2>&1
+if [ $? -eq "0" ] ; then
+    exit 0
+fi
+
+# Didn't work.  Try starting netscape
+exec $NETSCAPE $URL
