@@ -3,7 +3,7 @@
 ##
 ## MIME helper to show a URL
 ##
-## $Id: show-url,v 1.2 1999/01/08 01:56:17 phelps Exp $
+## $Id: show-url,v 1.3 1999/01/08 02:11:26 phelps Exp $
 ##
 
 # Where to find netscape
@@ -20,9 +20,9 @@ fi
 # otherwise, assume that $1 *IS* the URL.
 # Also run it through sed to get rid of troublesome characters
 if [ -r $1 ] ; then
-    URL=`sed 's/,/%2c/g' $1`
+    URL=`sed -e 's/,/%2c/g' -e 's/)/%29/g' $1`
 else
-    URL=`echo $1 | sed 's/,/%2c/g'`
+    URL=`echo $1 | sed -e 's/,/%2c/g' -e 's/)/%29/g`
 fi
 
 # Try to get netscape to open the URL
