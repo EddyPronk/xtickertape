@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.7 1999/11/18 07:14:53 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.8 1999/11/19 03:41:15 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -576,23 +576,6 @@ static void subscribe_cb(
     self -> subscription_id = subscription_id;
 }
 
-/* Callback for an unsubscribe request */
-static void unsubscribe_cb(
-    elvin_handle_t handle, int result,
-    int64_t subscription_id, void *rock,
-    dstc_error_t error)
-{
-    usenet_sub_t self = (usenet_sub_t)rock;
-
-    printf("unsubscribe_cb (result=%d, sub_id=%lld)\n", result, subscription_id);
-    if (self -> subscription_id != subscription_id)
-    {
-	printf("uh oh... self -> subscription_id = %lld\n", self -> subscription_id);
-    }
-
-    self -> subscription_id = 0;
-}
-
 /* Sets the receiver's elvin connection */
 void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, dstc_error_t error)
 {
@@ -601,7 +584,7 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, dstc_er
     {
 	if (elvin_async_delete_subscription(
 	    self -> handle, self -> subscription_id,
-	    unsubscribe_cb, self,
+	    NULL, NULL,
 	    error) == 0)
 	{
 	    fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
