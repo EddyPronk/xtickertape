@@ -1,10 +1,11 @@
-/* $Id: ElvinConnection.c,v 1.23 1998/10/21 02:44:52 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.24 1998/10/21 05:35:46 phelps Exp $ */
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <elvin3/elvin.h>
 #include <elvin3/element.h>
+#include <alloca.h>
 
 #include "sanity.h"
 #include "ElvinConnection.h"
