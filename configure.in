@@ -91,6 +91,20 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/time.h unistd.h)
 
+# See if we can track down Motif/LessTif
+AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
+
+# Check for silliness
+if test "x$with_motif" = xno ; then
+    AC_MSG_ERROR([xtickertape cannot be compiled without Motif])
+    exit 1
+fi
+
+# Where are we supposed to find Motif/LessTif?
+if test "x$with_motif" != xyes -a "x$with_motif" != x; then
+    CPPFLAGS="$CPPFLAGS -I$with_motif/include"
+    LDFLAGS="$LDFLAGS -L$with_motif/lib"
+fi
 
 AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
 if test "$ok" = "no" ; then
