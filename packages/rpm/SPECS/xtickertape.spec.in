@@ -28,7 +28,7 @@
 ################################################################
 
 # This is, among other things, an X application
-prefix=/usr/X11R6
+%define prefix /usr/X11R6
 
 # Header info
 Summary: A chat tool based around a single line of scrolling text
@@ -36,10 +36,10 @@ Name: @PACKAGE@
 Version: @VERSION@
 Release: 1
 Copyright: Copyright (C) DSTC.  Details at http://elvin.dstc.com/download/licence.txt
-Source: http://elvin.dstc.com/cgi-bin/download?@PACKAGE@-@VERSION@
-Patch:
+# FIX THIS: this is wrong, but the script doesn't like the correct URL
+Source: http://elvin.dstc.com/download/@PACKAGE@-@VERSION@.tar.gz
 Group: Applications/Internet
-BuildRoot: @RPM_BUILD_ROOT@
+BuildRoot: /var/tmp/%{name}-buildroot
 
 %description
 XTickertape is a demonstration of how much information can be
@@ -58,11 +58,11 @@ make CFLAGS="$RPM_OPT_FLAGS"
 
 # Install it
 %install
-make DESTDIR=${RPM_BUILD_ROOT} install
+make DESTDIR=$RPM_BUILD_ROOT install
 
 # Clean up
 %clean
-test @RPM_BUILD_ROOT@ = "/" || rm -rf @RPM_BUILD_ROOT@
+test $RPM_BUILD_ROOT = "/" || rm -rf $RPM_BUILD_ROOT
 
 # Our files
 %files
