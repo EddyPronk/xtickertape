@@ -125,11 +125,50 @@ static int eval_args(
 	    sexp_free(values[i - 1], NULL);
 	    i--;
 	}
+
+	return 0;
     }
 
     return 1;
 }
 
+/* Extract the arguments to a function without evaluating them */
+static int extract_args(
+    env_t env,
+    sexp_t args,
+    sexp_t *args_out,
+    uint32_t count,
+    elvin_error_t error)
+{
+    uint32_t i;
+
+    /* Go through the args */
+    for (i = 0; i < count; i++)
+    {
+	/* Make sure we have an arg */
+	if (sexp_get_type(args) != SEXP_CONS)
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	    return 0;
+	}
+
+	/* Extract the arg and move on to the next */
+	if ((args_out[i] = cons_car(args, error)) == NULL ||
+	    (args = cons_cdr(args, error)) == NULL)
+	{
+	    return 0;
+	}
+    }
+
+    /* Make sure there are no more args */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	return 0;
+    }
+
+    return 1;
+}
 
 /* The `and' primitive function */
 static int prim_and(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
@@ -435,76 +474,18 @@ static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 /* The `if' primitive function */
 static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
-    sexp_t test, true_branch, false_branch;
+    sexp_t values[3];
     sexp_t value;
 
-    /* Make sure we have at least one arg */
-    if (sexp_get_type(args) != SEXP_CONS)
+    /* Extract the args */
+    if (extract_args(env, args, values, 3, error) == 0)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract it */
-    if ((test = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure we have a second arg */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract it */
-    if ((true_branch = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure we have a third arg */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract it */
-    if ((false_branch = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure there are no more args */
-    if (sexp_get_type(args) != SEXP_NIL)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
 	return 0;
     }
 
 
     /* Evaluate the test */
-    if (sexp_eval(test, env, &value, error) == 0)
+    if (sexp_eval(values[0], env, &value, error) == 0)
     {
 	return 0;
     }
@@ -512,7 +493,7 @@ static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
     /* If it's non-nil then evaluate the true branch */
     if (sexp_get_type(value) != SEXP_NIL)
     {
-	if (sexp_eval(true_branch, env, result, error) == 0)
+	if (sexp_eval(values[1], env, result, error) == 0)
 	{
 	    sexp_free(value, NULL);
 	    return 0;
@@ -520,7 +501,7 @@ static int prim_if(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
     }
     else
     {
-	if (sexp_eval(false_branch, env, result, error) == 0)
+	if (sexp_eval(values[2], env, result, error) == 0)
 	{
 	    sexp_free(value, NULL);
 	    return 0;
