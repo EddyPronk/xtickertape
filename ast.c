@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.5 2000/07/09 00:48:11 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.6 2000/07/10 00:12:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -44,7 +44,7 @@ typedef enum ast_type
 {
     AST_INT32,
     AST_INT64,
-    AST_REAL64,
+    AST_FLOAT,
     AST_STRING,
     AST_LIST,
     AST_ID,
@@ -158,8 +158,8 @@ ast_t ast_int64_alloc(int64_t value, elvin_error_t error)
     return self;
 }
 
-/* Allocates and initializes a new real64 AST node */
-ast_t ast_real64_alloc(double value, elvin_error_t error)
+/* Allocates and initializes a new float AST node */
+ast_t ast_float_alloc(double value, elvin_error_t error)
 {
     ast_t self;
 
@@ -169,7 +169,7 @@ ast_t ast_real64_alloc(double value, elvin_error_t error)
 	return NULL;
     }
 
-    self -> type = AST_REAL64;
+    self -> type = AST_FLOAT;
     self -> next = NULL;
     self -> value.real64 = value;
     return self;
@@ -823,10 +823,11 @@ int ast_eval(
 	    return 1;
 	}
 
-	case AST_REAL64:
+	case AST_FLOAT:
 	{
-	    printf("ast_eval: real64\n");
-	    abort();
+	    value_out -> type = VALUE_FLOAT;
+	    value_out -> value.real64 = self -> value.real64;
+	    return 1;
 	}
 
 	case AST_STRING:
@@ -934,7 +935,7 @@ int ast_eval(
 			    return 1;
 			}
 
-			case VALUE_REAL64:
+			case VALUE_FLOAT:
 			{
 			    value_out -> value.real64 = ! value_out -> value.real64;
 			    return 1;
@@ -1028,7 +1029,7 @@ char *ast_to_string(ast_t self, elvin_error_t error)
 	}
 
 	/* Floating-point numbers (not really reals) */
-	case AST_REAL64:
+	case AST_FLOAT:
 	{
 	    /* FIX THIS: how big does this have to be? */
 	    char buffer[64];

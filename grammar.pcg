@@ -106,7 +106,7 @@
 	[identity]
 <value> ::= INT64
 	[identity]
-<value> ::= REAL64
+<value> ::= FLOAT
 	[identity]
 
 # Values can be lists

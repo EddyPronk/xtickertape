@@ -29,7 +29,7 @@ typedef enum
     TT_STRING,
     TT_INT32,
     TT_INT64,
-    TT_REAL64,
+    TT_FLOAT,
     TT_LPAREN,
     TT_RPAREN,
     TT_LBRACKET,
@@ -126,7 +126,7 @@ static struct production productions[34] =
     /* 26: <value> ::= INT64 */
     { identity, 9, 1 },
 
-    /* 27: <value> ::= REAL64 */
+    /* 27: <value> ::= FLOAT */
     { identity, 9, 1 },
 
     /* 28: <value> ::= LBRACE <values> RBRACE */

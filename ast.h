@@ -31,7 +31,7 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.4 2000/07/09 00:48:11 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.5 2000/07/10 00:12:10 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
@@ -48,7 +48,7 @@ typedef enum value_type
     VALUE_NONE,
     VALUE_INT32,
     VALUE_INT64,
-    VALUE_REAL64,
+    VALUE_FLOAT,
     VALUE_STRING,
     VALUE_OPAQUE,
     VALUE_LIST,
@@ -113,8 +113,8 @@ ast_t ast_int32_alloc(int32_t value, elvin_error_t error);
 /* Allocates and initializes a new int64 AST node */
 ast_t ast_int64_alloc(int64_t value, elvin_error_t error);
 
-/* Allocates and initializes a new real64 AST node */
-ast_t ast_real64_alloc(double value, elvin_error_t error);
+/* Allocates and initializes a new float AST node */
+ast_t ast_float_alloc(double value, elvin_error_t error);
 
 /* Allocates and initializes a new string AST node */
 ast_t ast_string_alloc(char *value, elvin_error_t error);
