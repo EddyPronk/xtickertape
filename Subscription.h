@@ -1,4 +1,4 @@
-/* $Id: Subscription.h,v 1.4 1998/10/21 01:58:08 phelps Exp $ */
+/* $Id: Subscription.h,v 1.5 1998/10/24 04:56:46 phelps Exp $ */
 
 #ifndef SUBSCRIPTION_H
 #define SUBSCRIPTION_H
@@ -47,17 +47,5 @@ void Subscription_setConnection(Subscription self, ElvinConnection connection);
 
 /* Registers the receiver with the ControlPanel */
 void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel);
-
-/* Answers the receiver's group */
-char *Subscription_getGroup(Subscription self);
-
-/* Answers the receiver's subscription expression */
-char *Subscription_getExpression(Subscription self);
-
-/* Answers true if the receiver should appear in the Control Panel menu */
-int Subscription_isInMenu(Subscription self);
-
-/* Answers true if the receiver should automatically show mime messages */
-int Subscription_isAutoMime(Subscription self);
 
 #endif /* SUBSCRIPTION_H */
