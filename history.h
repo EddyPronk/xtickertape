@@ -60,6 +60,9 @@ int history_add(history_t self, message_t message);
 /* Answers the message at the given index */
 message_t history_get(history_t self, int index);
 
+/* Answers the message t the given position */
+message_t history_get_at_point(history_t self, int x, int y);
+
 /* Answers the index of given message in the history */
 int history_index(history_t self, message_t message);
 

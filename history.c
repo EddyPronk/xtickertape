@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.23 1999/09/19 08:18:08 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.24 1999/10/07 00:23:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -631,6 +631,12 @@ message_t history_get(history_t self, int index)
     }
 
     return node -> message;
+}
+
+/* Answers the message_t the given position */
+message_t history_get_at_point(history_t self, int x, int y)
+{
+    return history_get(self, XmListYToPos(self -> list, y));
 }
 
 
