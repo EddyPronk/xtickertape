@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.10 1999/01/21 00:46:03 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.11 1999/04/25 02:04:13 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -137,8 +137,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n\
-<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>x: kill()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
+    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: delete()\n<Key>x: kill()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
 };
 
 
