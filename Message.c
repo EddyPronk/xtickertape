@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.17 1999/05/06 00:34:32 phelps Exp $";
+static const char cvsid[] = "$Id: Message.c,v 1.18 1999/05/21 05:30:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -71,10 +71,10 @@ struct Message_t
     unsigned long timeout;
 
     /* The identifier for this message */
-    unsigned long id;
+    long id;
 
     /* The identifier for the message for which this is a reply */
-    unsigned long replyId;
+    long replyId;
 };
 
 
@@ -87,8 +87,8 @@ Message Message_alloc(
     unsigned int timeout,
     char *mimeType,
     char *mimeArgs,
-    unsigned long id,
-    unsigned long replyId)
+    long id,
+    long replyId)
 {
     Message self = (Message) malloc(sizeof(struct Message_t));
 

@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: Message.h,v 1.11 1998/12/24 05:48:28 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: Message.h,v 1.12 1999/05/21 05:30:44 phelps Exp $";
 #endif /* lint */
 
 /* The Message pointer type */
@@ -50,8 +50,8 @@ Message Message_alloc(
     unsigned int timeout,
     char *mimeType,
     char *mimeArgs,
-    unsigned long id,
-    unsigned long replyId);
+    long id,
+    long replyId);
 
 /* Frees the memory used by the receiver */
 void Message_free(Message self);
