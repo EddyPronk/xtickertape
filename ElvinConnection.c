@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.16 1998/10/15 09:11:27 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.17 1998/10/15 09:25:11 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -280,6 +280,13 @@ void ElvinConnection_send(ElvinConnection self, Message message)
     en_notify_t notification;
 
     SANITY_CHECK(self);
+
+    /* Don't even try if we're not connected */
+    if (self -> state != Connected)
+    {
+	return;
+    }
+
     timeout = Message_getTimeout(message);
     notification = en_new();
     en_add_string(notification, "TICKERTAPE", Message_getGroup(message));
@@ -300,12 +307,9 @@ void ElvinConnection_send(ElvinConnection self, Message message)
 void ElvinConnection_read(ElvinConnection self)
 {
     SANITY_CHECK(self);
-    if (self -> elvin != NULL)
+
+    if (self -> state == Connected)
     {
 	elvin_dispatch(self -> elvin);
-    }
-    else
-    {
-	fprintf(stderr, "*** FNARG!\n");
     }
 }
