@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.7 1999/08/19 05:04:59 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.8 1999/08/22 12:39:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -162,10 +162,6 @@ static void do_free(message_glyph_t self)
 
     /* Free the message */
     Message_free(self -> message);
-
-#ifdef DEBUG
-    printf("message_glyph freed!\n");
-#endif /* DEBUG */
 
     free(self);
 }
