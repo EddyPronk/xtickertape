@@ -27,7 +27,6 @@
 *history.background: White
 *scroller.background: White
 
-! For the History widget
 *scroller.groupPixel: BlueViolet
 *history.groupPixel: BlueViolet
 *scroller.userPixel: ForestGreen
@@ -36,6 +35,8 @@
 *history.stringPixel: IndianRed
 *history.separatorPixel: Black
 *scroller.separatorPixel: Black
+
+*history.selectionPixel: Gray80
 
 !
 ! Fonts

@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.4 2001/07/13 13:02:14 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.5 2001/07/19 08:09:08 phelps Exp $";
 #endif /* lint */
 
 
@@ -54,6 +54,7 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.4 2001/07/13 13:02:14 ph
  marginWidth	     MarginWidth	Dimension	5
  marginHeight	     MarginHeight	Dimension	5
  messageCount	     MessageCount	Dimension	32
+ selectionPixel	     SelectionPixel	Pixel		Gray
 
  background	     Background		Pixel		XtDefaultBackground
  border		     BorderColor	Pixel		XtDefaultForeground
@@ -117,6 +118,12 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.4 2001/07/13 13:02:14 ph
 #endif
 #ifndef XtCMessageCapacity
 # define XtCMessageCapacity "MessageCapacity"
+#endif
+#ifndef XtNselectionPixel
+# define XtNselectionPixel "selectionPixel"
+#endif
+#ifndef XtCSelectionPixel
+# define XtCSelectionPixel "SelectionPixel"
 #endif
 
 

@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.11 2001/07/15 23:58:39 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.12 2001/07/19 08:09:08 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -93,6 +93,9 @@ typedef struct
     /* The maximum number of messages to display in the history */
     Dimension message_capacity;
 
+    /* The color to use when drawing the selection box */
+    Pixel selection_pixel;
+
     
     /* Private state */
 
@@ -108,8 +111,11 @@ typedef struct
     /* The width of the longest string in the history widget */
     unsigned long width;
 
-    /* The height of the strings in the history widget */
+    /* The height of all of the strings in the history widget */
     unsigned long height;
+
+    /* The height of a line in the history widget */
+    long line_height;
 
     /* The x coordinate of the origin of the visible region */
     long x;
@@ -125,6 +131,12 @@ typedef struct
 
     /* An array of message_views in display order */
     message_view_t *message_views;
+
+    /* The currently selected message_t (NULL if none) */
+    message_t selection;
+
+    /* The index of the selection ((unsigned int)-1 if none) */
+    unsigned int selection_index;
 } HistoryPart;
 
 /* Full instance record declaration */

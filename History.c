@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.14 2001/07/13 13:23:21 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.15 2001/07/19 08:09:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -137,6 +137,12 @@ static XtResource resources[] =
     {
 	XtNmessageCapacity, XtCMessageCapacity, XtRDimension, sizeof(unsigned int),
 	offset(history.message_capacity), XtRImmediate, (XtPointer)32
+    },
+
+    /* Pixel selection_pixel */
+    {
+	XtNselectionPixel, XtCSelectionPixel, XtRPixel, sizeof(Pixel),
+	offset(history.selection_pixel), XtRString, XtDefaultForeground
     }
 };
 #undef offset
@@ -273,12 +279,13 @@ WidgetClass historyWidgetClass = (WidgetClass) &historyClassRec;
 static void set_origin(HistoryWidget self, long x, long y)
 {
     Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
     GC gc = self -> history.gc;
     XGCValues values;
     delta_queue_t item;
 
     /* Skip this part if we're not visible */
-    if (gc != NULL)
+    if (gc != None)
     {
 	/* Allocate a new queue item to represent this movement */
 	item = malloc(sizeof(struct delta_queue));
@@ -294,8 +301,10 @@ static void set_origin(HistoryWidget self, long x, long y)
 
 	/* Copy to the new location */
 	XCopyArea(
-	    display, XtWindow((Widget)self), XtWindow((Widget)self), gc,
-	    -item -> dx, -item -> dy, self -> core.width, self -> core.height, 0, 0);
+	    display, window, window, gc,
+	    -item -> dx, -item -> dy,
+	    self -> core.width, self -> core.height,
+	    0, 0);
     }
 
     self -> history.x = x;
@@ -439,6 +448,11 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     /* Set our initial dimensions to be the margin width */
     self -> history.width = (long)self -> history.margin_width * 2;
     self -> history.height = (long)self -> history.margin_height * 2;
+
+    /* Compute the line height */
+    self -> history.line_height =
+	(long)self -> history.font -> ascent +
+	(long)self -> history.font -> descent + 1;
 
     /* Start with an empty delta queue */
     self -> history.dqueue = NULL;
@@ -621,37 +635,60 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 {
     Display *display = XtDisplay((Widget)self);
     Window window = XtWindow((Widget)self);
+    GC gc = self -> history.gc;
     long xmargin = (long)self -> history.margin_width;
     long ymargin = (long)self -> history.margin_height;
     message_view_t view;
+    XGCValues values;
     unsigned int i;
     long x, y;
 
     /* Set that as our bounding box */
-    XSetClipRectangles(display, self -> history.gc, 0, 0, bbox, 1, YXSorted);
+    XSetClipRectangles(display, gc, 0, 0, bbox, 1, YXSorted);
 
-    /* Start at the top margin */
+    /* Start here at the top margin offset by how far into the first
+     * line we've scrolled */
     x = xmargin - self -> history.x;
-    y = ymargin - self -> history.y;
+    y = ymargin - self -> history.y % self -> history.line_height;
+
 
     /* Draw all visible message views */
-    for (i = 0; i < self -> history.message_capacity; i++)
+    for (i = self -> history.y / self->history.line_height; i < self->history.message_count; i++)
     {
 	/* Skip NULL message views */
 	if ((view = self -> history.message_views[i]) == NULL)
 	{
-	    continue;
+	    return;
+	}
+
+	/* Is this the selected message? */
+	if (message_view_get_message(view) == self -> history.selection)
+	{
+	    /* Yes, draw a background for it */
+	    values.foreground = self -> history.selection_pixel;
+	    XChangeGC(display, gc, GCForeground, &values);
+
+	    /* FIX THIS: should we respect the margin? */
+	    XFillRectangle(
+		display, window, gc,
+		0, y, self -> core.width,
+		self -> history.line_height);
 	}
 
 	/* Draw the view */
 	message_view_paint(
-	    view, display, window, self -> history.gc,
+	    view, display, window, gc,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    x, y + self -> history.font -> ascent, bbox);
 
-	/* FIX THIS: should we allow more/less spacing? */
-	y += self -> history.font -> ascent + self -> history.font -> descent;
+	/* Get ready to draw the next one */
+	y += self -> history.line_height;
+
+	/* Bail out if the next line is past the end of the screen */
+	if (! (y < self -> core.height)) {
+	    return;
+	}
     }
 }
 
@@ -688,7 +725,6 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	/* Stop drawing stuff if the widget is obscured */
 	if (event -> type == NoExpose)
 	{
-	    /* FIX THIS: set a flag to stop doing stuff? */
 	    return;
 	}
 
@@ -757,7 +793,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	message_view_free(view);
 
 	/* Figure out where to start copying */
-	y = sizes.ascent + sizes.descent;
+	y = self -> history.line_height;
 
 	/* Move the other views towards the beginning of the array */
 	for (i = 1; i < index; i++)
@@ -767,7 +803,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    /* Measure the view for the new width/height of the widget */
 	    message_view_get_sizes(view, &sizes);
 	    width = MAX(width, sizes.width);
-	    height += sizes.ascent + sizes.descent;
+	    height += self -> history.line_height;
 	    self -> history.message_views[i - 1] = view;
 	}
 
@@ -791,7 +827,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	{
 	    message_view_get_sizes(self -> history.message_views[i], &sizes);
 	    width = MAX(width, sizes.width);
-	    height += sizes.ascent + sizes.descent;
+	    height += self -> history.line_height;
 	}
 
 	/* Update the counter */
@@ -813,13 +849,13 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	XFillRectangle(
 	    display, window, gc,
 	    0, self -> history.margin_height + height - self -> history.y,
-	    self -> core.width, sizes.ascent + sizes.descent);
+	    self -> core.width, self -> history.line_height);
 
 	/* Paint it */
 	bbox.x = 0;
 	bbox.y = self -> history.margin_height + height - self -> history.y;
 	bbox.width = self -> core.width;
-	bbox.height = sizes.ascent + sizes.descent;
+	bbox.height = self -> history.line_height;
 
 	message_view_paint(
 	    view, display, window, gc,
@@ -833,7 +869,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 
     /* Update the width and height */
     width = MAX(width, sizes.width);
-    height += sizes.ascent + sizes.descent;
+    height += self -> history.line_height;
 
     /* FIX THIS: copy the rest down! */
 
@@ -842,7 +878,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     {
 	message_view_get_sizes(self -> history.message_views[i], &sizes);
 	width = MAX(width, sizes.width);
-	height += sizes.ascent + sizes.descent;
+	height += self -> history.line_height;
     }
 
     /* Update the widget's dimensions */
@@ -851,6 +887,109 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 
     /* Update the scrollbars */
     update_scrollbars((Widget)self);
+}
+
+/* Selects the given message at the given index */
+static void set_selection(HistoryWidget self, unsigned int index, message_t message)
+{
+    Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
+    GC gc = self -> history.gc;
+    XGCValues values;
+    XRectangle bbox;
+    long y;
+
+    /* Bail if the selection is unchanged */
+    if (self -> history.selection == message)
+    {
+	return;
+    }
+
+    /* Set up a bounding box */
+    bbox.x = 0;
+    bbox.y = 0;
+    bbox.width = self -> core.width;
+    bbox.height = self -> core.height;
+
+    /* Drop our extra reference to the old selection */
+    if (self -> history.selection != NULL)
+    {
+	message_free(self -> history.selection);
+    }
+
+    /* Redraw the old selection if appropriate */
+    if (gc != None && self -> history.selection_index != (unsigned int)-1)
+    {
+	/* Determine the location of the old selection */
+	y = self -> history.selection_index * self -> history.line_height -
+	    self -> history.y + self -> history.margin_height;
+
+	/* Is it visible? */
+	if (0 <= y + self -> history.line_height && y < self -> history.height)
+	{
+	    /* Clear the clip mask */
+	    values.clip_mask = None;
+	    values.foreground = self -> core.background_pixel;
+	    XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+
+	    /* Erase the rectangle previously occupied by the message */
+	    XFillRectangle(
+		display, window, gc,
+		0, y, self -> core.width, self -> history.line_height);
+
+	    /* And then draw it again */
+	    message_view_paint(
+		self -> history.message_views[self -> history.selection_index],
+		display, window, gc,
+		self -> history.group_pixel, self -> history.user_pixel,
+		self -> history.string_pixel, self -> history.separator_pixel,
+		self -> history.margin_width - self -> history.x,
+		y + self -> history.font -> ascent,
+		&bbox);
+	}
+    }
+
+    /* Record the new selection */
+    if (message == NULL) {
+	self -> history.selection = NULL;
+    } else {
+	self -> history.selection = message_alloc_reference(message);
+    }
+
+    /* And record its index */
+    self -> history.selection_index = index;
+
+    /* Draw the new selection if appropriate */
+    if (gc != None && self -> history.selection_index != (unsigned int)-1)
+    {
+	/* Determine its location */
+	y = self -> history.selection_index * self -> history.line_height -
+	    self -> history.y + self -> history.margin_height;
+
+	/* Is it visible? */
+	if (0 <= y + self -> history.line_height && y < self -> history.height)
+	{
+	    /* Clear the clip mask */
+	    values.clip_mask = None;
+	    values.foreground = self -> history.selection_pixel;
+	    XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+
+	    /* Draw the selection rectangle */
+	    XFillRectangle(
+		display, window, gc,
+		0, y, self -> core.width, self -> history.line_height);
+
+	    /* And then draw the message view on top of it */
+	    message_view_paint(
+		self -> history.message_views[self -> history.selection_index],
+		display, window, gc,
+		self -> history.group_pixel, self -> history.user_pixel,
+		self -> history.string_pixel, self -> history.separator_pixel,
+		self -> history.margin_width - self -> history.x,
+		y + self -> history.font -> ascent,
+		&bbox);
+	}
+    }
 }
 
 
@@ -952,7 +1091,21 @@ Boolean HistoryIsMessageKilled(Widget widget, message_t message)
 /* Selects a message in the history */
 void HistorySelect(Widget widget, message_t message)
 {
-    dprintf(("HistorySelect(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)widget;
+    unsigned int i;
+
+    /* Find the index of the message */
+    for (i = 0; i < self -> history.message_count; i++)
+    {
+	if (message_view_get_message(self -> history.message_views[i]) == message)
+	{
+	    set_selection(self, i, message);
+	    return;
+	}
+    }
+
+    /* Not found -- select at -1 */
+    set_selection(self, (unsigned int)-1, message);
 }
 
 /* Returns the selected message or NULL if none is selected */
@@ -961,6 +1114,3 @@ message_t HistoryGetSelection(Widget widget)
     dprintf(("HistoryGetSelection(): not yet implemented\n"));
     return NULL;
 }
-
-
-
