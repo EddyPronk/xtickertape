@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.9 2004/02/11 10:40:38 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.10 2004/02/12 10:23:26 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -179,6 +179,8 @@ static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
     }
 
     /* Give up */
+    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
+            fromcode, tocode, strerror(errno));
     return (iconv_t)-1;
 }
 #else /* !HAVE_ICONV_OPEN */
@@ -388,7 +390,6 @@ utf8_renderer_t utf8_renderer_alloc(
     self -> is_skipping = 0;
     self -> dimension = 1;
 
-#ifdef HAVE_ICONV_OPEN
     /* Is there a font property for underline thickness? */
     if (! XGetFontProperty(font, XA_UNDERLINE_THICKNESS, &value))
     {
@@ -413,14 +414,13 @@ utf8_renderer_t utf8_renderer_alloc(
 	self -> underline_position = MAX(value, 2);
     }
 
+#ifdef HAVE_ICONV_OPEN
     /* Was an encoding provided? */
     if (tocode != NULL)
     {
 	/* Yes.  Use it to create a conversion descriptor */
 	if ((cd = do_iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
 	{
-	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-		    tocode, UTF8_CODE, strerror(errno));
 	    return self;
 	}
 
@@ -906,18 +906,8 @@ utf8_encoder_t utf8_encoder_alloc(
     /* If a code set was provided then use it */
     if (code_set != NULL)
     {
-	if ((self -> encoder_cd = do_iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
-	{
-	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-		    code_set, UTF8_CODE, strerror(errno));
-	}
-
-	if ((self -> decoder_cd = do_iconv_open(code_set, UTF8_CODE)) == (iconv_t)-1)
-	{
-	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-		    UTF8_CODE, code_set, strerror(errno));
-	}
-
+	self -> encoder_cd = do_iconv_open(UTF8_CODE, code_set);
+	self -> decoder_cd = do_iconv_open(code_set, UTF8_CODE);
 	return self;
     }
 
@@ -946,19 +936,10 @@ utf8_encoder_t utf8_encoder_alloc(
 	}
 
 	/* Open a conversion descriptor */
-	if ((self -> encoder_cd = do_iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
-	{
-	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-		    string, UTF8_CODE, strerror(errno));
-	}
+	self -> encoder_cd = do_iconv_open(UTF8_CODE, string);
 
 	/* Open the reverse conversion descriptor */
-	if ((self -> decoder_cd = do_iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
-	{
-	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-		    UTF8_CODE, string, strerror(errno));
-	}
-
+	self -> decoder_cd = do_iconv_open(string, UTF8_CODE);
 	free(string);
 
 	XmFontListFreeFontContext(context);
