@@ -96,9 +96,9 @@
 Tickertape.scroller.translations: #override \n\
 	<Btn1Down>: menu() \n\
 	<Btn2Down>: decodeMime() \n\
-	<Btn3Down>: delete() \n\
-	<Key>d: delete()\n\
-	<Key>x: kill()\n\
+	<Btn3Down>: expire() \n\
+	<Key>d: expire()\n\
+	<Key>x: delete()\n\
 	<Key>-: slower() \n\
 	<Key>=: faster() \n\
 	Meta<Key>q: quit()\n
