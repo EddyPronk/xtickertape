@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.64 2000/10/06 06:01:12 bill Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.65 2000/10/09 04:25:13 bill Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1256,7 +1256,7 @@ tickertape_t tickertape_alloc(
     /* Read the config file */
     if (! read_config_file(self, error))
     {
-	elvin_error_fprintf(stderr, "en", error);
+	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 #endif

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.87 2000/10/06 08:19:39 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.88 2000/10/09 04:25:13 bill Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -293,15 +293,17 @@ static void parse_args(
 	*domain_return = get_domain();
     }
 
-    /* If no URL was provided then add the server discovery URL */
-    if (! have_url)
+    /* Add the Server discovery url if there were no url arguments */       
+    if (!have_url)
     {
 	if (elvin_handle_append_url(handle, "*", error) == 0)
 	{
-	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
+            fprintf(stderr, "Add of discovery URL '*' failed\n");
 	    exit(1);
 	}
     }
+
+    return;
 }
 
 
