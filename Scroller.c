@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.44 1999/07/29 06:44:11 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.45 1999/07/29 12:35:12 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -427,35 +427,6 @@ static void queue_remove(glyph_t glyph)
     glyph -> previous = NULL;
     glyph -> next = NULL;
 }
-
-#if 0
-/* Adds all glyphs on the pending queue to the visible queue */
-static void queue_append_queue(glyph_t head, glyph_t queue)
-{
-    glyph_t tail;
-
-    /* If queue is empty, then we're done */
-    if (queue_is_empty(queue))
-    {
-	return;
-    }
-
-    /* Locate our tail */
-    tail = head -> previous;
-
-    /* Tell head and the tail of the queue where to go */
-    queue -> next -> previous = tail;
-    queue -> previous -> next = head;
-
-    /* Update our queue to point to the new elements */
-    head -> previous = queue -> previous;
-    tail -> next = queue -> next;
-
-    /* Update the old queue's gap to point to itself */
-    queue -> previous = queue;
-    queue -> next = queue;
-}
-#endif /* 0 */
 
 
 /*
@@ -1159,42 +1130,36 @@ static XtGeometryResult QueryGeometry(
 }
 
 
-/* Answers the glyph corresponding to the given point */
-static glyph_t glyph_at_point(ScrollerWidget self, int x, int y)
+/* Answers the glyph_holder corresponding to the given point */
+static glyph_holder_t holder_at_point(ScrollerWidget self, int x, int y)
 {
-    glyph_holder_t holder = self -> scroller.left_holder;
-    int end = self -> core.width;
-    int left;
+    glyph_holder_t holder;
+    int offset;
 
-    /* Points outside the scroller bounds return the gap glyph */
-    if ((x < 0) || (end <= x) || (y < 0) || (self -> core.height <= y))
+    /* Points outside the scroller bounds return NULL */
+    if ((x < 0) || (self -> core.width <= x) || (y < 0) || (self -> core.height <= y))
     {
-	printf("out of bounds! (x=%d, y=%d)\n", x, y);
-	return self -> scroller.gap;
+	printf("out of bounds! (x=%d, y=%d\n", x, y);
+	return NULL;
     }
 
     /* Work from left-to-right looking for the glyph */
-    left = 0 - self -> scroller.left_offset;
-    while (left < end)
+    offset = - self -> scroller.left_offset;
+    for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
     {
-	int right;
-
-	/* Found it? */
-	if (x < (right = left + glyph_holder_width(holder)))
+	offset += glyph_holder_width(holder);
+	if (x < offset)
 	{
-	    return holder -> glyph;
+	    return holder;
 	}
-
-	holder = holder -> next;
-	left = right;
     }
 
-    /* Didn't find it.  Return the gap */
-    return self -> scroller.gap;
+    /* Didn't find the point (!) so we return NULL */
+    return NULL;
 }
 
-/* Answers the glyph corresponding to the location of the last event */
-static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
+/* Answers the glyph_holder corresponding to the location of the given event */
+static glyph_holder_t holder_at_event(ScrollerWidget self, XEvent *event)
 {
     switch (event -> type)
     {
@@ -1202,20 +1167,20 @@ static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
 	case KeyRelease:
 	{
 	    XKeyEvent *key_event = (XKeyEvent *) event;
-	    return glyph_at_point(self, key_event -> x, key_event -> y);
+	    return holder_at_point(self, key_event -> x, key_event -> y);
 	}
 
 	case ButtonPress:
 	case ButtonRelease:
 	{
 	    XButtonEvent *button_event = (XButtonEvent *) event;
-	    return glyph_at_point(self, button_event -> x, button_event -> y);
+	    return holder_at_point(self, button_event -> x, button_event -> y);
 	}
 
 	case MotionNotify:
 	{
 	    XMotionEvent *motion_event = (XMotionEvent *) event;
-	    return glyph_at_point(self, motion_event -> x, motion_event -> y);
+	    return holder_at_point(self, motion_event -> x, motion_event -> y);
 	}
 
 	default:
@@ -1225,21 +1190,20 @@ static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
     }
 }
 
-
-/* Answers the message under the mouse in the given event */
-#if 0
-static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
+/* Answers the glyph corresponding to the location of the given event */
+static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
 {
-    view_holder_t holder;
+    glyph_holder_t holder = holder_at_event(self, event);
 
-    if ((holder = ViewHolderAtEvent(self, event)) == NULL)
+    /* If no holder found then return the gap */
+    if (holder == NULL)
     {
-	return NULL;
+	return self -> scroller.gap;
     }
 
-    return holder -> view;
+    return holder -> glyph;
 }
-#endif /* 0 */
+
 
 
 /*
@@ -1332,7 +1296,92 @@ static void expire(Widget widget, XEvent *event)
 /* Simple remove the message from the scroller NOW */
 static void delete(Widget widget, XEvent *event)
 {
-    printf("delete\n");
+    ScrollerWidget self = (ScrollerWidget) widget;
+    glyph_t glyph = glyph_at_event(self, event);
+
+    /* Ignore attempts to delete the gap */
+    if (glyph == self -> scroller.gap)
+    {
+	return;
+    }
+
+    /* Extract the glyph from the queue */
+    ScGlyphExpired(self, glyph);
+
+    /* Delete the glyph and any holders for that glyph, and keep the
+     * leading edge of the text in place */
+    if (self -> scroller.step < 0)
+    {
+	printf("L->R delete() not yet implemented\n");
+	exit(1);
+    }
+    else
+    {
+	int offset = - self -> scroller.left_offset;
+	int missing_width = 0;
+	glyph_holder_t holder = self -> scroller.left_holder;
+
+	/* If we're deleting the only visible glyph then we add
+	 * another holder to the list before we remove it so that the
+	 * list is never empty */
+	if ((holder -> glyph == glyph) &&
+	    (self -> scroller.left_holder == holder) && (self -> scroller.right_holder == holder))
+	{
+	    add_right_holder(self);
+	}
+
+	while (holder != NULL)
+	{
+	    glyph_holder_t next = holder -> next;
+
+	    /* If we've found the gap than insert any lost width into it */
+	    if ((holder -> glyph == self -> scroller.gap) && (missing_width != 0))
+	    {
+		holder -> width += missing_width;
+		missing_width = 0;
+	    }
+
+	    /* If we've found a holder for the deleted glyph, then extract it now */
+	    if (holder -> glyph == glyph)
+	    {
+		missing_width += glyph_holder_width(holder);
+
+		/* Remove the holder from the list */
+		if (holder -> previous != NULL)
+		{
+		    holder -> previous -> next = holder -> next;
+		}
+		else
+		{
+		    self -> scroller.left_holder = holder -> next;
+		}
+
+		if (holder -> next != NULL)
+		{
+		    holder -> next -> previous = holder -> previous;
+		}
+		else
+		{
+		    self -> scroller.right_holder = holder -> previous;
+		}
+
+		glyph_holder_free(holder);
+	    }
+	    else
+	    {
+		offset += holder -> width;
+	    }
+	    
+	    holder = next;
+	}
+
+	self -> scroller.right_offset = offset - self -> core.width;
+	adjust_right_right(self);
+	adjust_left_right(self);
+    }
+
+    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
+    Redisplay(widget, NULL, 0);
 
 #if 0
     ScrollerWidget self = (ScrollerWidget) widget;
