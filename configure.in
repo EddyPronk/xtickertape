@@ -36,8 +36,10 @@ if test "$SYSTYPE" = "not found" ; then
 fi
 
 dnl Set the OS define
-systype=`$SYSTYPE -_`
-AC_DEFINE_UNQUOTED(${systype})
+systypedef="`$SYSTYPE -_`"
+systype="`$SYSTYPE`"
+AC_DEFINE_UNQUOTED($systypedef)
+dnl AC_SUBST($systypedef)
 
 
 dnl Checks for libraries.
@@ -80,7 +82,7 @@ if test $ok = "no" ; then
 fi
 
 dnl Make sure that an elvin library can be found
-elvinlibdir=$DSTCDIR/`$SYSTYPE`/lib
+elvinlibdir=$DSTCDIR/$systype/lib
 LDFLAGS="$LDFLAGS -L$elvinlibdir"
 AC_CHECK_LIB(vin, elvin_connect, LIBS="-lvin -ldstc_std $LIBS" ; ok=yes, ok=no, -ldstc_std)
 if test $ok = "no" ; then
