@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.25 1999/12/16 07:52:11 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.26 2000/01/28 04:56:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1483,6 +1483,7 @@ message_t contruct_message(control_panel_t self)
 /* Callback for `Send' button */
 static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 {
+    /* Make sure a group is selected */
     if (self -> selection != NULL)
     {
 	message_t message = contruct_message(self);
@@ -1490,7 +1491,11 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
 	message_free(message);
     }
 
+    /* Close the box */
     XtPopdown(self -> top);
+
+    /* Shift focus back to the text field */
+    XmProcessTraversal(self -> text, XmTRAVERSE_CURRENT);
 }
 
 /* Callback for `Clear' button */
