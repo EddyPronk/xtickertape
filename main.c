@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.98 2002/04/08 11:58:12 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.99 2002/04/09 11:20:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -63,7 +63,7 @@ static struct option long_options[] =
 {
     { "elvin", required_argument, NULL, 'e' },
     { "scope", required_argument, NULL, 'S' },
-    { "proxy", required_argument, NULL, 'p' },
+    { "proxy", required_argument, NULL, 'H' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
     { "config", required_argument, NULL, 'c' },
@@ -101,7 +101,7 @@ static void usage(int argc, char *argv[])
 	"usage: %s [OPTION]...\n"
 	"  -e elvin-url,   --elvin=elvin-url\n"
 	"  -S scope,       --scope=scope\n"
-	"  -p http-proxy,  --proxy=http-proxy\n"
+	"  -H http-proxy,  --proxy=http-proxy\n"
 	"  -u user,        --user=user\n"
 	"  -D domain,      --domain=domain\n"
 	"  -c config-file, --config=config-file\n"
@@ -194,7 +194,7 @@ static void parse_args(
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:S:p:u:D:c:G:U:vh", long_options,
+	"e:S:H:u:D:c:G:U:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -225,8 +225,8 @@ static void parse_args(
 		break;
 	    }
 
-	    /* --proxy= or -p */
-	    case 'p':
+	    /* --proxy= or -H */
+	    case 'H':
 	    {
 		http_proxy = optarg;
 		break;
@@ -300,12 +300,6 @@ static void parse_args(
     if (*domain_return == NULL)
     {
 	*domain_return = get_domain();
-    }
-
-    /* If no proxy set then check the environment */
-    if (http_proxy == NULL)
-    {
-	http_proxy = getenv("http_proxy");
     }
 
     /* If we now have a proxy, then set its property */
