@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.13 1999/02/04 04:18:33 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.14 1999/04/27 04:31:12 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -350,13 +350,13 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
     /* Construct our portion of the subscription */
     StringBuffer_append(buffer, " && ");
-    StringBuffer_append(buffer, field);
 
     switch (operation)
     {
 	case Matches:
 	{
 	    /* Construct our portion of the subscription */
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " matches(\"");
 	    StringBuffer_append(buffer, pattern);
 	    StringBuffer_append(buffer, "\")");
@@ -365,7 +365,9 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case NotMatches:
 	{
-	    StringBuffer_append(buffer, " !matches(\"");
+	    StringBuffer_append(buffer, "! ");
+	    StringBuffer_append(buffer, field);
+	    StringBuffer_append(buffer, " matches(\"");
 	    StringBuffer_append(buffer, pattern);
 	    StringBuffer_append(buffer, "\")");
 	    return;
@@ -373,6 +375,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case Equals:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " == \"");
 	    StringBuffer_append(buffer, pattern);
 	    StringBuffer_append(buffer, "\"");
@@ -381,6 +384,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case NotEquals:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " != \"");
 	    StringBuffer_append(buffer, pattern);
 	    StringBuffer_append(buffer, "\"");
@@ -389,6 +393,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case LessThan:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " < ");
 	    StringBuffer_append(buffer, pattern);
 	    return;
@@ -396,6 +401,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case LessThanEquals:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " <= ");
 	    StringBuffer_append(buffer, pattern);
 	    return;
@@ -403,6 +409,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case GreaterThan:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " > ");
 	    StringBuffer_append(buffer, pattern);
 	    return;
@@ -410,6 +417,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
 	case GreaterThanEquals:
 	{
+	    StringBuffer_append(buffer, field);
 	    StringBuffer_append(buffer, " >= ");
 	    StringBuffer_append(buffer, pattern);
 	    return;
@@ -759,6 +767,7 @@ void UsenetSubscription_setConnection(UsenetSubscription self, ElvinConnection c
     /* Subscribe to the new connection */
     if (self -> connection != NULL)
     {
+	printf("usenet subscription is:\n%s\n", self -> expression);
 	self -> connectionInfo = ElvinConnection_subscribe(
 	    self -> connection, self -> expression,
 	    (NotifyCallback)HandleNotify, self);
