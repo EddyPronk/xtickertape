@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #define MAX_PACKET_SIZE 8192
 #define BUFFER_SIZE 1024
@@ -41,9 +42,8 @@ static lexer_state_t state = lex_start;
 static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
 
 
-
 /* Writes an int32 into a buffer */
-static void write_int32(char *buffer, int value)
+static void write_int32(unsigned char *buffer, int value)
 {
     buffer[0] = (value >> 24) & 0xff;
     buffer[1] = (value >> 16) & 0xff;
@@ -52,7 +52,7 @@ static void write_int32(char *buffer, int value)
 }
 
 /* Reads an int32 from a buffer */
-static int read_int32(char *buffer)
+static int read_int32(unsigned char *buffer)
 {
     return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | (buffer[3] << 0);
 }
@@ -165,6 +165,8 @@ static int end_name()
     name = first_name_point;
     while (name < length_point)
     {
+	int length;
+
 	/* Look for a match */
 	if (lstring_eq(length_point, name))
 	{
@@ -174,7 +176,11 @@ static int end_name()
 	    return 1;
 	}
 
-	name += read_int32(name) + 4;
+	/* Skip to the next name */
+	length = read_int32(name);
+	name += length + (MAX_PACKET_SIZE - length) % 4 + 8;
+	length = read_int32(name);
+	name += length + (MAX_PACKET_SIZE - length) % 4 + 4;
     }
 
     return 0;
@@ -628,7 +634,20 @@ static void dump_buffer()
 int main(int argc, char *argv[])
 {
     char buffer[BUFFER_SIZE];
-    int fd = STDIN_FILENO;
+    int fd;
+
+    if (argc < 2)
+    {
+	fd = STDIN_FILENO;
+    }
+    else
+    {
+	if ((fd = open(argv[1], O_RDONLY)) < 0)
+	{
+	    perror("open(): failed");
+	    exit(1);
+	}
+    }
 
     /* Write the header into the outgoing buffer */
     append_int32(UNOTIFY_TYPECODE);
@@ -672,6 +691,7 @@ int main(int argc, char *argv[])
 
 	    /* What have we got? */
 	    dump_buffer();
+	    close(fd);
 	    exit(0);
 	}
     }
