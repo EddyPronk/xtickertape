@@ -35,6 +35,10 @@ if test "$SYSTYPE" = "not found" ; then
 	exit 1
 fi
 
+dnl Set the OS define
+systype=`$SYSTYPE -_`
+AC_DEFINE_UNQUOTED(${systype})
+
 
 dnl Checks for libraries.
 dnl =====================
