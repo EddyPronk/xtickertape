@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.35 2001/05/05 07:42:37 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.36 2001/06/07 22:42:30 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -237,7 +237,13 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
     /* Look for the most common case first */
     if ((first <= ch) && (ch <= last))
     {
-	return font -> per_char + ch - first;
+	XCharStruct *per_char = font -> per_char + ch - first;
+
+	/* If the bounding box is non-zero then return this character */
+	if (per_char -> ascent != 0 || per_char -> descent != 0 ||
+	    per_char -> lbearing != 0 || per_char -> rbearing != 0) {
+	    return font -> per_char + ch - first;
+	}
     }
 
     /* If the character isn't in the given range, try the default char */
