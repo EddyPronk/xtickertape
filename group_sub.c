@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.20 2000/06/13 12:41:51 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.21 2000/06/14 00:17:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -412,14 +412,14 @@ static void send_message(group_sub_t self, message_t message)
 	}
     }
 
-
-    /* No keys support yet */
+    /* Send the notification */
     elvin_xt_notify(
 	self -> handle,
 	notification, 
 	self -> producer_keys,
 	self -> error);
 
+    /* And clean up */
     elvin_notification_free(notification, self -> error);
 }
 
@@ -610,7 +610,8 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
     {
 	if (elvin_xt_add_subscription(
 	    self -> handle, (uchar *)self -> expression,
-	    self -> consumer_keys, 0,
+	    self -> consumer_keys,
+	    (self -> consumer_keys == NULL) ? 1 : 0,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)
