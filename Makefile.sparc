@@ -19,7 +19,7 @@ INCLUDES = -I. -I/usr/dt/include -I/usr/openwin/include \
 
 CFLAGS = $(EXTRACFLAGS) $(CDEBUGFLAGS) $(INCLUDES) $(DEFINES)
 
-LIBDIRS = -R/usr/local/dstc/sparc-sun-solaris2.5/lib:/usr/local/lib:/usr/openwin/lib -L/usr/local/dstc/sparc-sun-solaris2.5/lib -L/usr/local/lib -L/usr/openwin/lib
+LIBDIRS = -R/usr/local/dstc/sparc-sun-solaris2.5/lib:/usr/local/lib:/usr/openwin/lib:/usr/dt/lib -L/usr/local/dstc/sparc-sun-solaris2.5/lib -L/usr/local/lib -L/usr/openwin/lib -L/usr/dt/lib
 LIBS = -lXm -lXext -lXmu  -lXt -lX11 -lvin -ldstc_std -lpthread
 
 all: $(ALL)
