@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.10 2000/07/10 13:43:45 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.11 2000/07/11 02:29:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -806,8 +806,12 @@ int ast_free(ast_t self, elvin_error_t error)
 
 	case AST_UNARY:
 	{
-	    fprintf(stderr, "unary\n");
-	    abort();
+	    if (! ast_free(self -> value.unary.value, error))
+	    {
+		return 0;
+	    }
+
+	    return ELVIN_FREE(self, error);
 	}
 
 	case AST_BINARY:
