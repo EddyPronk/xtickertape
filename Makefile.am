@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 bin_PROGRAMS = xtickertape show-url
 
 # Don't forget to set up the packagers
-SUBDIRS = packages
+SUBDIRS = packages m4
 
 # Automatically generated sources
 BUILT_SOURCES = errors.h XTickertape.ad
