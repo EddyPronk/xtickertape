@@ -126,6 +126,28 @@ char *strchr(const char *s, int c)
 }
 #endif
 
+#ifndef HAVE_STRRCHR
+/* A slow but correct implementation of strrchr */
+char *strrchr(const char *s, int c)
+{
+    char *result = NULL;
+    int ch;
+
+    while ((ch = *s) != 0)
+    {
+	if (ch == c)
+	{
+	    result = (char *)s;
+	}
+
+	s++;
+    }
+
+    return result;
+}
+#endif
+
+
 #ifndef HAVE_STRDUP
 /* A slow but correct implementation of strdup */
 char *strdup(const char *s)

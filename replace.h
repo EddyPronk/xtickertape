@@ -46,6 +46,10 @@ int strcasecmp(const char *s1, const char *s2);
 char *strchr(const char *s, int c);
 #endif
 
+#ifndef HAVE_STRRCHR
+char *strrchr(const char *s, int c);
+#endif
+
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
 #endif
