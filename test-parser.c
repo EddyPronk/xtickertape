@@ -67,6 +67,47 @@ static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_car(vm, error);
 }
 
+/* The `and' special form */
+static int prim_and(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No args evaluates to `t' */
+    if (argc == 0)
+    {
+	return vm_push_symbol(vm, "t", error);
+    }
+
+    /* Look for any nil arguments */
+    while (argc > 1)
+    {
+	object_type_t type;
+
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_type(vm, &type, error))
+	{
+	    return 0;
+	}
+
+	/* If the arg evaluated to nil then return that */
+	if (type == SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Otherwise pop it and go on to the next arg */
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last evaluates to */
+    return vm_eval(vm, error);
+}
+
 /* The `cdr' subroutine */
 static int prim_cdr(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -162,6 +203,74 @@ static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
     }
 
     return vm_make_lambda(vm, error);
+}
+
+/* The `or' special form */
+static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No args evaluates to `nil' */
+    if (argc == 0)
+    {
+	return vm_push_nil(vm, error);
+    }
+
+    /* Look for any tru arguments */
+    while (argc > 1)
+    {
+	object_type_t type;
+
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_type(vm, &type, error))
+	{
+	    return 0;
+	}
+
+	/* If the arg evaluated to non-nil then return that */
+	if (type != SEXP_NIL)
+	{
+	    return 1;
+	}
+
+	/* Otherwise pop it and go on to the next arg */
+	if (! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last arg evalutes to */
+    return vm_eval(vm, error);
+}
+
+/* The `progn' special form */
+static int prim_progn(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    /* No args evaluates to nil */
+    if (argc == 0)
+    {
+	return vm_push_nil(vm, error);
+    }
+
+    /* Evaluate each arg */
+    while (argc > 1)
+    {
+	/* Unroll the next arg onto the top of the stack */
+	if (! vm_unroll(vm, argc - 1, error) ||
+	    ! vm_eval(vm, error) ||
+	    ! vm_pop(vm, NULL, error))
+	{
+	    return 0;
+	}
+
+	argc--;
+    }
+
+    /* Return whatever the last arg evalutes to */
+    return vm_eval(vm, error);
 }
 
 /* The `+' subroutine */
@@ -285,6 +394,7 @@ int main(int argc, char *argv[])
 	! vm_assign(vm, error) ||
 	! vm_pop(vm, NULL, error) ||
 
+	! define_special(vm, "and", prim_and, error) ||
 	! define_subr(vm, "car", prim_car, error) ||
 	! define_subr(vm, "cdr", prim_cdr, error) ||
 	! define_subr(vm, "cons", prim_cons, error) ||
@@ -292,9 +402,11 @@ int main(int argc, char *argv[])
 	! define_special(vm, "if", prim_if, error) ||
 	! define_subr(vm, "gc", prim_gc, error) ||
 	! define_special(vm, "lambda", prim_lambda, error) ||
+	! define_special(vm, "or", prim_or, error) ||
+	! define_subr(vm, "+", prim_plus, error) ||
+	! define_special(vm, "progn", prim_progn, error) ||
 	! define_special(vm, "quote", prim_quote, error) ||
 	! define_special(vm, "setq", prim_setq, error) ||
-	! define_subr(vm, "+", prim_plus, error) ||
 	! define_special(vm, "print-state", prim_print_state, error))
     {
 	elvin_error_fprintf(stderr, error);
