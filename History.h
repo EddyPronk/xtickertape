@@ -31,7 +31,7 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.11 2003/01/10 11:57:23 phelps Exp $";
+static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.12 2003/01/27 15:16:37 phelps Exp $";
 #endif /* lint */
 
 
@@ -180,6 +180,9 @@ void HistoryKillThread(Widget widget, message_t message);
 
 /* Selects a message in the history */
 void HistorySelect(Widget widget, message_t message);
+
+/* Selects the parent of the message in the history */
+void HistorySelectId(Widget widget, char *message_id);
 
 /* Returns the selected message or NULL if none is selected */
 message_t HistoryGetSelection(Widget widget);
