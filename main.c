@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.86 2000/10/06 06:01:12 bill Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.87 2000/10/06 08:19:39 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -178,7 +178,7 @@ static void parse_args(
     char **usenet_file_return,
     elvin_error_t error)
 {
-    char *url;
+    int have_url = 0;
     int choice;
 
     /* Initialize arguments to sane values */
@@ -206,6 +206,7 @@ static void parse_args(
 		    exit(1);
 		}
 
+		have_url = 1;
 		break;
 	    }
 
@@ -292,12 +293,12 @@ static void parse_args(
 	*domain_return = get_domain();
     }
 
-    /* If the ELVIN_URL environment variable is set then add it to the list */
-    if ((url = getenv("ELVIN_URL")) != NULL && *url != '\0')
+    /* If no URL was provided then add the server discovery URL */
+    if (! have_url)
     {
-	if (elvin_handle_append_url(handle, url, error) == 0)
+	if (elvin_handle_append_url(handle, "*", error) == 0)
 	{
-	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", url);
+	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
 	    exit(1);
 	}
     }
