@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.39 1999/07/27 04:57:48 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.40 1999/08/01 06:46:16 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -45,6 +45,7 @@ static const char cvsid[] = "$Id: Tickertape.c,v 1.39 1999/07/27 04:57:48 phelps
 #include "StringBuffer.h"
 #include "Scroller.h"
 #include "Control.h"
+#include "message_thread.h"
 #include "Subscription.h"
 #include "UsenetSubscription.h"
 #include "MailSubscription.h"
@@ -84,6 +85,9 @@ struct Tickertape_t
 
     /* The top-level widget */
     Widget top;
+
+    /* The message threads */
+    message_thread_t messages;
 
     /* The receiver's subscriptions (from the groups file) */
     List subscriptions;
@@ -218,6 +222,11 @@ static void ReceiveMessage(Tickertape self, Message message)
 {
     SANITY_CHECK(self);
     ScAddMessage(self -> scroller, message);
+
+    printf("new message received:\n");
+    Message_debug(message);
+    self -> messages = message_thread_add(self -> messages, message);
+    message_thread_debug(self -> messages);
 }
 
 /* Read from the Groups file.  Returns a List of subscriptions if
@@ -581,6 +590,7 @@ Tickertape Tickertape_alloc(
     self -> groupsFile = (groupsFile == NULL) ? NULL : strdup(groupsFile);
     self -> usenetFile = (usenetFile == NULL) ? NULL : strdup(usenetFile);
     self -> top = top;
+    self -> messages = NULL;
     self -> subscriptions = ReadGroupsFile(self);
     self -> usenetSubscription = ReadUsenetFile(self);
     self -> mailSubscription = MailSubscription_alloc(
