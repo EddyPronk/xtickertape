@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.14 2000/12/08 06:54:43 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.15 2000/12/09 01:43:55 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -136,6 +136,9 @@ int vm_unwind_list(vm_t self, elvin_error_t error);
 
 /* Makes a lambda out of the current environment and stack */
 int vm_make_lambda(vm_t self, elvin_error_t error);
+
+/* Evaluates the top two items on the stack as a let */
+int vm_let(vm_t self, elvin_error_t error);
 
 
 /* Assigns the value on the top of the stack to the variable up one
