@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.110 2001/05/06 01:50:22 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.111 2001/05/06 02:04:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1662,7 +1662,7 @@ static void delete_left_to_right(ScrollerWidget self, glyph_t glyph)
 
 		    /* Remove the left gap from the list */
 		    right_gap -> previous = left_gap -> previous;
-		    if (left_gap -> next == NULL)
+		    if (left_gap -> previous == NULL)
 		    {
 			self -> scroller.left_holder = right_gap;
 		    }
