@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.141 2003/01/24 11:09:09 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.142 2003/01/27 00:10:02 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -158,6 +158,7 @@ static XtResource resources[] =
  * Action declarations
  */
 static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
@@ -174,6 +175,7 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
 static XtActionsRec actions[] =
 {
     { "start-drag", start_drag },
+    { "stop-drag", stop_drag },
     { "drag", drag },
     { "show-menu", show_menu },
     { "show-attachment", show_attachment },
@@ -1710,41 +1712,11 @@ static glyph_t glyph_at_event(ScrollerWidget self, XEvent *event)
  * Action definitions
  */
 
-/* This should be called by each action function -- it makes sure that
- * dragging operates correctly.  It returns 0 if the action should
- * proceed normally, -1 if the action should be aborted (i.e.  it's
- * really the end of a drag operation */
-static int pre_action(ScrollerWidget self, XEvent *event)
-{
-    /* Watch for a button release after a drag */
-    if (event -> type == ButtonRelease && self -> scroller.is_dragging)
-    {
-	/* We're not dragging anymore */
-	self -> scroller.is_dragging = False;
-
-	/* Restart the timer */
-	enable_clock(self);
-
-	/* And don't preform any action */
-	return -1;
-    }
-
-    /* Otherwise carry on as usual */
-    return 0;
-}
-
-
 /* Called when the button is pressed */
 void show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     DPRINTF((stderr, "show-menu()\n"));
 
@@ -1758,12 +1730,6 @@ static void show_attachment(Widget widget, XEvent *event, String *params, Cardin
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     DPRINTF((stderr, "show-attachment()\n"));
 
@@ -1780,12 +1746,6 @@ static void expire(Widget widget, XEvent *event, String *params, Cardinal *npara
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     DPRINTF((stderr, "expire()\n"));
 
@@ -2113,12 +2073,6 @@ static void delete(Widget widget, XEvent *event, String *params, Cardinal *npara
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
 
-    /* Abort if the pre_action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
-    
     DPRINTF((stderr, "delete()\n"));
 
     /* Figure out which glyph to delete */
@@ -2139,12 +2093,6 @@ static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *npar
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    /* Abort if the pre_action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
-
     DPRINTF((stderr, "kill()\n"));
 
     /* Figure out which glyph to kill */
@@ -2159,12 +2107,6 @@ static void do_kill(Widget widget, XEvent *event, String *params, Cardinal *npar
 static void faster(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     DPRINTF((stderr, "faster()\n"));
 
@@ -2184,12 +2126,6 @@ static void slower(Widget widget, XEvent *event, String *params, Cardinal *npara
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
-
     DPRINTF((stderr, "slower()\n"));
 
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
@@ -2207,12 +2143,6 @@ static void slower(Widget widget, XEvent *event, String *params, Cardinal *npara
 static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     /* set-speed only accepts one parameter */
     if (*nparams != 1)
@@ -2240,17 +2170,11 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
 }
 
 
-/* Someone has pressed a mouse button */
+/* Prepare to drag */
 static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     DPRINTF((stderr, "start_drag()\n"));
 
@@ -2259,18 +2183,11 @@ static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *n
     self -> scroller.last_x = button_event -> x;
 }
 
-
 /* Someone is dragging the mouse */
 static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     XMotionEvent *motion_event = (XMotionEvent *) event;
-
-    /* Abort if the pre-action tells us to */
-    if (pre_action(self, event) < 0)
-    {
-	return;
-    }
 
     /* Aren't we officially dragging yet? */
     if (! self -> scroller.is_dragging)
@@ -2294,6 +2211,30 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     /* Drag the scroller to the right place */
     scroll(self, self -> scroller.last_x - motion_event -> x);
     self -> scroller.last_x = motion_event -> x;
+}
+
+/* Stop draggin' my heart around */
+static void stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+
+    /* If we were dragging then stop */
+    if (self -> scroller.is_dragging)
+    {
+	self -> scroller.is_dragging = False;
+
+	/* Set the timer so that we can start scrolling */
+	enable_clock(self);
+	return;
+    }
+
+    /* We weren't dragging: optionally invoke a different action.  If
+     * we have parameters then invoke the first as an action and hand
+     * the rest to it as parameters */
+    if (*nparams != 0)
+    {
+	XtCallActionProc(widget, params[0], event, params + 1, *nparams - 1);
+    }
 }
 
 
