@@ -1,7 +1,14 @@
-Overview of changes in xtickertape-2.0
+Overview of changes in xtickertape-2.0a7
+
+* The application now refuses to run if the app-defaults isn't found
+  or has a different version number than the executable, and prints an
+  error message which should hopefully help the user to address the
+  problem.  [Thanks Mark White]
 
 * Added a way to set the idle-period to test the connection after some
   period of inactivity.
+
+Overview of changes in xtickertape-2.0a6
 
 * The Send button is now disabled until there is at least one
   character in the `Text' field.
