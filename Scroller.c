@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.31 1999/06/21 12:54:29 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.32 1999/06/21 14:26:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -139,7 +139,7 @@ static XtActionsRec actions[] =
  */
 static char defaultTranslations[] =
 {
-    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: delete()\n<Key>d: expire()\n<Key>x: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
+    "<Btn1Down>: menu()\n<Btn2Down>: decodeMime()\n<Btn3Down>: expire()\n<Key>d: expire()\n<Key>x: delete()\n<Key>q: quit()\n<Key>-: slower()\n<Key>=: faster()"
 };
 
 
@@ -663,7 +663,7 @@ static void adjust_left_left(ScrollerWidget self)
 	/* If the left_glyph was the gap and the gap needs to grow
 	 * then do so now */
 	last_width = get_last_width(self);
-	if ((left = self -> scroller.glyphs) && (self -> scroller.last_width < last_width))
+	if ((left == self -> scroller.glyphs) && (self -> scroller.last_width < last_width))
 	{
 	    /* If the gap is still visible then it must be the
 	     * right_glyph.  If it is then we'll need to adjust the
@@ -752,6 +752,7 @@ static void adjust_left_right(ScrollerWidget self)
 
     self -> scroller.left_offset = 0;
     self -> scroller.right_offset = 0;
+    self -> scroller.last_width = get_last_width(self);
     StopClock(self);
 }
 
@@ -781,7 +782,7 @@ static void adjust_right_right(ScrollerWidget self)
 	/* If the right_glyph was the gap and the gap needs to shrink
 	 * then do so now */
 	last_width = get_last_width(self);
-	if ((right = self -> scroller.glyphs) && (self -> scroller.last_width < last_width))
+	if ((right == self -> scroller.glyphs) && (self -> scroller.last_width < last_width))
 	{
 	    /* If the gap is still visible then it must be the
 	     * left_glyph.  If it is then we'll need to adjust the
@@ -860,6 +861,7 @@ static void adjust_right_left(ScrollerWidget self)
 
     self -> scroller.left_offset = 0;
     self -> scroller.right_offset = 0;
+    self -> scroller.last_width = get_last_width(self);
     StopClock(self);
 }
 
@@ -1194,33 +1196,63 @@ static void decode_mime(Widget widget, XEvent *event)
 static void expire(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
-    glyph_t glyph;
+    glyph_t glyph = glyph_at_event(self, event);
 
-    glyph = glyph_at_event(self, event);
     glyph -> expire(glyph);
 }
 
 /* Simple remove the message from the scroller NOW */
 static void delete(Widget widget, XEvent *event)
 {
-    printf("delete\n");
-#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
-    view_holder_t holder;
-    MessageView view;
+    glyph_t glyph = glyph_at_event(self, event);
 
-    if ((holder = ViewHolderAtEvent(self, event)) == NULL)
+    /* If the glyph is the gap then don't bother */
+    if (glyph == self -> scroller.glyphs)
     {
+	printf("missed\n");
 	return;
     }
 
-    if ((view = holder -> view) != NULL)
+    /* Figure out which way we're scrolling to determine what to do */
+    if (self -> scroller.step < 0)
     {
-	MessageView_expireNow(view);
-	view_holder_free(RemoveViewHolder(self, holder));
-	Resize(widget);
+	printf("not yet implemented\n");
     }
-#endif /* 0 */
+    else
+    {
+	/* Scrolling right-to-left */
+	glyph_t left = self -> scroller.left_glyph;
+	glyph_t right = self -> scroller.right_glyph;
+
+	/* If we've deleted the left_glyph, then update */
+	if (glyph == left)
+	{
+	    self -> scroller.left_glyph = left -> next;
+	}
+
+	/* If we've deleted the right_glyph then roll back */
+	if (glyph == right)
+	{
+	    self -> scroller.right_glyph = right -> previous;
+	}
+
+	/* Roll the right_offset back the width of the deleted glyph */
+	self -> scroller.right_offset -= glyph -> get_width(glyph);
+
+	/* Remove the deleted glyph from the queue */
+	queue_remove(glyph);
+	glyph -> free(glyph);
+	self -> scroller.last_width = get_last_width(self);
+
+	/* Attempt to recover */
+	adjust_left_left(self);
+	adjust_left_right(self);
+    }
+
+    /* Repaint everything */
+    Paint(self, 0, 0, self -> core.width, self -> core.height);
+    Redisplay(widget, NULL, 0);
 }
 
 /* Scroll more quickly */
