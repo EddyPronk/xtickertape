@@ -17,3 +17,6 @@ Things that would be nice to have in future versions of xtickertape:
 - It should be possible to have the scrolling speed change when the
   mouse enters/leaves the scroller.  I'm not sure yet how '=' and '-'
   should affect this...
+
+- Support for message replacement (useful for monitoring automated
+  stuff like cricket scores).
