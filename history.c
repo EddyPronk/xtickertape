@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.30 2000/10/31 04:48:59 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.31 2001/07/04 08:40:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,7 +37,6 @@ static const char cvsid[] = "$Id: history.c,v 1.30 2000/10/31 04:48:59 phelps Ex
 #include <time.h>
 #include <X11/IntrinsicP.h>
 #include <Xm/List.h>
-#include "glyph.h"
 #include "ScrollerP.h"
 #include "history.h"
 

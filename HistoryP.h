@@ -31,13 +31,12 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.1 2001/06/15 12:20:14 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.2 2001/07/04 08:40:36 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
 
 #include "History.h"
-#include "glyph.h"
 
 
 /* New fields for the History widget record */
@@ -54,6 +53,7 @@ typedef struct _HistoryClassRec
     HistoryClassPart history_class;
 } HistoryClassRec;
 
+
 /* New fields for the History widget record */
 typedef struct
 {
@@ -68,7 +68,8 @@ typedef struct
     
     /* Private state */
 
-    /* None yet */
+    /* Our graphics context */
+    GC gc;
 } HistoryPart;
 
 /* Full instance record declaration */
