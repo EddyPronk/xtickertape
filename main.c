@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.100 2002/04/14 22:33:16 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.101 2002/04/15 08:42:20 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -179,8 +179,8 @@ static void parse_args(
     char **ticker_dir_return,
     char **config_file_return,
     char **groups_file_return,
-    char **keys_file_return,
     char **usenet_file_return,
+    char **keys_file_return,
     elvin_error_t error)
 {
     int choice;
