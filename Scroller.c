@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.75 1999/11/10 13:16:55 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.76 1999/11/22 21:52:16 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -450,6 +450,58 @@ static void queue_add(glyph_t head, glyph_t glyph)
     glyph -> next = head;
     tail -> next = glyph;
     head -> previous = glyph;
+}
+
+/* Replace an existing queue item with a new one with the same tag */
+static int queue_replace(ScrollerWidget self, glyph_t head, glyph_t glyph, char *tag)
+{
+    glyph_t probe;
+
+    /* Don't replace if there's no tag */
+    if (tag == NULL)
+    {
+	return 0;
+    }
+
+    /* Look for the tag in the queue */
+    for (probe = head -> next; probe != head; probe = probe -> next)
+    {
+	message_t message;
+	char *probe_tag;
+
+	/* Check for a match */
+	if ((message = probe -> get_message(probe)) != NULL &&
+	    (probe_tag = message_get_tag(message)) != NULL &&
+	    strcmp(tag, probe_tag) == 0)
+	{
+	    /* Swap the message into place */
+	    glyph -> previous = probe -> previous;
+	    probe -> previous -> next = glyph;
+	    probe -> previous = NULL;
+
+	    glyph -> next = probe -> next;
+	    probe -> next -> previous = glyph;
+	    probe -> next = NULL;
+
+	    /* Update the left_glyph if appropriate */
+	    if (self -> scroller.left_glyph == probe)
+	    {
+		self -> scroller.left_glyph = glyph;
+	    }
+
+	    /* Update the right_glyph if appropriate */
+	    if (self -> scroller.right_glyph == probe)
+	    {
+		self -> scroller.right_glyph = glyph;
+	    }
+
+	    /* Clean up */
+	    probe -> free(probe);
+	    return 1;
+	}
+    }
+
+    return 0;
 }
 
 /* Removes an item from a circular queue of glyphs */
@@ -1745,8 +1797,12 @@ void ScAddMessage(ScrollerWidget self, message_t message)
 	return;
     }
 
-    /* Add it to the list of viable glyphs */
-    queue_add(self -> scroller.gap, glyph);
+    /* Try replacing an existing queue element with the same tag as this one */
+    if (! queue_replace(self, self -> scroller.gap, glyph, message_get_tag(message)))
+    {
+	/* Otherwise simply add it to the list of viable glyphs */
+	queue_add(self -> scroller.gap, glyph);
+    }
 
     /* Adjust the gap width if possible and appropriate */
     holder = self -> scroller.left_holder;
