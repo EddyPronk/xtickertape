@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.6 1997/02/10 14:45:00 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.7 1997/02/11 06:46:41 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,6 +86,7 @@ static char defaultTranslations[] =
  * Method declarations
  */
 static void Initialize();
+static void Rotate();
 static void Redisplay();
 static void Destroy();
 static void Resize();
@@ -269,7 +270,8 @@ static void StartClock(TickertapeWidget self)
 {
     if (self -> tickertape.isStopped)
     {
-	printf("restarting\n");
+	fprintf(stderr, "restarting\n");
+	fflush(stderr);
 	self -> tickertape.isStopped = FALSE;
 	SetClock(self);
     }
@@ -278,7 +280,8 @@ static void StartClock(TickertapeWidget self)
 /* Stops the clock */
 static void StopClock(TickertapeWidget self)
 {
-    printf("stalling\n");
+    fprintf(stderr, "stalling\n");
+    fflush(stderr);
     self -> tickertape.isStopped = TRUE;
 }
 
@@ -287,7 +290,7 @@ static void SetClock(TickertapeWidget self)
 {
     if (! self -> tickertape.isStopped)
     {
-	TtStartTimer(self, 41, Tick, self);
+	TtStartTimer(self, 41, Tick, (XtPointer) self);
     }
 }
 
@@ -297,6 +300,7 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
 
+    Rotate(self);
     Redisplay(self, NULL, 0);
     SetClock(self);
 }
@@ -443,7 +447,15 @@ Pixmap TtCreatePixmap(TickertapeWidget self, unsigned int width)
 XtIntervalId TtStartTimer(TickertapeWidget self, unsigned long interval,
 			  XtTimerCallbackProc proc, XtPointer client_data)
 {
-    return XtAppAddTimeOut(XtWidgetToApplicationContext((Widget)self), interval, proc, client_data);
+    return XtAppAddTimeOut(
+	XtWidgetToApplicationContext((Widget)self),
+	interval, proc, client_data);
+}
+
+/* Stops a timer from going off */
+void TtStopTimer(TickertapeWidget self, XtIntervalId id)
+{
+     XtRemoveTimeOut(id);
 }
 
 
@@ -501,19 +513,12 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     StartClock(self);
 }
 
-/* ARGSUSED */
-static void Redisplay(Widget widget, XEvent *event, Region region)
+
+/* Dequeue a ViewHolder if it is no longer visible */
+static void OutWithTheOld(TickertapeWidget self)
 {
-    TickertapeWidget self = (TickertapeWidget)widget;
     ViewHolder holder = List_first(self -> tickertape.holders);
-    void *context[3];
 
-    context[0] = (void *)XtWindow(self);
-    context[1] = (void *)(0 - self -> tickertape.offset++);
-    context[2] = (void *)0;
-    List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
-
-    /* see if it's time to dequeue a view */
     if (holder -> width <= self -> tickertape.offset)
     {
 	ViewHolder holder = DequeueViewHolder(self);
@@ -525,14 +530,11 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 	self -> tickertape.offset = 0;
 	ViewHolder_free(holder);
     }
+}
 
-    /* If no messages around then stop spinning */
-    if ((self -> tickertape.realCount == 0) && List_isEmpty(self -> tickertape.messages))
-    {
-	StopClock(self);
-    }
-    
-    /* see if it's time to enqueue a view */
+/* Enqueue a ViewHolder if there's space for one */
+static void InWithTheNew(TickertapeWidget self)
+{
     while (self -> tickertape.visibleWidth - self -> tickertape.offset < self -> core.width)
     {
 	MessageView next;
@@ -568,16 +570,48 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
     }
 }
 
+/* Move the messages along */
+static void Rotate(TickertapeWidget self)
+{
+    self -> tickertape.offset++;
+
+    OutWithTheOld(self);
+    InWithTheNew(self);
+
+    /* If no messages around then stop spinning */
+    if ((self -> tickertape.realCount == 0) && List_isEmpty(self -> tickertape.messages))
+    {
+	StopClock(self);
+    }
+}
+
+
+/* ARGSUSED */
+/* Repaints all of the ViewHolders' views */
+static void Redisplay(Widget widget, XEvent *event, Region region)
+{
+    TickertapeWidget self = (TickertapeWidget)widget;
+    void *context[3];
+
+    context[0] = (void *)XtWindow(self);
+    context[1] = (void *)(0 - self -> tickertape.offset);
+    context[2] = (void *)0;
+    List_doWith(self -> tickertape.holders, ViewHolder_redisplay, context);
+}
+
+/* FIX THIS: should actually do something? */
 static void Destroy(Widget widget)
 {
     fprintf(stderr, "Destroy 0x%p\n", widget);
 }
 
+/* Nothing to do */
 static void Resize(Widget widget)
 {
     fprintf(stderr, "Resize 0x%p\n", widget);
 }
 
+/* What should this do? */
 static Boolean SetValues(
     Widget current,
     Widget request,
@@ -588,6 +622,7 @@ static Boolean SetValues(
     return False;
 }
 
+/* What should this do? */
 static XtGeometryResult QueryGeometry(
     Widget widget,
     XtWidgetGeometry *intended,
@@ -597,7 +632,11 @@ static XtGeometryResult QueryGeometry(
 }
 
 
-/* Action definitions */
+/*
+ * Action definitions
+ */
+
+/* Called when the button is pressed */
 void Click(Widget widget, XEvent event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;

@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.6 1997/02/10 13:31:58 phelps Exp $ */
+/* $Id: main.c,v 1.7 1997/02/11 06:46:41 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +13,6 @@
 #include <errno.h>
 
 #include "Hash.h"
-#include "Scroller.h"
 #include "Message.h"
 
 #include <X11/Intrinsic.h>
