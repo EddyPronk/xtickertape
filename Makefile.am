@@ -1,6 +1,5 @@
 # First work out the executables
-bin_PROGRAMS = xtickertape
-bin_SCRIPTS = show-url
+bin_PROGRAMS = xtickertape show-url
 
 # Don't forget to set up the packagers
 SUBDIRS = packages
@@ -27,6 +26,9 @@ xtickertape_SOURCES = \
 	errors.h replace.h replace.c \
 	globals.h main.c
 
+# show-url only has one
+show_url_SOURCES = show-url.c
+
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 keys.5 usenet.5
 
@@ -50,7 +52,7 @@ errors.h: index en
 # Construct XTickertape from XTickertape.ad
 install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(appdefaultsdir)
-	$(INSTALL_DATA) $(srcdir)/XTickertape.ad $(DESTDIR)$(appdefaultsdir)/XTickertape
+	$(INSTALL_DATA) XTickertape.ad $(DESTDIR)$(appdefaultsdir)/XTickertape
 
 # Use fake targets for the various packages
 .PSEUDO: rpm
