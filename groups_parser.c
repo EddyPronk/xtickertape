@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.15 2000/08/27 12:21:32 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.16 2000/09/17 04:37:29 blaize Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -46,6 +46,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.15 2000/08/27 12:21:32 phe
 #define TIMEOUT_ERROR_MSG "illegal timeout value `%s'"
 #define PRODUCER_KEYS_MSG "illegal producer key: `%s'"
 #define EXTRA_ERROR_MSG "superfluous characters: `%s'"
+
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -414,11 +415,11 @@ static int lex_menu(groups_parser_t self, int ch)
 	}
 
 	/* Make sure the token is either "menu" or "no menu" */
-	if (strcasecmp(self -> token, "menu") == 0)
+	if (ELVIN_STRCASECMP(self -> token, "menu") == 0)
 	{
 	    self -> in_menu = 1;
 	}
-	else if (strcasecmp(self -> token, "no menu") == 0)
+	else if (ELVIN_STRCASECMP(self -> token, "no menu") == 0)
 	{
 	    self -> in_menu = 0;
 	}
@@ -472,17 +473,17 @@ static int lex_nazi(groups_parser_t self, int ch)
 	}
 
 	/* Make sure the token is either "auto" or "manual" */
-	if (strcasecmp(self -> token, "auto") == 0)
+	if (ELVIN_STRCASECMP(self -> token, "auto") == 0)
 	{
 	    self -> has_nazi = 1;
 	}
-	else if (strcasecmp(self -> token, "manual") == 0)
+	else if (ELVIN_STRCASECMP(self -> token, "manual") == 0)
 	{
 	    self -> has_nazi = 0;
 	}
 	else
 	{
-	    char *buffer = malloc(strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1);
+	    char *buffer = (char*)malloc(strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1);
 
 	    if (buffer != NULL)
 	    {
@@ -490,7 +491,6 @@ static int lex_nazi(groups_parser_t self, int ch)
 		parse_error(self, buffer);
 		free(buffer);
 	    }
-
 	    return -1;
 	}
 
