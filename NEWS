@@ -1,12 +1,19 @@
 Overview of changes in xtickertape-1.6.0
 
+* The `Message-Id' and `In-Reply-To' fields are now strings instead of 
+  integers.  This matches the updated specification and allows
+  messages to really have unique ids instead of merely hoping that the
+  random number generator is good enough.
+
 * Clicking on a message in the tickertape (to reply to it) now selects
   that message in the history.  Selecting an item in the history means 
   that you want to reply to that message and the group menu is updated 
   accordingly.
 
 * A history of the last few messages sent is now shown at the bottom
-  of the control panel window.
+  of the control panel window.  The history can be displayed in
+  threaded or chronological order and a toggle under the `Options'
+  menu lets the user switch between them.
 
 * The new action drag() can be used to drag the tickertape's scroller
   around.  Not necessarily useful, but quite cute.
