@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.6 2000/11/18 04:07:16 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.7 2000/11/20 05:22:43 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -47,8 +47,8 @@ static const char cvsid[] = "$Id: vm.c,v 2.6 2000/11/18 04:07:16 phelps Exp $";
 #define POINTER_SIZE (sizeof(void *))
 
 #define LENGTH_MASK 0xFFFF0000
-#define TYPE_MASK 0x0000F000
-#define FLAGS_MASK 0x00000FFF
+#define TYPE_MASK 0x0000FF00
+#define FLAGS_MASK 0x000000FF
 
 
 
@@ -72,14 +72,17 @@ struct vm
 
     /* --- CURRENT STATE --- */
 
+    /* The current stack frame */
+    uint32_t fp;
+
+    /* The current stack position */
+    uint32_t sp;
+
     /* The current environment */
     object_t env;
 
-    /* The current stack frame */
-    uint32_t sp;
-
-    /* The top of the stack */
-    uint32_t top;
+    /* The expression we're evaluating */
+    object_t expr;
 
     /* The program counter */
     uint32_t pc;
@@ -166,19 +169,19 @@ static object_type_t object_type(object_t object)
 
     /* Otherwise look in the object's header */
     header = (uint32_t)(*object);
-    return (header >> 12) & 0xF;
+    return (header >> 8) & 0xFF;
 }
 
 /* Returns the object on the top of the stack */
 int vm_top(vm_t self, object_t *result, elvin_error_t error)
 {
-    if (self -> top < 1)
+    if (self -> sp < 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
 	return 0;
     }
 
-    *result = self -> stack[self -> top - 1];
+    *result = self -> stack[self -> sp - 1];
     return 1;
 }
 
@@ -186,17 +189,17 @@ int vm_top(vm_t self, object_t *result, elvin_error_t error)
 int vm_pop(vm_t self, object_t *result, elvin_error_t error)
 {
     /* Make sure the stack doesn't underflow */
-    if (self -> top < 1)
+    if (self -> sp < 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
 	return 0;
     }
 
     /* Pop the result if there's a place to put it */
-    self -> top--;
+    self -> sp--;
     if (result)
     {
-	*result = self -> stack[self -> top];
+	*result = self -> stack[self -> sp];
     }
 
     return 1;
@@ -206,7 +209,7 @@ int vm_pop(vm_t self, object_t *result, elvin_error_t error)
 int vm_push(vm_t self, object_t object, elvin_error_t error)
 {
     /* FIX THIS: check bounds on stack */
-    self -> stack[self -> top++] = object;
+    self -> stack[self -> sp++] = object;
     return 1;
 }
 
@@ -215,41 +218,65 @@ int vm_swap(vm_t self, elvin_error_t error)
 {
     object_t swap;
 
-    if (self -> top < 2)
+    if (self -> sp < 2)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
 	return 0;
     }
 
-    swap = self -> stack[self -> top - 1];
-    self -> stack[self -> top - 1] = self -> stack[self -> top - 2];
-    self -> stack[self -> top - 2] = swap;
+    swap = self -> stack[self -> sp - 1];
+    self -> stack[self -> sp - 1] = self -> stack[self -> sp - 2];
+    self -> stack[self -> sp - 2] = swap;
     return 1;
 }
 
 /* Rotates the stack so that the top is `count' places back */
-int vm_rotate(vm_t self, uint32_t count, elvin_error_t error)
+int vm_roll(vm_t self, uint32_t count, elvin_error_t error)
 {
     object_t top;
-    uint32_t i;
 
-    if (self -> top < count + 1)
+    if (self -> sp < count + 1)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow");
 	return 0;
     }
 
     /* Grab the top of the stack */
-    top = self -> stack[self -> top - 1];
+    top = self -> stack[self -> sp - 1];
 
-    /* Push the remaining elements down */
-    for (i = 0; i < count; i++)
-    {
-	self -> stack[self -> top - 1 - i] = self -> stack[self -> top - 2 - i];
-    }
+    /* Push the remaining elements up */
+    memmove(
+	self -> stack + self -> sp - count, 
+	self -> stack + self -> sp - count - 1,
+	count * POINTER_SIZE);
 
     /* Push the top into the appropriate place */
-    self -> stack[self -> top - 1 - count] = top;
+    self -> stack[self -> sp - count - 1] = top;
+    return 1;
+}
+
+/* Rotates the stack so that the item `count' places back is on top */
+int vm_unroll(vm_t self, uint32_t count, elvin_error_t error)
+{
+    object_t top;
+
+    if (self -> sp < count + 1)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow");
+	return 0;
+    }
+
+    /* Grab the item from the stack */
+    top = self -> stack[self -> sp - count - 1];
+
+    /* Push the remaining elements down */
+    memmove(
+	self -> stack + self -> sp - count - 1,
+	self -> stack + self -> sp - count,
+	count * POINTER_SIZE);
+
+    /* Put the item onto the top */
+    self -> stack[self -> sp - 1] = top;
     return 1;
 }
 
@@ -285,7 +312,7 @@ int vm_new(
     self -> heap_next += size + 1;
 
     /* Write the object header (it pretends to be an integer) */
-    header = (size & 0xFFFF) << 16 | (type & 0xF) << 12 | (flags & 0xFFF);
+    header = (size & 0xFFFF) << 16 | (type & 0xFF) << 8 | (flags & 0xFF);
     object[0] = (void *)header;
 
     /* Push the object onto the stack */
@@ -364,6 +391,24 @@ int vm_push_char(vm_t self, int value, elvin_error_t error)
     return 0;
 }
 
+/* Pushes a special form onto the vm's stack */
+int vm_push_special_form(vm_t self, prim_t func, elvin_error_t error)
+{
+    object_t object;
+
+    /* Create a new special form object on the heap */
+    if (! vm_new(self, 1, SEXP_SPECIAL, 0, error) ||
+	! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Copy the function pointer into the object */
+    object[1] = (object_t)func;
+    return 1;
+}
+
+
 /* Makes a symbol out of the string on the top of the stack */
 int vm_make_symbol(vm_t self, elvin_error_t error)
 {
@@ -384,7 +429,7 @@ int vm_make_symbol(vm_t self, elvin_error_t error)
 	if (strcmp((char *)(string + 1), (char *)(*pointer + 1)) == 0)
 	{
 	    /* Pop the string off the stack */
-	    self -> top--;
+	    self -> sp--;
 
 	    /* Push the symbol on */
 	    return vm_push(self, *pointer, error);
@@ -396,7 +441,7 @@ int vm_make_symbol(vm_t self, elvin_error_t error)
 
     /* No such symbol.  Transform the string into a symbol. */
     header = (uint32_t)*string;
-    header = (header & ~TYPE_MASK) | (SEXP_SYMBOL << 12);
+    header = (header & ~TYPE_MASK) | (SEXP_SYMBOL << 8);
     *string = (void *)header;
 
     /* Write it on the end of the symbol table */
@@ -527,7 +572,7 @@ int vm_assign(vm_t self, elvin_error_t error)
     /* Duplicate the value and roll it up before the symbol */
     return
 	vm_dup(self, error) &&
-	vm_rotate(self, 2, error) &&
+	vm_roll(self, 2, error) &&
 	vm_make_cons(self, error) &&
 	vm_push(self, self -> env, error) &&
 	vm_car(self, error) &&
@@ -592,52 +637,245 @@ static int lookup(vm_t self, elvin_error_t error)
     return 0;
 }
 
-/* Evaluates the top of the stack, leaving the result in its place */
-int vm_eval(vm_t self, elvin_error_t error)
+
+/* Gets the top of the stack evaluated */
+static int eval_setup(vm_t self, elvin_error_t error)
 {
     object_t object;
+    uint32_t sp;
 
     /* Find the top item on the stack */
     if (! vm_top(self, &object, error))
     {
-	return 1;
+	return 0;
     }
 
+    /* Evaluate the object based upon its type */
     switch (object_type(object))
     {
-	/* Most objects evaluate to themselves */
+	/* Most values evaluate to themselves */
 	case SEXP_NIL:
 	case SEXP_CHAR:
 	case SEXP_INTEGER:
 	case SEXP_LONG:
 	case SEXP_FLOAT:
 	case SEXP_STRING:
-	case SEXP_PRIM:
+	case SEXP_SUBR:
+	case SEXP_SPECIAL:
 	case SEXP_LAMBDA:
 	{
 	    return 1;
 	}
 
-	/* Symbols get looked up in the environment */
+	/* Look up symbols in the current environment */
 	case SEXP_SYMBOL:
 	{
 	    return lookup(self, error);
 	}
 
-	/* Cons cells evaluate to function calls */
+	/* Cons cells create a new stack frame */
 	case SEXP_CONS:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[cons]");
-	    return 0;
+	    /* Record the current stack pointer */
+	    sp = self -> sp;
+
+	    /* Push the current state */
+	    if (! vm_push_integer(self, self -> fp, error) ||
+		! vm_push(self, self -> env, error) ||
+		! vm_push(self, self -> expr, error) ||
+		! vm_push_integer(self, self -> pc, error))
+	    {
+		self -> sp = sp;
+		return 0;
+	    }
+
+	    /* Set up our state to evaluate the new thing */
+	    self -> fp = sp;
+	    self -> expr = object;
+	    self -> pc = 0;
+	    return 1;
 	}
 
-	/* Nothing else should be getting put onto the stack */
+	/* Anything else doesn't evaluate */
 	default:
 	{
 	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "eval[unknown]");
 	    return 0;
 	}
     }
+}
+
+/* Returns the top of the stack from a function call */
+static int do_return(vm_t self, elvin_error_t error)
+{
+    object_t object;
+
+    printf("*** before...\n");
+    vm_print_state(self, error);
+
+    /* Get the object off of the stack */
+    if (! vm_pop(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Restore the old state */
+    self -> sp = self -> fp;
+    self -> fp = ((uint32_t)(self -> stack[self -> sp])) >> 1;
+    self -> env = self -> stack[self -> sp + 1];
+    self -> expr = self -> stack[self -> sp + 2];
+    self -> pc = ((uint32_t)(self -> stack[self -> sp + 3])) >> 1;
+
+    /* Push the result onto the stack */
+    if (! vm_pop(self, NULL, error) || ! vm_push(self, object, error))
+    {
+	return 0;
+    }
+
+    printf("*** after\n");
+    vm_print_state(self, error);
+    return 1;
+}
+
+
+/* Perform the next calculation based on the VM state */
+static int run(vm_t self, elvin_error_t error)
+{
+    /* Keep evaluating while our expression isn't nil */
+    while (self -> expr)
+    {
+	/* What we do depends on where we are */
+	switch (self -> pc)
+	{
+	    /* Always evaluate the first arg */
+	    case 0:
+	    {
+		self -> pc++;
+
+		/* Push the car of the expression onto the stack */
+		if (! vm_push(self, self -> expr[1], error))
+		{
+		    return 0;
+		}
+
+		/* The expression becomes the cdr */
+		self -> expr = self -> expr[2];
+
+		/* Set up to evaluate the expression */
+		if (! eval_setup(self, error))
+		{
+		    return 0;
+		}
+
+		break;
+	    }
+
+	    /* Do we evaluate the rest of the args? */
+	    case 1:
+	    {
+		object_t object;
+
+		/* The function should be on the top of the stack */
+		if (! vm_top(self, &object, error))
+		{
+		    return 0;
+		}
+
+		/* Do we need to evaluate the args? */
+		switch (object_type(object))
+		{
+		    /* Don't evaluate the args, just push them onto the stack */
+		    case SEXP_SPECIAL:
+		    {
+			while (object_type(self -> expr) == SEXP_CONS)
+			{
+			    if (! vm_push(self, self -> expr[1], error))
+			    {
+				return 0;
+			    }
+
+			    self -> expr = self -> expr[2];
+			    self -> pc++;
+			}
+
+			/* Make sure we have a null-terminated list */
+			if (object_type(self -> expr) != SEXP_NIL)
+			{
+			    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
+			    return 0;
+			}
+
+			/* Roll the function to the top of the stack */
+			if (! vm_unroll(self, self -> pc - 1, error))
+			{
+			    return 0;
+			}
+
+			/* Pop it and call it */
+			if (! vm_pop(self, &object, error))
+			{
+			    return 0;
+			}
+
+			/* Call the function */
+			if (! ((prim_t)object[1])(self, self -> pc - 1, error))
+			{
+			    return 0;
+			}
+
+			/* Return the top of the stack as the result */
+			if (! do_return(self, error))
+			{
+			    return 0;
+			}
+
+			break;
+		    }
+
+		    /* Evaluate the args and push the results onto the stack */
+		    case SEXP_SUBR:
+		    case SEXP_LAMBDA:
+		    {
+			printf("it's a subr or lambda\n");
+			exit(1);
+		    }
+
+		    /* Bogus function.  Bail! */
+		    default:
+		    {
+			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus func");
+			return 0;
+		    }
+		}
+
+		break;
+	    }
+
+	    /* Evaluating args */
+	    default:
+	    {
+		printf("we're evaluating later parts of the expression\n");
+		exit(1);
+	    }
+		
+	}
+    }
+
+    return 1;
+}
+
+
+/* Evaluates the top of the stack, leaving the result in its place */
+int vm_eval(vm_t self, elvin_error_t error)
+{
+    /* Set up to evaluate the top of the stack */
+    if (! eval_setup(self, error))
+    {
+	return 0;
+    }
+
+    /* Run until we're done */
+    return run(self, error);
 }
 
 
@@ -712,27 +950,27 @@ static void do_print(object_t object)
 	    break;
 	}
 
-	case SEXP_PRIM:
+	case SEXP_SUBR:
 	{
-	    printf("<prim>");
+	    printf("<subr>");
+	    break;
+	}
+
+	case SEXP_SPECIAL:
+	{
+	    printf("<special form>");
 	    break;
 	}
 
 	case SEXP_LAMBDA:
 	{
-	    printf("<lambda>");
+	    printf("<closure>");
 	    break;
 	}
 
 	case SEXP_ENV:
 	{
 	    printf("<env>");
-	    break;
-	}
-
-	case SEXP_ARRAY:
-	{
-	    printf("<array>");
 	    break;
 	}
 
@@ -762,14 +1000,20 @@ int vm_print(vm_t self, elvin_error_t error)
 }
 
 /* For debugging only */
-int vm_print_stack(vm_t self, elvin_error_t error)
+int vm_print_state(vm_t self, elvin_error_t error)
 {
     uint32_t i;
 
+    /* Print the state */
+    printf("fp=%d, sp=%d, pc=%d\n", self -> fp, self -> sp, self -> pc);
+    printf("env="); do_print(self -> env); printf("\n");
+    printf("expr="); do_print(self -> expr); printf("\n");
+    printf("stack:\n");
+
     /* print each stack item */
-    for (i = 0; i < self -> top; i++)
+    for (i = 0; i < self -> sp; i++)
     {
-	printf("%d: ", i);
+	printf("  %d: ", i);
 	do_print(self -> stack[i]);
 	printf("\n");
     }

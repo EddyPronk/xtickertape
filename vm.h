@@ -31,7 +31,7 @@
 #define VM_H
 
 #ifndef lint
-static const char cvs_VM_H[] = "$Id: vm.h,v 2.5 2000/11/18 04:07:44 phelps Exp $";
+static const char cvs_VM_H[] = "$Id: vm.h,v 2.6 2000/11/20 05:22:43 phelps Exp $";
 #endif /* lint */
 
 /* Objects are really handles to the world outside the VM */
@@ -40,11 +40,14 @@ typedef void **object_t;
 /* The virtual machine type */
 typedef struct vm *vm_t;
 
+/* The type of a primitive function */
+typedef int (*prim_t)(vm_t vm, uint32_t argc, elvin_error_t error);
+
 
 /* The types of objects */
 typedef enum
 {
-    /* Atomic types are 0-7 */
+    /* Atomic types are 0-127 */
     SEXP_NIL = 0,
     SEXP_CHAR,
     SEXP_INTEGER,
@@ -52,13 +55,13 @@ typedef enum
     SEXP_FLOAT,
     SEXP_STRING,
     SEXP_SYMBOL,
-    SEXP_PRIM,
+    SEXP_SUBR,
+    SEXP_SPECIAL,
 
-    /* Combined types are 8-15 */
-    SEXP_CONS = 8,
+    /* Combined types are 128-255 */
+    SEXP_CONS = 128,
     SEXP_LAMBDA,
-    SEXP_ENV,
-    SEXP_ARRAY
+    SEXP_ENV
 } object_type_t;
 
 /* Allocates and initializes a new virtual machine */
@@ -75,7 +78,10 @@ int vm_swap(vm_t self, elvin_error_t error);
 int vm_pop(vm_t self, object_t *result, elvin_error_t error);
 
 /* Rotates the stack so that the top is `count' places back */
-int vm_rotate(vm_t self, uint32_t count, elvin_error_t error);
+int vm_roll(vm_t self, uint32_t count, elvin_error_t error);
+
+/* Rotates the stack so that the item `count' places back is on top */
+int vm_unroll(vm_t self, uint32_t count, elvin_error_t error);
 
 /* Push nil onto the vm's stack */
 int vm_push_nil(vm_t self, elvin_error_t error);
@@ -95,6 +101,8 @@ int vm_push_string(vm_t self, char *value, elvin_error_t error);
 /* Pushes a char onto the vm's stack */
 int vm_push_char(vm_t self, int value, elvin_error_t error);
 
+/* Pushes a special form onto the vm's stack */
+int vm_push_special_form(vm_t self, prim_t func, elvin_error_t error);
 
 /* Makes a symbol out of the string on the top of the stack */
 int vm_make_symbol(vm_t self, elvin_error_t error);
@@ -118,7 +126,7 @@ int vm_eval(vm_t self, elvin_error_t error);
 int vm_print(vm_t self, elvin_error_t error);
 
 /* For debugging only */
-int vm_print_stack(vm_t self, elvin_error_t error);
+int vm_print_state(vm_t self, elvin_error_t error);
 
 
 #endif
