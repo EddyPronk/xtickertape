@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.83 2002/04/05 12:23:40 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.84 2002/04/08 11:41:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -81,9 +81,8 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.83 2002/04/05 12:23:40 phelps
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 #define DROP_WARN_MSG "One or more packets were dropped"
 
-#define GROUP_SUB "TICKERTAPE == \"%s\" || Channel == \"%s\""
+#define GROUP_SUB "TICKERTAPE == \"%s\" || Group == \"%s\""
 
-#define F_TICKERTAPE_STARTUP "tickertape.startup"
 #define F_USER "user"
 
 /* The tickertape data type */
@@ -157,11 +156,6 @@ static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(void *rock, message_t message, int show_attachment);
 static int parse_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
-#if 0
-static void publish_startup_notification(tickertape_t self);
-static void disconnect_callback(tickertape_t self, connection_t connection);
-static void reconnect_callback(tickertape_t self, connection_t connection);
-#endif /* 0 */
 static char *tickertape_ticker_dir(tickertape_t self);
 #if 0
 static char *tickertape_config_filename(tickertape_t self);
@@ -756,134 +750,6 @@ static void init_ui(tickertape_t self)
 	(XtCallbackProc)kill_callback, self);
     XtRealizeWidget(self -> top);
 }
-
-
-
-#if 0
-/* Publishes a notification indicating that the receiver has started */
-static void publish_startup_notification(tickertape_t self)
-{
-    elvin_notification_t notification;
-
-    /* If we haven't managed to connect, then don't try sending */
-    if (self -> handle == NULL)
-    {
-	return;
-    }
-
-    /* Create a nice startup notification */
-    if ((notification = elvin_notification_alloc(self -> error)) == NULL)
-    {
-	fprintf(stderr, "elvin_notification_alloc(): failed\n");
-	abort();
-    }
-
-    if (elvin_notification_add_string(
-	notification,
-	F_TICKERTAPE_STARTUP,
-	VERSION,
-	self -> error) == 0)
-    {
-	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
-    }
-
-    if (elvin_notification_add_string(
-	notification,
-	F_USER,
-	self -> user,
-	self -> error) == 0)
-    {
-	fprintf(stderr, "elvin_notification_add_string(): failed\n");
-	abort();
-    }
-
-    /* No keys support yet */
-    elvin_xt_notify(self -> handle, notification, NULL, self -> error);
-    elvin_notification_free(notification, self -> error);
-}
-#endif
-
-#if 0
-/* This is called when we get our elvin connection back */
-static void reconnect_callback(tickertape_t self, connection_t connection)
-{
-    char *host;
-    int port;
-    char *buffer;
-    message_t message;
-
-    /* Construct a reconnect message */
-    host = connection_host(connection);
-    port = connection_port(connection);
-    if ((buffer = (char *)malloc(strlen(CONNECT_MSG) + strlen(host) + 5 - 3)) == NULL)
-    {
-	return;
-    }
-
-    sprintf(buffer, CONNECT_MSG, host, port);
-
-    /* Display the message on the scroller */
-    message = message_alloc(
-	NULL, "internal", "tickertape", buffer, 30,
-	NULL, NULL, 0,
-	NULL, NULL, NULL);
-
-    receive_callback(self, message);
-    message_free(message);
-
-    /* Release our connect message */
-    free(buffer);
-
-    /* Republish the startup notification */
-    publish_startup_notification(self);
-}
-#endif /* 0 */
-
-#if 0
-/* This is called when we lose our elvin connection */
-static void disconnect_callback(tickertape_t self, connection_t connection)
-{
-    message_t message;
-    char *host = connection_host(connection);
-    int port = connection_port(connection);
-    char *format;
-    char *buffer;
-
-    /* If this is called in the middle of connection_alloc, then
-     * self -> connection will be NULL.  Let the user know that we've
-     * never managed to connect. */
-    if (self -> connection == NULL)
-    {
-	format = NO_CONNECT_MSG;
-    }
-    else
-    {
-	format = LOST_CONNECT_MSG;
-    }
-
-    /* Compose our message */
-    if ((buffer = (char *)malloc(strlen(format) + strlen(host) + 6)) == NULL)
-    {
-	return;
-    }
-
-    sprintf(buffer, format, host, port);
-
-    /* Display the message on the scroller */
-    message = message_alloc(
-	NULL, "internal", "tickertape", buffer, 10,
-	NULL, NULL,
-	NULL, NULL, NULL);
-
-    receive_callback(self, message);
-    message_free(message);
-
-    free(buffer);
-}
-#endif /* 0 */
-
-
 
 /* This is called when our connection request is handled */
 static void connect_cb(

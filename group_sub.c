@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.31 2002/02/25 16:22:51 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.32 2002/04/08 11:41:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -40,16 +40,21 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.31 2002/02/25 16:22:51 phelps 
 #include <elvin/xt_mainloop.h>
 #include "group_sub.h"
 
-#define F_VERSION "xtickertape.version"
-#define F_TICKERTAPE "TICKERTAPE"
-#define F_USER "USER"
-#define F_TIMEOUT "TIMEOUT"
-#define F_TICKERTEXT "TICKERTEXT"
-#define F_REPLACEMENT "REPLACEMENT"
-#define F_MESSAGE_ID "Message-Id"
-#define F_IN_REPLY_TO "In-Reply-To"
-#define F_MIME_ARGS "MIME_ARGS"
-#define F_MIME_TYPE "MIME_TYPE"
+#define F3_USER_AGENT "User-Agent"
+#define F3_GROUP "Group"
+#define F2_TICKERTAPE "TICKERTAPE"
+#define F3_FROM "From"
+#define F2_USER "USER"
+#define F3_MESSAGE "Message"
+#define F2_TICKERTEXT "TICKERTEXT"
+#define F3_TIMEOUT "Timeout"
+#define F2_TIMEOUT "TIMEOUT"
+#define F3_REPLACES "Replaces"
+#define F2_REPLACEMENT "REPLACEMENT"
+#define F3_MESSAGE_ID "Message-Id"
+#define F3_IN_REPLY_TO "In-Reply-To"
+#define F2_MIME_ARGS "MIME_ARGS"
+#define F2_MIME_TYPE "MIME_TYPE"
 
 
 /* The group subscription data type */
@@ -144,8 +149,13 @@ static void notify_cb(
     }
     
     /* Get the user from the notification (if provided) */
-    if (elvin_notification_get(notification, F_USER, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_FROM, &type, &value, error) &&
 	type == ELVIN_STRING)
+    {
+	user = (char *)value.s;
+    }
+    else if (elvin_notification_get(notification, F2_USER, &type, &value, error) &&
+	     type == ELVIN_STRING)
     {
 	user = (char *)value.s;
     }
@@ -155,7 +165,12 @@ static void notify_cb(
     }
 
     /* Get the text of the notification (if provided) */
-    if (elvin_notification_get(notification, F_TICKERTEXT, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_MESSAGE, &type, &value, error) &&
+	type == ELVIN_STRING)
+    {
+	text = (char *)value.s;
+    }
+    else if (elvin_notification_get(notification, F2_TICKERTEXT, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	text = (char *)value.s;
@@ -167,7 +182,41 @@ static void notify_cb(
 
     /* Get the timeout for the notification (if provided) */
     timeout = 0;
-    if (elvin_notification_get(notification, F_TIMEOUT, &type, &value, error))
+    if (elvin_notification_get(notification, F3_TIMEOUT, &type, &value, error))
+    {
+	switch (type)
+	{
+	    case ELVIN_INT32:
+	    {
+		timeout = value.i;
+		break;
+	    }
+
+	    case ELVIN_INT64:
+	    {
+		timeout = (int)value.h;
+		break;
+	    }
+
+	    case ELVIN_REAL64:
+	    {
+		timeout = (int)(0.5 + value.d);
+		break;
+	    }
+
+	    case ELVIN_STRING:
+	    {
+		timeout = atoi((char *)value.s);
+		break;
+	    }
+
+	    default:
+	    {
+		break;
+	    }
+	}
+    }
+    else if (elvin_notification_get(notification, F2_TIMEOUT, &type, &value, error))
     {
 	switch (type)
 	{
@@ -216,7 +265,7 @@ static void notify_cb(
     }
 
     /* Get the MIME type (if provided) */
-    if (elvin_notification_get(notification, F_MIME_TYPE, &type, &value, error) &&
+    if (elvin_notification_get(notification, F2_MIME_TYPE, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	mime_type = (char *)value.s;
@@ -227,7 +276,7 @@ static void notify_cb(
     }
 
     /* Get the MIME args (if provided) */
-    if (elvin_notification_get(notification, F_MIME_ARGS, &type, &value, error) &&
+    if (elvin_notification_get(notification, F2_MIME_ARGS, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	mime_args.data = value.s;
@@ -245,8 +294,13 @@ static void notify_cb(
     }
 
     /* Get the replacement tag (if provided) */
-    if (elvin_notification_get(notification, F_REPLACEMENT, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_REPLACES, &type, &value, error) &&
 	type == ELVIN_STRING)
+    {
+	tag = (char *)value.s;
+    }
+    else if (elvin_notification_get(notification, F2_REPLACEMENT, &type, &value, error) &&
+	     type == ELVIN_STRING)
     {
 	tag = (char *)value.s;
     }
@@ -256,7 +310,7 @@ static void notify_cb(
     }
 
     /* Get the message id (if provided) */
-    if (elvin_notification_get(notification, F_MESSAGE_ID, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_MESSAGE_ID, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	message_id = (char *)value.s;
@@ -267,7 +321,7 @@ static void notify_cb(
     }
 
     /* Get the reply id (if provided) */
-    if (elvin_notification_get(notification, F_IN_REPLY_TO, &type, &value, error) &&
+    if (elvin_notification_get(notification, F3_IN_REPLY_TO, &type, &value, error) &&
 	type == ELVIN_STRING)
     {
 	reply_id = (char *)value.s;
@@ -320,12 +374,23 @@ static void notify_cb(
 	return;
     }
 
-    /* Get the user from the notification */
-    if (! elvin_notification_get_string(notification, F_USER, &found, &user, error))
+    /* Get the `From' field from the notification */
+    if (! elvin_notification_get_string(notification, F3_FROM, &found, &user, error))
     {
 	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
+    }
+
+    /* If that didn't work then try the old `USER' field */
+    if (! found)
+    {
+	if (! elvin_notification_get_string(notification, F2_USER, &found, &user, error))
+	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
     }
 
     /* Use a default user if none was provided in the notification */
@@ -334,12 +399,22 @@ static void notify_cb(
 	user = "anonymous";
     }
 
-    /* Get the text of the notification (if provided) */
-    if (! elvin_notification_get_string(notification, F_TICKERTEXT, &found, &text, error))
+    /* Get the `Message' field from the notification */
+    if (! elvin_notification_get_string(notification, F3_MESSAGE, &found, &text, error))
     {
 	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
+    }
+
+    /* Try the `TICKERTEXT' field if no `Message' found */
+    if (! found) {
+	if (! elvin_notification_get_string(notification, F2_TICKERTEXT, &found, &text, error))
+	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
     }
 
     /* Default to an empty message if none provided */
@@ -348,23 +423,33 @@ static void notify_cb(
 	text = "";
     }
 
-    /* Get the timeout for the notification (if provided) */
-    if (! elvin_notification_get(
-	    notification,
-	    F_TIMEOUT,
-	    &found, &type, &value,
-	    error))
+    /* Get the `Timeout' field from the notification */
+    if (! elvin_notification_get(notification, F3_TIMEOUT, &found, &type, &value, error))
     {
+	fprintf(stderr, "elvin_notification_get(): failed");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
+    /* Try the `TIMEOUT' field for backward compatibility */
+    if (! found)
+    {
+	if (! elvin_notification_get(notification, F2_TIMEOUT, &found, &type, &value, error))
+	{
+	    fprintf(stderr, "elvin_notification_get(): failed");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+    }
+
+    /* Set the timeout to zero so that it's set */
     if (! found)
     {
 	timeout = 0;
     }
     else
     {
+	/* Be overly generous with the timeout field's type */
 	switch (type)
 	{
 	    case ELVIN_INT32:
@@ -398,7 +483,7 @@ static void notify_cb(
 	}
     }
 
-    /* If the timeout was illegible, then set it to 10 minutes */
+    /* If the timeout was zero, then set it to 10 minutes */
     timeout = (timeout == 0) ? 10 : timeout;
 
     /* Make sure the timeout conforms */
@@ -412,7 +497,11 @@ static void notify_cb(
     }
 
     /* Get the MIME type (if provided) */
-    if (! elvin_notification_get_string(notification, F_MIME_TYPE, NULL, &mime_type, error))
+    if (! elvin_notification_get_string(
+	    notification,
+	    F2_MIME_TYPE,
+	    NULL, &mime_type,
+	    error))
     {
 	fprintf(stderr, "elvin_notification_get_string(): failed");
 	elvin_error_fprintf(stderr, error);
@@ -422,7 +511,7 @@ static void notify_cb(
     /* Get the MIME args (if provided) */
     if (! elvin_notification_get(
 	    notification,
-	    F_MIME_ARGS,
+	    F2_MIME_ARGS,
 	    &found, &type, &value,
 	    error))
     {
@@ -430,6 +519,7 @@ static void notify_cb(
 	exit(1);
     }
 
+    /* Accept both string and opaque attachments */
     if (found && type == ELVIN_STRING)
     {
 	mime_args.data = value.s;
@@ -446,25 +536,36 @@ static void notify_cb(
 	mime_args.length = 0;
     }
 
-    /* Get the replacement tag (if provided) */
-    if (! elvin_notification_get_string(notification, F_REPLACEMENT, NULL, &tag, error))
+    /* Get the `Replaces' field from the notification */
+    if (! elvin_notification_get_string(notification, F3_REPLACES, &found, &tag, error))
     {
-	fprintf(stderr, "elvin_notification_get_string(): failed");
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+    }
+
+    /* Try the backward compatible `REPLACEMENT' field */
+    if (! found)
+    {
+	if (! elvin_notification_get_string(notification, F2_REPLACEMENT, NULL, &tag, error))
+	{
+	    fprintf(stderr, "elvin_notification_get_string(): failed\n");
+	    elvin_error_fprintf(stderr, error);
+	    exit(1);
+	}
+    }
+
+    /* Get the `Message-Id' from the notification */
+    if (! elvin_notification_get_string(notification, F3_MESSAGE_ID, NULL, &message_id, error)) {
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
 
-    /* Get the message id (if provided) */
-    if (! elvin_notification_get_string(notification, F_MESSAGE_ID, NULL, &message_id, error)) {
-	fprintf(stderr, "elvin_notification_get_string(): failed");
-	elvin_error_fprintf(stderr, error);
-	exit(1);
-    }
-
-    /* Get the reply id (if provided) */
-    if (! elvin_notification_get_string(notification, F_IN_REPLY_TO, NULL, &reply_id, error))
+    /* Get the `In-Reply-To' field from the notification */
+    if (! elvin_notification_get_string(notification, F3_IN_REPLY_TO, NULL, &reply_id, error))
     {
-	fprintf(stderr, "elvin_notification_get_string(): failed");
+	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
     }
@@ -509,56 +610,80 @@ static void send_message(group_sub_t self, message_t message)
 	abort();
     }
 
-    /* Add an xtickertape version tag */
+    /* Add an xtickertape user agent tag */
     if (elvin_notification_add_string(
-	notification,
-	F_VERSION,
-	VERSION,
-	self -> error) == 0)
+	    notification,
+	    F3_USER_AGENT,
+	    PACKAGE "-" VERSION,
+	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
-    /* Add the TICKERTAPE field */
+    /* Add the `Group' field and the backward compatible `TICKERTAPE'
+     * field */
     if (elvin_notification_add_string(
-	notification,
-	F_TICKERTAPE,
-	self -> name,
-	self -> error) == 0)
+	    notification,
+	    F3_GROUP,
+	    self -> name,
+	    self -> error) == 0 ||
+	elvin_notification_add_string(
+	    notification,
+	    F2_TICKERTAPE,
+	    self -> name,
+	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
-    /* Add the USER field */
+    /* Add the `From' field and the backward compatible `USER'
+     * field */
     if (elvin_notification_add_string(
-	notification,
-	F_USER,
-	message_get_user(message),
-	self -> error) == 0)
+	    notification,
+	    F3_FROM,
+	    message_get_user(message),
+	    self -> error) == 0 ||
+	elvin_notification_add_string(
+	    notification,
+	    F2_USER,
+	    message_get_user(message),
+	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
-    /* Add the TICKERTEXT field */
+    /* Add the `Message' field and the backward compatible
+     * `TICKERTEXT' field */
     if (elvin_notification_add_string(
-	notification,
-	F_TICKERTEXT,
-	message_get_string(message),
-	self -> error) == 0)
+	    notification,
+	    F3_MESSAGE,
+	    message_get_string(message),
+	    self -> error) == 0 ||
+	elvin_notification_add_string(
+	    notification,
+	    F2_TICKERTEXT,
+	    message_get_string(message),
+	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_string(): failed\n");
 	abort();
     }
 
-    /* Add the TIMEOUT field */
+    /* Add the `Timeout' field and the backward compatible `TIMEOUT'
+     * field */
     if (elvin_notification_add_int32(
-	notification,
-	F_TIMEOUT,
-	timeout,
-	self -> error) == 0)
+	    notification,
+	    F3_TIMEOUT,
+	    timeout,
+	    self -> error) == 0 ||
+	elvin_notification_add_int32(
+	    notification,
+	    F2_TIMEOUT,
+	    timeout,
+	    self -> error) == 0)
     {
 	fprintf(stderr, "elvin_notification_add_int32(): failed\n");
 	abort();
@@ -569,7 +694,7 @@ static void send_message(group_sub_t self, message_t message)
     {
 	if (elvin_notification_add_string(
 	    notification,
-	    F_MIME_ARGS,
+	    F2_MIME_ARGS,
 	    mime_args,
 	    self -> error) == 0)
 	{
@@ -579,7 +704,7 @@ static void send_message(group_sub_t self, message_t message)
 
 	if (elvin_notification_add_string(
 	    notification,
-	    F_MIME_TYPE,
+	    F2_MIME_TYPE,
 	    mime_type,
 	    self -> error) == 0)
 	{
@@ -591,7 +716,7 @@ static void send_message(group_sub_t self, message_t message)
     /* Add the Message-ID field */
     if (elvin_notification_add_string(
 	notification,
-	F_MESSAGE_ID,
+	F3_MESSAGE_ID,
 	message_id,
 	self -> error) == 0)
     {
@@ -605,7 +730,7 @@ static void send_message(group_sub_t self, message_t message)
     {
 	if (elvin_notification_add_string(
 	    notification,
-	    F_IN_REPLY_TO,
+	    F3_IN_REPLY_TO,
 	    reply_id,
 	    self -> error) == 0)
 	{
