@@ -78,6 +78,9 @@ History Widget
   font description since it's known to have incorrect values for some
   fonts.
 
+Miscellaneous:
+
+- Support Thread-Id.
 
 Scheme Interpreter [POSTPONED until v3]:
 
