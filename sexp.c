@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.6 2000/11/09 06:33:14 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.7 2000/11/09 07:30:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -61,6 +61,14 @@ struct builtin
     builtin_t function;
 };
 
+/* A lambda expression */
+struct lambda
+{
+    env_t env;
+    sexp_t arg_list;
+    sexp_t body;
+};
+
 /* An sexp can be many things */
 struct sexp
 {
@@ -79,6 +87,7 @@ struct sexp
 	char *s;
 	struct cons c;
 	struct builtin b;
+	struct lambda l;
     } value;
 };
 
@@ -476,9 +485,10 @@ sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error)
 	return NULL;
     }
 
-    /* Record the arg list and body in a cons cell */
-    sexp -> value.c.car = arg_list;
-    sexp -> value.c.cdr = body;
+    /* Record the interesting bits */
+    sexp -> value.l.env = NULL;
+    sexp -> value.l.arg_list = arg_list;
+    sexp -> value.l.body = body;
     return sexp;
 }
 
@@ -540,7 +550,6 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	}
 
 	case SEXP_CONS:
-	case SEXP_LAMBDA:
 	{
 	    int result;
 
@@ -554,6 +563,16 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	    int result;
 
 	    result = ELVIN_FREE(sexp -> value.b.name, error);
+	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
+	}
+
+	case SEXP_LAMBDA:
+	{
+	    int result;
+
+	    /* FIX THIS: free the environment too */
+	    result = sexp_free(sexp -> value.l.arg_list, error);
+	    result = sexp_free(sexp -> value.l.body, result ? error : NULL) && result;
 	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
 	}
 
@@ -642,8 +661,8 @@ int sexp_print(sexp_t sexp)
 	case SEXP_LAMBDA:
 	{
 	    printf("(lambda ");
-	    sexp_print(sexp -> value.c.car);
-	    print_cdrs(sexp -> value.c.cdr);
+	    sexp_print(sexp -> value.l.arg_list);
+	    print_cdrs(sexp -> value.l.body);
 	    fputc(')', stdout);
 	    return 1;
 	}
@@ -669,21 +688,23 @@ int funcall(sexp_t function, env_t env, sexp_t args, sexp_t *result, elvin_error
     /* What we do depends on the type */
     switch (function->type)
     {
+	/* Built-in function? */
 	case SEXP_BUILTIN:
 	{
-	    /* Call the built-in with the cdr as args */
 	    return function->value.b.function(env, args, result, error);
 	}
 
+	/* Lambda expression? */
 	case SEXP_LAMBDA:
 	{
+
 	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_eval");
 	    return 0;
 	}
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "foo");
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a function");
 	    return 0;
 	}
     }
