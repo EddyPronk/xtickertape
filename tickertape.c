@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.26 1999/10/04 11:30:20 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.27 1999/10/04 13:59:49 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -44,7 +44,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.26 1999/10/04 11:30:20 phelps
 #include "message.h"
 #include "history.h"
 #include "tickertape.h"
-#include "Hash.h"
 #include "Scroller.h"
 #include "Control.h"
 #include "groups.h"
@@ -115,7 +114,10 @@ struct tickertape
 
 #ifdef ORBIT
     /* The receiver's Orbit-related subscriptions */
-    Hashtable orbitSubscriptionsById;
+    orbit_sub_t *orbit_subs;
+
+    /* The number of subscriptions in orbit_subs */
+    int orbit_sub_count;
 #endif /* ORBIT */
 
     /* The elvin connection */
@@ -760,6 +762,66 @@ static void disconnect_callback(tickertape_t self, connection_t connection)
  *
  */
 
+/* Adds a new orbit_sub_t to the orbit_subs array */
+static void add_orbit_sub(tickertape_t self, orbit_sub_t orbit_sub)
+{
+    /* Expand the array */
+    if ((self -> orbit_subs = (orbit_sub_t *)realloc(
+	self -> orbit_subs,
+	sizeof(orbit_sub_t) * self -> orbit_sub_count)) == NULL)
+    {
+	return;
+    }
+
+    /* Add the subscription at the end */
+    self -> orbit_subs[self -> orbit_sub_count++] = orbit_sub;
+}
+
+/* Removes an orbit_sub_t from the orbit_subs array */
+static orbit_sub_t remove_orbit_sub(tickertape_t self, char *id)
+{
+    orbit_sub_t match = NULL;
+    int index;
+
+    for (index = 0; index < self -> orbit_sub_count; index++)
+    {
+	/* Have we already found a match? */
+	if (match != NULL)
+	{
+	    self -> orbit_subs[index - 1] = self -> orbit_subs[index];
+	}
+	/* Otherwise, do we have a match? */
+	else if (strcmp(orbit_sub_get_id(self -> orbit_subs[index]), id) == 0)
+	{
+	    match = self -> orbit_subs[index];
+	}
+    }
+
+    /* Adjust the number of subscriptions */
+    if (match != NULL)
+    {
+	self -> orbit_sub_count--;
+    }
+
+    return match;
+}
+
+/* Locates the subscription in the orbit_subs array */
+static orbit_sub_t find_orbit_sub(tickertape_t self, char *id)
+{
+    int index;
+
+    for (index = 0; index < self -> orbit_sub_count; index++)
+    {
+	if (strcmp(orbit_sub_get_id(self -> orbit_subs[index]), id) == 0)
+	{
+	    return self -> orbit_subs[index];
+	}
+    }
+
+    return NULL;
+}
+
 /* Callback for when we match the Orbit notification */
 static void orbit_callback(tickertape_t self, en_notify_t notification)
 {
@@ -797,33 +859,42 @@ static void orbit_callback(tickertape_t self, en_notify_t notification)
 	    title = "Untitled Zone";
 	}
 
-	/* If we already have a subscription, then update the title and quit */
-	if ((subscription = Hashtable_get(self -> orbitSubscriptionsById, id)) != NULL)
+	/* See if we already have a matching subscription */
+	if ((subscription = find_orbit_sub(self, id)) != NULL)
 	{
+	    /* We do.  Update its title and we're done */
 	    orbit_sub_set_title(subscription, title);
 	    en_free(notification);
 	    return;
 	}
 
-	/* Otherwise create a new Subscription and record it in the table */
-	subscription = orbit_sub_alloc(
+	/* Otherwise we need to make a new one */
+	if ((subscription = orbit_sub_alloc(
 	    title, id,
-	    (orbit_sub_callback_t)receive_callback, self);
-	Hashtable_put(self -> orbitSubscriptionsById, id, subscription);
+	    (orbit_sub_callback_t)receive_callback, self)) == NULL)
+	{
+	    en_free(notification);
+	    return;
+	}
+
+	/* Add the new subscription to the end */
+	add_orbit_sub(self, subscription);
 
 	/* Register the subscription with the connection and the ControlPanel */
 	orbit_sub_set_connection(subscription, self -> connection);
 	orbit_sub_set_control_panel(subscription, self -> control_panel);
     }
-
     /* See if we're unsubscribing */
-    if (strcasecmp(tickertape, "false") == 0)
+    else if (strcasecmp(tickertape, "false") == 0)
     {
-	orbit_sub_t subscription = Hashtable_remove(self -> orbitSubscriptionsById, id);
-	if (subscription != NULL)
+	orbit_sub_t subscription;
+
+	/* Remove the subscription from the array */
+	if ((subscription = remove_orbit_sub(self, id)) != NULL)
 	{
 	    orbit_sub_set_connection(subscription, NULL);
 	    orbit_sub_set_control_panel(subscription, NULL);
+	    orbit_sub_free(subscription);
 	}
     }
 
@@ -930,7 +1001,8 @@ tickertape_t tickertape_alloc(
 
 #ifdef ORBIT
     /* Listen for Orbit-related notifications and alert the world to our presence */
-    self -> orbitSubscriptionsById = Hashtable_alloc(37);
+    self -> orbit_subs = NULL;
+    self -> orbit_sub_count = 0;
     subscribe_to_orbit(self);
 #endif /* ORBIT */
 
@@ -963,9 +1035,14 @@ void tickertape_free(tickertape_t self)
     free(self -> groups);
 
 #ifdef ORBIT
-    if (self -> orbitSubscriptionsById)
+    for (index = 0; index < self -> orbit_sub_count; index++)
     {
-	Hashtable_free(self -> orbitSubscriptionsById);
+	orbit_sub_free(self -> orbit_subs[index]);
+    }
+
+    if (self -> orbit_subs != NULL)
+    {
+	free(self -> orbit_subs);
     }
 #endif /* ORBIT */
 
