@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.6 1997/02/25 06:41:15 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.7 1997/02/27 02:25:59 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -23,14 +23,60 @@ struct ElvinConnection_t
 
 
 
+/* Posts a message to the callback */
+static void postMessage(ElvinConnection self, Message message)
+{
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(message, self -> context);
+    }
+}
+
+/* Constructs a Message fromm an en_notify_t */
+static Message getMessageFromNotify(en_notify_t notify)
+{
+    char *group;
+    char *user;
+    char *text;
+    int32 *timeout;
+    en_type_t type;
+
+    if (en_search(notify, "TICKERTAPE", &type, (void **)&group) != 0)
+    {
+	return;
+    }
+
+    if (en_search(notify, "USER", &type, (void **)&user) != 0)
+    {
+	return;
+    }
+
+    if (en_search(notify, "TICKERTEXT", &type, (void **)&text) != 0)
+    {
+	return;
+    }
+
+    if (en_search(notify, "TIMEOUT", &type, (void **)&timeout) != 0)
+    {
+	return;
+    }
+
+#ifdef DEBUG
+    printf("%s:%s:%s (%d)\n", group, user, text, *timeout);
+#endif /* DEBUG */
+
+    return Message_alloc(group, user, text, *timeout);
+}
+
+
 /* Callback for quench expressions */
 static void (*quenchCallback)(elvin_t connection, char *quench) = NULL;
 
 /* Callback for subscription thingo */
 static void receiveCallback(elvin_t connection, uint32 id, en_notify_t notify)
 {
-    printf("receiveCallback\n");
-    exit(0);
+    fprintf(stderr, "receiveCallback\n");
+/*    postMessage(self, Message_alloc(group, user, text, *timeout));*/
 }
 
 /* Callback for elvin errors */
@@ -84,15 +130,6 @@ void subscribe(ElvinConnection self)
 }
 
 
-/* Posts a message to the callback */
-static void postMessage(ElvinConnection self, Message message)
-{
-    if (self -> callback != NULL)
-    {
-	(*self -> callback)(message, self -> context);
-    }
-}
-
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
     char *hostname,
@@ -137,6 +174,7 @@ int ElvinConnection_getFD(ElvinConnection self)
 {
     printf("fd = %d\n", elvin_get_socket(self -> connection));
     return elvin_get_socket(self -> connection);
+/*    return 0;*/
 }
 
 /* Sends a message by posting an Elvin event */
@@ -165,19 +203,26 @@ void ElvinConnection_read(ElvinConnection self)
 {
     en_notify_t notify;
 
+    printf("ElvinConnection_read"); fflush(stdout);
+    sleep(1);
+    printf(".\n");
+
     if (elvin_poll_notify(self -> connection, self -> subid, &notify) != 0)
     {
 	printf("foo!\n");
 	exit(1);
     }
 
-    if (notify == NULL)
+    if (elvin_get_quench(self -> connection) != NULL)
     {
-	printf("notify: empty\n");
-	exit(0);
+	printf("quench\n");
+    }
+    else if (notify == NULL)
+    {
+	printf("huh?\n");
     }
     else
     {
-	printf("notify\"%s\"\n", en_notify_to_string(notify, " = ", "\n"));
+	postMessage(self, getMessageFromNotify(notify));
     }
 }
