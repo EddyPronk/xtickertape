@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.133 2002/04/23 16:56:19 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.134 2002/04/25 10:31:31 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -863,7 +863,7 @@ static glyph_t get_tail(ScrollerWidget self)
   of the widths of all glyphs */
 static int gap_width(ScrollerWidget self, int last_width)
 {
-    return MAX(self -> core.width - last_width, self -> scroller.min_gap_width);
+    return MAX((int)self -> core.width - last_width, self -> scroller.min_gap_width);
 }
 
 /*
