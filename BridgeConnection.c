@@ -1,4 +1,4 @@
-/* $Id: BridgeConnection.c,v 1.6 1997/02/16 07:05:17 phelps Exp $ */
+/* $Id: BridgeConnection.c,v 1.7 1997/02/17 01:21:54 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +56,7 @@ static void sendItemSubscribe(Subscription subscription, BridgeConnection self)
     /* Check to see if it's the first item */
     if (subscription == List_first(self -> subscriptions))
     {
-	fprintf(self -> out, "+ TICKERTAPE == \"%s\"", name);
+	fprintf(self -> out, "+TICKERTAPE == \"%s\"", name);
     }
     else
     {
@@ -202,7 +202,7 @@ int BridgeConnection_getFD(BridgeConnection self)
 /* Sends a Message to the bridge */
 void BridgeConnection_send(BridgeConnection self, Message message)
 {
-    fprintf(self -> out, "* TICKERTAPE|%s|USER|%s|TICKERTEXT|%s|TIMEOUT|%ld%c",
+    fprintf(self -> out, "*TICKERTAPE|%s|USER|%s|TICKERTEXT|%s|TIMEOUT|%ld%c",
 	    Message_getGroup(message),
 	    Message_getUser(message),
 	    Message_getString(message),

@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.1 1997/02/17 00:29:41 phelps Exp $ */
+/* $Id: Subscription.c,v 1.2 1997/02/17 01:21:55 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,10 +116,8 @@ Subscription getFromGroupFile(FILE *file)
     char *pointer;
 
     /* find a non-empty line that doesn't begin with a '#' */
-    while (!feof(file))
+    while ((pointer = fgets(buffer, BUFFERSIZE, file)) != NULL)
     {
-	pointer = fgets(buffer, BUFFERSIZE, file);
-
 	/* skip whitespace */
 	while ((*pointer == ' ') || (*pointer == '\t'))
 	{
