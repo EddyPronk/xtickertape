@@ -2,27 +2,37 @@ dnl
 dnl   Copyright (C) 1998-2000, 2002, 2004 by Mantara Software
 dnl   (ABN 17 105 665 594). All Rights Reserved.
 dnl
-dnl   This software is the property of the Mantara Software. All use
-dnl   of this software is permitted only under the terms of a
-dnl   license agreement with Mantara Software. If you do not have
-dnl   such a license, then you have no rights to use this software
-dnl   in any manner and should contact Mantara at the address below
-dnl   to determine an appropriate licensing arrangement.
+dnl    Redistribution and use in source and binary forms, with or without
+dnl    modification, are permitted provided that the following conditions
+dnl    are met:
 dnl
-dnl      Mantara Software
-dnl      PO Box 1820
-dnl      Toowong QLD 4066
-dnl      Australia
-dnl      Tel: +61 7 3876 8844
-dnl      Fax: +61 7 3876 8843
-dnl      Email: licensing@mantara.com
+dnl    * Redistributions of source code must retain the above
+dnl      copyright notice, this list of conditions and the following
+dnl      disclaimer.
 dnl
-dnl      Web: http://www.mantara.com
+dnl    * Redistributions in binary form must reproduce the above
+dnl      copyright notice, this list of conditions and the following
+dnl      disclaimer in the documentation and/or other materials
+dnl      provided with the distribution.
 dnl
-dnl   This software is being provided "AS IS" without warranty of
-dnl   any kind. In no event shall Mantara Software be liable for
-dnl   damage of any kind arising out of or in connection with the
-dnl   use or performance of this software.
+dnl    * Neither the name of the Mantara Software nor the names
+dnl      of its contributors may be used to endorse or promote
+dnl      products derived from this software without specific prior
+dnl      written permission. 
+dnl
+dnl    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+dnl    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+dnl    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+dnl    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+dnl    REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+dnl    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+dnl    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+dnl    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+dnl    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+dnl    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+dnl    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+dnl    POSSIBILITY OF SUCH DAMAGE.
+dnl
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
