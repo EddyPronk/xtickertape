@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.c,v 1.2 1998/10/23 10:03:29 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.3 1998/10/23 17:00:17 phelps Exp $ */
 
 #include "FileStreamTokenizer.h"
 #include <stdlib.h>
@@ -30,12 +30,6 @@ struct FileStreamTokenizer_t
 
     /* The receiver's "special" characters (tokens all by themselves) */
     char *special;
-
-    /* Non-zero if the receiver has a remembered character */
-    int hasBacktrack;
-
-    /* The receiver's remembered character */
-    int backtrack;
 };
 
 
@@ -88,8 +82,6 @@ FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *whitespace, char
     self -> buffer = StringBuffer_alloc();
     self -> whitespace = strdup(whitespace);
     self -> special = strdup(special);
-    self -> hasBacktrack = 0;
-    self -> backtrack = '\0';
     return self;
 }
 
@@ -97,6 +89,11 @@ FileStreamTokenizer FileStreamTokenizer_alloc(FILE *file, char *whitespace, char
 void FileStreamTokenizer_free(FileStreamTokenizer self)
 {
     SANITY_CHECK(self);
+
+    if (self -> whitespace)
+    {
+	free(self -> whitespace);
+    }
 
     if (self -> special)
     {
@@ -121,8 +118,18 @@ void FileStreamTokenizer_debug(FileStreamTokenizer self)
 #endif /* SANITY */
     printf("  file = %p\n", self -> file);
     printf("  special = \"%s\"\n", self -> special);
-    printf("  hasBacktrack = %s\n", (self -> hasBacktrack) ? "true" : "false");
-    printf("  backtrack = \'%c\'\n", self -> backtrack);
+}
+
+
+/* Sets the list of whitespace characters recognized by the receiver */
+void FileStreamTokenizer_setWhitespace(FileStreamTokenizer self, char *whitespace)
+{
+    if (self -> whitespace)
+    {
+	free(self -> whitespace);
+    }
+
+    self -> whitespace = strdup(whitespace);
 }
 
 
