@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.60 1999/11/01 03:37:41 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.61 1999/11/04 03:36:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -356,6 +356,10 @@ static Window create_icon(Widget shell)
 /* Signal handler which causes xtickertape to reload its subscriptions */
 static void reload_subs(int signum)
 {
+    /* Put the signal handler back in place */
+    signal(SIGHUP, reload_subs);
+
+    /* Reload groups and usenet files */
     tickertape_reload_groups(tickertape);
     tickertape_reload_usenet(tickertape);
 }
