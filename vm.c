@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.15 2000/11/28 00:34:15 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.16 2000/12/08 04:08:12 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -39,6 +39,7 @@ static const char cvsid[] = "$Id: vm.c,v 2.15 2000/11/28 00:34:15 phelps Exp $";
 #include <elvin/error.h>
 #include <elvin/errors/elvin.h>
 #include "vm.h"
+#include "errors.h"
 
 /* The heap can contain this many pointers */
 #define HEAP_BLOCK_SIZE (1024)
@@ -122,7 +123,7 @@ int vm_peek(vm_t self, uint32_t count, object_t *result, elvin_error_t error)
 {
     if (self -> sp < count + 1)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack underflow");
 	return 0;
     }
 
@@ -142,7 +143,7 @@ int vm_pop(vm_t self, object_t *result, elvin_error_t error)
     /* Make sure the stack doesn't underflow */
     if (self -> sp < 1)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack underflow");
 	return 0;
     }
 
@@ -161,7 +162,7 @@ int vm_push(vm_t self, object_t object, elvin_error_t error)
 {
     if (! (self -> sp < STACK_SIZE))
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack overflow");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack overflow");
 	return 0;
     }
 
@@ -176,7 +177,7 @@ int vm_swap(vm_t self, elvin_error_t error)
 
     if (self -> sp < 2)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow!");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack underflow");
 	return 0;
     }
 
@@ -193,7 +194,7 @@ int vm_roll(vm_t self, uint32_t count, elvin_error_t error)
 
     if (self -> sp < count + 1)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack underflow");
 	return 0;
     }
 
@@ -218,7 +219,7 @@ int vm_unroll(vm_t self, uint32_t count, elvin_error_t error)
 
     if (self -> sp < count + 1)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "stack underflow");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "stack underflow");
 	return 0;
     }
 
@@ -259,7 +260,7 @@ int vm_new(
     /* See if there's space on the heap */
     if (! (self -> heap_next + size + 1 < self -> heap + 1 + HEAP_BLOCK_SIZE))
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "out of memory\n");
+	ELVIN_ERROR_INTERP_INTERNAL(error, "out of memory");
 	return 0;
     }
 
@@ -541,7 +542,9 @@ int vm_car(vm_t self, elvin_error_t error)
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a cons");
+	    char *string = "argument";
+
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "cons");
 	    return 0;
 	}
     }
@@ -590,7 +593,8 @@ int vm_cdr(vm_t self, elvin_error_t error)
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a cons");
+	    char *string = "argument";
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "cons");
 	    return 0;
 	}
     }
@@ -673,7 +677,8 @@ int vm_make_lambda(vm_t self, elvin_error_t error)
 	/* Complain if we're not given symbols */
 	if (object_type(object) != SEXP_SYMBOL)
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg name");
+	    char *string = "argument";
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "symbol");
 	    return 0;
 	}
 
@@ -689,7 +694,7 @@ int vm_make_lambda(vm_t self, elvin_error_t error)
     /* Make sure we've ended well */
     if (object_type(object) != SEXP_NIL)
     {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	ELVIN_ERROR_INTERP_ARGS_NOT_LIST(error);
 	return 0;
     }
 
@@ -760,6 +765,7 @@ static int lookup(vm_t self, elvin_error_t error)
 {
     object_t symbol;
     object_t env = self -> env;
+    char *string;
 
     /* Get the symbol from the stack */
     if (! vm_pop(self, &symbol, error))
@@ -778,7 +784,8 @@ static int lookup(vm_t self, elvin_error_t error)
 	env = (object_t)env[2];
     }
 
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "undefined symbol()");
+    string = "symbol";
+    ELVIN_ERROR_INTERP_SYM_UNDEF(error, string);
     return 0;
 }
 
@@ -792,6 +799,15 @@ int vm_assign(vm_t self, elvin_error_t error)
     /* Get the symbol */
     if (! vm_peek(self, 1, &symbol, error))
     {
+	return 0;
+    }
+
+    /* Make sure that the symbol is, in fact, a symbol */
+    if (object_type(symbol) != SEXP_SYMBOL)
+    {
+	/* FIX THIS: need to construct a string from an expression */
+	char *string = "argument";
+	ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "symbol");
 	return 0;
     }
 
@@ -893,7 +909,8 @@ int vm_add(vm_t self, elvin_error_t error)
 
 		default:
 		{
-		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+		    char *string = "argument";
+		    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "number");
 		    return 0;
 		}
 	    }
@@ -928,7 +945,8 @@ int vm_add(vm_t self, elvin_error_t error)
 
 		default:
 		{
-		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+		    char *string = "argument";
+		    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "number");
 		    return 0;
 		}
 	    }
@@ -936,7 +954,8 @@ int vm_add(vm_t self, elvin_error_t error)
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "not a number");
+	    char *string = "argument";
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "number");
 	    return 0;
 	}
     }
@@ -1071,7 +1090,7 @@ static int funcall(vm_t self, elvin_error_t error)
 	    count = OBJECT_SIZE((uint32_t)object[0]) - 2;
 	    if (count != self -> pc - 1)
 	    {
-		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "wrong argc");
+		ELVIN_ERROR_INTERP_WRONG_ARGC(error, "[closure]", count);
 		return 0;
 	    }
 
@@ -1111,7 +1130,8 @@ static int funcall(vm_t self, elvin_error_t error)
 
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad function");
+	    char *string = "argument";
+	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "function");
 	    return 0;
 	}
     }
@@ -1155,7 +1175,7 @@ static int eval_next_arg(vm_t self, elvin_error_t error)
 	/* Bogus arg list */
 	default:
 	{
-	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad arg list");
+	    ELVIN_ERROR_INTERP_ARGS_NOT_LIST(error);
 	    return 0;
 	}
     }
@@ -1215,7 +1235,7 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 			if (object_type(self -> expr) != SEXP_NIL)
 			{
 			    self -> sp = sp_exit - 1;
-			    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
+			    ELVIN_ERROR_INTERP_ARGS_NOT_LIST(error);
 			    return 0;
 			}
 
@@ -1245,8 +1265,9 @@ static int run(vm_t self, uint32_t sp_exit, elvin_error_t error)
 		    /* Bogus function.  Bail! */
 		    default:
 		    {
+			char *string = "argument";
 			self -> sp = sp_exit - 1;
-			ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bogus func");
+			ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, string, "function");
 			return 0;
 		    }
 		}
@@ -1288,7 +1309,7 @@ int vm_eval(vm_t self, elvin_error_t error)
 /* Catch non-local returns */
 int vm_catch(vm_t self, elvin_error_t error)
 {
-    uint32_t fp = self -> fp;
+    uint32_t fp, sp;
 
     /* Rotate the body to the top of the stack */
     if (! vm_unroll(self, 1, error))
@@ -1296,15 +1317,27 @@ int vm_catch(vm_t self, elvin_error_t error)
 	return 0;
     }
 
+    /* Record the frame pointer and stack pointer just in case */
+    fp = self -> fp;
+    sp = self -> sp - 1;
+
     /* If eval goes well then just drop out */
     if (vm_eval(self, error))
     {
 	return 1;
     }
 
-    /* DO MAGIC HERE */
-    printf("CATCH NOT YET IMPLEMENTED\n");
-    exit(1);
+    /* FIX THIS: we should check the tag */
+
+    /* Restore the state */
+    self -> fp = fp;
+    self -> sp = sp;
+    self -> env = self -> stack[self -> fp + 1];
+    self -> expr = self -> stack[self -> fp + 2];
+    self -> pc = ((uint32_t)(self -> stack[self -> fp + 3])) >> 1;
+
+    /* Evaluate the exception form */
+    return vm_eval(self, error);
 }
 
 
