@@ -21,6 +21,7 @@ config.status
 configure
 errors.h
 ix86-gnu-linux2.0
+show-url
 sparc-sun-solaris2.5
 sparc-sun-solaris2.6
 stamp-h
