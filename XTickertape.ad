@@ -65,7 +65,7 @@
 *menuBar*optionsMenu.mnemonic: O
 
 *menuBar*threaded.labelString: Thread History
-*menuBar*threaded.mnemonic: t
+*menuBar*threaded.mnemonic: T
 *menuBar*threaded.accelerator: Alt<Key>T
 *menuBar*threaded.acceleratorText: Alt+T
 *menuBar*threaded.set: True
