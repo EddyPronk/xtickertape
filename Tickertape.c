@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Tickertape.c,v 1.33 1998/12/24 05:48:30 phelps Exp $";
+static const char cvsid[] = "$Id: Tickertape.c,v 1.34 1999/05/03 12:45:36 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -576,7 +576,6 @@ void Tickertape_free(Tickertape self)
     }
 
     /* How do we free a Widget? */
-
     if (self -> subscriptions)
     {
 	List_free(self -> subscriptions);
