@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.68 1999/09/13 12:19:35 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.69 1999/09/14 11:10:39 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -470,52 +470,40 @@ GC ScGCForBackground(ScrollerWidget self)
     return self -> scroller.backgroundGC;
 }
 
-/* Answers a GC for displaying the Group field of a message at the given fade level */
-GC ScGCForGroup(ScrollerWidget self, int level, int x, int y, int width, int height)
+/* Sets up a GC with the given foreground color and clip region */
+static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width, int height)
 {
     XGCValues values;
     XRectangle rectangle = { x, y, width, height };
 
     XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
-    values.foreground = self -> scroller.groupPixels[level];
+    values.foreground = foreground;
     XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
     return self -> scroller.gc;
+}
+
+/* Answers a GC for displaying the Group field of a message at the given fade level */
+GC ScGCForGroup(ScrollerWidget self, int level, int x, int y, int width, int height)
+{
+    return SetUpGC(self, self -> scroller.groupPixels[level], x, y, width, height);
 }
 
 /* Answers a GC for displaying the User field of a message at the given fade level */
 GC ScGCForUser(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
-    XGCValues values;
-    XRectangle rectangle = { x, y, width, height };
-
-    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
-    values.foreground = self -> scroller.userPixels[level];
-    XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
-    return self -> scroller.gc;
+    return SetUpGC(self, self -> scroller.userPixels[level], x, y, width, height);
 }
 
 /* Answers a GC for displaying the String field of a message at the given fade level */
 GC ScGCForString(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
-    XGCValues values;
-    XRectangle rectangle = { x, y, width, height };
-
-    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
-    values.foreground = self -> scroller.stringPixels[level];
-    XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
-    return self -> scroller.gc;
+    return SetUpGC(self, self -> scroller.stringPixels[level], x, y, width, height);
 }
 
 /* Answers a GC for displaying the field separators at the given fade level */
 GC ScGCForSeparator(ScrollerWidget self, int level, int x, int y, int width, int height)
 {
-    XGCValues values;
-    XRectangle rectangle = { x, y, width, height };
-
-    XSetClipRectangles(XtDisplay(self), self -> scroller.gc, 0, 0, &rectangle, 1, Unsorted);
-    values.foreground = self -> scroller.separatorPixels[level];
-    XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground, &values);
-    return self -> scroller.gc;
+    return SetUpGC(self, self -> scroller.separatorPixels[level], x, y, width, height);
 }
 
 /* Answers the XFontStruct to be use for displaying the group */
@@ -683,7 +671,7 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
     colors[4].pixel = self -> scroller.separatorPixel;
     XQueryColors(display, colormap, colors, 5);
 
-    /* Create a window and couple graphics contexts */
+    /* Create a window and a couple of graphics contexts */
     XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
     CreateGC(self);
 
@@ -1076,7 +1064,7 @@ static void Resize(Widget widget)
 	return;
     }
 
-    /* Otherwise we need a new pixmap */
+    /* Otherwise we need a new offscreen pixmap */
     XFreePixmap(XtDisplay(widget), self -> scroller.pixmap);
     self -> scroller.pixmap = XCreatePixmap(
 	XtDisplay(widget), XtWindow(widget),
