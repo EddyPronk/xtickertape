@@ -49,6 +49,10 @@ void history_free(history_t self);
 /* Sets the history's Motif List widget */
 void history_set_list(history_t self, Widget list);
 
+/* Sets the history's threadedness */
+void history_set_threaded(history_t self, int is_threaded);
+
+
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message);
 
