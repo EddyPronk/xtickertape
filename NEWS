@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-2.0
 
+* Groups now conform to both the old message format and the v3.0 draft
+  specification.
+
 * Created a new widget (class History) to display the last few
   messages.  The length of the history can be specified by setting
   the XTickertape.history.messageCapacity X resource.  See the man
