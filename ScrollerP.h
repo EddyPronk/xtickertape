@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.30 2000/04/19 07:17:57 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.31 2000/04/21 12:40:03 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -154,6 +154,9 @@ typedef struct
     /* The array of Pixels used to display the string portion of a
      * message at varying degrees of fading */
     Pixel *stringPixels;
+
+    /* If nonzero, then the window is up-to-date */
+    int ready;
 
 } ScrollerPart;
 

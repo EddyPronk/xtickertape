@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.89 2000/04/19 07:17:57 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.90 2000/04/21 12:40:02 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -437,6 +437,17 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
      * and then. */
     SetClock(self);
 
+    /* Make sure the window doesn't fall behind */
+    if (! self -> scroller.use_pixmap)
+    {
+	if (self -> scroller.ready == 0)
+	{
+	    return;
+	}
+
+	self -> scroller.ready = 0;
+    }
+
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
     if (self -> scroller.step != 0)
     {
@@ -781,6 +792,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
     self -> scroller.clip_width = 0;
+    self -> scroller.ready = 1;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1240,31 +1252,47 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	return;
     }
 
-    /* Make sure we have an actual GraphicsExpose event */
-    if (event -> type != GraphicsExpose)
+    /* Get all of the GExpose events so that we don't accidentally get
+     * a timeout in the middle (which could lead to blank spots) */
+    while (1)
     {
-	return;
-    }
+	/* Make sure we have an actual GraphicsExpose event */
+	if (event -> type != GraphicsExpose)
+	{
+	    return;
+	}
 
-    /* Coerce the event and paint it */
-    g_event = (XGraphicsExposeEvent *)event;
+	/* Coerce the event and paint it */
+	g_event = (XGraphicsExposeEvent *)event;
 
 #ifdef DEBUG_GLYPH
-    {
-	XGCValues values;
+	{
+	    XGCValues values;
 
-	values.foreground = random();
-	values.clip_mask = None;
-	XChangeGC(g_event ->display, self -> scroller.gc, GCForeground | GCClipMask, &values);
-	XFillRectangle(g_event -> display,
-		       g_event -> drawable,
-		       self -> scroller.gc,
-		       g_event -> x, g_event -> y,
-		       g_event -> width, g_event -> height);
-    }
+	    values.foreground = random();
+	    values.clip_mask = None;
+	    XChangeGC(
+		g_event ->display,
+		self -> scroller.gc,
+		GCForeground | GCClipMask,
+		&values);
+	    XFillRectangle(g_event -> display,
+			   g_event -> drawable,
+			   self -> scroller.gc,
+			   g_event -> x, g_event -> y,
+			   g_event -> width, g_event -> height);
+	}
 #endif
 
-    Paint(self, g_event -> x, 0, g_event -> width, self -> core.height);
+	Paint(self, g_event -> x, 0, g_event -> width, self -> core.height);
+
+	/* If there are no more GraphicsExpose events then exit the loop */
+	if (g_event -> count < 1)
+	{
+	    self -> scroller.ready = 1;
+	    return;
+	}
+    }
 }
 
 
