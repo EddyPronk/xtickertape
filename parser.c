@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.29 2000/11/17 15:41:01 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.30 2000/11/18 00:46:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1212,7 +1212,6 @@ static int make_quote(parser_t self, elvin_error_t error)
     return
 	vm_push_nil(self -> vm, error) &&
 	vm_make_cons(self -> vm, error) &&
-	vm_swap(self -> vm, error) &&
 	vm_push_string(self -> vm, "quote", error) &&
 	vm_make_symbol(self -> vm, error) &&
 	vm_swap(self -> vm, error) &&
