@@ -20,7 +20,9 @@ xtickertape_SOURCES = \
 	getopt.h getopt.c getopt1.c \
 	main.c
 
-test_parser_SOURCES = grammar.h parser.c
+test_parser_SOURCES = \
+	ast.h ast.c \
+	grammar.h parser.h parser.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
