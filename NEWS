@@ -1,6 +1,14 @@
-Overview of changes in xtickertape-2.0b2
+Overview of changes in xtickertape-2.0rc1
+
+* It's now finally possible to reload a groups file in which the keys
+  for a group have changed (yay!).
 
 * It is now possible to reply to a message in a 'no menu' group.
+
+* Fixed a thinko in the metamail invocation which caused the first
+  argument to be lost and thus metamail would cause it to hang.
+
+Overview of changes in xtickertape-2.0b2
 
 * Fixed a bug that prevented the connection status from being updated
   properly.
