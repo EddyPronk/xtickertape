@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.21 2000/06/14 00:17:40 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.22 2000/06/15 01:35:47 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -518,7 +518,19 @@ void group_sub_free(group_sub_t self)
 	self -> expression = NULL;
     }
 
-    /* Dont' free a pending subscription */
+    if (self -> producer_keys)
+    {
+	elvin_keys_free(self -> producer_keys, NULL);
+	self -> producer_keys = NULL;
+    }
+
+    if (self -> consumer_keys)
+    {
+	elvin_keys_free(self -> consumer_keys, NULL);
+	self -> consumer_keys = NULL;
+    }
+
+    /* Don't free a pending subscription */
     if (self -> is_pending)
     {
 	return;
