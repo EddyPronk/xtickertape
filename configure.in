@@ -1,3 +1,29 @@
+dnl
+dnl   Copyright (C) 1998-2000, 2002, 2004 by Mantara Software
+dnl   (ABN 17 105 665 594). All Rights Reserved.
+dnl
+dnl   This software is the property of the Mantara Software. All use
+dnl   of this software is permitted only under the terms of a
+dnl   license agreement with Mantara Software. If you do not have
+dnl   such a license, then you have no rights to use this software
+dnl   in any manner and should contact Mantara at the address below
+dnl   to determine an appropriate licensing arrangement.
+dnl
+dnl      Mantara Software
+dnl      PO Box 1820
+dnl      Toowong QLD 4066
+dnl      Australia
+dnl      Tel: +61 7 3876 8844
+dnl      Fax: +61 7 3876 8843
+dnl      Email: licensing@mantara.com
+dnl
+dnl      Web: http://www.mantara.com
+dnl
+dnl   This software is being provided "AS IS" without warranty of
+dnl   any kind. In no event shall Mantara Software be liable for
+dnl   damage of any kind arising out of or in connection with the
+dnl   use or performance of this software.
+
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
 AM_INIT_AUTOMAKE(xtickertape, 2.0rc1)

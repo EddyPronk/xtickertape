@@ -1,33 +1,29 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999.
-  Unpublished work.  All Rights Reserved.
+  Copyright (C) 1999, 2001, 2004 by Mantara Software
+  (ABN 17 105 665 594). All Rights Reserved.
 
-  The software contained on this media is the property of the
-  DSTC Pty Ltd.  Use of this software is strictly in accordance
-  with the license agreement in the accompanying LICENSE.DOC
-  file.  If your distribution of this software does not contain
-  a LICENSE.DOC file then you have no rights to use this
-  software in any manner and should contact DSTC at the address
-  below to determine an appropriate licensing arrangement.
-
-     DSTC Pty Ltd
-     Level 7, GP South
-     University of Queensland
-     St Lucia, 4072
+  This software is the property of the Mantara Software. All use
+  of this software is permitted only under the terms of a
+  license agreement with Mantara Software. If you do not have
+  such a license, then you have no rights to use this software
+  in any manner and should contact Mantara at the address below
+  to determine an appropriate licensing arrangement.
+  
+     Mantara Software
+     PO Box 1820
+     Toowong QLD 4066
      Australia
-     Tel: +61 7 3365 4310
-     Fax: +61 7 3365 4311
-     Email: enquiries@dstc.edu.au
-
+     Tel: +61 7 3876 8844
+     Fax: +61 7 3876 8843
+     Email: licensing@mantara.com
+  
+     Web: http://www.mantara.com
+  
   This software is being provided "AS IS" without warranty of
-  any kind.  In no event shall DSTC Pty Ltd be liable for
-  damage of any kind arising out of or in connection with
-  the use or performance of this software.
-
-   Description: 
-             Manages tickertape group subscriptions and can parse the
-	     groups file
+  any kind. In no event shall Mantara Software be liable for
+  damage of any kind arising out of or in connection with the
+  use or performance of this software.
 
 ****************************************************************/
 
@@ -35,7 +31,7 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.6 2001/08/25 14:04:45 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.7 2004/08/02 22:24:17 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
