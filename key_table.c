@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.1 2002/04/14 20:44:00 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.2 2002/04/14 22:29:13 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -53,6 +53,8 @@ struct key_entry
     /* Whether the key is private. */
     int is_private;
 };
+
+static void key_entry_free(key_entry_t self);
 
 /* Allocates and initializes a new key_entry_t */
 static key_entry_t key_entry_alloc(
