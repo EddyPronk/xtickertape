@@ -31,7 +31,7 @@
 #define SEXP_H
 
 #ifndef lint
-static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.4 2000/11/09 03:04:54 phelps Exp $";
+static const char cvs_SEXP_H[] = "$Id: sexp.h,v 2.5 2000/11/09 07:35:32 phelps Exp $";
 #endif /* lint */
 
 /* An env_t is an opaque struct as well */
@@ -94,7 +94,7 @@ sexp_t cons_alloc(sexp_t car, sexp_t cdr, elvin_error_t error);
 sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error);
 
 /* Allocates and initializes a new lambda sexp */
-sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error);
+sexp_t lambda_alloc(env_t env, sexp_t arg_list, sexp_t body, elvin_error_t error);
 
 /* Returns the sexp's type */
 sexp_type_t sexp_get_type(sexp_t sexp);
@@ -139,6 +139,9 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error);
 
 /* Allocates and returns an evalutaion environment */
 env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error);
+
+/* Allocates another reference to the environment */
+int env_alloc_ref(env_t env, elvin_error_t error);
 
 /* Frees an environment and all of its references */
 int env_free(env_t env, elvin_error_t error);

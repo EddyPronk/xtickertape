@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.7 2000/11/09 07:30:50 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.8 2000/11/09 07:35:32 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -94,6 +94,9 @@ struct sexp
 /* An environment is a hashtable and a parent */
 struct env
 {
+    /* The number of references to this environment */
+    int ref_count;
+
     /* The parent environment */
     env_t parent;
 
@@ -475,7 +478,7 @@ sexp_t builtin_alloc(char *name, builtin_t function, elvin_error_t error)
 }
 
 /* Allocates and initializes a new lambda sexp */
-sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error)
+sexp_t lambda_alloc(env_t env, sexp_t arg_list, sexp_t body, elvin_error_t error)
 {
     sexp_t sexp;
 
@@ -486,7 +489,7 @@ sexp_t lambda_alloc(sexp_t arg_list, sexp_t body, elvin_error_t error)
     }
 
     /* Record the interesting bits */
-    sexp -> value.l.env = NULL;
+    sexp -> value.l.env = env;
     sexp -> value.l.arg_list = arg_list;
     sexp -> value.l.body = body;
     return sexp;
@@ -570,7 +573,7 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 	{
 	    int result;
 
-	    /* FIX THIS: free the environment too */
+	    result = env_free(sexp -> value.l.env, error);
 	    result = sexp_free(sexp -> value.l.arg_list, error);
 	    result = sexp_free(sexp -> value.l.body, result ? error : NULL) && result;
 	    return ELVIN_FREE(sexp, result ? error : NULL) && result;
@@ -802,14 +805,28 @@ env_t env_alloc(uint32_t size, env_t parent, elvin_error_t error)
 	return NULL;
     }
 
+    env -> ref_count = 1;
     env -> parent = parent;
     return env;
+}
+
+/* Allocates another reference to the environment */
+int env_alloc_ref(env_t env, elvin_error_t error)
+{
+    env -> ref_count++;
+    return 1;
 }
 
 /* Frees an environment and all of its references */
 int env_free(env_t env, elvin_error_t error)
 {
     int result = 1;
+
+    /* Decrement the reference count */
+    if (--env -> ref_count > 0)
+    {
+	return 1;
+    }
 
     /* Free the hashtable */
     if (env -> map)
