@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.13 1999/11/01 03:43:29 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.14 1999/11/01 14:39:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -244,8 +244,8 @@ static char *get_text(control_panel_t self);
 static void reset_timeout(control_panel_t self);
 static int get_timeout(control_panel_t self);
 static void set_mime_args(control_panel_t self, char *args);
-static char *get_mime_args(control_panel_t self);
 static char *get_mime_type(control_panel_t self);
+static char *get_mime_args(control_panel_t self);
 
 static char *crypt_id(time_t now);
 char *create_uuid(control_panel_t self);
@@ -710,6 +710,7 @@ static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
 
     /* Show them in a tool-tip */
     show_tool_tip(self, self -> history, mime_args, self -> x, self -> y);
+    XtFree(mime_args);
 }
 
 
@@ -1277,13 +1278,11 @@ static void set_user(control_panel_t self, char *user)
 }
 
 
-/* Answers the receiver's user */
+/* Answers the receiver's user.  Note: this string will need to be
+ * released with XtFree() */
 static char *get_user(control_panel_t self)
 {
-    char *user;
-
-    XtVaGetValues(self -> user, XmNvalue, &user, NULL);
-    return user;
+    return XmTextGetString(self -> user);
 }
 
 
@@ -1293,13 +1292,11 @@ static void set_text(control_panel_t self, char *text)
     XmTextSetString(self -> text, text);
 }
 
-/* Answers the receiver's text */
+/* Answers the receiver's text.  Note: this string will need to be
+ * released with XtFree() */
 static char *get_text(control_panel_t self)
 {
-    char *text;
-
-    XtVaGetValues(self -> text, XmNvalue, &text, NULL);
-    return text;
+    return XmTextGetString(self -> text);
 }
 
 
@@ -1321,12 +1318,36 @@ static int get_timeout(control_panel_t self)
     int result;
 
     XtVaGetValues(XmOptionButtonGadget(self -> timeout), XmNlabelString, &string, NULL);
-    XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &timeout);
-    XmStringFree(string);
+    if (XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &timeout))
+    {
+	result = atoi(timeout);
+	XtFree(timeout);
+    }
+    else
+    {
+	result = atoi(DEFAULT_TIMEOUT);
+    }
 
-    result = atoi(timeout);
-    XtFree(timeout);
+    /* Clean up */
+    XmStringFree(string);
     return result;
+}
+
+/* Answers the receiver's MIME type.  Note: this string will need to
+ * be released with XtFree() */
+static char *get_mime_type(control_panel_t self)
+{
+    XmString string;
+    char *mime_type;
+
+    XtVaGetValues(XmOptionButtonGadget(self -> mime_type), XmNlabelString, &string, NULL);
+    if (XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &mime_type))
+    {
+	XmStringFree(string);
+	return mime_type;
+    }
+
+    return NULL;
 }
 
 /* Sets the receiver's MIME args */
@@ -1335,34 +1356,19 @@ static void set_mime_args(control_panel_t self, char *args)
     XmTextSetString(self -> mime_args, args);
 }
 
-/* Answers the receiver's MIME args */
+/* Answers the receiver's MIME args.  Note: if non-null, this string
+ * will need to be released with XtFree() */
 static char *get_mime_args(control_panel_t self)
 {
-    char *args;
+    char *args = XmTextGetString(self -> mime_args);
 
-    XtVaGetValues(self -> mime_args, XmNvalue, &args, NULL);
-
-    if (*args != '\0')
+    if (*args == '\0')
     {
-	return args;
-    }
-    else
-    {
+	XtFree(args);
 	return NULL;
     }
-}
 
-/* Answers the receiver's MIME type */
-static char *get_mime_type(control_panel_t self)
-{
-    XmString string;
-    char *mime_type;
-
-    XtVaGetValues(XmOptionButtonGadget(self -> mime_type), XmNlabelString, &string, NULL);
-    XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &mime_type);
-    XmStringFree(string);
-
-    return mime_type;
+    return args;
 }
 
 
@@ -1421,10 +1427,16 @@ char *create_uuid(control_panel_t self)
 /* Answers a message based on the receiver's current state */
 message_t contruct_message(control_panel_t self)
 {
+    char *user;
+    char *text;
     char *mime_type;
     char *mime_args;
     char *uuid;
     message_t message;
+
+    /* Determine our user and text */
+    user = get_user(self);
+    text = get_text(self);
 
     /* Determine our MIME args */
     mime_type = get_mime_type(self);
@@ -1434,14 +1446,18 @@ message_t contruct_message(control_panel_t self)
     /* Construct a message */
     message = message_alloc(
 	self -> selection,
-	self -> selection -> title,
-	get_user(self),
-	get_text(self),
-	get_timeout(self),
-	(mime_args == NULL) ? NULL : mime_type,
-	mime_args,
-	uuid,
-	self -> message_id);
+	self -> selection -> title, user, text, get_timeout(self),
+	(mime_args == NULL) ? NULL : mime_type, mime_args,
+	uuid, self -> message_id);
+
+    /* Clean up */
+    XtFree(user);
+    XtFree(text);
+
+    if (mime_args != NULL)
+    {
+	XtFree(mime_args);
+    }
 
     if (mime_type != NULL)
     {
@@ -1628,9 +1644,9 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 {
     menu_item_tuple_t tuple = (menu_item_tuple_t)info;
     menu_item_tuple_t first_tuple = NULL;
+    Cardinal num_children;
     Widget *children;
     Widget *child;
-    int num_children;
 
     /* Make sure we haven't already remove it */
     if (tuple -> widget == NULL)
@@ -1677,7 +1693,7 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 	set_group_selection(self, first_tuple);
     }
 
-    /* Free up some memory */
+    /* Clean up */
     free(tuple -> title);
     free(tuple);
 }
