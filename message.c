@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.7 2000/05/31 05:46:25 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.8 2000/07/28 05:57:33 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -219,7 +219,7 @@ void message_debug(message_t self)
 {
     printf("message_t (%p)\n", self);
     printf("  ref_count=%d\n", self -> ref_count);
-    printf("  info = \"%s\"\n", self -> info);
+    printf("  info = \"%s\"\n", (self -> info == NULL) ? "<null>", self -> info);
     printf("  group = \"%s\"\n", self -> group);
     printf("  user = \"%s\"\n", self -> user);
     printf("  string = \"%s\"\n", self -> string);
