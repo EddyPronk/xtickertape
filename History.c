@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.30 2001/08/24 07:14:41 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.31 2001/08/25 08:53:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -92,6 +92,12 @@ static XtResource resources[] =
     {
 	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
 	offset(history.font), XtRString, XtDefaultFont
+    },
+
+    /* Pixel timestamp_pixel */
+    {
+	XtNtimestampPixel, XtCTimestampPixel, XtRPixel, sizeof(Pixel),
+	offset(history.timestamp_pixel), XtRString, "Black"
     },
 
     /* Pixel group_pixel */
@@ -658,6 +664,7 @@ static void paint(HistoryWidget self, XRectangle *bbox)
 	/* Draw the view */
 	message_view_paint(
 	    view, display, window, gc,
+	    True, 0, self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    x, y + self -> history.font -> ascent, bbox);
@@ -797,7 +804,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     {
 	/* Get rid of the first message and scroll the others upwards */
 	view = self -> history.message_views[0];
-	message_view_get_sizes(view, &sizes);
+	message_view_get_sizes(view, True, 0, &sizes);
 	message_view_free(view);
 
 	/* Figure out where to start copying */
@@ -809,7 +816,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	    view = self -> history.message_views[i];
 
 	    /* Measure the view for the new width/height of the widget */
-	    message_view_get_sizes(view, &sizes);
+	    message_view_get_sizes(view, True, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	    self -> history.message_views[i - 1] = view;
@@ -839,7 +846,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	/* Otherwise simply measure the messages */
 	for (i = 0; i < index; i++)
 	{
-	    message_view_get_sizes(self -> history.message_views[i], &sizes);
+	    message_view_get_sizes(self -> history.message_views[i], True, 0, &sizes);
 	    width = MAX(width, sizes.width);
 	    height += self -> history.line_height;
 	}
@@ -854,7 +861,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     self -> history.message_views[index] = view;
 
     /* Measure it */
-    message_view_get_sizes(view, &sizes);
+    message_view_get_sizes(view, True, 0, &sizes);
 
     /* Draw it if we have a graphics context */
     if (gc != None)
@@ -873,6 +880,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 
 	message_view_paint(
 	    view, display, window, gc,
+	    True, 0, self -> history.timestamp_pixel,
 	    self -> history.group_pixel, self -> history.user_pixel,
 	    self -> history.string_pixel, self -> history.separator_pixel,
 	    self -> history.margin_width - self -> history.x,
@@ -890,7 +898,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     /* Measure the remaining items */
     for (i = index + 1; i < self -> history.message_count; i++)
     {
-	message_view_get_sizes(self -> history.message_views[i], &sizes);
+	message_view_get_sizes(self -> history.message_views[i], True, 0, &sizes);
 	width = MAX(width, sizes.width);
 	height += self -> history.line_height;
     }
@@ -994,6 +1002,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
+		True, 0, self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
 		self -> history.margin_width - self -> history.x,
@@ -1049,6 +1058,7 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
 	    message_view_paint(
 		self -> history.message_views[self -> history.selection_index],
 		display, window, gc,
+		True, 0, self -> history.timestamp_pixel,
 		self -> history.group_pixel, self -> history.user_pixel,
 		self -> history.string_pixel, self -> history.separator_pixel,
 		self -> history.margin_width - self -> history.x,
