@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.72 2003/01/14 15:16:12 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.73 2003/01/14 16:58:26 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -53,10 +53,9 @@ static const char cvsid[] = "$Id: panel.c,v 1.72 2003/01/14 15:16:12 phelps Exp 
 #include <elvin/elvin.h>
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
-#include <iconv.h>
-#include <errno.h>
 #include "globals.h"
 #include "replace.h"
+#include "utf8.h"
 #include "panel.h"
 #include "History.h"
 
@@ -110,14 +109,6 @@ char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 
 /* The characters to use when converting a hex digit to ASCII */
 static char hex_chars[] = "0123456789abcdef";
-
-/* The CHARSET_REGISTRY atom */
-#define CHARSET_REGISTRY "CHARSET_REGISTRY"
-static Atom registry = None;
-
-/* The CHARSET_ENCODING atom */
-#define CHARSET_ENCODING "CHARSET_ENCODING"
-static Atom encoding = None;
 
 
 /* The structure used to hold font code-set information */
@@ -187,7 +178,7 @@ struct control_panel
     Widget user;
 
     /* The utf8 encoder for the user widget */
-    iconv_t user_encoder;
+    utf8_encoder_t user_encoder;
 
     /* The receiver's group menu button */
     Widget group;
@@ -211,13 +202,13 @@ struct control_panel
     Widget mime_args;
 
     /* The utf8 encoder for the mime args widget */
-    iconv_t mime_encoder;
+    utf8_encoder_t mime_encoder;
 
     /* The receiver's text text widget */
     Widget text;
 
     /* The utf8 encoder for the text widget */
-    iconv_t text_encoder;
+    utf8_encoder_t text_encoder;
 
     /* The receiver's "Send" button widget */
     Widget send;
@@ -344,189 +335,6 @@ static void action_dismiss(Widget button, control_panel_t self, XtPointer ignore
 
 static void prepare_reply(control_panel_t self, message_t message);
 
-
-
-/* Open a conversion descriptor */
-static iconv_t utf8_encoder_alloc(
-    Display *display,
-    XmFontList font_list,
-    char *code_set)
-{
-    XmFontContext context;
-    XmStringCharSet charset;
-    XFontStruct *font = NULL;
-    Atom atoms[2];
-    char *names[2];
-    char *string;
-    size_t length;
-    iconv_t cd;
-
-    /* If a code set was provided then use it */
-    if (code_set != NULL)
-    {
-	cd = iconv_open(TO_CODE, code_set);
-	if (cd == (iconv_t)-1)
-	{
-	    perror("iconv_open() failed\n");
-	}
-
-	return cd;
-    }
-
-    /* Go through the font list looking for a font */
-    if (! XmFontListInitFontContext(&context, font_list))
-    {
-	perror("XmFontListInitFontContext() failed");
-	return (iconv_t)-1;
-    }
-
-    /* Look for a font */
-    while (1)
-    {
-	if (! XmFontListGetNextFont(context, &charset, &font))
-	{
-	    perror("XmFontListGetNextFont() failed");
-	    XmFontListFreeFontContext(context);
-	    return (iconv_t)-1;
-	}
-
-	/* Look up the CHARSET_REGISTRY atom */
-	if (registry == None)
-	{
-	    registry = XInternAtom(display, CHARSET_REGISTRY, False);
-	}
-
-	/* Look up the font's CHARSET_REGISTRY property */
-	if (! XGetFontProperty(font, registry, &atoms[0]))
-	{
-	    continue;
-	}
-
-	/* Look up the CHARSET_ENCODING atom */
-	if (encoding == None)
-	{
-	    encoding = XInternAtom(display, CHARSET_ENCODING, False);
-	}
-
-	/* Look up the font's CHARSET_ENCODING property */
-	if (! XGetFontProperty(font, encoding, &atoms[1]))
-	{
-	    continue;
-	}
-
-	/* Stringify the names */
-	if (! XGetAtomNames(display, atoms, 2, names))
-	{
-	    continue;
-	}
-
-	/* Allocate some memory to hold the code set name */
-	length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
-	if ((string = malloc(length)) == NULL)
-	{
-	    XFree(names[0]);
-	    XFree(names[1]);
-	    XmFontListFreeFontContext(context);
-	    printf("4\n");
-	    return (iconv_t)-1;
-	}
-
-	/* Construct the code set name */
-	sprintf(string, "%s-%s", names[0], names[1]);
-
-	/* Clean up a bit */
-	XFree(names[0]);
-	XFree(names[1]);
-
-	/* Open a conversion descriptor */
-	cd = iconv_open(TO_CODE, string);
-	free(string);
-
-	XmFontListFreeFontContext(context);
-	return cd;
-    }
-}
-
-/* Encodes a string */
-static char *utf8_encoder_encode(iconv_t cd, char *input)
-{
-    char *buffer;
-    char *output;
-    size_t in_length;
-    size_t out_length;
-    size_t length;
-
-    /* Measure the input string */
-    in_length = strlen(input);
-
-    /* Special case for empty strings */
-    if (in_length == 0)
-    {
-	return strdup("");
-    }
-
-    /* If we have no encoder then try a simple memcpy and hope for the best */
-    if (cd == (iconv_t)-1)
-    {
-	printf("cd=-1\n");
-	if ((output = (char *)malloc(length)) == NULL)
-	{
-	    perror("malloc() failed");
-	    return NULL;
-	}
-
-	memcpy(output, input, in_length);
-	return output;
-    }
-
-    /* Guess twice as much should suffice for the output */
-    length = 2 * in_length + 1;
-    if ((buffer = (char *)malloc(length)) == NULL)
-    {
-	perror("malloc() failed");
-	return NULL;
-    }
-
-    output = buffer;
-    out_length = length;
-
-    /* Otherwise encode away! */
-    while (in_length != 0)
-    {
-	if (iconv(cd, &input, &in_length, &output, &out_length) == (size_t)-1)
-	{
-	    /* If we're out of space then allocate some more */
-	    if (errno == E2BIG)
-	    {
-		char *new_buffer;
-		size_t new_length;
-
-		new_length = (length - 1) * 2 + 1;
-		if ((new_buffer = realloc(buffer, new_length)) == NULL)
-		{
-		    perror("realloc() failed");
-		    free(output);
-		    return strdup("");
-		}
-
-		out_length += new_length - length;
-		output = new_buffer + (output - buffer);
-
-		buffer = new_buffer;
-		length = new_length;
-	    }
-	    else
-	    {
-		perror("iconv() failed");
-		return strdup("");
-	    }
-	}
-
-	*output = '\0';
-    }
-
-    return buffer;
-}
 
 
 /* This gets called when the user selects the "reloadGroups" menu item */
