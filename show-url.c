@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.12 2002/11/11 12:57:41 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.13 2003/03/10 10:29:00 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -488,29 +488,65 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
-    if (1 < verbosity)
+    /* Check the filename to see if it looks like a URL.  Use the
+     * heuristic of `:' before `/' indicates an URL */
+    for (point = filename; *point != 0; point++)
     {
-	printf("reading url from %s\n", filename);
+	/* Looks like a URL? */
+	if (*point == ':')
+	{
+	    if (1 < verbosity)
+	    {
+		printf("Using URL from command-line: %s\n", filename);
+	    }
+
+	    /* Make sure the URL isn't obscenely long */
+	    length = strlen(filename);
+	    if (! (length < MAX_URL_SIZE))
+	    {
+		fprintf(stderr, "URL exceeds maximum URL size of %d\n", MAX_URL_SIZE);
+		exit(1);
+	    }
+
+	    /* Copy it into the buffer */
+	    memcpy(buffer, filename, length + 1);
+	    break;
+	}
+
+	/* Looks like a filename? */
+	if (*point == '/')
+	{
+	    point = NULL;
+	    break;
+	}
     }
 
-    /* Read the URL from the file */
-    if ((file = fopen(filename, "r")) == NULL)
+    if (point == NULL || *point == 0)
     {
-	perror("Unable to open URL file");
-	exit(1);
+	if (1 < verbosity)
+	{
+	    printf("reading URL from %s\n", filename);
+	}
+
+	/* Read the URL from the file */
+	if ((file = fopen(filename, "r")) == NULL)
+	{
+	    perror("Unable to open URL file");
+	    exit(1);
+	}
+
+	/* Read up to MAX_URL_SIZE bytes of it */
+	length = fread(buffer, 1, MAX_URL_SIZE, file);
+	buffer[length] = 0;
+
+	if (1 < verbosity)
+	{
+	    printf("raw URL: %s\n", buffer);
+	}
+
+	/* Clean up */
+	fclose(file);
     }
-
-    /* Read up to MAX_URL_SIZE bytes of it */
-    length = fread(buffer, 1, MAX_URL_SIZE, file);
-    buffer[length] = 0;
-
-    if (1 < verbosity)
-    {
-	printf("raw url: %s\n", buffer);
-    }
-
-    /* Clean up */
-    fclose(file);
 
     /* Initialize the command buffer */
     cmd_length = INIT_CMD_SIZE;
