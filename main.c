@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.42 1998/12/23 11:39:30 phelps Exp $ */
+/* $Id: main.c,v 1.43 1998/12/23 13:58:42 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
@@ -84,11 +84,11 @@ static void Usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]...\n", argv[0]);
 #ifdef HAVE_GETOPT_H
-    fprintf(stderr, "  -h host, --host=host\n");
+    fprintf(stderr, "  -h host,     --host=host\n");
     fprintf(stderr, "  -p port,     --port=port\n");
     fprintf(stderr, "  -u username, --user=username\n");
-    fprintf(stderr, "  -g groupsfile, --groups=groupsfile\n");
-    fprintf(stderr, "  -n newsfile, --news=newsfile\n");
+    fprintf(stderr, "  -g filename, --groups=filename\n");
+    fprintf(stderr, "  -n filename, --news=filename\n");
     fprintf(stderr, "  -v,          --version\n");
     fprintf(stderr, "               --help\n");
 #else
