@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.h,v 1.11 1998/10/28 07:50:02 phelps Exp $ */
+/* $Id: ElvinConnection.h,v 1.12 1998/10/29 03:39:12 phelps Exp $ */
 
 #ifndef ELVINCONNECTION_H
 #define ELVINCONNECTION_H
@@ -11,8 +11,8 @@ typedef struct ElvinConnection_t *ElvinConnection;
 
 /* Callback types */
 typedef void (*NotifyCallback)(void *context, en_notify_t notification);
-typedef void (*DisconnectCallback)(void *context, char *message);
-typedef void (*ReconnectCallback)(void *context, char *message);
+typedef void (*DisconnectCallback)(void *context, ElvinConnection self);
+typedef void (*ReconnectCallback)(void *context, ElvinConnection self);
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
@@ -22,6 +22,12 @@ ElvinConnection ElvinConnection_alloc(
 
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self);
+
+/* Answers the receiver's host */
+char *ElvinConnection_host(ElvinConnection self);
+
+/* Answers the receiver's port */
+int ElvinConnection_port(ElvinConnection self);
 
 /* Registers a callback for when the given expression is matched */
 void *ElvinConnection_subscribe(
