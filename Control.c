@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.9 1998/08/26 06:00:25 phelps Exp $ */
+/* $Id: Control.c,v 1.10 1998/08/27 04:08:09 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -225,6 +225,7 @@ static Widget createGroupBox(ControlPanel self, Widget parent, Widget left)
 	XtNbottom, XawChainTop,
 	XtNleft, XawChainLeft,
 	XtNright, XawChainRight,
+	XtNlabel, Subscription_getGroup(List_first(self -> subscriptions)),
 	NULL);
     createGroupMenu(self, self -> group);
     return form;
@@ -509,7 +510,6 @@ static void ActionClear(Widget button, XtPointer context, XtPointer ignored)
     ControlPanel self = (ControlPanel) context;
 
     SANITY_CHECK(self);
-    setGroup(self, Subscription_getGroup(List_first(self -> subscriptions)));
     setUser(self, self -> userName);
     setText(self, "");
     setTimeout(self, 10);
