@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.46 2002/04/04 14:36:22 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.47 2002/04/04 15:21:51 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1139,7 +1139,7 @@ static void insert_message(HistoryWidget self,
 	    self -> history.message_views[i] = view;
 	    if (self -> history.selection_index == i - 1)
 	    {
-		self -> history.selection_index++;
+		self -> history.selection_index = i;
 	    }
 	}
 
@@ -1160,12 +1160,16 @@ static void insert_message(HistoryWidget self,
     {
 	/* Discard the first message view */
 	message_view_free(self -> history.message_views[0]);
+	if (self -> history.selection_index == 0)
+	{
+	    self -> history.selection_index = (unsigned int)-1;
+	}
 
 	/* Measure the nodes before the index, moving them up to make
 	 * room for the new message. */
-	for (i = 1; i < index; i++)
+	for (i = 0; i < index; i++)
 	{
-	    view = self -> history.message_views[i];
+	    view = self -> history.message_views[i + 1];
 
 	    /* Measure the view */
 	    message_view_get_sizes(view, show_timestamps, &sizes);
@@ -1173,17 +1177,20 @@ static void insert_message(HistoryWidget self,
 	    y += self -> history.line_height;
 	    height += self -> history.line_height;
 
-	    self -> history.message_views[i - 1] = view;
-	    if (self -> history.selection_index == i)
+	    /* Move it up */
+	    self -> history.message_views[i] = view;
+
+	    /* Update the selection index */
+	    if (self -> history.selection_index == i + 1)
 	    {
-		self -> history.selection_index--;
+		self -> history.selection_index = i;
 	    }
 	}
 
 	/* Measure the nodes after the index */
-	for (i = self -> history.message_count; i > index; i--)
+	for (i = index + 1; i < self -> history.message_count; i++)
 	{
-	    view = self -> history.message_views[i - 1];
+	    view = self -> history.message_views[i];
 
 	    /* Measure the view */
 	    message_view_get_sizes(view, show_timestamps, &sizes);
@@ -1197,13 +1204,9 @@ static void insert_message(HistoryWidget self,
 	    XCopyArea(
 		display, window, window, gc,
 		0, self -> history.margin_height - self -> history.y + self -> history.line_height,
-		self -> core.width, y - self -> history.line_height,
+		self -> core.width, y,
 		0, self -> history.margin_height - self -> history.y);
 	}
-
-	/* Everything's been moved up */
-	index--;
-	y -= self -> history.line_height;
     }
 
     /* Create a new message view */
