@@ -1,4 +1,4 @@
-facility lisp 256
+facility interp 256
 
 00001 PARSE_ERROR string(token)
 00002 INVALID_TOKEN string(token)
@@ -7,9 +7,9 @@ facility lisp 256
 00005 UNTERM_OPAQUE
 00006 OVERFLOW string(token)
 00007 INVALID_FUNC string(name)
-00008 TOO_FEW_ARGS string(function)
-00009 TOO_MANY_ARGS string(function)
+00008 WRONG_ARGC string(func) int32(count)
 00010 ARGS_NOT_LIST
 00011 TYPE_MISMATCH string(value) string(type)
+00012 INTERNAL string(description)
 
 00100 SYM_UNDEF string(symbol)

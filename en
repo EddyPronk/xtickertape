@@ -1,4 +1,4 @@
-# esh/en
+# esh/interp
 
 PARSE_ERROR	parse error before `%1'
 INVALID_TOKEN	invalid token `%1'
@@ -7,8 +7,8 @@ UNTERM_SYMBOL	unterminated symbol
 UNTERM_OPAQUE	unterminated opaque constant
 OVERFLOW	numeric constant overflow: %1
 INVALID_FUNC	invalid function `%1'
-TOO_FEW_ARGS	too few arguments to function `%1'
-TOO_MANY_ARGS	too many arguments to function `%1'
+WRONG_ARGC	Wrong number of arguments to `%1': %2
 ARGS_NOT_LIST	argument list must be nil-terminated
 TYPE_MISMATCH	type mismatch: `%1' is not a %2
 SYM_UNDEF	symbol `%1' is undefined
+INTERNAL	internal error: %1
