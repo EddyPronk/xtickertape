@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.7 2001/10/16 16:18:18 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.8 2002/04/08 14:55:59 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -51,6 +51,11 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent);
 
 /* Releases the resources used by the receiver */
 void control_panel_free(control_panel_t self);
+
+/* Displays a message in the status line */
+void control_panel_set_status(
+    control_panel_t self,
+    char *message);
 
 /* Displays a message in the status line */
 void control_panel_show_status(

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.56 2002/04/08 11:58:12 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.57 2002/04/08 14:55:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -181,6 +181,9 @@ struct control_panel
     /* The current status message string */
     char *status;
 
+    /* The overriding status message string */
+    char *status_override;
+
     /* The uuid counter */
     int uuid_count;
 
@@ -262,7 +265,9 @@ static void action_return(Widget textField, control_panel_t self, XmAnyCallbackS
 static void action_dismiss(Widget button, control_panel_t self, XtPointer ignored);
 
 static void prepare_reply(control_panel_t self, message_t message);
+#if 0
 static void make_index_visible(Widget list, int index);
+#endif
 
 
 /* This gets called when the user selects the "reloadGroups" menu item */
@@ -617,18 +622,23 @@ static Widget create_timeout_menu(control_panel_t self, Widget parent)
 }
 
 /* This is called when an item in the history list is selected */
-static void history_selection_callback(Widget widget, XtPointer closure, XtPointer call_data)
+static void history_selection_callback(
+    Widget widget,
+    XtPointer closure,
+    XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
     message_t message = (message_t)call_data;
     
-
     /* Reconfigure to reply to the selected message (or lack thereof) */
     prepare_reply(self, message);
 }
 
 /* This is called when an item in the history is double-clicked */
-static void history_attachment_callback(Widget widget, XtPointer closure, XtPointer call_data)
+static void history_attachment_callback(
+    Widget widget,
+    XtPointer closure,
+    XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
     message_t message = (message_t)call_data;
@@ -637,70 +647,25 @@ static void history_attachment_callback(Widget widget, XtPointer closure, XtPoin
     tickertape_show_attachment(self -> tickertape, message);
 }
 
-#if 0
-/* This is called when the mouse enters, leaves or moves around in the
- * history widget */
+/* This is called when the mouse has moved in the history widget */
 static void history_motion_callback(
     Widget widget,
-    control_panel_t self,
-    XEvent *event)
+    XtPointer closure,
+    XtPointer call_data)
 {
-    Position x, y;
-    message_t message;
-    char *mime_args;
-    int mime_length;
+    control_panel_t self = (control_panel_t)closure;
+    message_t message = (message_t)call_data;
+    char *string = NULL;
 
-    switch (event->type)
+    /* If the message has an URL then show it in the status bar */
+    if (message && message_has_attachment(message))
     {
-	case MotionNotify:
-	{
-	    XMotionEvent *motion_event = (XMotionEvent *)event;
-	    x = motion_event -> x;
-	    y = motion_event -> y;
-	    break;
-	}
-
-	case EnterNotify:
-	{
-	    XCrossingEvent *crossing_event = (XCrossingEvent *)event;
-	    x = crossing_event -> x;
-	    y = crossing_event -> y;
-	    break;
-	}
-
-	case LeaveNotify:
-	{
-	    control_panel_show_status(self, " ");
-	    return;
-	}
-
-	default:
-	{
-	    return;
-	}
+	message_get_mime_args(message, &string);
     }
 
-    /* Figure out which message we're looking at */
-    message = history_get_at_point(tickertape_history(self -> tickertape), x, y);
-
-    /* Make sure there is a message */
-    if (message == NULL)
-    {
-	control_panel_show_status(self, " ");
-	return;
-    }
-
-    /* See if it has mime args attached */
-    if ((mime_length = message_get_mime_args(message, &mime_args)) == 0)
-    {
-	control_panel_show_status(self, " ");
-	return;
-    }
-
-    /* Show the mime_args in the status line */
-    control_panel_show_status(self, mime_args);
+    control_panel_show_status(self, string);
 }
-#endif
+
 
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
@@ -744,7 +709,11 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtAddCallback(
 	self -> history, XtNattachmentCallback,
 	history_attachment_callback, (XtPointer)self);
-	
+
+    /* Add a callback for showing message attachments */
+    XtAddCallback(
+	self -> history, XtNmotionCallback,
+	history_motion_callback, (XtPointer)self);
 #else
     Arg args[10];
 
@@ -1525,26 +1494,60 @@ void control_panel_free(control_panel_t self)
 }
 
 
+/* Show a status message in the status bar */
+static void show_status(control_panel_t self, char *message)
+{
+    XmString string;
 
-/* Displays a message in the status line */
+    /* Create an XmString version of the string */
+    string = XmStringCreateSimple(message ? message : " ");
+    XtVaSetValues(self -> status_line, XmNlabelString, string, NULL);
+    XmStringFree(string);
+}
+
+/* Sets the control panel status message */
+void control_panel_set_status(
+    control_panel_t self,
+    char *message)
+{
+    /* Record the status message */
+    if (message != NULL)
+    {
+	self -> status = strdup(message);
+    }
+
+    /* If there's no overriding status message then show this one */
+    if (self -> status_override == NULL)
+    {
+	show_status(self, message);
+    }
+}
+
+/* Displays a message in the status line.  If `message' is NULL then
+ * the message will revert to the message set from
+ * control_set_status(). */
 void control_panel_show_status(
     control_panel_t self,
     char *message)
 {
-    XmString string;
-
     /* Bail if we're already displaying that message */
-    if (self -> status == message)
+    if (self -> status_override == message)
     {
 	return;
     }
 
-    /* Create a string to display the message */
-    string = XmStringCreateSimple(message);
-    XtVaSetValues(self -> status_line, XmNlabelString, string, NULL);
-    XmStringFree(string);
+    /* Record the status */
+    self -> status_override = message;
 
-    self -> status = message;
+    /* Display the `official' status if this one is NULL */
+    if (self -> status_override == NULL)
+    {
+	show_status(self, self -> status);
+    }
+    else
+    {
+	show_status(self, message);
+    }
 }
 
 /* This is called when the elvin connection status changes */
@@ -1672,6 +1675,7 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 /* Adds a message to the control panel's history */
 void control_panel_add_message(control_panel_t self, message_t message)
 {
+    /* Add the message to the history */
     HistoryAddMessage(self -> history, message);
 }
 
@@ -1827,6 +1831,7 @@ static void prepare_reply(control_panel_t self, message_t message)
     }
 }
 
+#if 0
 /* Ensures that the given list item is visible */
 static void make_index_visible(Widget list, int index)
 {
@@ -1854,33 +1859,16 @@ static void make_index_visible(Widget list, int index)
 	return;
     }
 }
+#endif
 
 /* Makes the control panel window visible */
 void control_panel_select(control_panel_t self, message_t message)
 {
-#if 0
-    int index;
-#endif
-
     /* Set up to reply */
     prepare_reply(self, message);
 
-#if 1
+    /* Select the item in the history */
     HistorySelect(self -> history, message);
-#else
-    /* Unselect everything */
-    XmListDeselectAllItems(self -> history);
-
-    /* If the message isn't visible in the history list then don't select anything */
-    if ((index = history_index(tickertape_history(self -> tickertape), message)) < 0)
-    {
-	return;
-    }
-
-    /* Select the item and make sure it is visible */
-    make_index_visible(self -> history, index);
-    XmListSelectPos(self -> history, index, False);
-#endif
 }
 
 /* Makes the control panel window visible */
