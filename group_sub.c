@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.59 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.60 2004/11/24 11:38:44 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1117,7 +1117,11 @@ static void group_sub_update_keys(
     old_names = self -> key_names;
 
     /* Duplicate the new key names */
-    if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL) 
+    if (key_count == 0)
+    {
+        self -> key_names = NULL;
+    }
+    else if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL) 
     {
         abort();
     }
@@ -1137,7 +1141,9 @@ static void group_sub_update_keys(
         free(old_names[i]);
     }
 
-    free(old_names);
+    if (old_names != NULL) {
+        free(old_names);
+    }
 }
 
 
