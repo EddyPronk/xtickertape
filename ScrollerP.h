@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.13 1999/06/23 08:31:11 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.14 1999/06/24 08:00:08 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -59,6 +59,8 @@ typedef struct _ScrollerClassRec
 } ScrollerClassRec;
 
 
+typedef struct glyph_holder *glyph_holder_t;
+
 /* New fields for the Scroller widget record */
 typedef struct
 {
@@ -74,35 +76,42 @@ typedef struct
     Position step;
 
     /* Private state */
-    int isStopped;
+    int is_stopped;
 
-    /* The width of the widget before the last resize */
-    int width;
+    /* The leftmost glyph holder */
+    glyph_holder_t left_holder;
 
-    /* The circular queue containing all glyphs */
-    glyph_t glyphs;
+    /* The rightmost glyph holder */
+    glyph_holder_t right_holder;
 
-    /* An array containing all glyphs that are currently visible */
-    glyph_t *visible;
-
-    /* The index into the visible array of the current leftmost visible glyph */
-    unsigned int left_index;
+    /* The number of glyph holders in the queue */
+    int holder_count;
 
     /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
     int left_offset;
 
-    /* The index into the visible array of the current rightmost visible glyph */
-    unsigned int right_index;
-
     /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
     int right_offset;
 
+    /* The gap in the scroller's circular queue of glyphs */
+    glyph_t gap;
+
+    /* The index into the visible array of the current leftmost visible glyph */
+    glyph_t left_glyph;
+
+    /* The index into the visible array of the current rightmost visible glyph */
+    glyph_t right_glyph;
+
     /* The width of the unexpired glyphs in the circular queue the
      * last time that a gap was added */
-    int glyphs_width;
+    int last_width;
 
-    /* The width of the unexpired glyphs in the circular queue */
-    int next_glyphs_width;
+    /* A queue of glyphs which are waiting to be added to glyphs */
+    glyph_t pending;
+
+    /* The width of the widget before the last resize */
+    int width;
+
 
     /* The off-screen pixmap */
     Pixmap pixmap;
@@ -128,6 +137,7 @@ typedef struct
     /* The array of Pixels used to display the string portion of a
      * Message at varying degrees of fading */
     Pixel *stringPixels;
+
 } ScrollerPart;
 
 
