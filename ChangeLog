@@ -1,3 +1,11 @@
+1999-09-29  Ted Phelps  <phelps@pobox.com>
+
+	* message_glyph.c: This time I think I've got it -- when measuring 
+		  character which don't have a glyph in the current font,
+		  use the dimensions of default_char.  If, however,
+		  default_char does not have a glyph then all dimensions
+		  default to zero.
+
 1999-09-27  Ted Phelps  <phelps@pobox.com>
 
 	* message_glyph.c: Characters which don't have a glyph in the
