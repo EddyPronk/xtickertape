@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.28 1999/05/21 05:59:37 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.29 1999/05/22 08:22:16 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -102,7 +102,6 @@ struct Subscription_t
  */
 
 static char *GetDomainName();
-static int CreateGroupsFile(char *filename, char *username);
 static int TranslateMenu(char *token);
 static int TranslateMime(char *token);
 static int TranslateTime(char *token);
@@ -153,59 +152,6 @@ static char *GetDomainName()
     }
 
     return domainname;
-}
-
-/* Create a default groups file and write it to the named file */
-static int CreateGroupsFile(char *filename, char *username)
-{
-    char *pointer;
-    FILE *file;
-
-    /* Open the file for writing */
-    if ((file = fopen(filename, "w")) == NULL)
-    {
-	perror("unable to create groups file");
-	return -1;
-    }
-
-    /* Copy the string into the file, substituting the user name for
-     * %u, domainname for %d and x for %x for any other character */
-    for (pointer = defaultGroupsFile; *pointer != '\0'; pointer++)
-    {
-	/* Watch for escape characters */
-	if (*pointer == '%')
-	{
-	    switch (*(++pointer))
-	    {
-		/* user name */
-		case 'u':
-		{
-		    fputs(username, file);
-		    break;
-		}
-
-		/* domain name */
-		case 'd':
-		{
-		    fputs(GetDomainName(), file);
-		    break;
-		}
-
-		/* Just a normal character */
-		default:
-		{
-		    fputc(*pointer, file);
-		    break;
-		}
-	    }
-	}
-	else
-	{
-	    fputc(*pointer, file);
-	}
-    }
-
-    fclose(file);
 }
 
 /* Translate the 'menu' or 'no menu' token into non-zero or zero*/
@@ -556,34 +502,60 @@ static void SendMessage(Subscription self, Message message)
  *
  */
 
-/* Read Subscriptions from the group file 'groups' and add them to 'list' */
-List Subscription_readFromGroupFile(
-    char *filename, char *username,
-    SubscriptionCallback callback, void *context)
+/* Create a default groups file and write it to the named file */
+int Subscription_writeDefaultGroupsFile(
+    FILE *out, char *username)
 {
-    List list = List_alloc();
-    FILE *file;
-    FileStreamTokenizer tokenizer;
-    char *token;
+    char *pointer;
 
-    /* Try to open the file */
-    while ((file = fopen(filename, "r")) == NULL)
+    /* Copy the string into the file, substituting the user name for
+     * %u, domainname for %d and x for %x for any other character */
+    for (pointer = defaultGroupsFile; *pointer != '\0'; pointer++)
     {
-	/* If one doesn't exist, then try to create one */
-	if (errno == ENOENT)
+	/* Watch for escape characters */
+	if (*pointer == '%')
 	{
-	    fprintf(stderr, "Creating a file %s\n", filename);
-	    CreateGroupsFile(filename, username);
-	    return list;
-	}
+	    switch (*(++pointer))
+	    {
+		/* user name */
+		case 'u':
+		{
+		    fputs(username, out);
+		    break;
+		}
 
-	/* Otherwise, life is hard */
-	perror("unable to read groups file");
-	return list;
+		/* domain name */
+		case 'd':
+		{
+		    fputs(GetDomainName(), out);
+		    break;
+		}
+
+		/* Just a normal character */
+		default:
+		{
+		    fputc(*pointer, out);
+		    break;
+		}
+	    }
+	}
+	else
+	{
+	    fputc(*pointer, out);
+	}
     }
 
-    /* We've successfully opened the file, so go ahead and allocate stuff */
-    tokenizer = FileStreamTokenizer_alloc(file, ":\r", "\n");
+    return 0;
+}
+
+/* Read Subscriptions from the group file 'groups' and add them to 'list' */
+List Subscription_readFromGroupFile(
+    FILE *in,
+    SubscriptionCallback callback, void *context)
+{
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(in, ":\r", "\n");
+    List list = List_alloc();
+    char *token;
 
     /* Locate a non-empty line that doesn't begin with a '#' */
     while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
@@ -601,7 +573,6 @@ List Subscription_readFromGroupFile(
 	}
     }
 
-    fclose(file);
     FileStreamTokenizer_free(tokenizer);
     return list;
 }

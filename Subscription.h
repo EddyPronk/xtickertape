@@ -35,7 +35,7 @@
 #define SUBSCRIPTION_H
 
 #ifndef lint
-static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.9 1999/05/21 05:30:32 phelps Exp $";
+static const char cvs_SUBSCRIPTION_H[] = "$Id: Subscription.h,v 1.10 1999/05/22 08:22:17 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -60,8 +60,12 @@ typedef void (*SubscriptionCallback)(void *context, Message message);
 
 /* Answer a List containing the subscriptions in the given file or NULL if unable */
 List Subscription_readFromGroupFile(
-    char *filename, char *username,
+    FILE *in,
     SubscriptionCallback callback, void *context);
+
+/* Creates a default groups file for the named user */
+int Subscription_writeDefaultGroupsFile(
+    FILE *out, char *username);
 
 /* Answers a new Subscription */
 Subscription Subscription_alloc(
