@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.78 1999/11/23 00:12:47 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.79 1999/11/23 00:54:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -513,19 +513,6 @@ static void queue_replace(ScrollerWidget self, glyph_t old_glyph, glyph_t new_gl
 
     /* Clean up */
     old_glyph -> free(old_glyph);
-}
-
-/* Returns the most recent replacement for the given glyph (if any) */
-static glyph_t queue_find_replacement(glyph_t head, glyph_t glyph)
-{
-    /* If the glyph has not been replaced then return the glyph itself */
-    if ((glyph -> next != NULL) && (glyph -> previous != NULL))
-    {
-	return glyph;
-    }
-
-    /* Otherwise hunt through the queue for the replacement glyph */
-    return queue_find(head, message_get_tag(glyph -> get_message(glyph)));
 }
 
 /* Removes an item from a circular queue of glyphs */
