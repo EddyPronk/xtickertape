@@ -134,6 +134,19 @@
 	<Key>d: expire()\n\
 	<Key>x: delete()\n\
 	<Key>k: kill()\n\
+	Meta<Key>q: quit()\n
 	<Key>-: slower() \n\
 	<Key>=: faster() \n\
-	Meta<Key>q: quit()\n
+	<Key>comma: faster() \n\
+	<Key>.: slower() \n\
+	<Key>0: set-speed(0)\n\
+	<Key>0: set-speed(0)\n\
+	<Key>1: set-speed(1)\n\
+	<Key>2: set-speed(2)\n\
+	<Key>3: set-speed(3)\n\
+	<Key>4: set-speed(4)\n\
+	<Key>5: set-speed(5)\n\
+	<Key>6: set-speed(6)\n\
+	<Key>7: set-speed(7)\n\
+	<Key>8: set-speed(8)\n\
+	<Key>9: set-speed(9)\n
