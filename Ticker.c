@@ -1,5 +1,5 @@
 /*
- * $Id: Ticker.c,v 1.12 1998/10/25 03:03:38 phelps Exp $
+ * $Id: Ticker.c,v 1.13 1998/10/25 03:07:15 phelps Exp $
  * COPYRIGHT!
  */
 
@@ -355,8 +355,9 @@ Tickertape Tickertape_alloc(
     /* Listen for Orbit-related notifications and alert the world to our presence */
     self -> orbitSubscriptionsById = Hashtable_alloc(37);
     SubscribeToOrbit(self);
-    PublishStartupNotification(self);
 #endif /* ORBIT */
+
+    PublishStartupNotification(self);
     return self;
 }
 
