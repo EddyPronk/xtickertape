@@ -1,6 +1,9 @@
 Overview of changes in xtickertape-1.6.0
 
-* Added a `Help' menu.  Now for the `About' box...
+* Added a `Help' menu and an `About' box.
+
+* The `not' operator in a usenet subscription no longer generates a
+  bogus elvin subscription.
 
 Overview of changes in xtickertape-1.5.10
 
