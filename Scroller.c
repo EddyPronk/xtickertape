@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.112 2001/05/06 02:41:21 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.113 2001/05/07 06:10:57 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -207,21 +207,24 @@ static char defaultTranslations[] =
  */
 static void scroll(ScrollerWidget self, int offset);
 
-static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
-static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
-static void Redisplay(ScrollerWidget self, Region region);
-static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
-static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
-static void Destroy(Widget widget);
-static void Resize(Widget widget);
-static void do_expose(Widget widget, XEvent *event, Region region);
-static Boolean SetValues(
+static void initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
+static void realize(
+    Widget widget,
+    XtValueMask *value_mask,
+    XSetWindowAttributes *attributes);
+static void redisplay(ScrollerWidget self, Region region);
+static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
+static void paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
+static void destroy(Widget widget);
+static void resize(Widget widget);
+static void expose(Widget widget, XEvent *event, Region region);
+static Boolean set_values(
     Widget current,
     Widget request,
     Widget new,
     ArgList args,
     Cardinal *num_args);
-static XtGeometryResult QueryGeometry(
+static XtGeometryResult query_geometry(
     Widget widget,
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred);
@@ -239,9 +242,9 @@ ScrollerClassRec scrollerClassRec =
 	NULL, /* class_initialize */
 	NULL, /* class_part_initialize */
 	False, /* class_inited */
-	Initialize, /* initialize */
+	initialize, /* initialize */
 	NULL, /* initialize_hook */
-	Realize, /* realize */
+	realize, /* realize */
 	actions, /* actions */
 	XtNumber(actions), /* num_actions */
 	resources, /* resources */
@@ -251,10 +254,10 @@ ScrollerClassRec scrollerClassRec =
 	True, /* compress_exposure */
 	True, /* compress_enterleave */
 	False, /* visible_interest */
-	Destroy, /* destroy */
-	Resize, /* resize */
-	do_expose, /* expose */
-	SetValues, /* set_values */
+	destroy, /* destroy */
+	resize, /* resize */
+	expose, /* expose */
+	set_values, /* set_values */
 	NULL, /* set_values_hook */
 	XtInheritSetValuesAlmost, /* set_values_almost */
 	NULL, /* get_values_hook */
@@ -262,7 +265,7 @@ ScrollerClassRec scrollerClassRec =
 	XtVersion, /* version */
 	NULL, /* callback_private */
 	defaultTranslations, /* tm_table */
-	QueryGeometry, /* query_geometry */
+	query_geometry, /* query_geometry */
 	XtInheritDisplayAccelerator, /* display_accelerator */
 	NULL /* extension */
     },
@@ -275,9 +278,12 @@ ScrollerClassRec scrollerClassRec =
 
 WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
 
-/*
- * The structure of a glyph_holder
- */
+
+/* The glyph_holders are used to maintain a doubly-linked list of the
+ * glyphs which are currently visible in the scroller window.  The
+ * width is also recorded because under certain circumstances a single
+ * glyph (usually the gap) may be displayed twice in the scroller with
+ * differing widths. */
 struct glyph_holder
 {
     /* The previous glyph_holder_t in the list */
@@ -294,7 +300,7 @@ struct glyph_holder
 };
 
 /* Allocates and initializes a new glyph_holder */
-glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
+static glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
 {
     glyph_holder_t self;
 
@@ -313,7 +319,7 @@ glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
 }
 
 /* Frees the resources consumed by the receiver */
-void glyph_holder_free(glyph_holder_t self)
+static void glyph_holder_free(glyph_holder_t self)
 {
     self -> previous = NULL;
     self -> next = NULL;
@@ -322,14 +328,8 @@ void glyph_holder_free(glyph_holder_t self)
     free(self);
 }
 
-/* Answers the width of the holder's glyph */
-int glyph_holder_width(glyph_holder_t self)
-{
-    return self -> width;
-}
-
 /* Paints the holder's glyph */
-void glyph_holder_paint(
+static void glyph_holder_paint(
     glyph_holder_t self, Display *display, Drawable drawable,
     int offset, int x, int y, unsigned int width, unsigned int height)
 {
@@ -345,17 +345,17 @@ void glyph_holder_paint(
  * Private Methods
  */
 
-static void CreateGC(ScrollerWidget self);
-static Pixel *CreateFadedColors(Display *display, Colormap colormap,
+static void create_gc(ScrollerWidget self);
+static Pixel *create_faded_colors(Display *display, Colormap colormap,
 				XColor *first, XColor *last, unsigned int levels);
-static void EnableClock(ScrollerWidget self);
-static void DisableClock(ScrollerWidget self);
-static void SetClock(ScrollerWidget self);
-static void Tick(XtPointer widget, XtIntervalId *interval);
+static void enable_clock(ScrollerWidget self);
+static void disable_clock(ScrollerWidget self);
+static void set_clock(ScrollerWidget self);
+static void tick(XtPointer widget, XtIntervalId *interval);
 
 
 /* Answers a GC with the right background color and font */
-static void CreateGC(ScrollerWidget self)
+static void create_gc(ScrollerWidget self)
 {
     XGCValues values;
 
@@ -370,7 +370,7 @@ static void CreateGC(ScrollerWidget self)
 
 
 /* Answers an array of colors fading from first to last */
-static Pixel *CreateFadedColors(
+static Pixel *create_faded_colors(
     Display *display, Colormap colormap,
     XColor *first, XColor *last, unsigned int levels)
 {
@@ -397,17 +397,17 @@ static Pixel *CreateFadedColors(
 }
 
 /* Re-enables the timer */
-static void EnableClock(ScrollerWidget self)
+static void enable_clock(ScrollerWidget self)
 {
     if ((self -> scroller.timer == 0) && (self -> scroller.step != 0))
     {
 	DPRINTF((stderr, "clock enabled\n"));
-	SetClock(self);
+	set_clock(self);
     }
 }
 
 /* Temporarily disables the timer */
-static void DisableClock(ScrollerWidget self)
+static void disable_clock(ScrollerWidget self)
 {
     if (self -> scroller.timer != 0)
     {
@@ -419,30 +419,30 @@ static void DisableClock(ScrollerWidget self)
 
 
 /* Sets the timer if the clock isn't stopped */
-static void SetClock(ScrollerWidget self)
+static void set_clock(ScrollerWidget self)
 {
     if (self -> scroller.timer == 0)
     {
 	self -> scroller.timer = ScStartTimer(
-	    self, 1000L / self -> scroller.frequency, Tick, (XtPointer) self);
+	    self, 1000L / self -> scroller.frequency, tick, (XtPointer) self);
     }
 }
 
 
 /* One interval has passed */
-static void Tick(XtPointer widget, XtIntervalId *interval)
+static void tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
 
     /* If we were called in response to the timer going off then clear
-     * the timer so that SetClock() can set it again */
+     * the timer so that set_clock() can set it again */
     if (interval != NULL && *interval == self -> scroller.timer)
     {
 	self -> scroller.timer = 0;
     }
 
     /* Set the clock now so that we get consistent scrolling speed */
-    SetClock(self);
+    set_clock(self);
 
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
     if (self -> scroller.step != 0)
@@ -702,8 +702,6 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
     /* Go through the visible glyphs looking for the one to paint */
     while (holder != NULL)
     {
-	int width = glyph_holder_width(holder);
-
 	if (holder -> glyph == glyph)
 	{
 	    if (self -> scroller.use_pixmap)
@@ -711,7 +709,7 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 		glyph_holder_paint(
 		    holder, display, self -> scroller.pixmap,
 		    offset, 0, 0, self -> core.width, self -> scroller.height);
-		Redisplay(self, NULL);
+		redisplay(self, NULL);
 	    }
 	    else
 	    {
@@ -721,8 +719,8 @@ void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph)
 	    }
 	}
 
+	offset += holder->width;
 	holder = holder -> next;
-	offset += width;
     }
 }
 
@@ -759,7 +757,11 @@ static int compute_min_gap_width(XFontStruct *font)
 }
 
 /* ARGSUSED */
-static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
+static void initialize(
+    Widget request,
+    Widget widget,
+    ArgList args,
+    Cardinal *num_args)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_holder_t holder;
@@ -805,7 +807,10 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 }
 
 /* Realize the widget by creating a window in which to display it */
-static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes)
+static void realize(
+    Widget widget,
+    XtValueMask *value_mask,
+    XSetWindowAttributes *attributes)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     Display *display = XtDisplay(self);
@@ -822,7 +827,7 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 
     /* Create a window and a couple of graphics contexts */
     XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
-    CreateGC(self);
+    create_gc(self);
 
     if (self -> scroller.use_pixmap)
     {
@@ -833,22 +838,22 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 	    self -> core.depth);
 
 	/* Clear the offscreen pixmap to the background color */
-	Paint(self, 0, 0, self -> core.width, self -> core.height);
+	paint(self, 0, 0, self -> core.width, self -> core.height);
     }
     else
     {
 	/* Register an event handler for GraphicsExpose events */
-	XtAddEventHandler(widget, 0, True, GExpose, NULL);
+	XtAddEventHandler(widget, 0, True, gexpose, NULL);
     }
 
     /* Allocate colors */
-    self -> scroller.separatorPixels = CreateFadedColors(
+    self -> scroller.separatorPixels = create_faded_colors(
 	display, colormap, &colors[4], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.groupPixels = CreateFadedColors(
+    self -> scroller.groupPixels = create_faded_colors(
 	display, colormap, &colors[1], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.userPixels = CreateFadedColors(
+    self -> scroller.userPixels = create_faded_colors(
 	display, colormap, &colors[2], &colors[0], self -> scroller.fadeLevels);
-    self -> scroller.stringPixels = CreateFadedColors(
+    self -> scroller.stringPixels = create_faded_colors(
 	display, colormap, &colors[3], &colors[0], self -> scroller.fadeLevels);
 }
 
@@ -926,7 +931,7 @@ static void add_right_holder(ScrollerWidget self)
     if (glyph == self -> scroller.gap)
     {
 	glyph_holder_t right = self -> scroller.right_holder;
-	width = gap_width(self, glyph_holder_width(right));
+	width = gap_width(self, right -> width);
 
 	/* If the previous glyph is also the gap then just expand it */
 	if (right -> glyph == self -> scroller.gap)
@@ -960,7 +965,7 @@ static void remove_left_holder(ScrollerWidget self)
     /* Clean up the linked list */
     self -> scroller.left_holder = holder -> next;
     self -> scroller.left_holder -> previous = NULL;
-    self -> scroller.left_offset -= glyph_holder_width(holder);
+    self -> scroller.left_offset -= holder -> width;
     glyph_holder_free(holder);
 
     /* Excise the glyph if it's no longer visible and viable */
@@ -979,7 +984,7 @@ static void remove_right_holder(ScrollerWidget self)
     /* Clean up the linked list */
     self -> scroller.right_holder = holder -> previous;
     self -> scroller.right_holder -> next = NULL;
-    self -> scroller.right_offset -= glyph_holder_width(holder);
+    self -> scroller.right_offset -= holder -> width;
     glyph_holder_free(holder);
 
     /* Excise the glyph if it's no longer visible and viable */
@@ -993,7 +998,7 @@ static void remove_right_holder(ScrollerWidget self)
 static void adjust_left_left(ScrollerWidget self)
 {
     /* Keep going until we can do no more damage */
-    while (self -> scroller.left_offset >= glyph_holder_width(self -> scroller.left_holder))
+    while (self -> scroller.left_offset >= self -> scroller.left_holder -> width)
     {
 	remove_left_holder(self);
     }
@@ -1023,7 +1028,7 @@ static void adjust_right_left(ScrollerWidget self)
 static void adjust_right_right(ScrollerWidget self)
 {
     /* Keep going until we can do no more damage */
-    while (self -> scroller.right_offset >= glyph_holder_width(self -> scroller.right_holder))
+    while (self -> scroller.right_offset >= self -> scroller.right_holder -> width)
     {
 	remove_right_holder(self);
     }
@@ -1051,7 +1056,7 @@ static void adjust_left(ScrollerWidget self)
 	self -> scroller.right_offset = 0;
 	self -> scroller.left_holder -> width = self -> core.width;
 	self -> scroller.is_stopped = True;
-	DisableClock(self);
+	disable_clock(self);
     }
 }
 
@@ -1076,7 +1081,7 @@ static void adjust_right(ScrollerWidget self)
 	self -> scroller.right_offset = 0;
 	self -> scroller.right_holder -> width = self -> core.width;
 	self -> scroller.is_stopped = True;
-	DisableClock(self);
+	disable_clock(self);
     }
 }
 
@@ -1131,7 +1136,7 @@ static void scroll(ScrollerWidget self, int offset)
 	    delta, 0);
 
 	/* Repaint the missing bits */
-	Paint(
+	paint(
 	    self,
 	    delta < 0 ? self -> core.width - self -> scroller.target_delta : 0, 0,
 	    self -> scroller.target_delta, self -> scroller.height);
@@ -1139,7 +1144,7 @@ static void scroll(ScrollerWidget self, int offset)
 	self -> scroller.local_delta = 0;
 
 	/* Copy the pixmap to the screen */
-	Redisplay(self, NULL);
+	redisplay(self, NULL);
 	return;
     }
 
@@ -1165,7 +1170,7 @@ static void scroll(ScrollerWidget self, int offset)
 
 
 /* Repaints the view of each view_holder_t */
-static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height)
+static void paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height)
 {
     Widget widget = (Widget)self;
     Display *display = XtDisplay(widget);
@@ -1194,7 +1199,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 	    glyph_holder_paint(holder, display, XtWindow(self), offset, x + delta, y, width, height);
 	}
 
-	offset += glyph_holder_width(holder);
+	offset += holder -> width;
 	holder = holder -> next;
     }
 
@@ -1204,7 +1209,7 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 
 
 /* Repaints the scroller */
-static void Redisplay(ScrollerWidget self, Region region)
+static void redisplay(ScrollerWidget self, Region region)
 {
     /* If we're using a pixmap then just copy it to the window */
     if (self -> scroller.use_pixmap)
@@ -1222,12 +1227,12 @@ static void Redisplay(ScrollerWidget self, Region region)
 	XRectangle rectangle;
 
 	XClipBox(region, &rectangle);
-	Paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
+	paint(self, rectangle.x, 0, rectangle.width, self -> scroller.height);
     }
 }
 
 /* Redisplay the portion of the scroller in the Region */
-static void do_expose(Widget widget, XEvent *event, Region region)
+static void expose(Widget widget, XEvent *event, Region region)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
 
@@ -1235,11 +1240,11 @@ static void do_expose(Widget widget, XEvent *event, Region region)
     self -> scroller.is_visible = True;
 
     /* Should we postpone the expose event until we're ready? */
-    Redisplay(self, region);
+    redisplay(self, region);
 }
 
 /* Repaint the bits of the scroller that didn't get copied */
-static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
+static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
     Display *display = XtDisplay(widget);
@@ -1276,7 +1281,7 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	g_event = (XGraphicsExposeEvent *)event;
 
 	/* Update this portion of the scroller */
-	Paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
+	paint(self, g_event -> x, 0, g_event -> width, self -> scroller.height);
 
 	/* Bail if this is the last GraphicsExpose event */
 	if (g_event -> count < 1)
@@ -1292,14 +1297,14 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 
 
 /* FIX THIS: should actually do something? */
-static void Destroy(Widget widget)
+static void destroy(Widget widget)
 {
-    DPRINTF((stderr, "Destroy %p\n", widget));
+    DPRINTF((stderr, "destroy %p\n", widget));
 }
 
 
 /* Find the empty view and update its width */
-static void Resize(Widget widget)
+static void resize(Widget widget)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
 
@@ -1327,8 +1332,8 @@ static void Resize(Widget widget)
 	self -> scroller.left_holder -> width = self -> core.width;
 	if (self -> scroller.use_pixmap)
 	{
-	    Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	    Redisplay(self, NULL);
+	    paint(self, 0, 0, self -> core.width, self -> scroller.height);
+	    redisplay(self, NULL);
 	}
 
 	return;
@@ -1338,7 +1343,7 @@ static void Resize(Widget widget)
     if (self -> scroller.step < 0)
     {
 	glyph_holder_t holder = self -> scroller.right_holder;
-	int offset = glyph_holder_width(holder) - self -> scroller.right_offset;
+	int offset = holder -> width - self -> scroller.right_offset;
 
 	/* Look for a gap (but not the leading glyph) that we can adjust */
 	holder = holder -> previous;
@@ -1350,7 +1355,7 @@ static void Resize(Widget widget)
 		/* Determine how wide the gap *should* be */
 		if (holder -> previous != NULL)
 		{
-		    holder -> width = gap_width(self, glyph_holder_width(holder -> previous));
+		    holder -> width = gap_width(self, holder -> previous -> width);
 		}
 		else
 		{
@@ -1384,7 +1389,7 @@ static void Resize(Widget widget)
     else
     {
 	glyph_holder_t holder = self -> scroller.left_holder;
-	int offset = glyph_holder_width(holder) - self -> scroller.left_offset;
+	int offset = holder -> width - self -> scroller.left_offset;
 
 	/* Look for a gap (but not the leading glyph) that we can adjust */
 	holder = holder -> next;
@@ -1393,7 +1398,7 @@ static void Resize(Widget widget)
 	    /* Adjust the width of the gap */
 	    if (holder -> glyph == self -> scroller.gap)
 	    {
-		holder -> width = gap_width(self, glyph_holder_width(holder -> previous));
+		holder -> width = gap_width(self, holder -> previous -> width);
 	    }
 
 	    offset += holder -> width;
@@ -1409,30 +1414,30 @@ static void Resize(Widget widget)
     if (self -> scroller.use_pixmap)
     {
 	/* Update the display on that pixmap */
-	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	Redisplay(self, NULL);
+	paint(self, 0, 0, self -> core.width, self -> scroller.height);
+	redisplay(self, NULL);
     }
 }
 
 /* What should this do? */
-static Boolean SetValues(
+static Boolean set_values(
     Widget current,
     Widget request,
     Widget new,
     ArgList args,
     Cardinal *num_args)
 {
-    DPRINTF((stderr, "SetValues\n"));
+    DPRINTF((stderr, "set_values\n"));
     return False;
 }
 
 /* What should this do? */
-static XtGeometryResult QueryGeometry(
+static XtGeometryResult query_geometry(
     Widget widget,
     XtWidgetGeometry *intended,
     XtWidgetGeometry *preferred)
 {
-    DPRINTF((stderr, "QueryGeometry\n"));
+    DPRINTF((stderr, "query_geometry\n"));
     return XtGeometryYes;
 }
 
@@ -1454,7 +1459,7 @@ static glyph_holder_t holder_at_point(ScrollerWidget self, int x, int y)
     offset = - self -> scroller.left_offset;
     for (holder = self -> scroller.left_holder; holder != NULL; holder = holder -> next)
     {
-	offset += glyph_holder_width(holder);
+	offset += holder -> width;
 	if (x < offset)
 	{
 	    return holder;
@@ -1531,7 +1536,7 @@ static int pre_action(ScrollerWidget self, XEvent *event)
 	self -> scroller.is_dragging = False;
 
 	/* Restart the timer */
-	EnableClock(self);
+	enable_clock(self);
 
 	/* And don't preform any action */
 	return -1;
@@ -1634,7 +1639,7 @@ static void delete_left_to_right(ScrollerWidget self, glyph_t glyph)
 	/* If we've found a holder for the deleted glyph then extract it now */
 	if (holder -> glyph == glyph)
 	{
-	    missing_width += glyph_holder_width(holder);
+	    missing_width += holder -> width;
 
 	    /* Previous can never be NULL */
 	    assert(previous != NULL);
@@ -1727,7 +1732,7 @@ static void delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 	/* If we've found a holder for the deleted glyph, then extract it now */
 	if (holder -> glyph == glyph)
 	{
-	    missing_width += glyph_holder_width(holder);
+	    missing_width += holder -> width;
 
 	    /* We'll always have a next glyph */
 	    assert(next != NULL);
@@ -1814,8 +1819,8 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
 
     if (self -> scroller.use_pixmap)
     {
-	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
-	Redisplay(self, NULL);
+	paint(self, 0, 0, self -> core.width, self -> scroller.height);
+	redisplay(self, NULL);
     }
     else
     {
@@ -1824,7 +1829,7 @@ static void delete_glyph(ScrollerWidget self, glyph_t glyph)
 	    XtDisplay((Widget)self), XtWindow((Widget)self),
 	    self -> scroller.backgroundGC,
 	    0, 0, self -> core.width, self -> scroller.height);
-	Paint(self, 0, 0, self -> core.width, self -> scroller.height);
+	paint(self, 0, 0, self -> core.width, self -> scroller.height);
     }
 }
 
@@ -1893,11 +1898,11 @@ static void faster(Widget widget, XEvent *event, String *params, Cardinal *npara
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
     if (++self -> scroller.step != 0)
     {
-	EnableClock(self);
+	enable_clock(self);
     }
     else
     {
-	DisableClock(self);
+	disable_clock(self);
     }
 }
 
@@ -1917,11 +1922,11 @@ static void slower(Widget widget, XEvent *event, String *params, Cardinal *npara
     /* Make sure the clock runs if we're scrolling and not if we're stationary */
     if (--self -> scroller.step != 0)
     {
-	EnableClock(self);
+	enable_clock(self);
     }
     else
     {
-	DisableClock(self);
+	disable_clock(self);
     }
 }
 
@@ -1947,7 +1952,7 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
     /* Set the speed.  Disable the clock for a speed of 0 */
     if ((self -> scroller.step = atoi(params[0])) == 0)
     {
-	DisableClock(self);
+	disable_clock(self);
 	return;
     }
 
@@ -1958,7 +1963,7 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
     }
 
     /* Otherwise make sure the clock is running */
-    EnableClock(self);
+    enable_clock(self);
 }
 
 
@@ -2010,7 +2015,7 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	self -> scroller.is_dragging = True;
 
 	/* Disable the timer until the drag is done */
-	DisableClock(self);
+	disable_clock(self);
     }
 
     /* Drag the scroller to the right place */
@@ -2073,7 +2078,7 @@ void ScAddMessage(ScrollerWidget self, message_t message)
     if (self -> scroller.is_stopped)
     {
 	self -> scroller.is_stopped = False;
-	EnableClock(self);
+	enable_clock(self);
     }
 }
 
@@ -2107,13 +2112,16 @@ void ScDeleteMessage(ScrollerWidget self, message_t message)
     }
 
     /* Locate the message's glyph and delete it */
-    for (glyph = self -> scroller.gap -> next; glyph != self -> scroller.gap; glyph = glyph -> next)
+    glyph = self -> scroller.gap -> next;
+    while (glyph != self -> scroller.gap)
     {
 	if (glyph -> get_message(glyph) == message)
 	{
 	    delete_glyph(self, glyph);
 	    return;
 	}
+
+	glyph = glyph -> next;
     }
 }
 
