@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.3 1999/10/04 02:49:57 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.4 1999/10/04 03:17:34 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -62,6 +62,12 @@ typedef int (*lexer_state_t)(usenet_parser_t self, int ch);
 /* The structure of a usenet_parser */
 struct usenet_parser
 {
+    /* The callback for when we've parsed a line */
+    usenet_parser_callback_t callback;
+
+    /* The user data for the callback */
+    void *rock;
+
     /* The tag for error messages */
     char *tag;
 
@@ -128,17 +134,22 @@ static void parse_error(usenet_parser_t self, char *message)
 /* This is called when a complete group entry has been read */
 static int accept_group(usenet_parser_t self, char *group)
 {
+    int result;
     struct usenet_expr *pointer;
 
-    printf("---\n%s\n", group);
+    /* Call the callback */
+    result = (self -> callback)(
+	self -> rock, group, self -> expressions,
+	self -> expr_pointer - self -> expressions);
+
+    /* Clean up */
     for (pointer = self -> expressions; pointer < self -> expr_pointer; pointer++)
     {
-	printf("  %d %d \"%s\"\n", pointer -> field, pointer -> operator, pointer -> pattern);
 	free(pointer -> pattern);
     }
 
     self -> expr_pointer = self -> expressions;
-    return 0;
+    return result;
 }
 
 
@@ -774,7 +785,7 @@ static int lex_pattern_ws(usenet_parser_t self, int ch)
 
 
 /* Allocates and initializes a new usenet file parser */
-usenet_parser_t usenet_parser_alloc(char *tag)
+usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag)
 {
     usenet_parser_t self;
 
@@ -810,6 +821,8 @@ usenet_parser_t usenet_parser_alloc(char *tag)
     }
 
     /* Initialize everything else to a sane value */
+    self -> callback = callback;
+    self -> rock = rock;
     self -> token_pointer = self -> token;
     self -> token_mark = self -> token;
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
@@ -856,49 +869,4 @@ int usenet_parser_parse(usenet_parser_t self, char *buffer, ssize_t length)
     }
 
     return 0;
-}
-
-
-#include <unistd.h>
-#define BUFFER_SIZE 2048
-
-/* Test harness */
-int main(int argc, char *argv[])
-{
-    usenet_parser_t parser;
-
-    /* Allocate a parser */
-    if ((parser = usenet_parser_alloc("usenet")) == NULL)
-    {
-	fprintf(stderr, "*** Out of memory\n");
-	exit(1);
-    }
-
-    /* Parse from stdin */
-    printf("--- begin parse ---\n");
-
-    while (1)
-    {
-	char buffer[BUFFER_SIZE];
-	ssize_t length;
-
-	if ((length = read(STDIN_FILENO, buffer, BUFFER_SIZE)) < 0)
-	{
-	    perror("unable to read from stdin");
-	    exit(1);
-	}
-
-	if (usenet_parser_parse(parser, buffer, length) < 0)
-	{
-	    exit(1);
-	}
-
-	/* Watch for end of input */
-	if (length == 0)
-	{
-	    printf("--- end parse ---\n");
-	    usenet_parser_free(parser);
-	    exit(0);
-	}
-    }
 }

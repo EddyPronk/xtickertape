@@ -35,7 +35,7 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.2 1999/10/04 02:49:58 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.3 1999/10/04 03:17:34 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
@@ -87,8 +87,13 @@ struct usenet_expr
 };
 
 
+/* The usenet parser callback type */
+typedef int (*usenet_parser_callback_t)(
+    void *rock, char *pattern,
+    struct usenet_expr *expressions, size_t expr_count);
+
 /* Allocates and initializes a new usenet subscription parser */
-usenet_parser_t usenet_parser_alloc(char *tag);
+usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag);
 
 /* Frees the resources consumed by the receiver */
 void usenet_parser_free(usenet_parser_t self);
