@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.21 1999/08/29 14:20:22 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.22 1999/08/30 03:48:17 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -66,7 +66,8 @@ typedef struct
 {
     /* Resources */
     XtCallbackList callbacks;
-    XtCallbackList action_callbacks;
+    XtCallbackList attachment_callbacks;
+    XtCallbackList kill_callbacks;
     XFontStruct *font;
     Pixel groupPixel;
     Pixel userPixel;
@@ -202,5 +203,8 @@ void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
 
 /* Answers the width of the gap glyph */
 int ScGapWidth(ScrollerWidget self);
+
+/* Delete a Message from the receiver */
+void ScDeleteMessage(ScrollerWidget self, Message message);
 
 #endif /* SCROLLERP_H */
