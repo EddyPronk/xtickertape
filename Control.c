@@ -1,4 +1,4 @@
-/* $Id: Control.c,v 1.18 1998/10/21 04:13:26 arnold Exp $ */
+/* $Id: Control.c,v 1.19 1998/10/21 05:23:44 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -681,7 +681,7 @@ void ControlPanel_show(ControlPanel self, Message message)
 	    SetSelection(self, tuple);
 	}
 
-	self -> reply_thread_id = Message_getThreadID(message);
+	self -> reply_thread_id = Message_getThreadId(message);
     }
     else
     {
