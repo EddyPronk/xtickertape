@@ -171,9 +171,15 @@
 ! History action translations
 !
 *.history.translations: #override \n\
-	<Btn1Down>: select()\n\
+	<Btn1Down>: toggle-selection()\n\
 	<Btn1Motion>: drag()\n\
 	<Btn1Up>: drag-done()\n\
+	<Btn2Down>: select()\n\
+	<Btn2Motion>: drag()\n\
 	<Btn2Up>: show-attachment()\n\
+	<Key>x: show-attachment()\n\
 	Ctrl<Key>p: select-previous()\n\
-	Ctrl<Key>n: select-next()\n
+	Ctrl<Key>n: select-next()\n\
+	<Key>osfUp: select-previous()\n\
+	<Key>osfDown: select-next()\n
+
