@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.83 2003/02/10 21:42:53 croy Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.84 2003/04/20 22:57:08 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -254,6 +254,9 @@ struct control_panel
 
     /* The message whose URL is overriding the current status */
     message_t status_message;
+
+    /* Non-zero if the status message is overriding the current status */
+    int is_overridden;
 
     /* The uuid counter */
     int uuid_count;
@@ -1816,7 +1819,7 @@ void control_panel_set_status(
     }
 
     /* If there's no overriding status message then show this one */
-    if (self -> status_message == NULL)
+    if (! self -> is_overridden)
     {
 	show_status(self, message);
     }
@@ -1846,6 +1849,7 @@ void control_panel_set_status_message(
 	had_attachment = message_has_attachment(self -> status_message);
 	message_free(self -> status_message);
 	self -> status_message = NULL;
+	self -> is_overridden = False;
     }
 
     /* Record which message we're showing */
@@ -1860,8 +1864,10 @@ void control_panel_set_status_message(
     if (mime_type && attachment)
     {
 	/* This is an ugly hack... */
-	if (strcmp(mime_type, mime_types[0]) == 0 || strncmp(mime_type, mime_types[1], 5) == 0)
+	if (strcmp(mime_type, mime_types[0]) == 0 ||
+	    strncmp(mime_type, mime_types[1], 5) == 0)
 	{
+	    self -> is_overridden = True;
 	    show_status(self, attachment);
 	    free(mime_type);
 	    free(attachment);
