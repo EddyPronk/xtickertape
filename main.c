@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.63 1999/11/19 02:16:40 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.64 1999/11/23 03:21:32 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -289,39 +289,38 @@ static Window create_icon(Widget shell)
 	0, 0, mask_width, mask_height, 0,
 	CopyFromParent, CopyFromParent);
 
-    /* Create a pixmap from the red bitmap data */
+    /* Allocate the color red */
     color.red = 0xFFFF;
     color.green = 0x0000;
     color.blue = 0x0000;
     color.flags = DoRed | DoGreen | DoBlue;
     XAllocColor(display, colormap, &color);
+
+    /* Create a pixmap from the red bitmap data */
     pixmap = XCreatePixmapFromBitmapData(
 	display, window, red_bits, red_width, red_height,
-	color.pixel, black, depth);
+	color.pixel ^ BlackPixelOfScreen(screen), 0, depth);
 
     /* Create a graphics context */
-    values.function = GXor;
+    values.function = GXxor;
     gc = XCreateGC(display, pixmap, GCFunction, &values);
 
     /* Create a pixmap for the white 'e' and paint it on top */
     mask = XCreatePixmapFromBitmapData(
 	display, pixmap, white_bits, white_width, white_height,
-	WhitePixelOfScreen(screen), black, depth);
+	WhitePixelOfScreen(screen) , black, depth);
     XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
     XFreePixmap(display, mask);
     XFreeGC(display, gc);
 
     /* Create a shape mask and apply it to the window */
 #ifdef HAVE_LIBXEXT
-    mask = XCreatePixmapFromBitmapData(
-	display, pixmap, mask_bits, mask_width, mask_height,
-	0, 1, 1);
-    XShapeCombineMask(display, window, 0, 0, 0, mask, X_ShapeCombine);
+    mask = XCreateBitmapFromData(display, pixmap, mask_bits, mask_width, mask_height);
+    XShapeCombineMask(display, window, ShapeBounding, 0, 0, mask, ShapeSet);
 #endif /* HAVE_LIBEXT */
 
     /* Set the window's background to be the pixmap */
     XSetWindowBackgroundPixmap(display, window, pixmap);
-
     return window;
 }
 

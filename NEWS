@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-2.0
 
+* Fixed a bug in the way the icon was created.  Now the big `e' will
+  be read even on 8-bit displays.
+
 * Message replacement now works!
 
 * Updated to use the elvin-4 client library instead of the elvin-3 client library
