@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.27 1998/08/26 05:08:33 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.28 1998/08/26 06:02:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -819,7 +819,9 @@ static MessageView messageAtEvent(TickertapeWidget self, XEvent *event)
 void Menu(Widget widget, XEvent *event)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
-    XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer)NULL);
+    MessageView view = messageAtEvent(self, event);
+    Message message = view ? MessageView_getMessage(view) : NULL;
+    XtCallCallbackList((Widget)self, self -> tickertape.callbacks, (XtPointer) message);
 }
 
 static void DecodeMime(Widget widget, XEvent *event)
