@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.27 2002/02/25 16:22:51 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.28 2002/04/03 23:27:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -186,6 +186,17 @@ static void notify_cb(
 	fprintf(stderr, "elvin_notification_get_string(): failed\n");
 	elvin_error_fprintf(stderr, error);
 	exit(1);
+    }
+
+    /* Split the user name from the address */
+    if ((mbox_parser_parse(self -> parser, from)) == 0)
+    {
+	from = mbox_parser_get_name(self -> parser);
+	if (*from == 0)
+	{
+	    /* Otherwise resort to the e-mail address */
+	    from = mbox_parser_get_email(self -> parser);
+	}
     }
 
     /* Default to an anonymous sender */
