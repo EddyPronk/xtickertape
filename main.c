@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.88 2000/10/09 04:25:13 bill Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.89 2000/10/10 03:58:27 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -178,7 +178,6 @@ static void parse_args(
     char **usenet_file_return,
     elvin_error_t error)
 {
-    int have_url = 0;
     int choice;
 
     /* Initialize arguments to sane values */
@@ -206,7 +205,6 @@ static void parse_args(
 		    exit(1);
 		}
 
-		have_url = 1;
 		break;
 	    }
 
@@ -291,16 +289,6 @@ static void parse_args(
     if (*domain_return == NULL)
     {
 	*domain_return = get_domain();
-    }
-
-    /* Add the Server discovery url if there were no url arguments */       
-    if (!have_url)
-    {
-	if (elvin_handle_append_url(handle, "*", error) == 0)
-	{
-            fprintf(stderr, "Add of discovery URL '*' failed\n");
-	    exit(1);
-	}
     }
 
     return;
