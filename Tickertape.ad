@@ -16,7 +16,7 @@
 ! Color resources
 !
 *foreground: Black
-*background: Gray75
+*background: #c1c3c1
 *XmText.background: White
 *XmTextField.background: White
 *XmList.background: White
