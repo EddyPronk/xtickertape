@@ -10,8 +10,8 @@ OBJS = Ticker.o Control.o Tickertape.o ElvinConnection.o MessageView.o Message.o
 	Subscription.o UsenetSubscription.o OrbitSubscription.o Hash.o List.o \
 	StringBuffer.o FileStreamTokenizer.o main.o
 
-CDEBUGFLAGS = -g 
-#CDEBUGFLAGS = -g
+CDEBUGFLAGS = -g -Wall
+#CDEBUGFLAGS = -O2 -Wall
 
 INCLUDES = -I/usr/local/include -I/usr/local/include/elvin3
 
