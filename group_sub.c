@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.41 2002/04/23 16:56:19 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.42 2002/04/23 23:11:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -149,7 +149,7 @@ static void notify_cb(
     char *user;
     char *text;
     int timeout;
-    uchar *attachment = NULL;
+    char *attachment = NULL;
     uint32_t length = 0;
     char *mime_type;
     char *buffer = NULL;

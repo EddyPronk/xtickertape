@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.64 2002/04/23 16:56:18 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.65 2002/04/23 23:10:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2131,7 +2131,7 @@ static void redraw_all(Widget widget)
 void HistorySetThreaded(Widget widget, Boolean is_threaded)
 {
     HistoryWidget self = (HistoryWidget)widget;
-    unsigned int i, index;
+    int i, index;
     message_t message;
 
     /* Don't do anything if there's no change */
