@@ -71,10 +71,17 @@ window.
 A combination of the above two.  If mozilla cannot open the window
 because it isn't running or there's not even an X session, then w3m is
 invoked to display the URL.
+.TP
+.SB netscape -raise -remote "openURL(%s,new-window)":lynx
+This is effectively the same as the previous example except that
+netscape replaces mozilla as the graphical browser, and lynx replaces
+w3m as the text-based one.
 .SH ENVIRONMENT
 .TP 10
 .SB BROWSER
-See DESCRIPTION above for an explanation of this variable.
+See DESCRIPTION above for an explanation of this variable.  If BROWSER
+is not set no browser is specified on the command-line then the
+expression given in the last example above is used.
 .SH SEE ALSO
 .BR xtickertape (1),
 .na
