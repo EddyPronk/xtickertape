@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.12 2000/06/14 00:18:24 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.13 2000/06/14 01:55:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -170,6 +170,7 @@ static int accept_producer_key(groups_parser_t self, char *string)
 	}
     }
 
+#if 1
     /* Copy the key string */
     if ((copy = (uchar *)strdup(string)) == NULL)
     {
@@ -181,6 +182,13 @@ static int accept_producer_key(groups_parser_t self, char *string)
     {
 	abort();
     }
+#else
+    /* Create our producer key */
+    if ((key = elvin_keyraw_alloc((uchar *)string, strlen(string), NULL)) == NULL)
+    {
+	abort();
+    }
+#endif
 
     /* Add it to the keys */
     if (elvin_keys_add(self -> producer_keys, key, NULL) == 0)
