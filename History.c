@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.5 2001/07/06 04:55:19 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.6 2001/07/06 06:48:47 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -232,16 +232,20 @@ static void set_origin(HistoryWidget self, Position x, Position y)
     GC gc = self -> history.gc;
     XGCValues values;
 
-    /* Remove our clip mask */
-    values.clip_mask = None;
-    XChangeGC(display, gc, GCClipMask, &values);
+    /* Skip this part if we're not visible */
+    if (gc != NULL)
+    {
+	/* Remove our clip mask */
+	values.clip_mask = None;
+	XChangeGC(display, gc, GCClipMask, &values);
 
-    /* Copy to the new location */
-    XCopyArea(
-	display, XtWindow((Widget)self), XtWindow((Widget)self), gc,
-	x - self -> history.x, y - self -> history.y,
-	self -> core.width, self -> core.height,
-	0, 0);
+	/* Copy to the new location */
+	XCopyArea(
+	    display, XtWindow((Widget)self), XtWindow((Widget)self), gc,
+	    x - self -> history.x, y - self -> history.y,
+	    self -> core.width, self -> core.height,
+	    0, 0);
+    }
 
     self -> history.x = x;
     self -> history.y = y;
@@ -428,17 +432,48 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 {
     HistoryWidget self = (HistoryWidget)widget;
     Widget scrollbar;
+    int margin = 10;
 
     /* Set the initial width/height if none are supplied */
     self -> core.width = 400;
     self -> core.height = 80;
 
+    /* Set our initial dimensions to be the margin width */
+    self -> history.width = 2 * margin;
+    self -> history.height = 2 * margin;
+
+    /* Create the horizontal scrollbar */
+    scrollbar = XtVaCreateManagedWidget(
+	"HorizScrollBar", xmScrollBarWidgetClass,
+	XtParent(self),
+	XmNorientation, XmHORIZONTAL,
+	XmNminimum, 0,
+	XmNmaximum, self -> history.width,
+	XmNsliderSize, self -> history.width,
+	NULL);
+
+    /* Add a bunch of callbacks */
+    XtAddCallback(scrollbar, XmNdecrementCallback, horiz_dec_cb, self);
+    XtAddCallback(scrollbar, XmNdragCallback, horiz_drag_cb, self);
+    XtAddCallback(scrollbar, XmNincrementCallback, horiz_inc_cb, self);
+    XtAddCallback(scrollbar, XmNpageDecrementCallback, horiz_page_dec_cb, self);
+    XtAddCallback(scrollbar, XmNpageIncrementCallback, horiz_page_inc_cb, self);
+    XtAddCallback(scrollbar, XmNtoTopCallback, horiz_to_top_cb, self);
+    XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_to_bottom_cb, self);
+    XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_val_changed_cb, self);
+    self -> history.hscrollbar = scrollbar;
+    
     /* Create the vertical scrollbar */
     scrollbar = XtVaCreateManagedWidget(
 	"VertScrollBar", xmScrollBarWidgetClass,
 	XtParent(self),
 	XmNorientation, XmVERTICAL,
+	XmNminimum, 0,
+	XmNmaximum, self -> history.height,
+	XmNsliderSize, self -> history.height,
 	NULL);
+
+    /* Add a bunch of callbacks */
     XtAddCallback(scrollbar, XmNdecrementCallback, vert_dec_cb, self);
     XtAddCallback(scrollbar, XmNdragCallback, vert_drag_cb, self);
     XtAddCallback(scrollbar, XmNincrementCallback, vert_inc_cb, self);
@@ -449,23 +484,65 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_val_changed_cb, self);
     self -> history.vscrollbar = scrollbar;
 
-    /* Create the horizontal scrollbar */
-    scrollbar = XtVaCreateManagedWidget(
-	"HorizScrollBar", xmScrollBarWidgetClass,
-	XtParent(self),
-	XmNorientation, XmHORIZONTAL,
-	NULL);
-    XtAddCallback(scrollbar, XmNdecrementCallback, horiz_dec_cb, self);
-    XtAddCallback(scrollbar, XmNdragCallback, horiz_drag_cb, self);
-    XtAddCallback(scrollbar, XmNincrementCallback, horiz_inc_cb, self);
-    XtAddCallback(scrollbar, XmNpageDecrementCallback, horiz_page_dec_cb, self);
-    XtAddCallback(scrollbar, XmNpageIncrementCallback, horiz_page_inc_cb, self);
-    XtAddCallback(scrollbar, XmNtoTopCallback, horiz_to_top_cb, self);
-    XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_to_bottom_cb, self);
-    XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_val_changed_cb, self);
-    self -> history.hscrollbar = scrollbar;
-
     printf("History: init()\n");
+}
+
+/* Updates the scrollbars after either the widget or the data it is
+ * displaying is resized */
+static void update_scrollbars(Widget widget)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    Dimension width, height;
+    Position x, y;
+
+    /* Figure out how big the widget is now */
+    XtVaGetValues(widget, XmNwidth, &width, XmNheight, &height, NULL);
+
+    /* The slider can't be wider than the total */
+    if (self -> history.width < width)
+    {
+	width = self -> history.width;
+    }
+
+    /* Keep the right edge sane */
+    x = self -> history.x;
+    if (self -> history.width - width < x)
+    {
+	x = self -> history.width - width;
+    }
+
+
+    /* The slider can't be taller than the total */
+    if (self -> history.height < height)
+    {
+	height = self -> history.height;
+    }
+
+    /* Keep the bottom edge sane */
+    y = self -> history.y;
+    if (self -> history.height - height < y)
+    {
+	y = self -> history.height - height;
+    }
+
+    /* Move the origin */
+    set_origin(self, x, y);
+
+    /* Update the horizontal scrollbar */
+    XtVaSetValues(
+	self -> history.hscrollbar,
+	XmNvalue, x,
+	XmNsliderSize, width,
+	XmNmaximum, self -> history.width,
+	NULL);
+
+    /* Update the vertical scrollbar */
+    XtVaSetValues(
+	self -> history.vscrollbar,
+	XmNvalue, y,
+	XmNsliderSize, height,
+	XmNmaximum, self -> history.height,
+	NULL);
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -509,20 +586,9 @@ static void realize(
     /* Record our sizes */
     self -> history.width = sizes.width + 2 * 10;
     self -> history.height = sizes.ascent + sizes.descent + 2 * 10;
-    printf("height=%u\n", self -> history.height);
 
-    XtVaSetValues(
-	self -> history.hscrollbar,
-	XmNminimum, 0,
-	XmNmaximum, sizes.width + 20,
-	NULL);
-
-    /* Update the vertical scrollbar */
-    XtVaSetValues(
-	self -> history.vscrollbar,
-	XmNminimum, 0,
-	XmNmaximum, sizes.ascent + sizes.descent,
-	NULL);
+    /* Update the scrollbars */
+    update_scrollbars(widget);
 }
 
 /* Repaint the widget */
@@ -637,25 +703,8 @@ static void destroy(Widget self)
 /* Resize the widget */
 static void resize(Widget widget)
 {
-    HistoryWidget self = (HistoryWidget)widget;
-    Dimension width, height;
-
-    /* Figure out how big the widget is now */
-    XtVaGetValues(widget, XmNwidth, &width, XmNheight, &height, NULL);
-
-    /* Update the horizontal scrollbar */
-    XtVaSetValues(
-	self -> history.hscrollbar,
-	XmNsliderSize, MIN(width, self -> history.width) + 1,
-	XmNmaximum, self -> history.width + 1,
-	NULL);
-
-    /* Update the vertical scrollbar */
-    XtVaSetValues(
-	self -> history.vscrollbar,
-	XmNsliderSize, MIN(height, self -> history.height) + 1,
-	XmNmaximum, self -> history.height + 1,
-	NULL);
+    /* Update the scrollbar sizes */
+    update_scrollbars(widget);
 }
 
 
