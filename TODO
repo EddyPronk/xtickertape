@@ -27,6 +27,7 @@ Control Panel:
 - Strip CRs from the MIME header of an attachment before handing it
   over to metamail, which isn't able to cope with such silliness.
 
+
 Scroller:
 
 - Deletion has less than satisfactory results on the scroller's state.
@@ -68,7 +69,7 @@ History Widget
   fonts.
 
 
-Scheme Interpreter [POSTPONED until v3]:
+Scheme Interpreter [ABANDONED]:
 
 - This needs to be connected to everything so that we can do
   amusing things.
