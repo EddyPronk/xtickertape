@@ -56,9 +56,9 @@ fi
 
 # Check for the various libraries
 AC_CHECK_LIB(vin4c, elvin_async_init,
-    LIBS="-lvin4c -lvin4 $LIBS",
+    LIBS="-lvin4c -lvin4 $LIBS -lm",
     AC_MSG_ERROR("unable to locate the elvin4 libraries"); exit 1,
-    -vin4c -lvin4)
+    -lvin4c -lvin4 -lm)
 
 AC_CHECK_LIB(vin4Xt, elvin_xt_async_init,
     LIBS="-lvin4Xt $LIBS",
