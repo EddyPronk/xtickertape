@@ -6,10 +6,8 @@
 show-url \- show a URL in netscape
 .SH SYNOPSIS
 .nf
-show-url [-b browser] [--browser=browser]
-         [-d] [--debug] [--debug=level] filename
-         [-v] [--version]
-         [-h] [--help]
+show-url [OPTION]... filename
+show-url [OPTION]... -u url
 .fi
 .SH OPTIONS
 \*(Su may be invoked with the following command-line option:
@@ -27,6 +25,14 @@ DESCRIPTION below for details.
 .BI --debug= level
 Set the debug level.  Without a level, this will increase the
 debugging level by one.
+.TP
+.B -u \fIurl\fP
+.TP
+.BI --url= url
+Display \fIurl\fP rather than reading one from a file.  If \fIurl\fP
+names a readable file then a corresponding file url will be
+constructed.  Otherwise \fIurl\fP will be passed to the browser
+without modification.
 .TP
 .B -v
 .TP

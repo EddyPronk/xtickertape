@@ -3,6 +3,10 @@ Overview of changes in xtickertape-2.0b2
 * Fixed a bug that prevented the connection status from being updated
   properly.
 
+* Added the `-u' option to show-url command, making it possible to
+  specify the URL on the command-line rather than writing it to a file
+  first.
+
 Overview of changes in xtickertape-2.0b1
 
 * Messages containing non-ASCII characters are now sent and displayed
