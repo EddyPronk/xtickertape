@@ -1,66 +1,45 @@
-/* $Id: ElvinConnection.c,v 1.1 1997/02/07 08:48:42 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.2 1997/02/13 05:51:11 phelps Exp $ */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <string.h>
-#include <signal.h>
-#include <errno.h>
 
 #include "ElvinConnection.h"
 #include "List.h"
 
 struct ElvinConnection_t
 {
-    int fd;
-    FILE *in;
-    FILE *out;
+    static elvin_t connection;
 };
 
 
 
+/* Set up callbacks */
+static void (*quench_function)(elvin_t connection, char *quench) = NULL;
+
+static void error(elvin_t connection, void *arg, elvin_error_code_t code, char *message)
+{
+    fprintf(stderr, "*** Elvin error %d (%s): exiting\n", code, message);
+    exit(0);
+}
+
 
 
 /* Answers a new ElvinConnection */
-ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptions)
+ElvinConnection ElvinConnection_alloc(
+    TickertapeWidge widget,
+    char *hostname,
+    int port,
+    List subscriptions)
 {
     ElvinConnection self;
-    struct hostent *host;
-    struct sockaddr_in address;
 
     /* Allocate memory for the new ElvinConnection */
     self = (ElvinConnection) malloc(sizeof(ElvinConnection_t));
-
-    /* Construct an address for the Elvin server */
-    host = gethostbyname(hostname);
-    memcpy(&address.sin_addr, host -> h_addr_list[0], host -> h_length);
-    address.sin_family = AF_INET;
-    address.sin_port = htons(port);
-
-    /* Make a socket */
-    if ((self -> fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((self -> connection = elvin_connect(hostname, port, quench_function, error, NULL)) == 0)
     {
-	fprintf(stderr, "*** unable to create a socket\n");
-	exit(1);
+	fprintf(stderr, "*** Unable to connect to elvin server at %s:%d\n", hostname, port);
+	exit(0);
     }
 
-    /* Connect to the socket */
-    if (connect(self -> fd, (struct sockaddr *)&address, sizeof(address)))
-    {
-	fprintf(stderr, "*** unable to connect to %s:%d\n", hostname, port);
-	exit(1);
-    }
-
-    /* Create files to read and write with */
-    self -> in = fdopen(fd, "r");
-    self -> out = fdopen(fd, "a");
-
-    List_doWith(subscriptions, ElvinConnection_subscribeInternal, self);
+    /* FIX THIS: should add subscriptions here... */
 
     return self;
 }
@@ -69,9 +48,8 @@ ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptio
 /* Releases the resources used by the ElvinConnection */
 void ElvinConnection_free(ElvinConnection self)
 {
-    /* Flush and close the socket */
-    fflush(out);
-    close(fd);
+    /* Disconnect from elvin server */
+    elvin_disconnect(self -> connection);
 
     /* Free our memory */
     free(self);
