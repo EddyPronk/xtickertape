@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.50 2001/07/20 01:10:23 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.51 2001/08/25 09:45:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -146,6 +146,12 @@ struct control_panel
 
     /* The receiver's history form */
     Widget history_form;
+
+    /* Non-zero if the history widget is threaded */
+    Boolean is_threaded;
+
+    /* Non-zero if the history widget is displaying timestamps */
+    Boolean show_timestamps;
 
     /* The receiver's history list widget */
     Widget history;
@@ -344,12 +350,12 @@ static void create_options_menu(control_panel_t self, Widget parent)
     /* Create the `threaded' menu item */
     item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNvalueChangedCallback, options_threaded, (XtPointer)self);
-    HistorySetThreaded(self -> history, XmToggleButtonGetState(item));
+    self -> is_threaded = XmToggleButtonGetState(item);
 
     /* Create the `show time' menu item */
     item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNvalueChangedCallback, options_show_time, (XtPointer)self);
-    HistorySetShowTimestamps(self -> history, XmToggleButtonGetState(item));
+    self -> show_timestamps = XmToggleButtonGetState(item);
 
     /* Create a `close policy' menu item */
     item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass, menu, NULL);
@@ -738,6 +744,10 @@ static void create_history_box(control_panel_t self, Widget parent)
     self -> history = XtVaCreateManagedWidget(
 	"history", historyWidgetClass, scroll_window,
 	NULL);
+
+    /* Indicate whether or not to show timestamps and do threading */
+    HistorySetThreaded(self -> history, self -> is_threaded);
+    HistorySetShowTimestamps(self -> history, self -> show_timestamps);
 
     /* Tell the scroller what its work window is */
     XtVaSetValues(scroll_window, XmNworkWindow, self -> history, NULL);
