@@ -11,9 +11,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-#define MAX_PACKET_SIZE 16384
-#define BUFFER_SIZE 4096
+#include "parse_mail.h"
 
 #define UNOTIFY_PACKET 1
 #define INT32_TYPECODE 1
@@ -23,16 +21,13 @@
 #define VERSION_MAJOR 2
 #define VERSION_MINOR 0
 
-#define DEFAULT_HOST "127.0.0.1"
-#define DEFAULT_PORT 13131
 #define N_VERSION_MAJOR "elvinmail"
 #define N_VERSION_MINOR "elvinmail.minor"
 #define N_FOLDER "folder"
 #define N_USER "user"
 #define N_INDEX "index"
 
-typedef struct lexer *lexer_t;
-typedef int (*lexer_state_t)(lexer_t self, int ch);
+#define ALIGN_4(x) ((((x) + 3) >> 2) << 2)
 
 /* Forward declarations for the state machine states */
 static int lex_error(lexer_t self, int ch);
@@ -48,42 +43,11 @@ static int lex_skip_body(lexer_t self, int ch);
 static int lex_skip_fold(lexer_t self, int ch);
 static int lex_end(lexer_t self, int ch);
 
-/* A bunch of state information for the lexer */
-struct lexer
-{
-    /* The current lexical state */
-    lexer_state_t state;
-
-    /* The packet buffer */
-    char *buffer;
-
-    /* The end of the packet buffer */
-    char *end;
-
-    /* The next character in the packet buffer */
-    char *point;
-
-    /* The number of attributes in the buffer */
-    int count;
-
-    /* The position of the first name in the buffer */
-    char *first_name_point;
-
-    /* The position of the attribute count in the buffer */
-    char *count_point;
-
-    /* The position of the length of the current string */
-    char *length_point;
-};
-
-char *hostname = DEFAULT_HOST;
-int port = DEFAULT_PORT;
-
 /* The length-prefixed string `From' */
 static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
 
 /* Initializes a lexer's state */
-static void lexer_init(lexer_t self, char *buffer, ssize_t length)
+void lexer_init(lexer_t self, char *buffer, ssize_t length)
 {
     self -> state = lex_start;
     self -> buffer = buffer;
@@ -268,7 +232,7 @@ static int append_string_tuple(lexer_t self, char *name, char *value)
 
 
 /* Writes a UNotify packet header */
-static int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
+int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 {
     /* Write the packet type */
     if (append_int32(self, UNOTIFY_PACKET) < 0)
@@ -321,7 +285,7 @@ static int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 }
 
 /* Writes the UNotify packet footer */
-static int lexer_append_unotify_footer(lexer_t self, int msg_num)
+int lexer_append_unotify_footer(lexer_t self, int msg_num)
 {
     /* Append the message number (if provided) */
     if (! (msg_num < 0))
@@ -375,10 +339,9 @@ static int end_name(lexer_t self)
 
 	/* Skip to the next name */
 	length = read_int32(name);
-	/* FIX THIS: need a better constant here */
-	name += length + (MAX_PACKET_SIZE - length) % 4 + 8;
+	name += ALIGN_4(length) + 8;
 	length = read_int32(name);
-	name += length + (MAX_PACKET_SIZE - length) % 4 + 4;
+	name += ALIGN_4(length) + 4;
     }
 
     return 0;
@@ -829,7 +792,7 @@ static int lex_end(lexer_t self, int ch)
 
 
 /* Run the buffer through the lexer */
-static int lex(lexer_t self, char *buffer, ssize_t length)
+int lex(lexer_t self, char *buffer, ssize_t length)
 {
     char *point;
 
@@ -850,124 +813,3 @@ static int lex(lexer_t self, char *buffer, ssize_t length)
     return 0;
 }
 
-static int dump_buffer(char *buffer, int length)
-{
-    struct sockaddr_in name;
-    int fd;
-
-    /* Initialize the name */
-    memset(&name, 0, sizeof(name));
-    name.sin_family = AF_INET;
-    name.sin_port = htons(port);
-
-    /* See if the hostname is in dot notation */
-    if ((name.sin_addr.s_addr = inet_addr(hostname)) == (unsigned long)-1)
-    {
-	struct hostent *host;
-
-	/* Check with the name service */
-	while ((host = gethostbyname(hostname)) == NULL)
-	{
-	    switch (h_errno)
-	    {
-		case HOST_NOT_FOUND:
-		{
-		    fprintf(stderr, "Error: unknown host: %s\n", hostname);
-		    exit(1);
-		}
-
-		case TRY_AGAIN:
-		{
-		    break;
-		}
-
-		default:
-		{
-		    fprintf(stderr, "Error: internal error: %s\n", hostname);
-		    return -1;
-		}
-	    }
-	}
-
-	name.sin_addr = *(struct in_addr *)host -> h_addr;
-    }
-
-    /* Create a socket */
-    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-	perror("socket(): failed");
-	return -1;
-    }
-
-    /* Send the packet */
-    if (sendto(fd, buffer, length, 0, (struct sockaddr *)&name, sizeof(name)) < 0)
-    {
-	perror("sendto(): failed");
-	return -1;
-    }
-
-    return 0;
-}
-
-int main(int argc, char *argv[])
-{
-    struct lexer lexer;
-    char packet[MAX_PACKET_SIZE];
-    char buffer[BUFFER_SIZE];
-    int fd = STDIN_FILENO;
-
-    if (argc > 1)
-    {
-	if ((fd = open(argv[1], O_RDONLY)) < 0)
-	{
-	    perror("open(): failed");
-	    exit(1);
-	}
-    }
-
-    /* Initialize the lexer */
-    lexer_init(&lexer, packet, MAX_PACKET_SIZE);
-
-    /* Write the header */
-    if (lexer_append_unotify_header(&lexer, "phelps", "Inbox") < 0)
-    {
-	abort();
-    }
-
-    /* Read the attributes and add them to the notification */
-    while (1)
-    {
-	ssize_t length;
-	int result;
-
-	/* Read some more */
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
-	{
-	    perror("read(): failed");
-	    exit(1);
-	}
-
-	/* Run it through the lexer */
-	result = lex(&lexer, buffer, length);
-
-	/* Check for end of input */
-	if (length == 0)
-	{
-	    if (result < 0)
-	    {
-		exit(1);
-	    }
-
-	    /* Write the footer */
-	    if (lexer_append_unotify_footer(&lexer, 42) < 0)
-	    {
-		abort();
-	    }
-
-	    /* What have we got? */
-	    dump_buffer(lexer.buffer, lexer.point - lexer.buffer);
-	    close(fd);
-	    exit(0);
-	}
-    }
-}
