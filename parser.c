@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.16 2000/07/11 03:49:48 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.17 2000/07/11 03:59:38 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -254,26 +254,6 @@ static void unpop(parser_t self, int count, elvin_error_t error)
 static int top(parser_t self)
 {
     return *(self->state_top);
-}
-
-/* Frees everything on the stack */
-static void clean_stack(parser_t self, elvin_error_t error)
-{
-    ast_t *pointer;
-
-    /* Free everything on the stack */
-    for (pointer = self -> value_stack; pointer < self -> value_top; pointer++)
-    {
-	if (*pointer != NULL)
-	{
-	    ast_free(*pointer, error);
-	}
-    }
-
-    /* Reset the parser */
-    self -> state_top = self -> state_stack;
-    self -> value_top = self -> value_stack;
-    self -> state = lex_start;
 }
 
 /* Returns the first value */
@@ -809,8 +789,8 @@ static int do_accept(parser_t self, elvin_error_t error)
 	return 0;
     }
 
-    /* Clean up the stack */
-    if (! ast_free(self -> value_stack[0], error))
+    /* Reset the parser */
+    if (! parser_reset(self, error))
     {
 	return 0;
     }
@@ -885,6 +865,9 @@ static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_e
     ELVIN_ERROR_XTICKERTAPE_PARSE_ERROR(
 	error, self -> tag, self -> line_num,
 	self -> token);
+
+    /* Clean up */
+    ast_free(value, NULL);
     return 0;
 }
 
@@ -2172,13 +2155,37 @@ int parser_free(parser_t self, elvin_error_t error)
     return ELVIN_FREE(self, error);
 }
 
+/* Resets the parser to accept new input */
+int parser_reset(parser_t self, elvin_error_t error)
+{
+    ast_t *pointer;
+
+    /* Free everything on the stack */
+    for (pointer = self -> value_stack; pointer < self -> value_top; pointer++)
+    {
+	if (*pointer != NULL)
+	{
+	    if (! ast_free(*pointer, error))
+	    {
+		return 0;
+	    }
+	}
+    }
+
+    /* Reset the parser */
+    self -> line_num = 1;
+    self -> state_top = self -> state_stack;
+    self -> value_top = self -> value_stack;
+    self -> state = lex_start;
+    return 1;
+}
 
 /* Parses a single character, counting LFs */
 static int parse_char(parser_t self, int ch, elvin_error_t error)
 {
     if (! self -> state(self, ch, error))
     {
-	clean_stack(self, NULL);
+	parser_reset(self, NULL);
 	return 0;
     }
 
