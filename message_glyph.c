@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.23 1999/09/27 05:08:44 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.24 1999/09/29 15:26:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -228,7 +228,13 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
 	return font -> per_char + ch - first;
     }
 
-    /* If the character doesn't have a glyph, then return a pointer to an empty_char */
+    /* If the character isn't in the given range, try the default char */
+    if ((first <= font -> default_char) && (font -> default_char <= last))
+    {
+	return font -> per_char + font -> default_char - first;
+    }
+
+    /* Assume zero-width characters for this pathological case */
     return &empty_char;
 }
 
