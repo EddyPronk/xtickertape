@@ -12,23 +12,8 @@ AC_PATH_PROG(MCGEN, mcgen, false)
 
 dnl Checks for libraries.
 
-# See if we're supposed to use libiconv
-AC_ARG_WITH(libiconv, [  --with-libiconv[=DIR]     use libiconv's iconv() implementation])
-
-if test "x$with_libiconv" != xno ; then
-    # If DIR was specified then set up the environment to look there
-    if test "x$with_libiconv" != x -a "x$with_libiconv" != xyes ; then
-	LDFLAGS="$LDFLAGS -L$with_libiconv/lib"
-	CPPFLAGS="$CPPFLAGS -I$with_libiconv/include"
-    fi
-
-    # See if we can find the library
-    AC_CHECK_LIB(iconv, iconv_open, LIBS="-liconv $LIBS", [
-	if test "x$with_libiconv" != x ; then
-	    AC_MSG_ERROR([libiconv not found])
-	    exit 1
-	fi])
-fi
+# Iconv is just ugly
+AM_ICONV
 
 # Figure out where X11 lives.
 AC_PATH_XTRA
@@ -57,6 +42,21 @@ AC_CHECK_LIB(Xext, XShapeCombineMask)
 # Check for the Xp (printing?!) library used by open motif.
 AC_CHECK_LIB(Xp, XpCreateContext)
 
+# See if we can track down Motif/LessTif
+AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
+
+# Check for silliness
+if test "x$with_motif" = xno ; then
+    AC_MSG_ERROR([xtickertape requires either LessTif or Motif])
+    exit 1
+fi
+
+# Where are we supposed to find Motif/LessTif?
+if test "x$with_motif" != xyes -a "x$with_motif" != x; then
+    CPPFLAGS="$CPPFLAGS -I$with_motif/include"
+    LDFLAGS="$LDFLAGS -L$with_motif/lib"
+fi
+
 # Check for the Motif library
 AC_CHECK_LIB(Xm, XmCreatePulldownMenu, ok=yes, ok=no)
 if test "$ok" = no; then
@@ -66,6 +66,14 @@ if test "$ok" = no; then
     exit 1
 fi
 LIBS="-lXm $LIBS"
+
+AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
+if test "$ok" = "no" ; then
+    echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
+    echo "       a free Motif implementation from the Hungry Programmers"
+    echo "       at http://www.lesstif.org/"
+    exit 1
+fi
 
 # See if the elvin libraries look healthy
 AC_ARG_WITH(elvin, [  --with-elvin=DIR        specify the elvin4 installation directory])
@@ -109,29 +117,6 @@ fi
 dnl Checks for header files.
 AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h iconv.h netdb.h pwd.h stdio.h stdlib.h string.h strings.h signal.h stdarg.h sys/time.h sys/types.h sys/utsname.h time.h unistd.h])
 
-# See if we can track down Motif/LessTif
-AC_ARG_WITH(motif, [  --with-motif=DIR        specify the LessTif/Motif installation directory])
-
-# Check for silliness
-if test "x$with_motif" = xno ; then
-    AC_MSG_ERROR([xtickertape requires either LessTif or Motif])
-    exit 1
-fi
-
-# Where are we supposed to find Motif/LessTif?
-if test "x$with_motif" != xyes -a "x$with_motif" != x; then
-    CPPFLAGS="$CPPFLAGS -I$with_motif/include"
-    LDFLAGS="$LDFLAGS -L$with_motif/lib"
-fi
-
-AC_CHECK_HEADER(Xm/Xm.h, ok=yes, ok=no)
-if test "$ok" = "no" ; then
-    echo "ERROR: \`Xm.h' is missing on your system.  You may obtain"
-    echo "       a free Motif implementation from the Hungry Programmers"
-    echo "       at http://www.lesstif.org/"
-    exit 1
-fi
-
 dnl Check for the metamail program
 AH_TEMPLATE(METAMAIL, [Define to the path to the metamail program])
 AC_PATH_PROG(METAMAIL, metamail)
@@ -166,7 +151,7 @@ dnl =============================
 # then the cache value will be set to no, even if it was then found in
 # -lnsl.  By clearing the cache, we can force it to be checked again.
 unset ac_cv_func_gethostbyname
-AC_CHECK_FUNCS([dup2 gethostbyname getopt_long iconv iconv_close iconv_open memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
+AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
 
 
 dnl Checks for misc features
