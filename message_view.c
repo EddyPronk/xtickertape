@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_view.c,v 2.2 2001/07/04 11:50:21 phelps Exp $";
+static const char cvsid[] = "$Id: message_view.c,v 2.3 2001/07/06 04:11:10 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -253,7 +253,7 @@ static void paint_string(
     }
 
     /* Is the underline visible? */
-    if (rect_overlaps(bbox, x, y + 1, x + sizes -> width, y + 1))
+    if (rect_overlaps(bbox, x, y + 2, x + sizes -> width, y + 2))
     {
 	/* Set the foreground color */
 	values.foreground = pixel;
@@ -262,8 +262,8 @@ static void paint_string(
 	/* Draw the underline */
 	XDrawLine(
 	    display, drawable, gc,
-	    MAX(x, bbox -> x), y + 1,
-	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width), y + 1);
+	    MAX(x, bbox -> x), y + 2,
+	    MIN(x + sizes -> width, (long)bbox -> x + (long)bbox -> width), y + 2);
     }
 }
 
@@ -405,7 +405,7 @@ void message_view_paint(
     /* And finally draw the underline */
     if (do_underline)
     {
-	XDrawLine(display, drawable, gc, x, y + 1, px, y + 1);
+	XDrawLine(display, drawable, gc, x, y + 2, px, y + 2);
     }
 #endif /* DEBUG_PER_CHAR */
 
