@@ -23,7 +23,6 @@ xtickertape_SOURCES = \
 	keys.h keys_parser.h keys_parser.c \
 	key_table.h key_table.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
-	orbit_sub.h orbit_sub.c \
 	mask.xbm red.xbm white.xbm \
 	errors.h main.c
 
