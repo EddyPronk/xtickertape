@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.3 2001/07/04 11:49:31 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.4 2001/07/04 14:27:54 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -37,6 +37,7 @@ static const char cvsid[] = "$Id: History.c,v 1.3 2001/07/04 11:49:31 phelps Exp
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
@@ -124,6 +125,7 @@ static void realize(
     XtValueMask *value_mask,
     XSetWindowAttributes *attributes);
 static void redisplay(Widget self, XEvent *event, Region region);
+static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
 static void destroy(Widget self);
 static void resize(Widget self);
 static Boolean set_values(
@@ -214,6 +216,28 @@ WidgetClass historyWidgetClass = (WidgetClass) &historyClassRec;
  *
  */
 
+/* Sets the origin of the visible portion of the widget */
+static void set_origin(HistoryWidget self, Position x, Position y)
+{
+    Display *display = XtDisplay((Widget)self);
+    GC gc = self -> history.gc;
+    XGCValues values;
+
+    /* Remove our clip mask */
+    values.clip_mask = None;
+    XChangeGC(display, gc, GCClipMask, &values);
+
+    /* Copy to the new location */
+    XCopyArea(
+	display, XtWindow((Widget)self), XtWindow((Widget)self), gc,
+	x - self -> history.x, y - self -> history.y,
+	self -> core.width, self -> core.height,
+	0, 0);
+
+    self -> history.x = x;
+    self -> history.y = y;
+}
+
 
 /*
  *
@@ -282,7 +306,6 @@ message_t HistoryGetSelection(Widget widget)
 
 
 
-
 /* Callback for the vertical scrollbar */
 static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
 {
@@ -290,9 +313,13 @@ static void vert_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta
 }
 
 /* Callback for the vertical scrollbar */
-static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void vert_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
-    dprintf(("vert_drag_cb(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Drag to the new location */
+    set_origin(self, self -> history.x, cbs -> value);
 }
 
 /* Callback for the vertical scrollbar */
@@ -333,7 +360,6 @@ static void vert_val_changed_cb(Widget widget, XtPointer client_data, XtPointer 
 
 
 
-
 /* Callback for the horizontal scrollbar */
 static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
 {
@@ -341,9 +367,13 @@ static void horiz_dec_cb(Widget widget, XtPointer client_data, XtPointer call_dt
 }
 
 /* Callback for the horizontal scrollbar */
-static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_dta)
+static void horiz_drag_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 {
-    dprintf(("horiz_drag_cb(): not yet implemented\n"));
+    HistoryWidget self = (HistoryWidget)client_data;
+    XmScrollBarCallbackStruct *cbs = (XmScrollBarCallbackStruct *)call_data;
+
+    /* Drag to the new location */
+    set_origin(self, cbs -> value, self -> history.y);
 }
 
 /* Callback for the horizontal scrollbar */
@@ -447,6 +477,10 @@ static void realize(
     values.background = self -> core.background_pixel;
     values.font = self -> history.font -> fid;
     self -> history.gc = XCreateGC(display, XtWindow(widget), GCBackground | GCFont, &values);
+
+    /* Register to receive GraphicsExpose events */
+    XtAddEventHandler(widget, 0, True, gexpose, NULL);
+
 
     /* Create a message */
     message = message_alloc(
@@ -557,24 +591,22 @@ static void draw_highlights(Display *display,
 }
 
 /* Repaint the widget */
-static void redisplay(Widget widget, XEvent *event, Region region)
+static void paint(HistoryWidget self, XRectangle *bbox)
 {
-    HistoryWidget self = (HistoryWidget)widget;
-    Display *display = XtDisplay(widget);
-    Window window = XtWindow(widget);
-    XRectangle bbox;
+    Display *display = XtDisplay((Widget)self);
+    Window window = XtWindow((Widget)self);
 
-    /* Find the smallest rectangle which contains the region */
-    XClipBox(region, &bbox);
-
+    /* Set that as our bounding box */
+    XSetClipRectangles(display, self -> history.gc, 0, 0, bbox, 1, YXSorted);
 
     /* Draw something.  I don't know */
     message_view_paint(
 	self -> history.mv, display, window, self -> history.gc,
 	self -> history.group_pixel, self -> history.user_pixel,
 	self -> history.string_pixel, self -> history.separator_pixel,
-	10, 10 + self -> history.font -> ascent, &bbox);
+	10 - self -> history.x, self -> history.font -> ascent - self -> history.y, bbox);
 
+#if 0
     /* Draw the highlights and shadows */
     draw_highlights(
 	display, window,
@@ -582,6 +614,70 @@ static void redisplay(Widget widget, XEvent *event, Region region)
 	self -> primitive.bottom_shadow_GC,
 	0, 0, self -> core.width, self -> core.height,
 	self -> primitive.shadow_thickness);
+#endif
+}
+
+/* Redisplay the given region */
+static void redisplay(Widget widget, XEvent *event, Region region)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    XRectangle bbox;
+
+    /* Find the smallest rectangle which contains the region */
+    XClipBox(region, &bbox);
+
+    /* Repaint the region */
+    paint(self, &bbox);
+}
+
+/* Repaint the bits of the widget that didn't get copied */
+static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    Display *display = XtDisplay(widget);
+    XEvent event_buffer;
+    XRectangle bbox;
+
+    /* Process all of the GraphicsExpose events in one hit */
+    while (1)
+    {
+	XGraphicsExposeEvent *g_event;
+
+	/* See if the server has synced with our local state */
+	/* FIX THIS: this is still necessary */
+
+	/* Stop drawing stuff if the widget is obscured */
+	if (event -> type == NoExpose)
+	{
+	    /* FIX THIS: set a flag to stop doing stuff? */
+	    return;
+	}
+
+	/* Sanity check */
+	assert(event -> type == GraphicsExpose || event -> type == NoExpose);
+
+	/* Coerce the event */
+	g_event = (XGraphicsExposeEvent *)event;
+
+	/* Get the bounding box of the event */
+	bbox.x = g_event -> x;
+	bbox.y = g_event -> y;
+	bbox.width = g_event -> width;
+	bbox.height = g_event -> height;
+
+	/* Update this portion of the history */
+	paint(self, &bbox);
+
+	/* Bail out if this is the last GraphicsExpose event */
+	if (g_event -> count < 1)
+	{
+	    return;
+	}
+
+	/* Otherwise grab the next one */
+	XNextEvent(display, &event_buffer);
+	event = &event_buffer;
+    }
 }
 
 

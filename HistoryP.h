@@ -31,7 +31,7 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.3 2001/07/04 11:49:57 phelps Exp $";
+static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.4 2001/07/04 14:27:55 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -71,6 +71,12 @@ typedef struct
 
     /* Our graphics context */
     GC gc;
+
+    /* The x coordinate of the origin of the visible region */
+    Position x;
+
+    /* The y coordinate of the origin of the visible region */
+    Position y;
 
     /* A message view for playing with */
     message_view_t mv;
