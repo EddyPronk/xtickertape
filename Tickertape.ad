@@ -44,16 +44,21 @@
 *cancel.labelString: Cancel
 
 ! file menu labels
-*file.labelString: File
-*file.mnemonic: F
+*menuBar.fileMenu.labelString: File
+*menuBar.fileMenu.mnemonic: F
 
-*reloadGroups.labelString: Reload Groups File
-*reloadUsenet.labelString: Reload Usenet File
-*exit.labelString: Exit
-*exit.mnemonic: x
-*exit.accelerator: Alt<Key>Q
-*exit.acceleratorText: Alt+Q
+*menuBar*reloadGroups.labelString: Reload Groups File
+*menuBar*reloadUsenet.labelString: Reload Usenet File
+*menuBar*exit.labelString: Exit
+*menuBar*exit.mnemonic: x
+*menuBar*exit.accelerator: Alt<Key>Q
+*menuBar*exit.acceleratorText: Alt+Q
 
+! help menu labels
+*menuBar.helpMenu.labelString: Help
+*menuBar.helpMenu.mnemonic: H
+
+*menuBar*about.labelString: About Xtickertape
 
 !
 ! Scrolling parameters
@@ -73,3 +78,16 @@
 	~Meta ~Alt Ctrl<Key>e: end-of-line() \n\
 	~Meta ~Alt Ctrl<Key>f: forward-character() \n\
 	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line() \n
+
+!
+! Scroller action translations
+!
+Tickertape.scroller.translations: #override \n\
+	<Btn1Down>: menu() \n\
+	<Btn2Down>: decodeMime() \n\
+	<Btn3Down>: delete() \n\
+	<Key>d: delete()\n\
+	<Key>x: kill()\n\
+	<Key>-: slower() \n\
+	<Key>=: faster() \n\
+	Meta<Key>q: quit()\n
