@@ -169,6 +169,7 @@ fi
 AM_CONFIG_HEADER(config.h)
 AC_OUTPUT([
     Makefile
+    XTickertape.ad
     packages/Makefile
     packages/rpm/Makefile
     packages/rpm/SOURCES/Makefile
