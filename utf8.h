@@ -33,8 +33,13 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.5 2004/04/06 00:36:53 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.6 2004/05/28 14:02:24 phelps Exp $";
 #endif /* lint */
+
+/* Make sure that ICONV_CONST is defined */
+#ifndef ICONV_CONST
+#define ICONV_CONST
+#endif
 
 /* String measurements */
 typedef struct string_sizes *string_sizes_t;
