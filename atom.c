@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.1 2000/11/01 02:07:02 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.2 2000/11/03 09:11:42 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -393,6 +393,11 @@ atom_t atom_eval(atom_t atom, elvin_error_t error)
 	}
 
 	case ATOM_CONS:
+	{
+	    return &Qnil;
+	}
+
+	default:
 	{
 	    return &Qnil;
 	}
