@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.5 1999/10/06 05:33:04 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.6 1999/10/06 09:00:02 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -579,6 +579,36 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
     tickertape_show_attachment(self -> tickertape, message);
 }
 
+
+/* This is called when the mouse enters or leaves or moves around
+ * inside the history widget */
+static void history_motion_callback(
+    Widget widget,
+    control_panel_t self,
+    XEvent *event)
+{
+    switch (event -> type)
+    {
+	case MotionNotify:
+	{
+	    printf("motion\n");
+	    break;
+	}
+
+	case EnterNotify:
+	{
+	    printf("enter\n");
+	    break;
+	}
+
+	case LeaveNotify:
+	{
+	    printf("leave\n");
+	    break;
+	}
+    }
+}
+
 /* Constructs the history list */
 static void create_history_box(control_panel_t self, Widget parent)
 {
@@ -602,6 +632,12 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtAddCallback(
 	self -> history, XmNdefaultActionCallback,
 	(XtCallbackProc)history_action_callback, (XtPointer)self);
+    XtAddEventHandler(
+ 	self -> history,
+	EnterWindowMask | LeaveWindowMask | PointerMotionMask,
+	False,
+	(XtEventHandler)history_motion_callback,
+	(XtPointer)self);
 
     XtManageChild(self -> history);
 
