@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.7 1999/08/19 04:37:51 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.8 1999/08/19 05:04:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -221,9 +221,11 @@ static void click_callback(Widget widget, tickertape_t self, Message message)
 static void receive_callback(tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
+
+    /* Add the message to the scroller */
     ScAddMessage(self -> scroller, message);
 
-/*    ControlPanel_addHistoryMessage(self -> control_panel, message);*/
+    /* Add the message to the history */
     history_add(self -> history, message);
 }
 
@@ -411,6 +413,7 @@ static void reconnect_callback(tickertape_t self, ElvinConnection connection)
 	NULL, NULL,
 	0, 0);
     receive_callback(self, message);
+    Message_free(message);
 
     /* Republish the startup notification */
     publish_startup_notification(self);
@@ -459,6 +462,8 @@ static void disconnect_callback(tickertape_t self, ElvinConnection connection)
 	NULL, NULL,
 	0, 0);
     receive_callback(self, message);
+    Message_free(message);
+
     StringBuffer_free(buffer);
 }
 

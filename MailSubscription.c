@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: MailSubscription.c,v 1.6 1999/05/06 00:34:31 phelps Exp $";
+static const char cvsid[] = "$Id: MailSubscription.c,v 1.7 1999/08/19 05:04:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
@@ -221,6 +221,7 @@ static void HandleNotify(MailSubscription self, en_notify_t notification)
     /* Construct a Message and deliver it */
     message = Message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
     (*self -> callback)(self -> context, message);
+    Message_free(message);
 
 #ifndef HAVE_ALLOCA
     free(from);

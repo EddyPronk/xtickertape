@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.3 1999/08/19 04:41:42 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.4 1999/08/19 05:04:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -71,7 +71,7 @@ static history_node_t history_node_alloc(Message message)
     }
 
     /* Initialize the fields to sane values */
-    self -> message = message;
+/*    self -> message = Message_allocReference(message);*/
     self -> color = 0;
     self -> previous = NULL;
     self -> previous_response = NULL;
@@ -83,6 +83,7 @@ static history_node_t history_node_alloc(Message message)
 /* Releases the resources consumed by the receiver */
 static void history_node_free(history_node_t self)
 {
+/*    Message_free(self -> message); */
     free(self);
 }
 

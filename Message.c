@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Message.c,v 1.18 1999/05/21 05:30:44 phelps Exp $";
+static const char cvsid[] = "$Id: Message.c,v 1.19 1999/08/19 05:04:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -48,6 +48,9 @@ struct Message_t
 #ifdef SANITY
     char *sanity_check;
 #endif /* SANITY */
+
+    /* The receiver's reference count */
+    int ref_count;
 
     /* The Subscription which was matched to generate the receiver */
     void *info;
@@ -95,6 +98,7 @@ Message Message_alloc(
 #ifdef SANITY
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
+    self -> ref_count = 1;
     self -> info = info;
     self -> group = strdup(group);
     self -> user = strdup(user);
@@ -125,11 +129,25 @@ Message Message_alloc(
     return self;
 }
 
+/* Allocates another reference to the Message */
+Message Message_allocReference(Message self)
+{
+    self -> ref_count++;
+    return self;
+}
+
 /* Frees the memory used by the receiver */
 void Message_free(Message self)
 {
     SANITY_CHECK(self);
 
+    /* Decrement the reference count */
+    if (--self -> ref_count > 0)
+    {
+	return;
+    }
+
+    /* Out of references -- release the hounds! */
     if (self -> group)
     {
 	free(self -> group);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: OrbitSubscription.c,v 1.15 1999/05/06 00:34:32 phelps Exp $";
+static const char cvsid[] = "$Id: OrbitSubscription.c,v 1.16 1999/08/19 05:04:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -186,6 +186,9 @@ static void HandleNotify(OrbitSubscription self, en_notify_t notification)
 
     /* Deliver the Message */
     (*self -> callback)(self -> context, message);
+
+    /* Release our reference to the message */
+    Message_free(message);
 }
 
 /* Constructs a notification out of a Message and delivers it to the ElvinConection */

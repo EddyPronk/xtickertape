@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.6 1999/08/17 17:59:49 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.7 1999/08/19 05:04:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -160,14 +160,13 @@ static void do_free(message_glyph_t self)
 
     clear_clock(self);
 
+    /* Free the message */
+    Message_free(self -> message);
+
 #ifdef DEBUG
     printf("message_glyph freed!\n");
 #endif /* DEBUG */
 
-#if 0
-    /* FIX THIS: free this once history_t doesn't refer to the message anymore */
-    Message_free(self -> message);
-#endif /* 0 */
     free(self);
 }
 
@@ -351,7 +350,7 @@ glyph_t message_glyph_alloc(ScrollerWidget widget, Message message)
     self -> expire = (expire_method_t)do_expire;
 
     self -> widget = widget;
-    self -> message = message;
+    self -> message = Message_allocReference(message);
     self -> ref_count = 1;
     self -> has_expired = False;
     self -> fade_level = 0;
