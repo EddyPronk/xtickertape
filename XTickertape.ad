@@ -45,11 +45,11 @@
 !
 *fontList: -adobe-helvetica-medium-r-normal--12-120-75-75-p-*-iso8859-1
 !-adobe-helvetica-bold-r-normal--12-120-75-75-p-*-iso8859-1=MIME
-*scroller.font: -adobe-times-medium-r-normal--18-180-75-75-p-0-iso8859-1
-*history.font: -adobe-times-medium-r-normal--18-180-75-75-p-0-iso8859-1
-!*history.font: -adobe-utopia-medium-r-normal--200-*-75-75-p-0-iso8859-1
-!*history.font: -freefont-brushstroke-normal-r-normal--200-*-75-75-p-0-iso8859-1
-!*history.font: -adobe-helvetica-medium-r-normal--12-120-75-75-p-0-iso8859-1
+*scroller.font: -adobe-times-medium-r-normal--18-180-75-75-p-*-iso8859-1
+*history.font: -adobe-times-medium-r-normal--18-180-75-75-p-*-iso8859-1
+!*history.font: -adobe-utopia-medium-r-normal--200-*-75-75-p-*-iso8859-1
+!*history.font: -freefont-brushstroke-normal-r-normal--200-*-75-75-p-*-iso8859-1
+!*history.font: -adobe-helvetica-medium-r-normal--12-120-75-75-p-*-iso8859-1
 
 !
 ! Labels
