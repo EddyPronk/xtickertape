@@ -28,8 +28,8 @@ xtickertape_SOURCES = \
 #	def-config.h parser.h parser.c \
 
 test_parser_SOURCES = \
-	sexp.h sexp.c \
 	grammar.h parser.h parser.c \
+	vm.h vm.c \
 	test-parser.c
 
 # Indicate what the man pages are
