@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.22 2000/06/15 01:35:47 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.23 2000/08/27 12:20:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -416,6 +416,7 @@ static void send_message(group_sub_t self, message_t message)
     elvin_xt_notify(
 	self -> handle,
 	notification, 
+	1, /* deliver_insecure */
 	self -> producer_keys,
 	self -> error);
 
