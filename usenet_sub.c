@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.32 2002/04/23 16:22:25 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_sub.c,v 1.33 2002/04/23 23:12:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -44,6 +44,7 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.32 2002/04/23 16:22:25 phelps
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
+#include "replace.h"
 #include "usenet_sub.h"
 
 /* Some notification field names */
@@ -239,7 +240,7 @@ static void notify_cb(
 		news_host = "news";
 	    }
 
-	    length = strlen(NEWS_URL) + strlen(new_host) + strlen(message_id) - 3;
+	    length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
 	    if ((buffer = (char *)malloc(length)) == NULL)
 	    {
 		mime_type = NULL;

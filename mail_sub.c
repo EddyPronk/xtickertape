@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.32 2002/04/23 17:21:22 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.33 2002/04/23 23:12:23 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -130,7 +130,7 @@ static void notify_cb(
 	folder = value.s;
 
 	/* Format the folder name to use as the group */
-	length = strlen(FOLDER_FMT) + strlen(folder) - 1
+	length = strlen(FOLDER_FMT) + strlen(folder) - 1;
 	if ((buffer = (char *)malloc(length)) != NULL)
 	{
 	    snprintf(buffer, length, FOLDER_FMT, folder);
