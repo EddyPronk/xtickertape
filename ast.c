@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: ast.c,v 1.3 2000/07/07 05:57:36 phelps Exp $";
+static const char cvsid[] = "$Id: ast.c,v 1.4 2000/07/07 10:43:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,6 +37,7 @@ static const char cvsid[] = "$Id: ast.c,v 1.3 2000/07/07 05:57:36 phelps Exp $";
 #include <elvin/elvin.h>
 #include <elvin/memory.h>
 #include "ast.h"
+#include "subscription.h"
 
 /* The types of AST nodes */
 typedef enum ast_type
@@ -50,7 +51,7 @@ typedef enum ast_type
     AST_BINOP,
     AST_FUNCTION,
     AST_BLOCK,
-    AST_SUBSCRIPTION
+     AST_SUB
 } ast_type_t;
 
 /* The supported functions */
@@ -82,19 +83,19 @@ struct func
     ast_t args;
 };
 
-
 /* A union of all of the various kinds of ASTs */
 union ast_union
 {
     int32_t int32;
     int64_t int64;
     double real64;
-    char *string;
+    uchar *string;
     ast_t list;
+    ast_t block;
     char *id;
     struct binop binop;
     struct func func;
-    ast_t block;
+    subscription_t sub;
 };
 
 
@@ -304,33 +305,7 @@ ast_t ast_block_alloc(ast_t body, elvin_error_t error)
     return self;
 }
 
-/* Evaluates a value to either true or false */
-static int eval_boolean(ast_t value, int *result_out, elvin_error_t error)
-{
-    /* Make sure the boolean is an ID */
-    if (value -> type != AST_ID)
-    {
-	fprintf(stderr, "bad boolean\n");
-	return 0;
-    }
 
-    /* Is it `true'? */
-    if (strcmp(value -> value.id, "true") == 0)
-    {
-	*result_out = 1;
-	return 1;
-    }
-
-    /* Is it `false'? */
-    if (strcmp(value -> value.id, "false") == 0)
-    {
-	*result_out = 0;
-	return 1;
-    }
-
-    fprintf(stderr, "bad boolean: `%s'\n", value -> value.id);
-    return 0;
-}
 
 /* Converts a list of strings into an elvin_keys_t */
 static int eval_producer_keys(
@@ -407,7 +382,7 @@ static int eval_producer_keys(
 
 /* Converts a list of strings into an elvin_keys_t */
 static int eval_consumer_keys(
-    ast_t value,
+    ast_t list,
     elvin_keys_t *keys_out,
     elvin_error_t error)
 {
@@ -418,15 +393,8 @@ static int eval_consumer_keys(
     /* Don't accidentally return anything interesting */
     *keys_out = NULL;
 
-    /* Make sure we've been given a list */
-    if (value -> type != AST_LIST)
-    {
-	fprintf(stderr, "keys must be list\n");
-	return 0;
-    }
-
     /* If the list is empty then don't bother creating a key set */
-    if (value -> value.list == NULL)
+    if (list -> value.list == NULL)
     {
 	return 1;
     }
@@ -438,7 +406,7 @@ static int eval_consumer_keys(
     }
 
     /* Go through the list and add keys */
-    for (ast = value -> value.list; ast != NULL; ast = ast -> next)
+    for (ast = list -> value.list; ast != NULL; ast = ast -> next)
     {
 	/* FIX THIS: we should allow functions to read from files */
 	/* Make sure the key is a string */
@@ -478,34 +446,36 @@ static int eval_consumer_keys(
 /* Allocates and initializes a new subscription AST node */
 ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 {
-    ast_t ast, next;
+    subscription_t sub;
+    ast_t self, ast, next;
     char *name = NULL;
     char *subscription = NULL;
     int in_menu = 1;
     int auto_mime = 0;
     elvin_keys_t producer_keys = NULL;
     elvin_keys_t consumer_keys = NULL;
-    ast_t group = NULL;
-    ast_t user = NULL;
-    ast_t message = NULL;
-    ast_t timeout = NULL;
-    ast_t mime_type = NULL;
-    ast_t mime_args = NULL;
-    ast_t message_id = NULL;
-    ast_t reply_id = NULL;
+    value_t group;
+    value_t user;
+    value_t message;
+    value_t timeout;
+    value_t mime_type;
+    value_t mime_args;
+    value_t message_id;
+    value_t reply_id;
 
     /* Go through the statements, perform sanity checks on them and
      * then use them to construct a usable subscription_t */
     for (ast = statements; ast != NULL; ast = next)
     {
 	char *field;
-	ast_t value;
+	ast_t rvalue;
+	value_t value;
 
 	next = ast -> next;
 
-	/* Take the assignment node apart */
+	/* Pull apart the assignment node */
 	field = ast -> value.binop.lvalue -> value.id;
-	value = ast -> value.binop.rvalue;
+	rvalue = ast -> value.binop.rvalue;
 
 	/* Figure out which field we're assigning */
 	switch (*field)
@@ -515,12 +485,21 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "auto-mime") == 0)
 		{
-		    /* Value must be either true or false */
-		    if (! eval_boolean(value, &auto_mime, error))
+		    /* Evaluate the rvalue */
+		    if (! ast_eval(rvalue, NULL, &value, error))
 		    {
+			fprintf(stderr, "trouble evaluating `auto-mime'\n");
 			abort();
 		    }
 
+		    /* Check the resulting type */
+		    if (value.type != VALUE_INT32)
+		    {
+			fprintf(stderr, "bogus value for `auto-mime'\n");
+			abort();
+		    }
+
+		    auto_mime = value.value.int32;
 		    continue;
 		}
 
@@ -532,11 +511,27 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "consumer-keys") == 0)
 		{
-		    if (! eval_consumer_keys(value, &consumer_keys, error))
+		    /* Evaluate the rvalue */
+		    if (! ast_eval(rvalue, NULL, &value, error))
 		    {
+			fprintf(stderr, "trouble evaluating `consumer-keys'\n");
 			abort();
 		    }
 
+		    /* Check the resulting type */
+		    if (value.type != VALUE_LIST)
+		    {
+			fprintf(stderr, "bogus value for `consumer-keys'\n");
+			abort();
+		    }
+
+		    /* Convert the list into a set of keys */
+		    if (! eval_consumer_keys(value.value.list, &consumer_keys, error))
+		    {
+			fprintf(stderr, "bad keys\n");
+			abort();
+		    }
+		
 		    continue;
 		}
 
@@ -550,7 +545,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		{
 		    /* Just steal the AST */
 		    group = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
@@ -562,12 +557,21 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "in-menu") == 0)
 		{
-		    /* Value must be either `true' or `false' */
-		    if (! eval_boolean(value, &in_menu, error))
+		    /* Evaluate the rvalue */
+		    if (! ast_eval(rvalue, NULL, &value, error))
 		    {
+			fprintf(stderr, "trouble evaluating `in-menu'\n");
 			abort();
 		    }
 
+		    /* Check the resulting type */
+		    if (value.type != VALUE_INT32)
+		    {
+			fprintf(stderr, "bogus value for `in-menu'\n");
+			abort();
+		    }
+
+		    in_menu = value.value.int32;
 		    continue;
 		}
 
@@ -580,28 +584,28 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		if (strcmp(field, "message") == 0)
 		{
 		    message = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
 		if (strcmp(field, "message-id") == 0)
 		{
 		    message_id = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
 		if (strcmp(field, "mime-args") == 0)
 		{
 		    mime_args = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
 		if (strcmp(field, "mime-type") == 0)
 		{
 		    mime_type = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
@@ -613,16 +617,22 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "name") == 0)
 		{
-		    /* Make sure the name is a simple string */
-		    if (value -> type != AST_STRING)
+		    /* Evaluate the rvalue to get the name */
+		    if (! ast_eval(rvalue, NULL, &value, error))
+		    {
+			fprintf(stderr, "trouble evaluating `name'\n");
+			abort();
+		    }
+
+		    /* Check the type of the result */
+		    if (value.type != VALUE_STRING)
 		    {
 			fprintf(stderr, "`name' must be a string\n");
 			abort();
 		    }
 
-		    /* Steal the string from the AST */
-		    name = value -> value.string;
-		    value -> value.string = NULL;
+		    /* Hang on to that string */
+		    name = value.value.string;
 		    continue;
 		}
 
@@ -634,7 +644,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	    {
 		if (strcmp(field, "producer-keys") == 0)
 		{
-		    if (! eval_producer_keys(value, &producer_keys, error))
+		    if (! eval_producer_keys(rvalue, &producer_keys, error))
 		    {
 			abort();
 		    }
@@ -652,7 +662,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		{
 		    /* Steal the string from the AST */
 		    reply_id = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
@@ -665,15 +675,15 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		if (strcmp(field, "subscription") == 0)
 		{
 		    /* Make sure the subscription is a simple string */
-		    if (value -> type != AST_STRING)
+		    if (rvalue -> type != AST_STRING)
 		    {
 			fprintf(stderr, "`subscription' must be a string\n");
 			abort();
 		    }
 
 		    /* Steal the string from the AST */
-		    subscription = value -> value.string;
-		    value -> value.string = NULL;
+		    subscription = rvalue -> value.string;
+		    rvalue -> value.string = NULL;
 		    continue;
 		}
 
@@ -686,7 +696,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		if (strcmp(field, "timeout") == 0)
 		{
 		    timeout = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
@@ -700,7 +710,7 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 		{
 		    /* Just steal the AST */
 		    user = value;
-		    value -> next = NULL;
+		    rvalue -> next = NULL;
 		    continue;
 		}
 
@@ -712,7 +722,30 @@ ast_t ast_sub_alloc(ast_t tag, ast_t statements, elvin_error_t error)
 	abort();
     }
 
-    return tag;
+    /* Allocate a subscription */
+    if (! (sub = subscription_alloc(
+	tag -> value.id, name, subscription, 
+	in_menu, auto_mime,
+	producer_keys, consumer_keys,
+	group, user, message, timeout,
+	mime_type, mime_args,
+	message_id, reply_id,
+	error)))
+    {
+	return NULL;
+    }
+
+    /* Allocate memory for the node */
+    if (! (self = (ast_t)ELVIN_MALLOC(sizeof(struct ast), error)))
+    {
+	subscription_free(sub, NULL);
+	return NULL;
+    }
+
+    self -> type = AST_SUB;
+    self -> next = NULL;
+    self -> value.sub = sub;
+    return self;
 }
 
 
@@ -738,12 +771,92 @@ ast_t ast_append(ast_t list, ast_t item, elvin_error_t error)
 
 
 /* Evaluates an AST with the given notification */
-ast_t ast_eval(ast_t self, elvin_notification_t notification, elvin_error_t error)
+int ast_eval(
+    ast_t self,
+    elvin_notification_t env,
+    value_t *value_out,
+    elvin_error_t error)
 {
-    fprintf(stderr, "ast_eval(): not yet implemented\n");
-    return NULL;
-}
+    switch (self -> type)
+    {
+	case AST_INT32:
+	{
+	    value_out -> type = VALUE_INT32;
+	    value_out -> value.int32 = self -> value.int32;
+	    return 1;
+	}
 
+	case AST_INT64:
+	{
+	    value_out -> type = VALUE_INT64;
+	    value_out -> value.int64 = self -> value.int64;
+	    return 1;
+	}
+
+	case AST_REAL64:
+	{
+	    printf("ast_eval: real64\n");
+	    abort();
+	}
+
+	case AST_STRING:
+	{
+	    if (! (value_out -> value.string = ELVIN_STRDUP(self -> value.string, error)))
+	    {
+		return 0;
+	    }
+
+	    value_out -> type = VALUE_STRING;
+	    return 1;
+	}
+
+	case AST_LIST:
+	{
+	    printf("ast_eval: list\n");
+	    abort();
+	}
+
+	case AST_ID:
+	{
+	    /* If we have no environment then everything evalutes to nil */
+	    if (! env)
+	    {
+		value_out -> type = VALUE_NONE;
+		return 1;
+	    }
+
+	    /* Otherwise look up the value in the notification */
+	    printf("punt!\n");
+	    abort();
+	}
+
+	case AST_BINOP:
+	{
+	    printf("ast_eval: binop\n");
+	    abort();
+	}
+
+	case AST_FUNCTION:
+	{
+	    printf("ast_eval: function\n");
+	    abort();
+	}
+
+	case AST_BLOCK:
+	{
+	    printf("ast_eval: block\n");
+	    abort();
+	}
+
+	case AST_SUB:
+	{
+	    printf("ast_eval: sub\n");
+	    abort();
+	}
+    }
+
+    return 0;
+}
 
 /* Allocates and returns a string representation of the AST */
 char *ast_to_string(ast_t self, elvin_error_t error)

@@ -31,13 +31,48 @@
 #define AST_H
 
 #ifndef lint
-static const char cvs_AST_H[] = "$Id: ast.h,v 1.2 2000/07/07 05:57:36 phelps Exp $";
+static const char cvs_AST_H[] = "$Id: ast.h,v 1.3 2000/07/07 10:43:15 phelps Exp $";
 #endif /* lint */
 
 /* The ast data type */
 typedef struct ast *ast_t;
 
-/* The supported binary operations */
+
+
+/* The types of the values */
+typedef enum value_type
+{
+    VALUE_NONE,
+    VALUE_INT32,
+    VALUE_INT64,
+    VALUE_REAL64,
+    VALUE_STRING,
+    VALUE_OPAQUE,
+    VALUE_LIST,
+    VALUE_BLOCK
+} value_type_t;
+
+/* The value union contains all possible types values */
+typedef union value_union
+{
+    int32_t int32;
+    int64_t int64;
+    double real64;
+    uchar *string;
+    elvin_opaque_t opaque;
+    ast_t list;
+    ast_t block;
+} value_union_t;
+
+typedef struct value value_t;
+struct value
+{
+    value_type_t type;
+    value_union_t value;
+};
+
+
+/* The supported binary operators */
 enum ast_binop
 {
     AST_ASSIGN,
@@ -91,6 +126,14 @@ int ast_free(ast_t self, elvin_error_t error);
 
 /* Appends another element to the end of an AST list */
 ast_t ast_append(ast_t list, ast_t item, elvin_error_t error);
+
+
+/* Evaluates an AST against the given notification */
+int ast_eval(
+    ast_t self,
+    elvin_notification_t env,
+    value_t *value_out,
+    elvin_error_t error);
 
 /* Allocates and returns a string representation of the AST */
 char *ast_to_string(ast_t self, elvin_error_t error);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 2.7 2000/07/07 05:57:36 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 2.8 2000/07/07 10:43:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -149,6 +149,8 @@ static int lex_gt(parser_t self, int ch, elvin_error_t error);
 static int lex_vbar(parser_t self, int ch, elvin_error_t error);
 static int lex_zero(parser_t self, int ch, elvin_error_t error);
 static int lex_decimal(parser_t self, int ch, elvin_error_t error);
+static int lex_octal(parser_t self, int ch, elvin_error_t error);
+static int lex_hex(parser_t self, int ch, elvin_error_t error);
 static int lex_float_first(parser_t self, int ch, elvin_error_t error);
 static int lex_dq_string(parser_t self, int ch, elvin_error_t error);
 static int lex_dq_string_esc(parser_t self, int ch, elvin_error_t error);
@@ -439,6 +441,7 @@ static int shift_reduce(parser_t self, terminal_t terminal, ast_t value, elvin_e
     /* See if we can accept */
     if (IS_ACCEPT(action))
     {
+	printf("accept!\n");
 	return 1;
     }
 
@@ -997,10 +1000,65 @@ static int lex_vbar(parser_t self, int ch, elvin_error_t error)
     abort();
 }
 
+/* Reading the character after an initial `0' */
 static int lex_zero(parser_t self, int ch, elvin_error_t error)
 {
-    fprintf(stderr, "lex_zero: not yet implemented\n");
-    abort();
+    /* An `x' means that we've got a hex constant */
+    if (ch == 'x' || ch == 'X')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_hex;
+	return 1;
+    }
+
+    /* A decimal point means a floating point number follows */
+    if (ch == '.')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_float_first;
+	return 1;
+    }
+
+    /* A digit means that an octal number follows */
+    if (isdigit(ch) && ch != '8' && ch != '9')
+    {
+	if (! append_char(self, ch, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_octal;
+	return 1;
+    }
+
+    /* A trailing 'L' means that we've got a 64-bit zero */
+    if (ch == 'l' || ch == 'L')
+    {
+	if (! accept_int64(self, 0L, error))
+	{
+	    return 0;
+	}
+
+	self -> state = lex_start;
+	return 1;
+    }
+
+    /* Otherwise we've got a plain, simple, 32-bit zero */
+    if (! accept_int32(self, 0, error))
+    {
+	return 0;
+    }
+
+    /* Run ch through the lexer start state */
+    return lex_start(self, ch, error);
 }
 
 /* We've read one or more digits of a decimal number */
@@ -1057,6 +1115,19 @@ static int lex_decimal(parser_t self, int ch, elvin_error_t error)
     return lex_start(self, ch, error);
 }
 
+/* Reading an octal integer */
+static int lex_octal(parser_t self, int ch, elvin_error_t error)
+{
+    fprintf(stderr, "lex_octal: not yet implemented\n");
+    abort();
+}
+
+/* Reading a hex integer */
+static int lex_hex(parser_t self, int ch, elvin_error_t error)
+{
+    fprintf(stderr, "lex_hex: not yet implemented\n");
+    abort();
+}
 
 /* Reading the first digit of the decimal portion of a floating point number */
 static int lex_float_first(parser_t self, int ch, elvin_error_t error)
