@@ -1,4 +1,4 @@
-/* $Id: Message.c,v 1.13 1998/10/25 02:49:44 phelps Exp $ */
+/* $Id: Message.c,v 1.14 1998/10/25 07:14:18 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,6 +196,12 @@ void Message_setTimeout(Message self, unsigned long timeout)
 {
     SANITY_CHECK(self);
     self -> timeout = timeout;
+}
+
+/* Answers non-zero if the receiver has a MIME attachment */
+int Message_hasAttachment(Message self)
+{
+    return (self -> mimeArgs != NULL);
 }
 
 /* Answers the receiver's MIME-type string */

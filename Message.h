@@ -1,4 +1,4 @@
-/* $Id: Message.h,v 1.9 1998/10/24 15:35:05 phelps Exp $ */
+/* $Id: Message.h,v 1.10 1998/10/25 07:14:18 phelps Exp $ */
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
@@ -42,6 +42,9 @@ unsigned long Message_getTimeout(Message self);
 
 /* Sets the receiver's timeout in minutes*/
 void Message_setTimeout(Message self, unsigned long timeout);
+
+/* Answers non-zero if the receiver has a MIME attachment */
+int Message_hasAttachment(Message self);
 
 /* Answers the receiver's MIME-type string */
 char *Message_getMimeType(Message self);
