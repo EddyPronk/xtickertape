@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: gap.c,v 1.4 1999/08/17 17:59:48 phelps Exp $";
+static const char cvsid[] = "$Id: gap.c,v 1.5 1999/09/07 14:02:41 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -70,10 +70,7 @@ static void do_paint(
     gap_t self, Display *display, Drawable drawable, 
     int offset, int w, int x, int y, unsigned int width, unsigned int height)
 {
-    XFillRectangle(
-	display, drawable, 
-	ScGCForBackground(self -> widget),
-	offset, y, w, height);
+    /* Nothing to do here people.  Move along */
 }
 
 /* The gap will never expire */
