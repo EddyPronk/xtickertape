@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.16 2002/04/09 22:44:03 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.17 2002/04/12 13:20:25 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -81,6 +81,9 @@ struct message
 
     /* The identifier for the message for which this is a reply */
     char *reply_id;
+
+    /* Non-zero if the message has been killed */
+    int is_killed;
 };
 
 
@@ -316,5 +319,17 @@ char *message_get_id(message_t self)
 char *message_get_reply_id(message_t self)
 {
     return self -> reply_id;
+}
+
+/* Answers non-zero if the mesage has been killed */
+int message_is_killed(message_t self)
+{
+    return self -> is_killed;
+}
+
+/* Set the message's killed status */
+void message_set_killed(message_t self, int is_killed)
+{
+    self -> is_killed = is_killed;
 }
 

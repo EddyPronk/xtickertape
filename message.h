@@ -35,7 +35,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.7 2002/04/09 17:06:58 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.8 2002/04/12 13:20:25 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */
@@ -99,5 +99,11 @@ char *message_get_id(message_t self);
 
 /* Answers the id of the message for which this is a reply */
 char *message_get_reply_id(message_t self);
+
+/* Answers non-zero if the mesage has been killed */
+int message_is_killed(message_t self);
+
+/* Set the message's killed status */
+void message_set_killed(message_t self, int is_killed);
 
 #endif /* MESSAGE_H */
