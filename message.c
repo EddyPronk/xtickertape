@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.15 2002/04/09 17:06:58 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.16 2002/04/09 22:44:03 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -120,7 +120,7 @@ message_t message_alloc(
     else
     {
 	/* Allocate some room for a copy of the mime args */
-	if ((self -> attachment = malloc(length + 1)) == NULL)
+	if ((self -> attachment = malloc(length)) == NULL)
 	{
 	    self -> length = 0;
 	}
@@ -128,7 +128,6 @@ message_t message_alloc(
 	{
 	    /* Make a copy of the attachment */
 	    memcpy(self -> attachment, attachment, length);
-	    self -> attachment[length] = '\0';
 	    self -> length = length;
 	}
     }
