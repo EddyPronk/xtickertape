@@ -22,11 +22,14 @@ AC_SEARCH_LIBS(crypt, crypt)
 AC_SEARCH_LIBS(fmod, m)
 
 # Figure out where X11 lives.
-AC_PATH_X
+AC_PATH_XTRA
 if test "$no_x" = yes ; then
     AC_MSG_ERROR("Unable to find the X11 package")
     exit 1
 fi
+
+CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+LIBS="$LIBS $X_LIBS"
 
 # Check to see if we can find the X library.
 AC_CHECK_LIB(X11, XOpenDisplay)
@@ -86,6 +89,7 @@ AC_PATH_PROG(METAMAIL, metamail, not found, $DSTCDIR/script:$PATH)
 if test "$METAMAIL" = "not found" ; then
 	echo "WARNING: \`metamail\' is missing on your system. Without it,"
 	echo "          xtickertape will be unable to decode MIME messages"
+	echo "Grab it from ftp://thumper.bellcore.com/pub/nsb/mm-2.7.tar.Z"
 else
 	AC_DEFINE_UNQUOTED(METAMAIL, "$METAMAIL")
 fi
