@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.2 2001/07/04 11:20:17 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.3 2001/07/04 11:49:31 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -436,6 +436,7 @@ static void realize(
     HistoryWidget self = (HistoryWidget)widget;
     Display *display = XtDisplay(self);
     XGCValues values;
+    message_t message;
 
     printf("History: realize() w=%d, h=%d\n", self -> core.width, self -> core.height);
 
@@ -444,7 +445,19 @@ static void realize(
 
     /* Create a GC for our own nefarious purposes */
     values.background = self -> core.background_pixel;
-    self -> history.gc = XCreateGC(display, XtWindow(widget), GCBackground, &values);
+    values.font = self -> history.font -> fid;
+    self -> history.gc = XCreateGC(display, XtWindow(widget), GCBackground | GCFont, &values);
+
+    /* Create a message */
+    message = message_alloc(
+	NULL,
+	"ÆgroupÆ", "ÆuserÆ", "ÆstringÆ", 10,
+	"x-elvin/url", "http://www.woolfit.com/",
+	strlen("http://www.woolfit.com/"), "tag",
+	"id", "reply_id");
+
+    /* Create a mesage view */
+    self -> history.mv = message_view_alloc(message, self -> history.font);
 }
 
 /* Draws the highlights and shadows */
@@ -549,15 +562,26 @@ static void redisplay(Widget widget, XEvent *event, Region region)
     HistoryWidget self = (HistoryWidget)widget;
     Display *display = XtDisplay(widget);
     Window window = XtWindow(widget);
+    XRectangle bbox;
+
+    /* Find the smallest rectangle which contains the region */
+    XClipBox(region, &bbox);
+
+
+    /* Draw something.  I don't know */
+    message_view_paint(
+	self -> history.mv, display, window, self -> history.gc,
+	self -> history.group_pixel, self -> history.user_pixel,
+	self -> history.string_pixel, self -> history.separator_pixel,
+	10, 10 + self -> history.font -> ascent, &bbox);
 
     /* Draw the highlights and shadows */
-    draw_highlights(display, window,
-		    self -> primitive.top_shadow_GC,
-		    self -> primitive.bottom_shadow_GC,
-		    0, 0, self -> core.width, self -> core.height,
-		    self -> primitive.shadow_thickness);
-
-    dprintf(("History: redisplay()\n"));
+    draw_highlights(
+	display, window,
+	self -> primitive.top_shadow_GC,
+	self -> primitive.bottom_shadow_GC,
+	0, 0, self -> core.width, self -> core.height,
+	self -> primitive.shadow_thickness);
 }
 
 
