@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.12 1998/06/04 02:03:55 bill Exp $ */
+/* $Id: ElvinConnection.c,v 1.13 1998/09/30 08:43:46 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -46,16 +46,31 @@ static void receiveCallback(elvin_t connection, void *object, uint32 id, en_noti
     char *mimeType;
     char *mimeArgs;
 
-    en_search(notify, "TICKERTAPE", &type, (void **)&group);
-    en_search(notify, "USER", &type, (void **)&user);
-    en_search(notify, "TICKERTEXT", &type, (void **)&text);
-    en_search(notify, "TIMEOUT", &type, (void **)&timeout);
-    if (en_search(notify, "MIME_TYPE", &type, (void **)&mimeType) != 0)
+    /* Get the group from the subscription */
+    group = Subscription_getGroup(subscription);
+
+    /* Get the user from the notification if one is provided */
+    if ((en_search(notify, "USER", &type, (void **)&user) != 0) || (type != EN_STRING))
+    {
+	user = "nobody";
+    }
+
+    if ((en_search(notify, "TICKERTEXT", &type, (void **)&text) != 0) || (type != EN_STRING))
+    {
+	text = "no message";
+    }
+
+    if ((en_search(notify, "TIMEOUT", &type, (void **)&timeout) != 0) || (type != EN_INT32))
+    {
+	*timeout = 10;
+    }
+
+    if ((en_search(notify, "MIME_TYPE", &type, (void **)&mimeType) != 0) || (type != EN_STRING))
     {
 	mimeType = NULL;
     }
 
-    if (en_search(notify, "MIME_ARGS", &type, (void **)&mimeArgs) != 0)
+    if ((en_search(notify, "MIME_ARGS", &type, (void **)&mimeArgs) != 0) || (type != EN_STRING))
     {
 	mimeArgs = NULL;
     }
@@ -76,11 +91,10 @@ static void errorCallback(elvin_t connection, void *arg, elvin_error_code_t code
 /* Add the subscription info for an 'group' to the buffer */
 void subscribeToItem(Subscription subscription, ElvinConnection self)
 {
-    char buffer[BUFFERSIZE];
-
     SANITY_CHECK(self);
-    sprintf(buffer, "TICKERTAPE == \"%s\"", Subscription_getGroup(subscription));
-    elvin_add_subscription(self -> connection, buffer, receiveCallback, subscription, 0);
+    elvin_add_subscription(
+	self -> connection, Subscription_getExpression(subscription),
+	receiveCallback, subscription, 0);
 }
 
 
