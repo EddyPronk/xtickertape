@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.113 2001/05/07 06:10:57 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.114 2001/05/07 06:46:05 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -49,6 +49,9 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.113 2001/05/07 06:10:57 phelps 
 #define DPRINTF(x)
 #endif
 
+#ifndef MAX
+#define MAX(x, y) (((x) < (y)) ? (y) : (x))
+#endif
 
 /*
  * Resources
@@ -346,8 +349,9 @@ static void glyph_holder_paint(
  */
 
 static void create_gc(ScrollerWidget self);
-static Pixel *create_faded_colors(Display *display, Colormap colormap,
-				XColor *first, XColor *last, unsigned int levels);
+static Pixel *create_faded_colors(
+    Display *display, Colormap colormap,
+    XColor *first, XColor *last, unsigned int levels);
 static void enable_clock(ScrollerWidget self);
 static void disable_clock(ScrollerWidget self);
 static void set_clock(ScrollerWidget self);
@@ -470,8 +474,7 @@ static glyph_t get_tail(ScrollerWidget self)
   of the widths of all glyphs */
 static int gap_width(ScrollerWidget self, int last_width)
 {
-    return (self -> core.width < last_width + self -> scroller.min_gap_width) ?
-	self -> scroller.min_gap_width : self -> core.width - last_width;
+    return MAX(self -> core.width - last_width, self -> scroller.min_gap_width);
 }
 
 /* Returns true if the queue contains no unexpired messages */
@@ -868,7 +871,8 @@ static void add_left_holder(ScrollerWidget self)
     int width;
 
     /* Find the first unexpired glyph to the left of the scroller */
-    glyph = self -> scroller.left_holder -> glyph -> previous;
+    glyph = self -> scroller.left_holder -> glyph;
+    glyph = glyph -> get_replacement(glyph) -> previous;
     while (glyph -> is_expired(glyph))
     {
 	glyph = glyph -> previous;
@@ -921,7 +925,8 @@ static void add_right_holder(ScrollerWidget self)
     int width;
 
     /* Find the first unexpired glyph to the right of the scroller */
-    glyph = self -> scroller.right_holder -> glyph -> next;
+    glyph = self -> scroller.right_holder -> glyph;
+    glyph = glyph -> get_replacement(glyph) -> next;
     while (glyph -> is_expired(glyph))
     {
 	glyph = glyph -> next;
