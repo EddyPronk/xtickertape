@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.85 2000/08/28 13:53:55 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.86 2000/10/06 06:01:12 bill Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -200,7 +200,7 @@ static void parse_args(
 	    /* --elvin= or -e */
 	    case 'e':
 	    {
-		if (elvin_handle_insert_server(handle, -1, optarg, error) == 0)
+		if (elvin_handle_append_url(handle, optarg, error) == 0)
 		{
 		    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
 		    exit(1);
@@ -215,7 +215,7 @@ static void parse_args(
 		if (! elvin_handle_set_discovery_scope(handle, optarg, error))
 		{
 		    fprintf(stderr, "Unable to set scope to %s\n", optarg);
-		    elvin_error_fprintf(stderr, "en", error);
+		    elvin_error_fprintf(stderr, error);
 		    exit(1);
 		}
 
@@ -295,7 +295,7 @@ static void parse_args(
     /* If the ELVIN_URL environment variable is set then add it to the list */
     if ((url = getenv("ELVIN_URL")) != NULL && *url != '\0')
     {
-	if (elvin_handle_insert_server(handle, 0, url, error) == 0)
+	if (elvin_handle_append_url(handle, url, error) == 0)
 	{
 	    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", url);
 	    exit(1);
@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
     XtAppAddActions(context, actions, XtNumber(actions));
 
     /* Initialize the elvin client library */
-    if ((error = elvin_xt_init("en", context)) == NULL)
+    if ((error = elvin_xt_init(context)) == NULL)
     {
 	fprintf(stderr, "*** elvin_xt_init(): failed\n");
 	abort();
