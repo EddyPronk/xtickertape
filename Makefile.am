@@ -1,5 +1,5 @@
 # First work out the executables
-bin_PROGRAMS = xtickertape
+bin_PROGRAMS = xtickertape test-parser
 bin_SCRIPTS = show-url
 
 # xtickertape has many sources
@@ -20,17 +20,23 @@ xtickertape_SOURCES = \
 	getopt.h getopt.c getopt1.c \
 	main.c
 
+test_parser_SOURCES = grammar.h parser.c
+
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
 # and also the show-url script
-EXTRA_DIST = XTickertape.ad show-url $(man_MANS)
+EXTRA_DIST = XTickertape.ad show-url $(man_MANS) grammar.pcg
 
 
 # Put the app-defaults somewhere...
 x11libdir = $(libdir)/X11
 appdefaultsdir = $(x11libdir)/app-defaults
+
+# Constructs grammar.h from grammar.pcg
+grammar.h: grammar.pcg
+	@TPC@ -o $@ $<
 
 # Construct XTickertape from XTickertape.ad
 install-data-local:
