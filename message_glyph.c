@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.9 1999/08/27 15:26:11 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.10 1999/09/07 14:08:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -184,80 +184,92 @@ static unsigned int get_width(message_glyph_t self)
 	SPACING;
 }
 
-/* Answers the width of the character in the given font */
-static unsigned int measure_char(XFontStruct *font, int ch)
+/* Answers statistics to use for a given character in the font */
+inline static XCharStruct *per_char(XFontStruct *font, int ch)
 {
     unsigned int first = font -> min_char_or_byte2;
     unsigned int last = font -> max_char_or_byte2;
 
-    /* Watch for the easy ones */
-    if ((first <= ch) && (ch <= last))
+    /* Look for the most common case first */
+    if ((first <= ch) || (ch <= last))
     {
-	return font -> per_char[ch - first].width;
+	return font -> per_char + ch - first;
     }
 
-    /* If the font's default char is valid then return its width */
+    /* If the font's default char is valid then use it */
     if ((first <= font -> default_char) && (font -> default_char <= last))
     {
-	return font -> per_char[font -> default_char - first].width;
+	return font -> per_char + font -> default_char - first;
     }
 
-    /* Failing that, try a space */
+    /* Ok, try using a space */
     if ((first <= ' ') && (' ' <= last))
     {
-	return font -> per_char[' ' - first].width;
+	return font -> per_char + ' ' - first;
     }
 
-    /* No luck there.  Resort to the font's max_width */
-    return font -> max_bounds.width;
+    /* If all else fails, default to the first character in the font */
+    return font -> per_char;
 }
 
 /* Measure all of the characters in a string */
-static unsigned int measure_string(XFontStruct *font, char *string)
+static unsigned int measure_string(XFontStruct *font, unsigned char *string)
 {
     unsigned char *pointer;
     unsigned int width = 0;
+    unsigned int result = 0;
 
-    for (pointer = (unsigned char *)string; *pointer != '\0'; pointer++)
+    /* Include the right bearing of the last character in the width */
+    for (pointer = string; *pointer != '\0'; pointer++)
     {
-	width += measure_char(font, *pointer);
+	result = width + per_char(font, *pointer) -> rbearing;
+	width += per_char(font, *pointer) -> width;
     }
 
-    return width;
+    return result;
 }
 
 /* Draws a String with an optional underline */
 static void paint_string(
     message_glyph_t self,
     Display *display, Drawable drawable, GC gc, XFontStruct *font,
-    int left, int right, int baseline, char *string, int do_underline,
+    int left, int right, int baseline, unsigned char *string, int do_underline,
     int x, int y, int width, int height)
 {
-    int char_width;
-    char *first;
-    char *last;
+    XCharStruct *char_info;
+    unsigned char *first;
+    unsigned char *last;
 
-    /* Make sure the string is visible left-to-right */
-    if ((x + width < left) || (right <= x))
+    /* If the glyph is off to the left of the rectangle then quit */
+    if (right < x)
+    {
+	return;
+    }
+
+    /* If the glyph is off to the right of the rectangle then quit */
+    first = string;
+    char_info = per_char(font, *first);
+    if ((x + width < left - char_info -> lbearing) && (x + width < left))
     {
 	return;
     }
 
     /* Find the first visible character in the string */
-    first = string;
-    while (left + (char_width = measure_char(font, *first)) < x)
+    while ((left + char_info -> rbearing < x) && (left + char_info -> width < x))
     {
-	left += char_width;
+	left += char_info -> width;
 	first++;
+	char_info = per_char(font, *first);
     }
 
-    /* Count the number of visible characters in the string */
+    /* Find the character *after* the last visible character */
     last = first;
     right = left;
-    while ((right < x + width) && (*last != '\0'))
+    while (((right - char_info -> lbearing < x + width) || (right < x + width)) && (*last != '\0'))
     {
-	right += measure_char(font, *last);
+	right += char_info -> width;
 	last++;
+	char_info = per_char(font, *last);
     }
 
 #ifdef DEBUG_GLYPH
