@@ -35,11 +35,57 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.1 1999/10/03 06:11:27 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.2 1999/10/04 02:49:58 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
 typedef struct usenet_parser *usenet_parser_t;
+
+/* The field type */
+enum field_name
+{
+    F_NONE,
+    F_BODY,
+    F_FROM,
+    F_EMAIL,
+    F_SUBJECT,
+    F_KEYWORDS,
+    F_XPOSTS
+};
+
+typedef enum field_name field_name_t;
+
+
+/* The operator type */
+enum op_name
+{
+    O_NONE,
+    O_MATCHES,
+    O_NOT,
+    O_EQ,
+    O_NEQ,
+    O_LT,
+    O_GT,
+    O_LTEQ,
+    O_GTEQ
+};
+
+typedef enum op_name op_name_t;
+
+
+/* The structure of an expression used in the callback */
+struct usenet_expr
+{
+    /* The field */
+    field_name_t field;
+
+    /* The operator */
+    op_name_t operator;
+
+    /* The pattern */
+    char *pattern;
+};
+
 
 /* Allocates and initializes a new usenet subscription parser */
 usenet_parser_t usenet_parser_alloc(char *tag);

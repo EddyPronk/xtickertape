@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.2 1999/10/03 12:44:11 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.3 1999/10/04 02:49:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -38,6 +38,7 @@ static const char cvsid[] = "$Id: usenet_parser.c,v 1.2 1999/10/03 12:44:11 phel
 #include "usenet_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
+#define INITIAL_EXPR_MAX 8
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(usenet_parser_t self, int ch);
@@ -57,37 +58,6 @@ typedef int (*lexer_state_t)(usenet_parser_t self, int ch);
 #define T_GT ">"
 #define T_LTEQ "<="
 #define T_GTEQ ">="
-
-/* The field type */
-enum field_name
-{
-    F_NONE,
-    F_BODY,
-    F_FROM,
-    F_EMAIL,
-    F_SUBJECT,
-    F_KEYWORDS,
-    F_XPOSTS
-};
-
-typedef enum field_name field_name_t;
-
-
-/* The operator type */
-enum op_name
-{
-    O_NONE,
-    O_MATCHES,
-    O_NOT,
-    O_EQ,
-    O_NEQ,
-    O_LT,
-    O_GT,
-    O_LTEQ,
-    O_GTEQ
-};
-
-typedef enum op_name op_name_t;
 
 /* The structure of a usenet_parser */
 struct usenet_parser
@@ -124,6 +94,15 @@ struct usenet_parser
 
     /* The operator of the current expression */
     op_name_t operator;
+
+    /* The usenet_expr patterns of the current group */
+    struct usenet_expr *expressions;
+
+    /* The next expression in the array */
+    struct usenet_expr *expr_pointer;
+
+    /* The end of the expression array */
+    struct usenet_expr *expr_end;
 };
 
 
@@ -149,7 +128,16 @@ static void parse_error(usenet_parser_t self, char *message)
 /* This is called when a complete group entry has been read */
 static int accept_group(usenet_parser_t self, char *group)
 {
-    printf("%s\n===\n", group);
+    struct usenet_expr *pointer;
+
+    printf("---\n%s\n", group);
+    for (pointer = self -> expressions; pointer < self -> expr_pointer; pointer++)
+    {
+	printf("  %d %d \"%s\"\n", pointer -> field, pointer -> operator, pointer -> pattern);
+	free(pointer -> pattern);
+    }
+
+    self -> expr_pointer = self -> expressions;
     return 0;
 }
 
@@ -161,7 +149,31 @@ static int accept_expression(
     op_name_t operator,
     char *pattern)
 {
-    printf("  expr: %d %d \"%s\"\n", field, operator, pattern);
+    /* Make sure there's room in the expressions table */
+    if (! (self -> expr_pointer < self -> expr_end))
+    {
+	/* Grow the expressions array */
+	struct usenet_expr *new_array;
+	ssize_t length = (self -> expr_end - self -> expressions) * 2;
+
+	/* Try to allocate more memory */
+	if ((new_array = (struct usenet_expr *)realloc(
+	    self -> expressions, sizeof(struct usenet_expr) * length)) == NULL)
+	{
+	    return -1;
+	}
+
+	/* Update the other pointers */
+	self -> expr_pointer = new_array + (self -> expr_pointer - self -> expressions);
+	self -> expressions = new_array;
+	self -> expr_end = self -> expressions + length;
+    }
+
+    /* Plug in the values */
+    self -> expr_pointer -> field = field;
+    self -> expr_pointer -> operator = operator;
+    self -> expr_pointer -> pattern = strdup(pattern);
+    self -> expr_pointer++;
     return 0;
 }
 
@@ -787,6 +799,16 @@ usenet_parser_t usenet_parser_alloc(char *tag)
 	return NULL;
     }
 
+    /* Allocate room for the expression array */
+    if ((self -> expressions = (struct usenet_expr *)malloc(
+	sizeof(struct usenet_expr) * INITIAL_EXPR_MAX)) == NULL)
+    {
+	free(self -> token);
+	free(self -> tag);
+	free(self);
+	return NULL;
+    }
+
     /* Initialize everything else to a sane value */
     self -> token_pointer = self -> token;
     self -> token_mark = self -> token;
@@ -797,6 +819,8 @@ usenet_parser_t usenet_parser_alloc(char *tag)
     self -> group = NULL;
     self -> field = F_NONE;
     self -> operator = O_NONE;
+    self -> expr_pointer = self -> expressions;
+    self -> expr_end = self -> expressions + INITIAL_EXPR_MAX;
     return self;
 }
 
@@ -805,6 +829,7 @@ void usenet_parser_free(usenet_parser_t self)
 {
     free(self -> tag);
     free(self -> token);
+    free(self -> expressions);
     free(self);
 }
 
