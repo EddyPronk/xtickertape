@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.18 1998/10/16 02:09:02 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.19 1998/10/16 03:46:04 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -20,8 +20,12 @@ static char *sanity_freed = "Freed ElvinConnection";
 #endif /* SANITY */
 
 /* Static function headers */
-static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notify);
+static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
+static void ReceiveMetaCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification);
 static void SubscribeToItem(Subscription subscription, ElvinConnection self);
+static void SubscribeToMeta(ElvinConnection self);
+static void ReadInput(ElvinConnection self);
+static void PublishStartupNotification(ElvinConnection self);
 static void Connect(ElvinConnection self);
 static void Reconnect(ElvinConnection self);
 static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, char *message);
@@ -52,6 +56,7 @@ struct ElvinConnection_t
     /* Our elvin connection */
     elvin_t elvin;
 
+    /* The state of our connection to the elvin server */
     ConnectionState state;
 
     /* The duration to wait before attempting to reconnect */
@@ -83,7 +88,7 @@ struct ElvinConnection_t
 static void (*QuenchCallback)(elvin_t elvin, void *arg, char *quench) = NULL;
 
 /* Callback for subscription thingo */
-static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notify)
+static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification)
 {
     Subscription subscription = (Subscription)object;
     en_type_t type;
@@ -98,31 +103,31 @@ static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t 
     group = Subscription_getGroup(subscription);
 
     /* Get the user from the notification if one is provided */
-    if ((en_search(notify, "USER", &type, (void **)&user) != 0) || (type != EN_STRING))
+    if ((en_search(notification, "USER", &type, (void **)&user) != 0) || (type != EN_STRING))
     {
 	user = "nobody";
     }
 
     /* Get the text of the notification (if any is provided) */
-    if ((en_search(notify, "TICKERTEXT", &type, (void **)&text) != 0) || (type != EN_STRING))
+    if ((en_search(notification, "TICKERTEXT", &type, (void **)&text) != 0) || (type != EN_STRING))
     {
 	text = "no message";
     }
 
     /* Get the timeout for the notification (if any is provided) */
-    if ((en_search(notify, "TIMEOUT", &type, (void **)&timeout) != 0) || (type != EN_INT32))
+    if ((en_search(notification, "TIMEOUT", &type, (void **)&timeout) != 0) || (type != EN_INT32))
     {
 	*timeout = 10;
     }
 
     /* Get the MIME type of the notification (if provided) */
-    if ((en_search(notify, "MIME_TYPE", &type, (void **)&mimeType) != 0) || (type != EN_STRING))
+    if ((en_search(notification, "MIME_TYPE", &type, (void **)&mimeType) != 0) || (type != EN_STRING))
     {
 	mimeType = NULL;
     }
 
     /* Get the MIME args of the notification (if provided) */
-    if ((en_search(notify, "MIME_ARGS", &type, (void **)&mimeArgs) != 0) || (type != EN_STRING))
+    if ((en_search(notification, "MIME_ARGS", &type, (void **)&mimeArgs) != 0) || (type != EN_STRING))
     {
 	mimeArgs = NULL;
     }
@@ -133,16 +138,74 @@ static void ReceiveCallback(elvin_t elvin, void *object, uint32 id, en_notify_t 
 	Message_alloc(group, user, text, *timeout, mimeType, mimeArgs));
 }
 
+/* Receive callbacks about the meta subscription */
+static void ReceiveMetaCallback(elvin_t elvin, void *object, uint32 id, en_notify_t notification)
+{
+    ElvinConnection self = (ElvinConnection) object;
+
+    SANITY_CHECK(self);
+    fprintf(stderr, "whoot!\n");
+}
 
 
 
-/* Add the subscription info for an 'group' to the buffer */
+
+/* Subscribe to a tickertape "group" */
 static void SubscribeToItem(Subscription subscription, ElvinConnection self)
 {
     SANITY_CHECK(self);
-    elvin_add_subscription(
-	self -> elvin, Subscription_getExpression(subscription),
-	ReceiveCallback, subscription, 0);
+
+    /* Don't try to subscribe if we've lost our connection */
+    if (self -> state == Connected)
+    {
+	elvin_add_subscription(
+	    self -> elvin, Subscription_getExpression(subscription),
+	    ReceiveCallback, subscription, 0);
+    }
+}
+
+/* Subscribe to the tickertape metagroup */
+static void SubscribeToMeta(ElvinConnection self)
+{
+    char buffer[BUFFERSIZE];
+    SANITY_CHECK(self);
+
+    /* Don't try to subscribe if we've lost our elvin connection */
+    if (self -> state != Connected)
+    {
+	return;
+    }
+
+    /* Listen for Orbit-related stuff */
+    sprintf(
+	buffer,
+	"exists(orbit.view_update) && exists(tickertape) && user == \"%s\"",
+	self -> user);
+    elvin_add_subscription(self -> elvin, buffer, ReceiveMetaCallback, self, 0);
+}
+
+/* Call this when the connection has data available */
+static void ReadInput(ElvinConnection self)
+{
+    SANITY_CHECK(self);
+
+    if (self -> state == Connected)
+    {
+	elvin_dispatch(self -> elvin);
+    }
+}
+
+/* Publish a notification to say that we're up and running */
+static void PublishStartupNotification(ElvinConnection self)
+{
+    en_notify_t notification;
+    SANITY_CHECK(self);
+
+    notification = en_new();
+    en_add_string(notification, "tickertape.startup_notification", "1.0");
+    en_add_string(notification, "user", self -> user);
+    elvin_notify(self -> elvin, notification);
+    en_free(notification);
 }
 
 /* Attempt to connect to the elvin server */
@@ -181,11 +244,14 @@ static void Connect(ElvinConnection self)
 		self -> errorSubscription,
 		Message_alloc("tickertape", "tickertape", buffer, 10, NULL, NULL));
 	}
-
-	self -> registrationData = 
-	    (*self -> registerFunc)(elvin_get_socket(self -> elvin), ElvinConnection_read, self);
-	List_doWith(self -> subscriptions, SubscribeToItem, self);
 	self -> state = Connected;
+
+	self -> registrationData = (*self -> registerFunc)(elvin_get_socket(self -> elvin), ReadInput, self);
+	List_doWith(self -> subscriptions, SubscribeToItem, self);
+
+	/* Subscribe to changes in our subscription information */
+	SubscribeToMeta(self);
+	PublishStartupNotification(self);
     }
 }
 
@@ -214,6 +280,7 @@ static void ErrorCallback(elvin_t elvin, void *arg, elvin_error_code_t code, cha
     /* Try to reconnect */
     Connect(self);
 }
+
 
 /* Answers a new ElvinConnection */
 ElvinConnection ElvinConnection_alloc(
@@ -253,7 +320,10 @@ void ElvinConnection_free(ElvinConnection self)
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
     /* Disconnect from elvin server */
-    elvin_disconnect(self -> elvin);
+    if (self -> state == Connected)
+    {
+	elvin_disconnect(self -> elvin);
+    }
 
     /* Free our memory */
     free(self);
@@ -274,14 +344,11 @@ void ElvinConnection_register(
 }
 
 
-
-
-
 /* Sends a message by posting an Elvin event */
 void ElvinConnection_send(ElvinConnection self, Message message)
 {
-    int32 timeout;
     en_notify_t notification;
+    int32 timeout;
 
     SANITY_CHECK(self);
 
@@ -307,13 +374,3 @@ void ElvinConnection_send(ElvinConnection self, Message message)
     en_free(notification);
 }
 
-/* Call this when the connection has data available */
-void ElvinConnection_read(ElvinConnection self)
-{
-    SANITY_CHECK(self);
-
-    if (self -> state == Connected)
-    {
-	elvin_dispatch(self -> elvin);
-    }
-}
