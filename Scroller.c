@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.14 1999/05/17 14:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.15 1999/05/18 00:12:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -239,7 +239,8 @@ static void Tick(XtPointer widget, XtIntervalId *interval);
 static void AddMessageView(ScrollerWidget self, MessageView view);
 static MessageView RemoveMessageView(ScrollerWidget self, MessageView view);
 static void EnqueueViewHolder(ScrollerWidget self, view_holder_t view_holder);
-
+static view_holder_t DequeueViewHolder(ScrollerWidget self);
+static view_holder_t RemoveViewHolder(ScrollerWidget self, view_holder_t view_holder);
 
 /* Allocates and initializes new view_holder_t.  Returns a valid
  * view_holder_t if successful, NULL otherwise */
@@ -407,13 +408,43 @@ static void EnqueueViewHolder(ScrollerWidget self, view_holder_t holder)
     if (self -> scroller.last_holder == NULL)
     {
 	self -> scroller.holders = holder;
-	self -> scroller.last_holder = holder;
-	return;
+    }
+    else
+    {
+	self -> scroller.last_holder -> next = holder;
     }
 
-    /* Otherwise, append the view_holder_t to the end of the list */
-    self -> scroller.last_holder -> next = holder;
     self -> scroller.last_holder = holder;
+}
+
+/* Removes the first view_holder_t from the receiver */
+static view_holder_t DequeueViewHolder(ScrollerWidget self)
+{
+    view_holder_t holder;
+
+    /* Watch for an empty list */
+    if ((holder = self -> scroller.holders) == NULL)
+    {
+	return holder;
+    }
+
+    self -> scroller.holders = holder -> next;
+
+    /* Watch for removal of the only holder */
+    if (self -> scroller.last_holder == holder)
+    {
+	self -> scroller.last_holder = NULL;
+    }
+
+    /* See if we've updated the spacer */
+    if (holder == self -> scroller.spacer)
+    {
+	self -> scroller.spacer = NULL;
+    }
+
+    /* Update the visible width */
+    self -> scroller.visibleWidth -= holder -> width;
+    return holder;
 }
 
 /* Removes a view_holder_t from the receiver */
@@ -424,23 +455,7 @@ static view_holder_t RemoveViewHolder(ScrollerWidget self, view_holder_t holder)
     /* Short cut for removing the first view_holder_t */
     if (self -> scroller.holders == holder)
     {
-	self -> scroller.holders = holder -> next;
-
-	/* Watch for removal of the last view_holder_t */
-	if (self -> scroller.last_holder == holder)
-	{
-	    self -> scroller.last_holder = NULL;
-	}
-
-	/* Update the spacer */
-	if (holder == self -> scroller.spacer)
-	{
-	    self -> scroller.spacer = NULL;
-	}
-
-	/* Update the visible width */
-	self -> scroller.visibleWidth -= holder -> width;
-	return holder;
+	return DequeueViewHolder(self);
     }
 
     /* Otherwise we spin through the list looking for the holder */
@@ -709,13 +724,16 @@ static void InWithTheNew(ScrollerWidget self)
 	    else
 	    {
 		lastWidth = last -> width;
-		if (self -> core.width < last -> width + END_SPACING)
+
+		/* This is (self -> core.width - lastWidth < END_SPACING)
+		 * written so that we don't have negative numbers */
+		if (self -> core.width < lastWidth + END_SPACING)
 		{
 		    width = END_SPACING;
 		}
 		else
 		{
-		    width = self -> core.width - last -> width;
+		    width = self -> core.width - lastWidth;
 		}
 	    }
 
@@ -991,7 +1009,7 @@ static void Kill(Widget widget, XEvent *event)
     if ((view = holder -> view) != NULL)
     {
 	MessageView_expireNow(view);
-	RemoveViewHolder(self, holder);
+	view_holder_free(RemoveViewHolder(self, holder));
 	Resize(widget);
     }
 }
