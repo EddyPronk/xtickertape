@@ -1,13 +1,13 @@
 /*
- * $Id: version.h,v 1.4 1998/11/12 04:47:57 phelps Exp $
+ * $Id: version.h,v 1.5 1998/12/17 01:26:51 phelps Exp $
  * Copyright!
  *
  * Merely contains the version number
  */
 
 #ifdef ORBIT
-#define VERSION "1.5.2 (orbit)"
+#define VERSION "1.5.3 (orbit)"
 #else /* ORBIT */
-#define VERSION "1.5.2"
+#define VERSION "1.5.3"
 #endif /* ORBIT */
 
