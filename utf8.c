@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.5 2003/01/17 16:00:17 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.6 2003/01/17 16:07:50 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -304,7 +304,7 @@ utf8_renderer_t utf8_renderer_alloc(
 	/* Yes.  Use it to create a conversion descriptor */
 	if ((cd = iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
 	{
-	    fprintf(stderr, "Unable convert from %s to %s: %s\n",
+	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
 		    tocode, UTF8_CODE, strerror(errno));
 	    return self;
 	}
@@ -788,7 +788,8 @@ utf8_encoder_t utf8_encoder_alloc(
     {
 	if ((self -> cd = iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
 	{
-	    perror("iconv_open() failed\n");
+	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
+		    UTF8_CODE, code_set, strerror(errno));
 	}
 
 	return self;
@@ -849,16 +850,34 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 	return strdup("");
     }
 
-    /* If we have no encoder then try a simple memcpy and hope for the best */
+    /* If we have no encoder then do a manual ASCII to UTF-8 and
+     * replace any characters with the high bit set with a `?' */
     if (self -> cd == (iconv_t)-1)
     {
-	if ((output = (char *)malloc(length)) == NULL)
+	int i;
+
+	/* The output will be the same size as the input */
+	if ((output = (char *)malloc(in_length)) == NULL)
 	{
 	    perror("malloc() failed");
 	    return NULL;
 	}
 
-	memcpy(output, input, in_length);
+	/* Copy, replacing any UTF-8 unfriendly characters */
+	for (i = 0; i < in_length; i++)
+	{
+	    int ch = input[i];
+
+	    if (ch & 0x80)
+	    {
+		output[i] = '?';
+	    }
+	    else
+	    {
+		output[i] = ch;
+	    }
+	}
+
 	return output;
     }
 
