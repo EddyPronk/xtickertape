@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Subscription.c,v 1.23 1999/01/20 04:57:41 phelps Exp $";
+static const char cvsid[] = "$Id: Subscription.c,v 1.24 1999/02/04 04:18:33 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -250,7 +250,7 @@ static Subscription ReadNextSubscription(
     maxTime = TranslateTime(token);
 
     /* optional subscription expression */
-    token = FileStreamTokenizer_nextWithSpec(tokenizer, "", "\n");
+    token = FileStreamTokenizer_nextWithSpec(tokenizer, "\r", "\n");
     if ((token == NULL) || (*token == '\n'))
     {
 	StringBuffer buffer = StringBuffer_alloc();
@@ -464,7 +464,7 @@ static void SendMessage(Subscription self, Message message)
 List Subscription_readFromGroupFile(
     FILE *groups, SubscriptionCallback callback, void *context)
 {
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(groups, ":", "\n");
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(groups, ":\r", "\n");
     List list = List_alloc();
     char *token;
 

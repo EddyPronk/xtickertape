@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.12 1998/12/24 05:48:30 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.13 1999/02/04 04:18:33 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -339,7 +339,7 @@ static void ReadNextTuple(FileStreamTokenizer tokenizer, StringBuffer buffer)
 
     /* Read the pattern */
     FileStreamTokenizer_skipWhitespace(tokenizer);
-    pattern = FileStreamTokenizer_nextWithSpec(tokenizer, "", "/\n");
+    pattern = FileStreamTokenizer_nextWithSpec(tokenizer, "\r", "/\n");
     DeleteTrailingWhitespace(pattern, " \t");
 
     if ((pattern == NULL) || (*pattern == '/') || (*field == '\n'))
@@ -477,7 +477,7 @@ static void ReadNextLine(FileStreamTokenizer tokenizer, char *token, StringBuffe
  * all of the usenet news stuff, which is written into buffer */
 static void ReadUsenetFile(FILE *file, StringBuffer buffer)
 {
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, " \t", "/\n");
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, " \t\r", "/\n");
     char *token;
     int isFirst = 1;
 
