@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.17 2001/08/25 14:04:43 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.18 2002/04/03 23:30:53 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -415,11 +415,11 @@ static int lex_menu(groups_parser_t self, int ch)
 	}
 
 	/* Make sure the token is either "menu" or "no menu" */
-	if (ELVIN_STRCASECMP(self -> token, "menu") == 0)
+	if (strcasecmp(self -> token, "menu") == 0)
 	{
 	    self -> in_menu = 1;
 	}
-	else if (ELVIN_STRCASECMP(self -> token, "no menu") == 0)
+	else if (strcasecmp(self -> token, "no menu") == 0)
 	{
 	    self -> in_menu = 0;
 	}
@@ -473,11 +473,11 @@ static int lex_nazi(groups_parser_t self, int ch)
 	}
 
 	/* Make sure the token is either "auto" or "manual" */
-	if (ELVIN_STRCASECMP(self -> token, "auto") == 0)
+	if (strcasecmp(self -> token, "auto") == 0)
 	{
 	    self -> has_nazi = 1;
 	}
-	else if (ELVIN_STRCASECMP(self -> token, "manual") == 0)
+	else if (strcasecmp(self -> token, "manual") == 0)
 	{
 	    self -> has_nazi = 0;
 	}
