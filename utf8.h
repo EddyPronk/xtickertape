@@ -33,7 +33,7 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.3 2003/01/22 13:35:40 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.4 2003/01/27 16:16:52 phelps Exp $";
 #endif /* lint */
 
 /* String measurements */
@@ -112,5 +112,8 @@ void utf8_encoder_free(utf8_encoder_t self);
 
 /* Encodes a string */
 char *utf8_encoder_encode(utf8_encoder_t self, char *input);
+
+/* Decodes a string */
+char *utf8_encoder_decode(utf8_encoder_t self, char *input);
 
 #endif /* MESSAGE_VIEW_H */

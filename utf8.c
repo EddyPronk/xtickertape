@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.7 2003/01/22 13:29:48 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.8 2003/01/27 16:16:52 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -858,8 +858,11 @@ void utf8_renderer_draw_underline(
 /* The structure of the UTF-8 encoder */
 struct utf8_encoder
 {
-    /* The conversion descriptor */
-    iconv_t cd;
+    /* The conversion descriptor for encoding (xxx to UTF-8) */
+    iconv_t encoder_cd;
+
+    /* The conversion descriptor for decoding (UTF-8 to xxx) */
+    iconv_t decoder_cd;
 };
 
 /* Allocate and initialize a utf8_encoder */
@@ -881,12 +884,19 @@ utf8_encoder_t utf8_encoder_alloc(
     }
 
     /* Initialize with a sane value */
-    self -> cd = (iconv_t)-1;
+    self -> encoder_cd = (iconv_t)-1;
+    self -> decoder_cd = (iconv_t)-1;
 
     /* If a code set was provided then use it */
     if (code_set != NULL)
     {
-	if ((self -> cd = do_iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
+	if ((self -> encoder_cd = do_iconv_open(UTF8_CODE, code_set)) == (iconv_t)-1)
+	{
+	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
+		    code_set, UTF8_CODE, strerror(errno));
+	}
+
+	if ((self -> decoder_cd = do_iconv_open(code_set, UTF8_CODE)) == (iconv_t)-1)
 	{
 	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
 		    UTF8_CODE, code_set, strerror(errno));
@@ -920,9 +930,17 @@ utf8_encoder_t utf8_encoder_alloc(
 	}
 
 	/* Open a conversion descriptor */
-	if ((self -> cd = do_iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
+	if ((self -> encoder_cd = do_iconv_open(UTF8_CODE, string)) == (iconv_t)-1)
 	{
-	    perror("iconv_open() failed");
+	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
+		    string, UTF8_CODE, strerror(errno));
+	}
+
+	/* Open the reverse conversion descriptor */
+	if ((self -> decoder_cd = do_iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
+	{
+	    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
+		    UTF8_CODE, string, strerror(errno));
 	}
 
 	free(string);
@@ -952,7 +970,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 
     /* If we have no encoder then do a manual ASCII to UTF-8 and
      * replace any characters with the high bit set with a `?' */
-    if (self -> cd == (iconv_t)-1)
+    if (self -> encoder_cd == (iconv_t)-1)
     {
 	int i;
 
@@ -995,7 +1013,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
     /* Otherwise encode away! */
     while (in_length != 0)
     {
-	if (iconv(self -> cd, &input, &in_length, &output, &out_length) == (size_t)-1)
+	if (iconv(self -> encoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
 	{
 	    /* If we're out of space then allocate some more */
 	    if (errno == E2BIG)
@@ -1008,7 +1026,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 		{
 		    perror("realloc() failed");
 		    free(output);
-		    return strdup("");
+		    return NULL;
 		}
 
 		out_length += new_length - length;
@@ -1019,15 +1037,110 @@ char *utf8_encoder_encode(utf8_encoder_t self, char *input)
 	    }
 	    else
 	    {
-		perror("iconv1() failed");
-		return strdup("");
+		perror("iconv() failed");
+		return NULL;
 	    }
 	}
-
-	*output = '\0';
     }
 
     return buffer;
 }
 
+/* Decodes a string */
+char *utf8_encoder_decode(utf8_encoder_t self, char *input)
+{
+    char *buffer;
+    char *output;
+    size_t in_length;
+    size_t out_length;
+    size_t length;
+
+    /* Measure the input string */
+    in_length = strlen(input) + 1;
+
+    /* Special case for empty strings */
+    if (in_length == 1)
+    {
+	return strdup("");
+    }
+
+    /* If we have no decoder then do a manual UTF-8 to ASCII and
+     * replace any characters with the high bit set with `?' */
+    if (self -> decoder_cd == (iconv_t)-1)
+    {
+	int ch;
+	int i;
+
+	/* The output will be no longer than the input */
+	if ((output = (char *)malloc(in_length)) == NULL)
+	{
+	    perror("malloc() failed");
+	    return NULL;
+	}
+
+	/* Copy, replacing any non-ASCII characters */
+	i = 0;
+	while ((ch = *input++) != 0)
+	{
+	    if ((ch & 0xc0) == 0xc0)
+	    {
+		output[i++] = '?';
+	    }
+	    else if ((ch & 0xc0) != 0x80)
+	    {
+		output[i++] = ch;
+	    }
+	}
+
+	/* Null-terminate the output string */
+	output[i] = 0;
+	return output;
+    }
+
+    /* Guess the length of the UTF-8 string */
+    length = in_length;
+    if ((buffer = (char *)malloc(length)) == NULL)
+    {
+	perror("malloc() failed");
+	return NULL;
+    }
+
+    output = buffer;
+    out_length = length;
+
+    /* Encode away */
+    while (in_length != 0)
+    {
+	if (iconv(self -> decoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
+	{
+	    /* If we're out of space then allocate some more */
+	    if (errno == E2BIG)
+	    {
+		char *new_buffer;
+		size_t new_length;
+
+		new_length = length * 2;
+		if ((new_buffer = realloc(buffer, new_length)) == NULL)
+		{
+		    perror("realloc() failed");
+		    free(output);
+		    return NULL;
+		}
+
+		out_length += new_length - length;
+		output = new_buffer + (output - buffer);
+
+		buffer = new_buffer;
+		length = new_length;
+	    }
+	    else
+	    {
+		perror("iconv() failed");
+		return NULL;
+	    }
+	}
+    }
+
+    return buffer;
+}
 
