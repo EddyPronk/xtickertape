@@ -1,0 +1,59 @@
+
+    Elvin Notification Service
+
+    Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1995-2000.
+    All Rights Reserved.
+
+    The software contained on this media is the property of the
+    DSTC Pty Ltd.  The following conditions apply:
+
+    - The DSTC grants you (hereafter, Licensee) a license to use the
+      Software for academic, research and non-commercial purposes only,
+      without a fee. Licensees may distribute the binary and source code to
+      third parties under the terms of this license but must ensure that
+      such distribution is under the terms of this license and this license
+      is ditributed along with the binaries and source.
+      
+    - The DSTC imposes no restrictions on any code developed using the
+      software. However, DSTC retains a non-exclusive royalty-free license
+      to any modifications to the distribution made by the licensee.
+
+    - Any Licensee wishing to make commercial use of the Software
+      should contact the DSTC to negotiate an appropriate license for such
+      commercial use.  Commercial use includes (1) integration of all or
+      part of the source code into a product for sale or commercial license
+      by or on behalf of Licensee to third parties, or (2) distribution of
+      the binary code or source code to third parties that need it to
+      utilize a commercial product sold or licensed by or on behalf of
+      Licensee.  DSTC Participants have special arrangements for commercial
+      use licenses.  Please contact DSTC for details.
+
+    - This software is being provided "AS IS" without warranty of
+      any kind, express, implied or otherwise, including without
+      limitation, any warranty of merchantability or fitness for a
+      particular purpose
+
+    - In no event shall DSTC Pty Ltd be liable for any special,
+      incidental, indirect or consequential damages of any kind, or any
+      damages whatsoever resulting from loss of use, data or profits,
+      whether or not advised of the possibility of damage, and on any
+      theory of liability, arising out of or in connection with the use or
+      performance of this software.
+
+    DSTC Pty Ltd welcomes comments and bug fixes related to this software.
+    Please address any queries, comments or bug fixes (please include the
+    name and version of the software you are using and details of your
+    operating system version) to the address below:
+
+          DSTC Pty Ltd
+          Level 7, General Purpose South
+          University of Queensland
+          St Lucia, 4072
+          Tel: +61 7 365 4310
+          Fax: +61 7 365 4311
+          Email: elvin@dstc.edu.au
+
+   Please note that DSTC does provide commercial licensing terms
+   available from the Elvin web:
+
+	http://www.dstc.edu.au/Elvin/download
