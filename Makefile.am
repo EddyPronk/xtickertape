@@ -31,7 +31,8 @@ man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5
 
 # Make sure we include the app-defaults file in the distribution
 # and also the show-url script
-EXTRA_DIST = XTickertape.ad show-url $(man_MANS) grammar.pcg
+EXTRA_DIST = XTickertape.ad show-url $(man_MANS) \
+	grammar.pcg index en
 
 
 # Put the app-defaults somewhere...
@@ -41,6 +42,10 @@ appdefaultsdir = $(x11libdir)/app-defaults
 # Constructs grammar.h from grammar.pcg
 grammar.h: grammar.pcg
 	@TPC@ -o $@ $<
+
+# How to construct the error macros
+errors.h: index en
+	@MCGEN@ -c -i index -l en -o $@
 
 # Construct XTickertape from XTickertape.ad
 install-data-local:
