@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.10 1999/08/19 05:26:05 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.11 1999/08/19 07:30:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,6 +40,8 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.10 1999/08/19 05:26:05 phelps
 #include <errno.h>
 #include <X11/Intrinsic.h>
 #include "sanity.h"
+#include "Message.h"
+#include "history.h"
 #include "tickertape.h"
 #include "Hash.h"
 #include "StringBuffer.h"
@@ -52,7 +54,6 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.10 1999/08/19 05:26:05 phelps
 #ifdef ORBIT
 #include "OrbitSubscription.h"
 #endif /* ORBIT */
-#include "history.h"
 
 #ifdef SANITY
 static char *sanity_value = "Ticker";
@@ -214,7 +215,8 @@ static void publish_startup_notification(tickertape_t self)
 static void click_callback(Widget widget, tickertape_t self, Message message)
 {
     SANITY_CHECK(self);
-    ControlPanel_show(self -> control_panel, message);
+    ControlPanel_select(self -> control_panel, message);
+    ControlPanel_show(self -> control_panel);
 }
 
 /* Receive a Message matched by Subscription */
@@ -593,7 +595,7 @@ tickertape_t tickertape_alloc(
     self -> mailSubscription = MailSubscription_alloc(
 	user, (MailSubscriptionCallback)receive_callback, self);
     self -> connection = NULL;
-    self -> history = history_alloc(self);
+    self -> history = history_alloc();
 
     init_ui(self);
 
@@ -697,6 +699,12 @@ void tickertape_debug(tickertape_t self)
 char *tickertape_user_name(tickertape_t self)
 {
     return self -> user;
+}
+
+/* Answers the tickertape's history_t */
+history_t tickertape_history(tickertape_t self)
+{
+    return self -> history;
 }
 
 /* Quit the application */
