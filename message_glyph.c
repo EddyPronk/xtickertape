@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.37 2001/06/15 13:06:57 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.38 2001/06/17 00:48:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -43,7 +43,10 @@ static const char cvsid[] = "$Id: message_glyph.c,v 1.37 2001/06/15 13:06:57 phe
 #define MIN(x, y) ((x < y) ? x : y)
 #define MAX(x, y) ((x > y) ? x : y)
 
+
+/* Various debugging flags */
 #if 0
+#define DEBUG_PER_CHAR 1
 #define DEBUG_GLYPH 1
 #endif
 
@@ -223,7 +226,7 @@ static message_t get_message(message_glyph_t self)
 static unsigned int get_width(message_glyph_t self)
 {
     return
-	-self -> group_lbearing +
+	MIN(0, -self -> group_lbearing) +
 	self -> group_width +
 	self -> separator_width +
 	self -> user_width +
@@ -244,7 +247,8 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
 	XCharStruct *per_char = font -> per_char + ch - first;
 
 	/* If the bounding box is non-zero then return this character */
-	if (per_char -> ascent != 0 || per_char -> descent != 0 ||
+	if (per_char -> width != 0 ||
+	    per_char -> ascent != 0 || per_char -> descent != 0 ||
 	    per_char -> lbearing != 0 || per_char -> rbearing != 0) {
 	    return font -> per_char + ch - first;
 	}
@@ -315,12 +319,13 @@ static unsigned int measure_string(XFontStruct *font, char *string, int *lbearin
     return (unsigned int)width;
 }
 
+#if 0
 /* Draws a String with an optional underline */
 static void paint_string(
     message_glyph_t self,
     Display *display, Drawable drawable, GC gc, XFontStruct *font,
-    int offset, int string_width, int baseline, char *string, int do_underline,
-    int x, int y, int width, int height)
+    int x, int string_width, int y, char *string, int do_underline,
+    XRectangle *bbox)
 {
     XCharStruct *char_info;
     char *first;
@@ -328,11 +333,11 @@ static void paint_string(
     int left, right;
 
     /* Find the first visible character in the string */
-    left = offset;
+    left = x;
     first = string;
     char_info = per_char(font, (unsigned char)*first);
 
-    while ((left + char_info -> rbearing < x) && (*first != '\0'))
+    while ((left + char_info -> rbearing < bbox -> x) && (*first != '\0'))
     {
 	left += char_info -> width;
 	first++;
@@ -343,125 +348,280 @@ static void paint_string(
     last = first;
     right = left;
 
-    while ((right + char_info -> lbearing < x + width) && (*last != '\0'))
+    while ((right + char_info -> lbearing < bbox -> x + bbox -> width) && (*last != '\0'))
     {
 	right += char_info -> width;
 	last++;
 	char_info = per_char(font, *last);
     }
 
-#ifdef DEBUG_GLYPH
+#if 0
     {
 	XGCValues values;
 
-	XFillRectangle(display, drawable, gc, offset, 0, string_width, height);
+	XFillRectangle(display, drawable, gc, x, 0, string_width, bbox -> height);
 	values.foreground = random();
 	XChangeGC(display, gc, GCForeground, &values);
     }
-#endif /* DEBUG */
+#endif
 
     /* Draw all of the characters of the string if there are any */
     if (*first != '\0')
     {
-	XDrawString(display, drawable, gc, left, baseline, first, last - first);
+	XDrawString(display, drawable, gc, left, y, first, last - first);
     }
 
     /* Draw the underline based on the string's width to avoid gaps */
     if (do_underline)
     {
 	XDrawLine(display, drawable, gc,
-		  MAX(offset, x), baseline + 1,
-		  MIN(offset + string_width, x + width), baseline + 1);
+		  MAX(x, bbox -> x), y + 1,
+		  MIN(x + string_width, bbox -> x + bbox -> width), y + 1);
+    }
+}
+#endif
+
+/* Draw a string, measuring the individual characters to ensure that
+ * we don't draw anything outside the bounding box */
+static void draw_string(
+    Display *display, Drawable drawable,
+    GC gc, XFontStruct *font,
+    int x, int y, XRectangle *bbox,
+    char *string)
+{
+    XCharStruct *char_info;
+    char *first;
+    char *last;
+    int left, right;
+
+    /* Find the first visible character in the string */
+    left = x;
+    first = string;
+    /* FIX THIS: what about multibyte characters? */
+    char_info = per_char(font, (unsigned char)*first);
+
+    while (left + char_info -> rbearing < bbox -> x && *first != '\0')
+    {
+	left += char_info -> width;
+	first++;
+	char_info = per_char(font, (unsigned char)*first);
+    }
+
+    /* Find the character after the last visible character */
+    last = first;
+    right = left;
+
+    while (right + char_info -> lbearing < bbox -> x + bbox -> width && *last != '\0')
+    {
+	right += char_info -> width;
+	last++;
+	char_info = per_char(font, (unsigned char)*last);
+    }
+
+#ifdef DEBUG_DRAW_STRING
+    {
+	XGCValues values;
+
+	values.foreground = random();
+	XChangeGC(display, gc, GCForeground, &values);
+    }
+#endif
+
+    /* Draw the visible characters (if any) */
+    if (*first != '\0')
+    {
+	XDrawString(display, drawable, gc, left, y, first, last - first);
     }
 }
 
 /* Draw the receiver */
 static void do_paint(
-    message_glyph_t self, Display *display, Drawable drawable,
-    int offset, int x, int y, int width, int height)
+    message_glyph_t self,
+    Display *display, Drawable drawable,
+    int x, int y, XRectangle *bbox)
 {
     int do_underline = message_has_attachment(self -> message);
     int level = self -> fade_level;
-    int baseline = self -> ascent;
-    int left = offset - self -> group_lbearing;
+    int baseline = y + self -> ascent;
+    int left = x - MIN(self -> group_lbearing, 0);
+
+#ifdef DEBUG_PER_CHAR
+    /* Draw the message the slow way, offset by one pixel so we
+     * can tell when we're misinterpreting the per_char information */
+    {
+	GC gc = ScGCForSeparator(self -> widget, level, bbox);
+	char *string;
+	int px = left;
+	int py = baseline;
+
+	/* Draw the strings the slow but easy way to make sure we
+	 * measure the characters properly */
+	string = message_get_group(self -> message);
+	XDrawString(display, drawable, gc, px, py, string, strlen(string));
+	px += self -> group_width;
+
+	string = ":";
+	XDrawString(display, drawable, gc, px, py, string, strlen(string));
+	px += self -> separator_width;
+
+	string = message_get_user(self -> message);
+	XDrawString(display, drawable, gc, px, py, string, strlen(string));
+	px += self -> user_width;
+
+	string = ":";
+	XDrawString(display, drawable, gc, px, py, string, strlen(string));
+	px += self -> separator_width;
+
+	string = message_get_string(self -> message);
+	XDrawString(display, drawable, gc, px, py, string, strlen(string));
+
+	/* Draw an underline */
+	if (do_underline) {
+	    XDrawLine(
+		display, drawable, gc,
+		left, baseline + 1,
+		left + self -> group_width + self -> separator_width +
+		self -> user_width + self -> separator_width + self -> string_width,
+		baseline + 1);
+	}
+    }
+#endif /* DEBUG_PER_CHAR */
 
 #ifdef DEBUG_GLYPH
-    /* Draw a rectangle around the message */
     {
-	GC gc = ScGCForSeparator(self -> widget, level, x, y, width, height);
-	unsigned int my_width = get_width(self);
-
-	XDrawRectangle(display, drawable, gc, offset, 0, my_width, height);
-	XFillRectangle(display, drawable, gc, offset, 0, my_width - self -> spacing, height);
+	/* Draw a rectangle around the message */
+	GC gc = ScGCForSeparator(self -> widget, level, bbox);
+	XDrawRectangle(display, drawable, gc, x, y, get_width(self) - 1, bbox -> height - 1);
     }
 #endif /* DEBUG_GLYPH */
 
-    /* Draw the group string if appropriate */
-    if (((x <= left + self -> group_rbearing) && (left + self -> group_lbearing <= x + width)) ||
-	((x <= left + self -> group_width) && (left <= x + width)))
+    /* Draw the group string if it's visible */
+    if ((bbox -> x <= left + self -> group_rbearing) &&
+	(left + self -> group_lbearing <= bbox -> x + bbox -> width))
     {
-	paint_string(
-	    self, display, drawable, ScGCForGroup(self -> widget, level, x, y, width, height),
+	draw_string(
+	    display, drawable,
+	    ScGCForGroup(self -> widget, level, bbox),
 	    ScFontForGroup(self -> widget),
-	    left, self -> group_width, baseline,
-	    message_get_group(self -> message), do_underline,
-	    x, y, width, height);
+	    left, baseline, bbox,
+	    message_get_group(self -> message));
     }
+
+    /* Underline it now to take advantage of GC caching */
+    if (do_underline &&
+	(bbox -> x <= left + self -> group_width) &&
+	(left <= bbox -> x + bbox -> width))
+    {
+	XDrawLine(
+	    display, drawable, 
+	    ScGCForGroup(self -> widget, level, bbox),
+	    MAX(left, bbox -> x), baseline + 1,
+	    MIN(left + self -> group_width, bbox -> x + bbox -> width), baseline + 1);
+    } 
 
     left += self -> group_width;
 
-    /* Draw the separator if appropriate */
-    if (((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width)) ||
-	((x <= left + self -> separator_rbearing) && (left <= x + width)))
+    /* Draw the separator string if it's visible */
+    if ((bbox -> x <= left + self -> separator_rbearing) &&
+	(left + self -> separator_lbearing <= bbox -> x + bbox -> width))
     {
-	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
+	draw_string(
+	    display, drawable,
+	    ScGCForSeparator(self -> widget, level, bbox),
 	    ScFontForSeparator(self -> widget),
-	    left, self -> separator_width, baseline,
-	    SEPARATOR, do_underline,
-	    x, y, width, height);
+	    left, baseline, bbox,
+	    SEPARATOR);
+    }
+
+    /* Underline it now to take advantage of GC caching */
+    if (do_underline &&
+	(bbox -> x <= left + self -> separator_width) &&
+	(left <= bbox -> x + bbox -> width))
+    {
+	XDrawLine(
+	    display, drawable,
+	    ScGCForSeparator(self -> widget, level, bbox),
+	    MAX(left, bbox -> x), baseline + 1,
+	    MIN(left + self -> separator_width, bbox -> x + bbox -> width), baseline + 1);
     }
 
     left += self -> separator_width;
 
-    /* Draw the user string if appropriate */
-    if (((x <= left + self -> user_rbearing) && (left + self -> user_lbearing <= x + width)) ||
-	((x <= left + self -> user_width) && (left <= x + width)))
+    /* Draw the user string if's visible */
+    if ((bbox -> x <= left + self -> user_rbearing) &&
+	(left + self -> user_lbearing <= bbox -> x + bbox -> width))
     {
-	paint_string(
-	    self, display, drawable, ScGCForUser(self -> widget, level, x, y, width, height),
+	draw_string(
+	    display, drawable,
+	    ScGCForUser(self -> widget, level, bbox),
 	    ScFontForUser(self -> widget),
-	    left, self -> user_width, baseline,
-	    message_get_user(self -> message), do_underline,
-	    x, y, width, height);
+	    left, baseline, bbox,
+	    message_get_user(self -> message));
+    }
+
+    /* Underline it now to take advantage of GC caching */
+    if (do_underline &&
+	(bbox -> x <= left + self -> user_width) &&
+	(left <= bbox -> x + bbox -> width))
+    {
+	XDrawLine(
+	    display, drawable,
+	    ScGCForUser(self -> widget, level, bbox),
+	    MAX(left, bbox -> x), baseline + 1,
+	    MIN(left + self -> user_width, bbox -> x + bbox -> width), baseline + 1);
     }
 
     left += self -> user_width;
 
-    /* Draw the separator if appropriate */
-    if (((x <= left + self -> separator_rbearing) && (left + self -> separator_lbearing <= x + width)) ||
-	((x <= left + self -> separator_width) && (left <= x + width)))
+    /* Draw the separator string if it's visible */
+    if ((bbox -> x <= left + self -> separator_rbearing) &&
+	(left + self -> separator_lbearing <= bbox -> x + bbox -> width))
     {
-	paint_string(
-	    self, display, drawable, ScGCForSeparator(self -> widget, level, x, y, width, height),
+	draw_string(
+	    display, drawable,
+	    ScGCForSeparator(self -> widget, level, bbox),
 	    ScFontForSeparator(self -> widget),
-	    left, self -> separator_width, baseline,
-	    SEPARATOR, do_underline,
-	    x, y, width, height);
+	    left, baseline, bbox,
+	    SEPARATOR);
+    }
+
+    /* Underline it now to take advantage of GC caching */
+    if (do_underline &&
+	(bbox -> x <= left + self -> separator_width) &&
+	(left <= bbox -> x + bbox -> width))
+    {
+	XDrawLine(
+	    display, drawable,
+	    ScGCForSeparator(self -> widget, level, bbox),
+	    MAX(left, bbox -> x), baseline + 1,
+	    MIN(left + self -> separator_width, bbox -> x + bbox -> width), baseline + 1);
+
     }
 
     left += self -> separator_width;
 
     /* Draw the message string if appropriate */
-    if (((x <= left + self -> string_rbearing) && (left + self -> string_lbearing <= x + width)) ||
-	((x <= left + self -> string_width) && (left <= x + width)))
+    if ((bbox -> x <= left + self -> string_rbearing) &&
+	(left + self -> separator_lbearing <= bbox -> x + bbox -> width))
     {
-	paint_string(
-	    self, display, drawable, ScGCForString(self -> widget, level, x, y, width, height),
+	draw_string(
+	    display, drawable,
+	    ScGCForString(self -> widget, level, bbox),
 	    ScFontForString(self -> widget),
-	    left, self -> string_width, baseline,
-	    message_get_string(self -> message), do_underline,
-	    x, y, width, height);
+	    left, baseline, bbox,
+	    message_get_string(self -> message));
+    }
+
+    /* Underline it now to take advantage of GC caching */
+    if (do_underline &&
+	(bbox -> x <= left + self -> string_width) &&
+	(left <= bbox -> x + bbox -> width))
+    {
+	XDrawLine(
+	    display, drawable,
+	    ScGCForString(self -> widget, level, bbox),
+	    MAX(left, bbox -> x), baseline + 1,
+	    MIN(left + self -> string_width, bbox -> x + bbox -> width), baseline + 1);
     }
 }
 

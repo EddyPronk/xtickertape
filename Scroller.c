@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.118 2001/06/15 13:09:17 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.119 2001/06/17 00:48:56 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -444,9 +444,13 @@ static void glyph_holder_paint(
     glyph_holder_t self, Display *display, Drawable drawable,
     int offset, int x, int y, unsigned int width, unsigned int height)
 {
-    self -> glyph -> paint(
-	self -> glyph, display, drawable,
-	offset, x, y, width, height);
+    XRectangle bbox;
+
+    bbox.x = x;
+    bbox.y = y;
+    bbox.width = width;
+    bbox.height = height;
+    self -> glyph -> paint(self -> glyph, display, drawable, offset, 0, &bbox); 
 }
 
 
@@ -591,29 +595,31 @@ GC ScGCForBackground(ScrollerWidget self)
 }
 
 /* Sets up a GC with the given foreground color and clip region */
-static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width, int height)
+static GC SetUpGC(ScrollerWidget self, Pixel foreground, XRectangle *bbox)
 {
     XGCValues values;
+    XRectangle clip;
 
     /* Try to reuse the clip mask if at all possible */
-    if (self -> scroller.clip_width == width)
+    if (self -> scroller.clip_width == bbox -> width)
     {
 	values.foreground = foreground;
-	values.clip_x_origin = x;
+	values.clip_x_origin = bbox -> x;
 	XChangeGC(XtDisplay(self), self -> scroller.gc, GCForeground | GCClipXOrigin, &values);
     }
     else
     {
-	XRectangle rectangle;
-
-	rectangle.x = 0;
-	rectangle.y = 0;
-	rectangle.width = width;
-	rectangle.height = y + height;
+	clip.x = 0;
+	clip.y = 0;
+	clip.width = bbox -> width;
+	clip.height = bbox -> height;
 
 	/* Set up the clip mask */
-	XSetClipRectangles(XtDisplay(self), self -> scroller.gc, x, 0, &rectangle, 1, Unsorted);
-	self -> scroller.clip_width = width;
+	XSetClipRectangles(XtDisplay(self),
+			   self -> scroller.gc,
+			   bbox -> x, bbox -> y,
+			   &clip, 1, Unsorted);
+	self -> scroller.clip_width = bbox -> width;
 
 	/* Set up the foreground color */
 	values.foreground = foreground;
@@ -624,27 +630,27 @@ static GC SetUpGC(ScrollerWidget self, Pixel foreground, int x, int y, int width
 }
 
 /* Answers a GC for displaying the Group field of a message at the given fade level */
-GC ScGCForGroup(ScrollerWidget self, int level, int x, int y, int width, int height)
+GC ScGCForGroup(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.groupPixels[level], x, y, width, height);
+    return SetUpGC(self, self -> scroller.groupPixels[level], bbox);
 }
 
 /* Answers a GC for displaying the User field of a message at the given fade level */
-GC ScGCForUser(ScrollerWidget self, int level, int x, int y, int width, int height)
+GC ScGCForUser(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.userPixels[level], x, y, width, height);
+    return SetUpGC(self, self -> scroller.userPixels[level], bbox);
 }
 
 /* Answers a GC for displaying the String field of a message at the given fade level */
-GC ScGCForString(ScrollerWidget self, int level, int x, int y, int width, int height)
+GC ScGCForString(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.stringPixels[level], x, y, width, height);
+    return SetUpGC(self, self -> scroller.stringPixels[level], bbox);
 }
 
 /* Answers a GC for displaying the field separators at the given fade level */
-GC ScGCForSeparator(ScrollerWidget self, int level, int x, int y, int width, int height)
+GC ScGCForSeparator(ScrollerWidget self, int level, XRectangle *bbox)
 {
-    return SetUpGC(self, self -> scroller.separatorPixels[level], x, y, width, height);
+    return SetUpGC(self, self -> scroller.separatorPixels[level], bbox);
 }
 
 /* Answers the XFontStruct to be use for displaying the group */

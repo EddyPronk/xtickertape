@@ -31,7 +31,7 @@
 #define GLYPH_H
 
 #ifndef lint
-static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.7 2001/06/15 13:06:57 phelps Exp $";
+static const char cvs_GLYPH_H[] = "$Id: glyph.h,v 1.8 2001/06/17 00:48:56 phelps Exp $";
 #endif /* lint */
 
 typedef struct glyph *glyph_t;
@@ -72,7 +72,7 @@ typedef unsigned int (*width_method_t)(glyph_t glyph);
  */
 typedef void (*paint_method_t)(
     glyph_t glyph, Display *display, Drawable drawable,
-    int offset, int x, int y, unsigned int width, unsigned int height);
+    int x, int y, XRectangle *bbox);
 
 /*
  * The signature of a function which answers True if the glyph has

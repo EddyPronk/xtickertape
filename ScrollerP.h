@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.39 2001/06/07 22:41:46 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.40 2001/06/17 00:48:56 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -187,16 +187,16 @@ typedef struct _ScrollerRec
 GC ScGCForBackground(ScrollerWidget self);
 
 /* Answers a GC to be used for displaying the group */
-GC ScGCForGroup(ScrollerWidget self, int level, int x, int y, int width, int height);
+GC ScGCForGroup(ScrollerWidget self, int level, XRectangle *bbox);
 
 /* Answers a GC to be used for displaying the user */
-GC ScGCForUser(ScrollerWidget self, int level, int x, int y, int width, int height);
+GC ScGCForUser(ScrollerWidget self, int level, XRectangle *bbox);
 
 /* Answers a GC to be used for displaying the string */
-GC ScGCForString(ScrollerWidget self, int level, int x, int y, int width, int height);
+GC ScGCForString(ScrollerWidget self, int level, XRectangle *bbox);
 
 /* Answers a GC to be used for displaying the separators */
-GC ScGCForSeparator(ScrollerWidget self, int level, int x, int y, int width, int height);
+GC ScGCForSeparator(ScrollerWidget self, int level, XRectangle *bbox);
 
 /* Answers the font to use for displaying the group */
 XFontStruct *ScFontForGroup(ScrollerWidget self);
