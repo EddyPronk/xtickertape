@@ -1,3 +1,11 @@
+1999-10-27  Ted Phelps  <phelps@pobox.com>
+
+	* panel.c: The tool-tip is not cancelled by a keyboard event
+
+1999-10-19  Ted Phelps  <phelps@pobox.com>
+
+	* usenet_sub.c: fixed the spelling of KEYWORDS
+	
 1999-10-07  Ted Phelps  <phelps@pobox.com>
 
 	* panel.c: added a tool-tip to the history panel which displays

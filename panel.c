@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.11 1999/10/07 06:25:57 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.12 1999/10/27 09:04:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -750,20 +750,14 @@ static void history_motion_callback(
 	    /* Make sure the tool-tip is not visible */
 	    hide_tool_tip(self);
 
-	    /* If we have a timer then reset it */
-	    if (self -> timer != 0)
-	    {
-		cancel_tool_tip_timer(self);
-	    }
-
-	    /* If any mouse button is down then ignore the event */
-	    if ((motion_event -> state & AnyButtonMask) != 0)
-	    {
-		return;
-	    }
-
+	    /* Ensure that the timer is not set */
 	    cancel_tool_tip_timer(self);
-	    set_tool_tip_timer(self, motion_event -> x, motion_event -> y);
+
+	    /* If no mouse buttons are down then restart the timer */
+	    if ((motion_event -> state & AnyButtonMask) == 0)
+	    {
+		set_tool_tip_timer(self, motion_event -> x, motion_event -> y);
+	    }
 
 	    return;
 	}
@@ -773,14 +767,12 @@ static void history_motion_callback(
 	{
 	    XCrossingEvent *crossing_event = (XEnterWindowEvent *)event;
 
-	    /* If any mouse button is down then ignore the event */
-	    if ((crossing_event -> state & AnyButtonMask) != 0)
+	    /* If no mouse buttons are down then restart the timer */
+	    if ((crossing_event -> state & AnyButtonMask) == 0)
 	    {
-		return;
+		set_tool_tip_timer(self, crossing_event -> x, crossing_event -> y);
 	    }
 
-	    /* Set the timer for a short pause before we show the tool-tip */
-	    set_tool_tip_timer(self, crossing_event -> x, crossing_event -> y);
 	    return;
 	}
 
@@ -789,18 +781,48 @@ static void history_motion_callback(
 	{
 	    XButtonEvent *button_event = (XButtonEvent *)event;
 
-	    /* If other buttons are still pressed then ignore this event */
-	    if ((button_event -> state & button_masks[button_event -> button]) != 0)
+	    /* If no buttons are pressed then restart the timer */
+	    if ((button_event -> state & button_masks[button_event -> button]) == 0)
 	    {
-		return;
+		set_tool_tip_timer(self, button_event -> x, button_event -> y);
 	    }
 
-	    /* Set the timer for a short pause before we show the tool-tip */
-	    set_tool_tip_timer(self, button_event -> x, button_event -> y);
 	    return;
 	}
 
-	/* Treat ButtonPress and LeaveNotify as identical */
+	/* Treat a key release as an enter if it was within our bounds */
+	case KeyRelease:
+	{
+	    XKeyEvent *key_event = (XKeyEvent *)event;
+
+	    /* Disable any existing timer */
+	    cancel_tool_tip_timer(self);
+
+	    /* Make sure no buttons are pressed */
+	    if ((key_event -> state & AnyButtonMask) == 0)
+	    {
+		Dimension width, height;
+
+		/* Determine the history list's bounds */
+		XtVaGetValues(
+		    self -> history,
+		    XmNwidth, &width,
+		    XmNheight, &height,
+		    NULL);
+
+		/* Make sure the key was released within the window */
+		if ((0 <= key_event -> x) && (key_event -> x < width) &&
+		    (0 <= key_event -> y) && (key_event -> y < height))
+		{
+		    set_tool_tip_timer(self, key_event -> x, key_event -> y);
+		}
+	    }
+
+	    return;
+	}
+
+	/* Treat KeyPress, ButtonPress and LeaveNotify as identical */
+	case KeyPress:
 	case ButtonPress:
 	case LeaveNotify:
 	{
@@ -836,8 +858,8 @@ static void create_history_box(control_panel_t self, Widget parent)
 	(XtCallbackProc)history_action_callback, (XtPointer)self);
     XtAddEventHandler(
  	self -> history,
-	EnterWindowMask | LeaveWindowMask | PointerMotionMask | 
-	ButtonPressMask | ButtonReleaseMask,
+	KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
+	EnterWindowMask | LeaveWindowMask | PointerMotionMask,
 	False,
 	(XtEventHandler)history_motion_callback,
 	(XtPointer)self);
