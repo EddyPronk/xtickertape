@@ -1,7 +1,10 @@
-/* $Id: MailSubscription.c,v 1.3 1998/12/18 07:56:45 phelps Exp $ */
+/* $Id: MailSubscription.c,v 1.4 1998/12/18 14:57:21 phelps Exp $ */
 
 #include <config.h>
 #include <stdlib.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
 #include "StringBuffer.h"
 #include "MailSubscription.h"
 #include "sanity.h"
@@ -153,15 +156,23 @@ static void HandleNotify(MailSubscription self, en_notify_t notification)
     /* Try to make the from field into something nice */
     if (from == NULL)
     {
+#ifdef HAVE_ALLOCA
 	from = "anonymous";
+#else /* HAVE_ALLOCA */
+	from = strdup("anonymous");
+#endif /* HAVE_ALLOCA */
     }
     else
     {
 	StringBuffer_clear(buffer);
 
 	GetNameFromEmail(buffer, from);
+#ifdef HAVE_ALLOCA
 	from = (char *)alloca(StringBuffer_length(buffer) + 1);
 	strcpy(from, StringBuffer_getBuffer(buffer));
+#else /* HAVE_ALLOCA */
+	from = strdup(StringBuffer_getBuffer(buffer));
+#endif /* HAVE_ALLOCA */
     }
 
     /* If we did get a folder, then add a "+" to the beginning of it's name */
@@ -181,6 +192,9 @@ static void HandleNotify(MailSubscription self, en_notify_t notification)
     message = Message_alloc(NULL, folder, from, subject, 60, NULL, NULL, 0, 0);
     (*self -> callback)(self -> context, message);
 
+#ifndef HAVE_ALLOCA
+    free(from);
+#endif /* HAVE_ALLOCA */
     StringBuffer_free(buffer);
 }
 

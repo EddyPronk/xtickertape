@@ -1,10 +1,12 @@
-/* $Id: Subscription.c,v 1.20 1998/12/18 07:56:45 phelps Exp $ */
+/* $Id: Subscription.c,v 1.21 1998/12/18 14:57:21 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
 #include "sanity.h"
 #include "Subscription.h"
 #include "FileStreamTokenizer.h"
@@ -193,8 +195,12 @@ static Subscription ReadNextSubscription(
     Subscription subscription;
 
     /* Copy the group token */
+#ifdef HAVE_ALLOCA
     group = (char *)alloca(strlen(firstToken) + 1);
     strcpy(group, firstToken);
+#else /* HAVE_ALLOCA */
+    group = strdup(firstToken);
+#endif /* HAVE_ALLOCA */
 
     /* 'menu' or 'no menu' */
     token = FileStreamTokenizer_next(tokenizer);
@@ -238,6 +244,9 @@ static Subscription ReadNextSubscription(
 	FileStreamTokenizer_skipToEndOfLine(tokenizer);
     }
 
+#ifndef HAVE_ALLOCA
+    free(group);
+#endif /* HAVE_ALLOCA */
     return subscription;
 }
 

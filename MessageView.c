@@ -1,10 +1,12 @@
-/* $Id: MessageView.c,v 1.31 1998/12/18 07:56:45 phelps Exp $ */
+/* $Id: MessageView.c,v 1.32 1998/12/18 14:57:21 phelps Exp $ */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/Xresource.h>
@@ -483,8 +485,12 @@ void MessageView_decodeMime(MessageView self)
     buffer = StringBuffer_alloc();
     StringBuffer_append(buffer, "/tmp/ticker");
     StringBuffer_appendInt(buffer, getpid());
+#ifdef HAVE_ALLOCA
     filename = (char *)alloca(StringBuffer_length(buffer) + 1);
     strcpy(filename, StringBuffer_getBuffer(buffer));
+#else /* HAVE_ALLOCA */
+    filename = strdup(StringBuffer_getBuffer(buffer));
+#endif /* HAVE_ALLOCA */
 
     file = fopen(filename, "wb");
     fputs(mimeArgs, file);
@@ -501,6 +507,9 @@ void MessageView_decodeMime(MessageView self)
 
     /* Remove the temporary file */
     unlink(filename);
+#ifndef HAVE_ALLOCA
+    free(filename);
+#endif /* HAVE_ALLOCA */
     StringBuffer_free(buffer);
 }
 
