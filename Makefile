@@ -31,7 +31,7 @@
 # History:
 #           08-Feb-1996  Bill Segall (bill) : created
 #
-# "@(#)$RCSfile: Makefile,v $ $Revision: 1.13 $"
+# "@(#)$RCSfile: Makefile,v $ $Revision: 1.14 $"
 #
 #############################################################################
 
@@ -45,7 +45,7 @@ include $(DSTCDIR)/install/Makefile.base
 
 # So we can make locally
 ifndef PROJDIR
-PROJDIR = units/arch/elvin3.11
+PROJDIR = units/arch/elvin3.12
 endif
 include $(DSTCDIR)/$(PROJDIR)/install/Makefile.elvin
 
