@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.1 1999/10/05 02:55:45 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.2 1999/10/05 04:31:46 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -41,7 +41,6 @@ static const char cvsid[] = "$Id: panel.c,v 1.1 1999/10/05 02:55:45 phelps Exp $
 #include <pwd.h>
 #include "history.h"
 #include "panel.h"
-#include "List.h"
 
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
@@ -85,10 +84,22 @@ char *timeouts[] =
 typedef struct menu_item_tuple *menu_item_tuple_t;
 struct menu_item_tuple
 {
+    /* The tuple's control panel */
     control_panel_t control_panel;
+
+    /* The tuple's push-button widget */
     Widget widget;
+
+    /* The title of the tuple's push-button widget */
     char *title;
+
+    /* The position of the widget in the pull-down menu */
+    int index;
+
+    /* The tuple's callback for button-press */
     control_panel_callback_t callback;
+
+    /* The user data for the tuple's callback */
     void *rock;
 };
 
@@ -109,6 +120,9 @@ struct control_panel
 
     /* The receiver's group menu */
     Widget group_menu;
+
+    /* The number of entries in the group menu */
+    int group_count;
 
     /* The receiver's timeout menu button */
     Widget timeout;
@@ -139,9 +153,6 @@ struct control_panel
 
     /* The currently selected subscription (group) */
     menu_item_tuple_t selection;
-
-    /* The list of subscriptions to appear in the group menu */
-    List subscriptions;
 
     /* The list of timeouts to appear in the timeout menu */
     char **timeouts;
@@ -481,7 +492,7 @@ static Cardinal order_group_menu(Widget item)
     self = tuple -> control_panel;
 
     /* Locate the menu item tuple corresponding to the given item */
-    return List_index(self -> subscriptions, tuple);
+    return tuple -> index;
 }
 
 /* Construct the menu for the Group list */
@@ -590,7 +601,7 @@ static void create_history_box(control_panel_t self, Widget parent)
 
     XtManageChild(self -> history);
 
-    /* Tell the tickertape's history to use this List widget */
+    /* Tell the tickertape's history to use this XmList widget */
     history_set_list(tickertape_history(self -> tickertape), self -> history);
 }
 
@@ -1232,6 +1243,7 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     self -> user = NULL;
     self -> group = NULL;
     self -> group_menu = NULL;
+    self -> group_count = 0;
     self -> timeout = NULL;
     self -> default_timeout = NULL;
     self -> mime_type = NULL;
@@ -1241,7 +1253,6 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     self -> history = NULL;
     self -> uuid_count = 0;
     self -> selection = NULL;
-    self -> subscriptions = List_alloc();
     self -> timeouts = timeouts;
     self -> message_id = NULL;
 
@@ -1267,7 +1278,6 @@ void *control_panel_add_subscription(
     control_panel_callback_t callback, void *rock)
 {
     XmString string;
-    Widget item;
     menu_item_tuple_t tuple;
 
     /* Create a tuple to hold callback information */
@@ -1280,30 +1290,25 @@ void *control_panel_add_subscription(
     /* Fill in the values of the tuple */
     tuple -> control_panel = self;
     tuple -> title = strdup(title);
+    tuple -> index = self -> group_count++;
     tuple -> callback = callback;
     tuple -> rock = rock;
-
-    /* Add the tuple to the receiver's list of subscriptions */
-    List_addLast(self -> subscriptions, tuple);
-
+    
     /* Create a menu item for the subscription.
      * Use the user data field to point to the tuple so that we can
      * find our way back to the control panel when we want to order the 
      * menu items */
     string = XmStringCreateSimple(title);
-    item = XtVaCreateManagedWidget(
+    tuple -> widget = XtVaCreateManagedWidget(
 	title, xmPushButtonWidgetClass, self -> group_menu,
 	XmNlabelString, string,
 	XmNuserData, tuple,
 	NULL);
     XmStringFree(string);
 
-    /* Add the widget to the tuple */
-    tuple -> widget = item;
-
     /* Add a callback to update the selection when the item is selected */
     XtAddCallback(
-	item, XmNactivateCallback,
+	tuple -> widget, XmNactivateCallback,
 	(XtCallbackProc)select_group, (XtPointer)tuple);
 
     /* If this is our first menu item, then select it by default */
@@ -1319,23 +1324,57 @@ void *control_panel_add_subscription(
 /* Removes a subscription from the receiver (tuple was returned by addSubscription) */
 void control_panel_remove_subscription(control_panel_t self, void *info)
 {
-    menu_item_tuple_t tuple;
+    menu_item_tuple_t tuple = (menu_item_tuple_t)info;
+    menu_item_tuple_t first_tuple = NULL;
+    Widget *children;
+    Widget *child;
+    int num_children;
 
-    /* Bail out if it's not in the List of subscriptions */
-    if ((tuple = (menu_item_tuple_t)List_remove(self -> subscriptions, info)) == NULL)
+    /* Make sure we haven't already remove it */
+    if (tuple -> widget == NULL)
     {
 	return;
     }
 
     /* Destroy it's widget so it isn't in the menu anymore */
     XtDestroyWidget(tuple -> widget);
+    tuple -> widget = NULL;
+
+    /* Update the indices of the other tuples */
+    XtVaGetValues(
+	self -> group_menu,
+	XmNnumChildren, &num_children,
+	XmNchildren, &children,
+	NULL);
+
+    for (child = children; child < children + num_children; child++)
+    {
+	menu_item_tuple_t child_tuple;
+
+	XtVaGetValues(*child, XmNuserData, &child_tuple, NULL);
+	if (child != NULL)
+	{
+	    /* Pull the following children up */
+	    if (tuple -> index < child_tuple -> index)
+	    {
+		child_tuple -> index--;
+	    }
+
+	    /* Remember the first tuple just in case */
+	    if ((child_tuple -> index == 0) && (child_tuple != tuple))
+	    {
+		first_tuple = child_tuple;
+	    }
+	}
+    }
 
     /* If it's the selected item, then change the selection to something else */
     if (self -> selection == tuple)
     {
-	menu_item_tuple_t selection = List_first(self -> subscriptions);
-	set_group_selection(self, selection);
+	set_group_selection(self, first_tuple);
     }
+
+    self -> group_count--;
 
     /* Free up some memory */
     free(tuple -> title);
@@ -1345,29 +1384,52 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
 /* Changes the location of the subscription within the control panel */
 void control_panel_set_index(control_panel_t self, void *info, int index)
 {
-    menu_item_tuple_t tuple;
+    menu_item_tuple_t tuple = (menu_item_tuple_t)info;
     XmString string;
+    Cardinal num_children;
+    Widget *children;
+    Widget *child;
 
-    /* Bail out if the tuple isn't here */
-    if ((tuple = (menu_item_tuple_t)List_remove(self -> subscriptions, info)) == NULL)
+    /* Bail now if the tuple isn't registered */
+    if (tuple -> widget == NULL)
     {
 	return;
     }
 
     /* Remove the item from the menu... */
     XtDestroyWidget(tuple -> widget);
+    tuple -> widget = NULL;
 
-    /* Insert the tuple in the appropriate location */
-    List_insert(self -> subscriptions, index, info);
+    /* Update the indices of the other tuples */
+    XtVaGetValues(
+	self -> group_menu,
+	XmNnumChildren, &num_children,
+	XmNchildren, &children,
+	NULL);
+    for (child = children; child < children + num_children; child++)
+    {
+	menu_item_tuple_t child_tuple;
+
+	XtVaGetValues(*child, XmNuserData, &child_tuple, NULL);
+	if (child != NULL)
+	{
+	    /* Push the following children along */
+	    if (index <= child_tuple -> index)
+	    {
+		child_tuple -> index++;
+	    }
+	}
+    }
 
     /* ... and put it back in the proper locations */
+    tuple -> index = index;
     string = XmStringCreateSimple(tuple -> title);
     tuple -> widget = XtVaCreateManagedWidget(
 	tuple -> title, xmPushButtonWidgetClass, self -> group_menu,
 	XmNlabelString, string,
 	XmNuserData, tuple,
 	NULL);
-    XmStringFree(string);
+	XmStringFree(string);
 
     /* Add a callback to update the selection when the item is specified */
     XtAddCallback(
