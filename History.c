@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.37 2001/10/05 14:56:55 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.38 2002/01/24 17:27:22 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -816,7 +816,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     Window window = XtWindow((Widget)self);
     message_view_t view;
     struct string_sizes sizes;
-    long y;
+    long y, delta_y;
     long width = 0;
     long height = 0;
     XRectangle bbox;
@@ -955,10 +955,20 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
     }
 
     /* Update our height */
+    if (self -> core.height < height)
+    {
+	delta_y = height - MAX(self -> history.height, self -> core.height);
+    }
+    else
+    {
+	delta_y = 0;
+    }
+
     self -> history.height = height;
 
     /* Update the scrollbars */
     update_scrollbars((Widget)self);
+    set_origin(self, self -> history.x, self -> history.y + delta_y, True);
 }
 
 
