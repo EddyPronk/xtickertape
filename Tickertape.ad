@@ -101,6 +101,12 @@
 	~Meta ~Alt Ctrl<Key>f: forward-character() \n\
 	~Meta ~Alt Ctrl<Key>k: delete-to-end-of-line() \n
 
+*XmList.translations: #override \n\
+	~Meta ~Alt Ctrl<Key>a: ListBeginLine() \n\
+	~Meta ~Alt Ctrl<Key>e: ListEndLine() \n\
+	~Meta ~Alt Ctrl<Key>p: ListPrevItem() \n\
+	~Meta ~Alt Ctrl<Key>n: ListNextItem() \n
+
 !
 ! Scroller action translations
 !
