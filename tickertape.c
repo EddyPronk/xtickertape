@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.90 2002/04/12 14:39:34 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.91 2002/04/14 22:33:17 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -55,6 +55,9 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.90 2002/04/12 14:39:34 phelps
 #include "parser.h"
 #endif /* ENABLE_LISP_INTERPRETER */
 
+#include "keys.h"
+#include "key_table.h"
+#include "keys_parser.h"
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -67,6 +70,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.90 2002/04/12 14:39:34 phelps
 #define DEFAULT_CONFIG_FILE "xtickertape.conf"
 #define DEFAULT_GROUPS_FILE "groups"
 #define DEFAULT_USENET_FILE "usenet"
+#define DEFAULT_KEYS_FILE "keys"
 
 #define METAMAIL_OPTIONS "-x", "-B", "-q"
 
@@ -119,6 +123,9 @@ struct tickertape
     /* The usenet file from which we read our usenet subscription */
     char *usenet_file;
 
+    /* The keys file from which we read ours and others' key locations */
+    char *keys_file;
+
     /* The top-level widget */
     Widget top;
 
@@ -130,6 +137,9 @@ struct tickertape
 
     /* The receiver's usenet subscription (from the usenet file) */
     usenet_sub_t usenet_sub;
+
+    /* The keys available for use */
+    key_table_t keys;
 
     /* The receiver's mail subscription */
     mail_sub_t mail_sub;
@@ -151,6 +161,7 @@ static int mkdirhier(char *dirname);
 static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(void *rock, message_t message, int show_attachment);
 static int parse_groups_file(tickertape_t self);
+static int parse_keys_file(tickertape_t self);
 static void init_ui(tickertape_t self);
 static char *tickertape_ticker_dir(tickertape_t self);
 #if 0
@@ -158,6 +169,7 @@ static char *tickertape_config_filename(tickertape_t self);
 #endif
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
+static char *tickertape_keys_filename(tickertape_t self);
 
 
 /*
@@ -308,6 +320,13 @@ static int write_default_file(tickertape_t self, FILE *out, char *template)
 		    break;
 		}
 
+		/* home directory */
+		case 'h':
+		{
+		    fputs(getenv("HOME"), out);
+		    break;
+		}
+
 		/* Anything else */
 		default:
 		{
@@ -432,8 +451,8 @@ static int parse_groups_callback(
     tickertape_t self, char *name,
     int in_menu, int has_nazi,
     int min_time, int max_time,
-    elvin_keys_t producer_keys,
-    elvin_keys_t consumer_keys)
+    elvin_keys_t notification_keys,
+    elvin_keys_t subscription_keys)
 {
     char *expression;
     group_sub_t subscription;
@@ -452,7 +471,7 @@ static int parse_groups_callback(
 	    name, expression,
 	    in_menu, has_nazi,
 	    min_time, max_time,
-	    producer_keys, consumer_keys,
+	    notification_keys, subscription_keys,
 	    receive_callback, self)) == NULL)
     {
 	return -1;
@@ -478,8 +497,7 @@ static int parse_groups_file(tickertape_t self)
     /* Allocate a new groups file parser */
     if ((parser = groups_parser_alloc(
 	(groups_parser_callback_t)parse_groups_callback,
-	self,
-	filename)) == NULL)
+	self, filename, self -> keys)) == NULL)
     {
 	return -1;
     }
@@ -594,6 +612,88 @@ static int parse_usenet_file(tickertape_t self)
 	{
 	    close(fd);
 	    usenet_parser_free(parser);
+	    return 0;
+	}
+    }
+}
+
+/* The callback for the keys file parser */
+static int parse_keys_callback(
+    void *rock, char *name,
+    char *data, int length,
+    int is_private)
+{
+    tickertape_t self = (tickertape_t)rock;
+
+    /* Check whether a key with that name already exists */
+    if (key_table_lookup(self -> keys, name, NULL, NULL, NULL) == 0)
+    {
+	return -1;
+    }
+
+    /* Add the key to the table */
+    if (key_table_add(self -> keys, name, data, length, is_private) < 0)
+    {
+	return -1;
+    }
+
+    return 0;
+}
+
+/* Parse the keys file and update the keys table accordingly */
+static int parse_keys_file(tickertape_t self)
+{
+    char *filename = tickertape_keys_filename(self);
+    keys_parser_t parser;
+    int fd;
+
+    /* Allocate a new keys file parser */
+    if ((parser = keys_parser_alloc(parse_keys_callback, self, filename)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Allocate a new key table */
+    if ((self -> keys = key_table_alloc()) == NULL)
+    {
+	keys_parser_free(parser);
+	return -1;
+    }
+
+    /* Make sure we can read the keys file */
+    if ((fd = open_config_file(self, filename, default_keys_file)) < 0)
+    {
+	keys_parser_free(parser);
+	return -1;
+    }
+
+    /* Keep reading from the file until we've read it all or got an error */
+    while (1)
+    {
+	char buffer[BUFFER_SIZE];
+	ssize_t length;
+
+	/* Read a chunk of the file */
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+	{
+	    close(fd);
+	    keys_parser_free(parser);
+	    return -1;
+	}
+
+	/* Send it to the parser */
+	if (keys_parser_parse(parser, buffer, length) < 0)
+	{
+	    close(fd);
+	    keys_parser_free(parser);
+	    return -1;
+	}
+
+	/* Watch for the end-of-file */
+	if (length == 0)
+	{
+	    close(fd);
+	    keys_parser_free(parser);
 	    return 0;
 	}
     }
@@ -716,6 +816,23 @@ void tickertape_reload_usenet(tickertape_t self)
 	self -> error);
 }
 
+/* Request from the control panel to reload the keys file */
+void tickertape_reload_keys(tickertape_t self)
+{
+    /* Release the old keys table */
+    if (self -> keys != NULL)
+    {
+	key_table_free(self -> keys);
+	self -> keys = NULL;
+    }
+
+    /* Try to read in the new one */
+    if (parse_keys_file(self) < 0)
+    {
+	/* FIX THIS: do something? */
+	return;
+    }
+}
 
 /* Initializes the User Interface */
 static void init_ui(tickertape_t self)
@@ -1557,6 +1674,7 @@ tickertape_t tickertape_alloc(
     char *config_file,
     char *groups_file,
     char *usenet_file,
+    char *keys_file,
     Widget top,
     elvin_error_t error)
 {
@@ -1577,6 +1695,7 @@ tickertape_t tickertape_alloc(
     self -> config_file = (config_file == NULL) ? NULL : strdup(config_file);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
+    self -> keys_file = (keys_file == NULL) ? NULL : strdup(keys_file);
     self -> top = top;
     self -> groups = NULL;
     self -> groups_count = 0;
@@ -1584,6 +1703,12 @@ tickertape_t tickertape_alloc(
     self -> mail_sub = NULL;
     self -> control_panel = NULL;
     self -> scroller = NULL;
+
+    /* Read the keys from the keys file */
+    if (parse_keys_file(self) < 0)
+    {
+	exit(1);
+    }
 
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)
@@ -1681,6 +1806,11 @@ void tickertape_free(tickertape_t self)
 	free(self -> groups_file);
     }
 
+    if (self -> keys_file != NULL)
+    {
+	free(self -> keys_file);
+    }
+
     for (index = 0; index < self -> groups_count; index++)
     {
 	group_sub_set_connection(self -> groups[index], NULL, self -> error);
@@ -1696,6 +1826,11 @@ void tickertape_free(tickertape_t self)
     {
 	usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
 	usenet_sub_free(self -> usenet_sub);
+    }
+
+    if (self -> keys != NULL)
+    {
+	key_table_free(self -> keys);
     }
 
     if (self -> control_panel)
@@ -1809,6 +1944,22 @@ static char *tickertape_usenet_filename(tickertape_t self)
     }
 
     return self -> usenet_file;
+}
+
+/* Answers the receiver's keys filename */
+static char *tickertape_keys_filename(tickertape_t self)
+{
+    if (self -> keys_file == NULL)
+    {
+	char *dir = tickertape_ticker_dir(self);
+	size_t length;
+
+	length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
+	self -> keys_file = (char *)malloc(length);
+	snprintf(self -> keys_file, length, "%s/%s", dir, DEFAULT_KEYS_FILE);
+    }
+
+    return self -> keys_file;
 }
 
 

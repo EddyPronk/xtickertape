@@ -35,7 +35,7 @@
 #define GROUPS_PARSER_H
 
 #ifndef lint
-static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.7 2001/08/25 14:04:43 phelps Exp $";
+static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.8 2002/04/14 22:33:16 phelps Exp $";
 #endif /* lint */
 
 /* The groups parser data type */
@@ -50,7 +50,11 @@ typedef int (*groups_parser_callback_t)(
     elvin_keys_t consumer_keys);
 
 /* Allocates and initializes a new groups file parser */
-groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag);
+groups_parser_t groups_parser_alloc(
+    groups_parser_callback_t callback,
+    void *rock,
+    char *tag,
+    key_table_t keys);
 
 /* Frees the resources consumed by the receiver */
 void groups_parser_free(groups_parser_t self);

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.38 2002/04/11 15:36:12 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.39 2002/04/14 22:33:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -73,11 +73,11 @@ struct group_sub
     /* The receiver's subscription expression */
     char *expression;
 
-    /* The receiver's producer keys */
-    elvin_keys_t producer_keys;
+    /* The receiver's notification keys */
+    elvin_keys_t notification_keys;
 
-    /* The receiver's consumer keys */
-    elvin_keys_t consumer_keys;
+    /* The receiver's subscription keys */
+    elvin_keys_t subscription_keys;
 
     /* Non-zero if the receiver should appear in the groups menu */
     int in_menu;
@@ -904,8 +904,8 @@ static void send_message(group_sub_t self, message_t message)
     elvin_async_notify(
 	self -> handle,
 	notification, 
-	1, /* deliver_insecure */
-	self -> producer_keys,
+	(self -> notification_keys == NULL) ? 1 : 0,
+	self -> notification_keys,
 	self -> error);
 
     /* And clean up */
@@ -931,8 +931,8 @@ group_sub_t group_sub_alloc(
     int has_nazi,
     int min_time,
     int max_time,
-    elvin_keys_t producer_keys,
-    elvin_keys_t consumer_keys,
+    elvin_keys_t notification_keys,
+    elvin_keys_t subscription_keys,
     group_sub_callback_t callback,
     void *rock)
 {
@@ -943,55 +943,41 @@ group_sub_t group_sub_alloc(
     {
 	return NULL;
     }
+    memset(self, 0, sizeof(struct group_sub));
 
     /* Copy the name string */
     if ((self -> name = strdup(name)) == NULL)
     {
-	free(self);
+	group_sub_free(self);
 	return NULL;
     }
 
     /* Copy the subscription expression */
     if ((self -> expression = strdup(expression)) == NULL)
     {
-	free(self -> name);
-	free(self);
+	group_sub_free(self);
 	return NULL;
     }
 
-    /* Copy the producer keys (if there are any) */
-    if (producer_keys != NULL)
+    /* Copy the notification keys (if there are any) */
+    if (notification_keys != NULL)
     {
-	self -> producer_keys = elvin_keys_clone(producer_keys, NULL);
-    }
-    else 
-    {
-	self -> producer_keys = NULL;
+	self -> notification_keys = elvin_keys_clone(notification_keys, NULL);
     }
 
-    /* Copy the consumer keys (if there are any) */
-    if (consumer_keys != NULL)
+    /* Copy the subscription keys (if there are any) */
+    if (subscription_keys != NULL)
     {
-	self -> consumer_keys = elvin_keys_clone(consumer_keys, NULL);
+	self -> subscription_keys = elvin_keys_clone(subscription_keys, NULL);
     }
-    else
-    {
-	self -> consumer_keys = NULL;
-    }
-    /* Initialize everything else to a sane value */
+
+    /* Copy the rest of the initializers */
     self -> in_menu = in_menu;
     self -> has_nazi = has_nazi;
     self -> min_time = min_time;
     self -> max_time = max_time;
-    self -> control_panel = NULL;
-    self -> control_panel_rock = NULL;
-    self -> handle = NULL;
-    self -> error = NULL;
-    self -> subscription = NULL;
     self -> callback = callback;
     self -> rock = rock;
-    self -> is_pending = 0;
-
     return self;
 }
 
@@ -1010,16 +996,16 @@ void group_sub_free(group_sub_t self)
 	self -> expression = NULL;
     }
 
-    if (self -> producer_keys)
+    if (self -> notification_keys)
     {
-	elvin_keys_free(self -> producer_keys, NULL);
-	self -> producer_keys = NULL;
+	elvin_keys_free(self -> notification_keys, NULL);
+	self -> notification_keys = NULL;
     }
 
-    if (self -> consumer_keys)
+    if (self -> subscription_keys)
     {
-	elvin_keys_free(self -> consumer_keys, NULL);
-	self -> consumer_keys = NULL;
+	elvin_keys_free(self -> subscription_keys, NULL);
+	self -> subscription_keys = NULL;
     }
 
     /* Don't free a pending subscription */
@@ -1037,14 +1023,112 @@ char *group_sub_expression(group_sub_t self)
     return self -> expression;
 }
 
+/* Compares two key blocks (possibly NULL) and returns whether they
+ * are equivalent.  It would be convenient if libelvin could do
+ * this. */
+static int keys_equal(elvin_keys_t self, elvin_keys_t keys)
+{
+#if defined(ELVIN_VERSION_AT_LEAST)
+#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
+    int matched;
+#endif
+#endif
+
+    /* Shortcut: if self is NULL then the decision is equal */
+    if (self == NULL)
+    {
+	return keys == NULL ? 1 : 0;
+    }
+
+    /* If keys is NULL then they can't match */
+    if (keys == NULL)
+    {
+	return 0;
+    }
+
+    /* Are the key blocks subsets of each other? */
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+    return elvin_keys_contains_all(self, keys, NULL) &&
+	elvin_keys_contains_all(keys, self, NULL);
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+    /* Is self a superset of keys? */
+    if (! elvin_keys_contains_all(self, keys, &matched, NULL))
+    {
+	return -1;
+    }
+
+    if (! matched)
+    {
+	return 0;
+    }
+
+    /* Is keys a superset of self? */
+    if (! elvin_keys_contains_all(keys, self, &matched, NULL))
+    {
+	return -1;
+    }
+
+    return matched;
+#endif /* ELVIN_VERSION_AT_LEAST */
+}
 
 /* Updates the receiver to look just like subscription in terms of
- * name, in_menu, autoMime, min_time, max_time, callback and rock,
- * but NOT expression */
+ * name, in_menu, autoMime, min_time, max_time, keys, callback and
+ * rock, but NOT expression */
 void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
 {
+    int sub_changed = 0;
+
     /* Release any dynamically allocated strings in the receiver */
     free(self -> name);
+
+    /* Compare the notification keys */
+    if (! keys_equal(self -> notification_keys, subscription -> notification_keys))
+    {
+	sub_changed = 1;
+
+	/* Free the old key block */
+	if (self -> notification_keys != NULL)
+	{
+	    elvin_keys_free(self -> notification_keys, NULL);
+	    self -> notification_keys = NULL;
+	}
+
+	/* Clone the new key block */
+	if (subscription -> notification_keys != NULL)
+	{
+	    self -> notification_keys = elvin_keys_clone(
+		subscription -> notification_keys, NULL);
+	}
+    }
+
+    /* Compare the subscription keys */
+    if (! keys_equal(self -> subscription_keys, subscription -> subscription_keys))
+    {
+	sub_changed = 1;
+
+	/* Free the old key block */
+	if (self -> subscription_keys != NULL)
+	{
+	    elvin_keys_free(self -> subscription_keys, NULL);
+	    self -> subscription_keys = NULL;
+	}
+
+	/* Clone the new key block */
+	if (subscription -> subscription_keys != NULL)
+	{
+	    self -> subscription_keys = elvin_keys_clone(
+		subscription -> subscription_keys, NULL);
+	}
+    }
+
+    /* Update the key blocks */
+    if (sub_changed)
+    {
+	/* Modify the subscription on the server */
+	/* FIX THIS: blech! */
+	abort();
+    }
     
     /* Copy various fields */
     self -> name = strdup(subscription -> name);
@@ -1114,8 +1198,8 @@ void group_sub_set_connection(group_sub_t self, elvin_handle_t handle, elvin_err
     {
 	if (elvin_async_add_subscription(
 	    self -> handle, self -> expression,
-	    self -> consumer_keys,
-	    (self -> consumer_keys == NULL) ? 1 : 0,
+	    self -> subscription_keys,
+	    (self -> subscription_keys == NULL) ? 1 : 0,
 	    notify_cb, self,
 	    subscribe_cb, self,
 	    error) == 0)

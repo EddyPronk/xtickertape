@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.18 2002/04/03 23:30:53 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.19 2002/04/14 22:33:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -37,6 +37,8 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.18 2002/04/03 23:30:53 phe
 #include <ctype.h>
 #include <string.h>
 #include <elvin/elvin.h>
+#include <elvin/sha1.h>
+#include "key_table.h"
 #include "groups_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
@@ -47,6 +49,11 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.18 2002/04/03 23:30:53 phe
 #define PRODUCER_KEYS_MSG "illegal producer key: `%s'"
 #define EXTRA_ERROR_MSG "superfluous characters: `%s'"
 
+
+/* libvin 4.0 has a poorly named macro */
+#if ! defined(ELVIN_SHA1DIGESTLEN)
+#define ELVIN_SHA1DIGESTLEN SHA1DIGESTLEN
+#endif
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -93,11 +100,26 @@ struct groups_parser
     /* The maximum timeout value for the current group */
     int max_time;
 
-    /* The producer keys */
-    elvin_keys_t producer_keys;
+    /* The table of keys to use */
+    key_table_t key_table;
 
-    /* The consumer keys */
-    elvin_keys_t consumer_keys;
+    /* The number of private keys */
+    int private_key_count;
+
+    /* The private keys */
+    char **private_keys;
+
+    /* The length of each private key */
+    int *private_key_lengths;
+
+    /* The number of public keys */
+    int public_key_count;
+
+    /* The public keys */
+    char **public_keys;
+
+    /* The length of each public key */
+    int *public_key_lengths;
 };
 
 
@@ -111,12 +133,8 @@ static int lex_nazi(groups_parser_t self, int ch);
 static int lex_min_time(groups_parser_t self, int ch);
 static int lex_max_time(groups_parser_t self, int ch);
 static int lex_bad_time(groups_parser_t self, int ch);
-static int lex_producer_keys_ws(groups_parser_t self, int ch);
-static int lex_producer_keys(groups_parser_t self, int ch);
-static int lex_producer_keys_esc(groups_parser_t self, int ch);
-static int lex_consumer_keys_ws(groups_parser_t self, int ch);
-static int lex_consumer_keys(groups_parser_t self, int ch);
-static int lex_consumer_keys_esc(groups_parser_t self, int ch);
+static int lex_keys_ws(groups_parser_t self, int ch);
+static int lex_keys(groups_parser_t self, int ch);
 static int lex_superfluous(groups_parser_t self, int ch);
 
 
@@ -124,6 +142,9 @@ static int lex_superfluous(groups_parser_t self, int ch);
 static int accept_subscription(groups_parser_t self)
 {
     int result;
+    int i;
+    elvin_keys_t notification_keys = NULL;
+    elvin_keys_t subscription_keys = NULL;
 
     /* Make sure there is a callback */
     if (self -> callback == NULL)
@@ -131,89 +152,249 @@ static int accept_subscription(groups_parser_t self)
 	return 0;
     }
 
+    /* If there are keys then make a key block */
+    if (self -> private_key_count != 0 || self -> public_key_count != 0)
+    {
+	/* Construct a notification key block */
+	if ((notification_keys = elvin_keys_alloc(NULL)) == NULL)
+	{
+	    abort();
+	}
+
+	/* Construct a subscription key block */
+	if ((subscription_keys = elvin_keys_alloc(NULL)) == NULL)
+	{
+	    abort();
+	}
+
+	/* Add the private keys to the notification block */
+	for (i = 0; i < self -> private_key_count; i++)
+	{
+	    if (self -> private_key_count != 0)
+	    {
+		/* SHA1 dual */
+		if (! elvin_keys_add(notification_keys,
+				     ELVIN_KEY_SCHEME_SHA1_DUAL,
+				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				     self -> private_keys[i],
+				     self -> private_key_lengths[i],
+				     NULL))
+		{
+		    return -1;
+		}
+	    }
+
+	    /* SHA1 consumer */
+	    if (! elvin_keys_add(notification_keys,
+				 ELVIN_KEY_SCHEME_SHA1_CONSUMER,
+				 ELVIN_KEY_SHA1_CONSUMER_INDEX,
+				 self -> public_keys[i],
+				 self -> public_key_lengths[i],
+				 NULL))
+	    {
+		return -1;
+	    }
+	}
+
+	/* Add the public keys to the notification key blcok */
+	for (i = 0; i < self -> public_key_count; i++)
+	{
+	    /* SHA1 dual */
+	    if (! elvin_keys_add(notification_keys,
+				 ELVIN_KEY_SCHEME_SHA1_DUAL,
+				 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				 self -> public_keys[i],
+				 self -> public_key_lengths[i],
+				 NULL))
+	    {
+		return -1;
+	    }
+	}
+
+	/* Add the public keys to the subscription key block */
+	for (i = 0; i < self -> private_key_count; i++)
+	{
+	    /* SHA1 dual */
+	    if (! elvin_keys_add(subscription_keys,
+				 ELVIN_KEY_SCHEME_SHA1_DUAL,
+				 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+				 self -> private_keys[i],
+				 self -> private_key_lengths[i],
+				 NULL))
+	    {
+		return -1;
+	    }
+	}
+
+	/* Add the public keys to the subscription key block */
+	for (i = 0; i < self -> public_key_count; i++)
+	{
+	    if (self -> private_key_count != 0)
+	    {
+		/* SHA1 dual */
+		if (! elvin_keys_add(subscription_keys,
+				     ELVIN_KEY_SCHEME_SHA1_DUAL,
+				     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+				     self -> public_keys[i],
+				     self -> public_key_lengths[i],
+				     NULL))
+		{
+		    return -1;
+		}
+	    }
+
+	    /* SHA1 producer */
+	    if (! elvin_keys_add(subscription_keys,
+				 ELVIN_KEY_SCHEME_SHA1_PRODUCER,
+				 ELVIN_KEY_SHA1_PRODUCER_INDEX,
+				 self -> public_keys[i],
+				 self -> public_key_lengths[i],
+				 NULL))
+	    {
+		return -1;
+	    }
+	}
+    }
+
     /* Call it with the information */
     result = (self -> callback)(
 	self -> rock, self -> name,
 	self -> in_menu, self -> has_nazi,
 	self -> min_time, self -> max_time,
-	self -> producer_keys,
-	self -> consumer_keys);
+	notification_keys,
+	subscription_keys);
+
+    /* Free the private keys */
+    for (i = 0; i < self -> private_key_count; i++)
+    {
+	free(self -> private_keys[i]);
+    }
+
+    if (self -> private_keys != NULL)
+    {
+	free(self -> private_keys);
+	self -> private_keys = NULL;
+
+	free(self -> private_key_lengths);
+	self -> private_key_lengths = NULL;
+
+	self -> private_key_count = 0;
+    }
+
+    /* Free the public keys */
+    for (i = 0; i < self -> public_key_count; i++)
+    {
+	free(self -> public_keys[i]);
+    }
+
+    if (self -> public_keys != NULL)
+    {
+	free(self -> public_keys);
+	self -> public_keys = NULL;
+
+	free(self -> public_key_lengths);
+	self -> public_key_lengths = NULL;
+
+	self -> public_key_count = 0;
+    }
 
     /* Clean up */
-    if (self -> producer_keys != NULL)
-    {
-	elvin_keys_free(self -> producer_keys, NULL);
-	self -> producer_keys = NULL;
-    }
-
-    if (self -> consumer_keys != NULL)
-    {
-	elvin_keys_free(self -> consumer_keys, NULL);
-	self -> consumer_keys = NULL;
-    }
-
     free(self -> name);
     return result;
 }
 
-/* Adds a producer key to the current list */
-static int accept_producer_key(groups_parser_t self, char *string)
+/* Adds a key to the current list */
+static int accept_key(groups_parser_t self, char *name)
 {
-#if 0
-    elvin_key_t key;
+    char *data;
+    int length;
+    int is_private;
+    void *new_names;
+    void *new_lengths;
+    char public_key[ELVIN_SHA1DIGESTLEN];
 
-    /* Make sure we have a key set */
-    if (self -> producer_keys == NULL)
+    /* Look up the key in the table */
+    if (key_table_lookup(
+	    self -> key_table, name,
+	    &data, &length, &is_private) < 0)
     {
-	if ((self -> producer_keys = elvin_keys_alloc(7, NULL)) == NULL)
+	/* FIX THIS: report that the key is unknown */
+	return -1;
+    }
+
+    if (is_private)
+    {
+	/* Grow the array of private keys */
+	if ((new_names = realloc(
+		 self -> private_keys,
+		 (self -> private_key_count + 1) * sizeof(char *))) == NULL)
 	{
-	    abort();
+	    return -1;
 	}
-    }
 
-    /* Create our producer key */
-    if ((key = elvin_keyraw_alloc((uchar *)string, strlen(string), NULL)) == NULL)
-    {
-	abort();
-    }
+	self -> private_keys = new_names;
 
-    /* Add it to the keys */
-    if (elvin_keys_add(self -> producer_keys, key, NULL) == 0)
-    {
-	abort();
-    }
-#endif
-
-    return 0;
-}
-
-/* Adds a consumer key to the current list */
-static int accept_consumer_key(groups_parser_t self, char *string)
-{
-#if 0
-    elvin_key_t key;
-
-    /* Make sure we have a key set */
-    if (self -> consumer_keys == NULL)
-    {
-	if ((self -> consumer_keys = elvin_keys_alloc(7, NULL)) == NULL)
+	/* Grow the array of private key lengths */
+	if ((new_lengths = realloc(
+		 self -> private_key_lengths,
+		 (self -> private_key_count + 1) * sizeof(char *))) == NULL)
 	{
-	    abort();
+	    return -1;
 	}
+
+	self -> private_key_lengths = new_lengths;
+
+	/* Store the new private key */
+	if ((self -> private_keys[self -> private_key_count] = malloc(length)) == NULL)
+	{
+	    return -1;
+	}
+	memcpy(self -> private_keys[self -> private_key_count], data, length);
+
+	self -> private_key_lengths[self -> private_key_count] = length;
+	self -> private_key_count++;
+
+#if ! defined(ELVIN_VERSION_AT_LEAST)
+	/* Calculate the public key */
+	if (! elvin_sha1digest(data, length, public_key))
+	{
+	    return -1;
+	}
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+	/* Calculate the public key */
+	if (! elvin_sha1digest(data, length, public_key, NULL))
+	{
+	    return -1;
+	}
+#endif /* ELVIN_VERSION_AT_LEAST */
+
+	length = ELVIN_SHA1DIGESTLEN;
+	data = public_key;
     }
 
-    /* Create our consumer key */
-    if ((key = elvin_keyprime_from_hexstring(string, NULL)) == NULL)
+    /* Grow the array of public keys */
+    if ((new_names = realloc(self -> public_keys, (self -> public_key_count + 1) * sizeof(char *))) == NULL)
     {
-	abort();
+	return -1;
     }
+    self -> public_keys = new_names;
 
-    /* Add it to the keys */
-    if (elvin_keys_add(self -> consumer_keys, key, NULL) == 0)
+    /* Grow the array of public key lengths */
+    if ((new_lengths = realloc(self -> public_key_lengths, (self -> public_key_count + 1) * sizeof(int))) == NULL)
     {
-	abort();
+	return -1;
     }
-#endif
+    self -> public_key_lengths = new_lengths;
+
+    /* Store the new public key */
+    if ((self -> public_keys[self -> public_key_count] = malloc(length)) == NULL)
+    {
+	return -1;
+    }
+    memcpy(self -> public_keys[self -> public_key_count], data, length);
+
+    self -> public_key_lengths[self -> public_key_count] = length;
+    self -> public_key_count++;
     return 0;
 }
 
@@ -586,7 +767,7 @@ static int lex_max_time(groups_parser_t self, int ch)
 	return append_char(self, ch);
     }
 
-    /* If we get a `:' then look for producer (raw) keys */
+    /* If we get a `:' then look for keys */
     if (ch == ':')
     {
 	/* Null-terminate the token */
@@ -607,7 +788,7 @@ static int lex_max_time(groups_parser_t self, int ch)
 
 	/* Prepare to read a key */
 	self -> token_pointer = self -> token;
-	self -> state = lex_producer_keys_ws;
+	self -> state = lex_keys_ws;
 	return 0;
     }
 
@@ -647,9 +828,8 @@ static int lex_bad_time(groups_parser_t self, int ch)
     return append_char(self, ch);
 }
 
-
-/* Skipping whitespace in a producer key */
-static int lex_producer_keys_ws(groups_parser_t self, int ch)
+/* Skipping whitespace in a key name */
+static int lex_keys_ws(groups_parser_t self, int ch)
 {
     /* Watch for the end of the line */
     if (ch == EOF || ch == '\n')
@@ -667,158 +847,7 @@ static int lex_producer_keys_ws(groups_parser_t self, int ch)
     /* Throw away whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_producer_keys_ws;
-	return 0;
-    }
-
-    /* Watch for a `:' */
-    if (ch == ':')
-    {
-	self -> token_pointer = self -> token;
-	self -> state = lex_consumer_keys_ws;
-	return 0;
-    }
-
-    /* Send anything else through the producer keys state */
-    return lex_producer_keys(self, ch);
-}
-
-
-/* Reading the producer (raw) keys */
-static int lex_producer_keys(groups_parser_t self, int ch)
-{
-    /* Watch for EOF or linefeed */
-    if (ch == EOF || ch == '\n')
-    {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
-
-	/* Accept it */
-	if (accept_producer_key(self, self -> token) < 0)
-	{
-	    return -1;
-	}
-
-	/* Accept the subscription */
-	if (accept_subscription(self) < 0)
-	{
-	    return -1;
-	}
-
-	/* Go on to the next subscription */
-	return lex_start(self, ch);
-    }
-
-    /* Watch for `:' */
-    if (ch == ':')
-    {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
-
-	/* Accept it */
-	if (accept_producer_key(self, self -> token) < 0)
-	{
-	    return -1;
-	}
-
-	/* Prepare to read consumer keys */
-	self -> token_pointer = self -> token;
-	self -> state = lex_consumer_keys;
-	return 0;
-    }
-
-    /* Watch for `,' */
-    if (ch == ',')
-    {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
-
-	/* Accept it */
-	if (accept_producer_key(self, self -> token) < 0)
-	{
-	    return -1;
-	}
-
-	/* Get set up for the next key */
-	self -> token_pointer = self -> token;
-	self -> state = lex_producer_keys_ws;
-	return 0;
-    }
-
-    /* Watch for an esc-char */
-    if (ch == '\\')
-    {
-	self -> state = lex_producer_keys_esc;
-	return 0;
-    }
-
-    /* Anything else is part of the key */
-    if (append_char(self, ch) < 0)
-    {
-	return -1;
-    }
-
-    self -> state = lex_producer_keys;
-    return 0;
-}
-
-/* Reading the character after a `\' in a key */
-static int lex_producer_keys_esc(groups_parser_t self, int ch)
-{
-    /* We can't escape an EOF */
-    if (ch == EOF)
-    {
-	/* Pretend we never saw the backslash */
-	return lex_producer_keys(self, ch);
-    }
-
-    /* Watch for an end-of-line */
-    if (ch == '\n')
-    {
-	self -> state = lex_producer_keys_ws;
-	return 0;
-    }
-
-    /* Anything else is the character itself? */
-    if (append_char(self, ch) < 0)
-    {
-	return -1;
-    }
-
-    self -> state = lex_producer_keys;
-    return 0;
-}
-
-
-/* Skipping whitespace in a consumer key */
-static int lex_consumer_keys_ws(groups_parser_t self, int ch)
-{
-    /* Watch for the end of the line */
-    if (ch == EOF || ch == '\n')
-    {
-	/* Accept the subscription */
-	if (accept_subscription(self) < 0)
-	{
-	    return -1;
-	}
-
-	/* Go on to the next subscription */
-	return lex_start(self, ch);
-    }
-
-    /* Throw away whitespace */
-    if (isspace(ch))
-    {
-	self -> state = lex_consumer_keys_ws;
+	self -> state = lex_keys_ws;
 	return 0;
     }
 
@@ -829,12 +858,12 @@ static int lex_consumer_keys_ws(groups_parser_t self, int ch)
 	return lex_superfluous(self, ch);
     }
 
-    /* Send anything else through the consumer keys state */
-    return lex_consumer_keys(self, ch);
+    /* Send anything else through the keys state */
+    return lex_keys(self, ch);
 }
 
-/* Reading the consumer (prime) keys */
-static int lex_consumer_keys(groups_parser_t self, int ch)
+/* Reading the key names */
+static int lex_keys(groups_parser_t self, int ch)
 {
     /* Watch for EOF or linefeed */
     if (ch == EOF || ch == '\n')
@@ -846,7 +875,7 @@ static int lex_consumer_keys(groups_parser_t self, int ch)
 	}
 
 	/* Accept it */
-	if (accept_consumer_key(self, self -> token) < 0)
+	if (accept_key(self, self -> token) < 0)
 	{
 	    return -1;
 	}
@@ -878,21 +907,14 @@ static int lex_consumer_keys(groups_parser_t self, int ch)
 	}
 
 	/* Accept it */
-	if (accept_consumer_key(self, self -> token) < 0)
+	if (accept_key(self, self -> token) < 0)
 	{
 	    return -1;
 	}
 
 	/* Set up for the next key */
 	self -> token_pointer = self -> token;
-	self -> state = lex_consumer_keys_ws;
-	return 0;
-    }
-
-    /* Watch for escapes */
-    if (ch == '\\')
-    {
-	self -> state = lex_consumer_keys_esc;
+	self -> state = lex_keys_ws;
 	return 0;
     }
 
@@ -902,37 +924,9 @@ static int lex_consumer_keys(groups_parser_t self, int ch)
 	return -1;
     }
 
-    self -> state = lex_consumer_keys;
+    self -> state = lex_keys;
     return 0;
 }
-
-/* Reading an escaped character in a consumer key */
-static int lex_consumer_keys_esc(groups_parser_t self, int ch)
-{
-    /* We can't escape an EOF */
-    if (ch == EOF)
-    {
-	/* Pretend we never saw the backslash */
-	return lex_consumer_keys(self, ch);
-    }
-
-    /* Watch for an end-of-line */
-    if (ch == '\n')
-    {
-	self -> state = lex_consumer_keys_ws;
-	return 0;
-    }
-
-    /* Anything else is the character itself? */
-    if (append_char(self, ch) < 0)
-    {
-	return -1;
-    }
-
-    self -> state = lex_consumer_keys;
-    return 0;
-}
-
 
 /* Reading extraneous stuff at the end of the line */
 static int lex_superfluous(groups_parser_t self, int ch)
@@ -993,7 +987,11 @@ static int parse_char(groups_parser_t self, int ch)
 
 
 /* Allocates and initializes a new groups file parser */
-groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag)
+groups_parser_t groups_parser_alloc(
+    groups_parser_callback_t callback,
+    void *rock,
+    char *tag,
+    key_table_t keys)
 {
     groups_parser_t self;
 
@@ -1002,31 +1000,30 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
     {
 	return NULL;
     }
+    memset(self, 0, sizeof(struct groups_parser));
 
     /* Copy the tag string */
     if ((self -> tag = strdup(tag)) == NULL)
     {
-	free(self);
+	groups_parser_free(self);
 	return NULL;
     }
 
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
-	free(self -> tag);
-	free(self);
+	groups_parser_free(self);
 	return NULL;
     }
 
     /* Initialize everything else to sane values */
-    self -> producer_keys = NULL;
-    self -> consumer_keys = NULL;
     self -> callback = callback;
     self -> rock = rock;
     self -> token_pointer = self -> token;
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
     self -> state = lex_start;
     self -> line_num = 1;
+    self -> key_table = keys;
     return self;
 }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.99 2002/04/09 11:20:56 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.100 2002/04/14 22:33:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -69,6 +69,7 @@ static struct option long_options[] =
     { "config", required_argument, NULL, 'c' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
+    { "keys", required_argument, NULL, 'K' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, '\0' }
@@ -107,6 +108,7 @@ static void usage(int argc, char *argv[])
 	"  -c config-file, --config=config-file\n"
 	"  -G groups-file, --groups=groups-file\n"
 	"  -U usenet-file, --usenet=usenet-file\n"
+	"  -K keys-file,   --keys=keys-file\n"
 	"  -v,             --version\n"
 	"  -h,             --help\n" ,
 	argv[0]);
@@ -177,6 +179,7 @@ static void parse_args(
     char **ticker_dir_return,
     char **config_file_return,
     char **groups_file_return,
+    char **keys_file_return,
     char **usenet_file_return,
     elvin_error_t error)
 {
@@ -189,12 +192,13 @@ static void parse_args(
     *ticker_dir_return = NULL;
     *config_file_return = NULL;
     *groups_file_return = NULL;
+    *keys_file_return = NULL;
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
     while ((choice = getopt_long(
 	argc, argv,
-	"e:S:H:u:D:c:G:U:vh", long_options,
+	"e:S:H:u:D:c:G:U:K:vh", long_options,
 	NULL)) > 0)
     {
 	switch (choice)
@@ -264,6 +268,13 @@ static void parse_args(
 	    case 'U':
 	    {
 		*usenet_file_return = optarg;
+		break;
+	    }
+
+	    /* --keys= or -K */
+	    case 'K':
+	    {
+		*keys_file_return = optarg;
 		break;
 	    }
 
@@ -369,7 +380,8 @@ static void reload_subs(int signum)
     /* Put the signal handler back in place */
     signal(SIGHUP, reload_subs);
 
-    /* Reload groups and usenet files */
+    /* Reload configuration files */
+    tickertape_reload_keys(tickertape);
     tickertape_reload_groups(tickertape);
     tickertape_reload_usenet(tickertape);
 }
@@ -404,6 +416,7 @@ int main(int argc, char *argv[])
     char *config_file;
     char *groups_file;
     char *usenet_file;
+    char *keys_file;
     Widget top;
 
     /* Create the toplevel widget */
@@ -460,7 +473,8 @@ int main(int argc, char *argv[])
 
     /* Scan what's left of the arguments */
     parse_args(argc, argv, handle, &user, &domain,
-	       &ticker_dir, &config_file, &groups_file, &usenet_file,
+	       &ticker_dir, &config_file,
+	       &groups_file, &usenet_file, &keys_file,
 	       error);
 
     /* Create an Icon for the root shell */
@@ -471,7 +485,7 @@ int main(int argc, char *argv[])
 	handle,
 	user, domain,
 	ticker_dir, config_file,
-	groups_file, usenet_file,
+	groups_file, usenet_file, keys_file,
 	top,
 	error);
 
