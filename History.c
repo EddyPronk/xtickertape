@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.11 2001/07/13 13:17:39 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.12 2001/07/13 13:19:49 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -820,7 +820,7 @@ static void insert_message(HistoryWidget self, unsigned int index, message_t mes
 	bbox.x = 0;
 	bbox.y = self -> history.margin_height + height - self -> history.y;
 	bbox.width = self -> core.width;
-	bbox.height = sizes.ascent = sizes.descent;
+	bbox.height = sizes.ascent + sizes.descent;
 
 	message_view_paint(
 	    view, display, window, gc,
