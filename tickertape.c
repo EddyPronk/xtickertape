@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.80 2001/08/25 14:04:45 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.81 2001/10/16 16:19:24 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -79,7 +79,7 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.80 2001/08/25 14:04:45 phelps
 #define UNKNOWN_STATUS_MSG "Unknown status: %d"
 #define DROP_WARN_MSG "One or more packets were dropped"
 
-#define GROUP_SUB "TICKERTAPE == \"%s\""
+#define GROUP_SUB "TICKERTAPE == \"%s\" || Channel == \"%s\""
 
 #define F_TICKERTAPE_STARTUP "tickertape.startup"
 #define F_USER "user"
@@ -443,12 +443,12 @@ static int parse_groups_callback(
 
     /* Construct the subscription expression */
     if ((expression = (char *)malloc(
-	strlen(GROUP_SUB) + strlen(name) - 1)) == NULL)
+	strlen(GROUP_SUB) + 2 * strlen(name) - 3)) == NULL)
     {
 	return -1;
     }
 
-    sprintf(expression, GROUP_SUB, name);
+    sprintf(expression, GROUP_SUB, name, name);
 
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
@@ -822,7 +822,7 @@ static void reconnect_callback(tickertape_t self, connection_t connection)
     /* Display the message on the scroller */
     message = message_alloc(
 	NULL, "internal", "tickertape", buffer, 30,
-	NULL, NULL,
+	NULL, NULL, 0,
 	NULL, NULL, NULL);
 
     receive_callback(self, message);
@@ -994,6 +994,27 @@ static void status_cb(
 	    break;
 	}
 
+	/* Connection warnings go to the status line */
+	case ELVIN_STATUS_CONNECTION_WARN:
+	{
+	    /* Get a big buffer */
+	    if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
+	    {
+		return;
+	    }
+	    
+	    /* Print the error message into it */
+	    elvin_error_snprintf(buffer, BUFFER_SIZE, error);
+	    string = buffer;
+
+	    /* Display it on the status line */
+	    control_panel_show_status(self -> control_panel, buffer);
+
+	    /* Clean up */
+	    free(buffer);
+	    return;
+	}
+
 	case ELVIN_STATUS_DROP_WARN:
 	{
 	    string = DROP_WARN_MSG;
@@ -1048,6 +1069,9 @@ static void status_cb(
 	receive_callback(self, message, False);
 	message_free(message);
     }
+
+    /* Also display the message on the status line */
+    control_panel_show_status(self -> control_panel, buffer);
 
     /* Clean up */
     if (buffer != NULL)
