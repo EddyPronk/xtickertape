@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: vm.c,v 2.3 2000/11/17 15:41:01 phelps Exp $";
+static const char cvsid[] = "$Id: vm.c,v 2.4 2000/11/18 00:58:09 phelps Exp $";
 #endif
 
 #include <config.h>
@@ -48,8 +48,7 @@ static const char cvsid[] = "$Id: vm.c,v 2.3 2000/11/17 15:41:01 phelps Exp $";
 
 #define LENGTH_MASK 0xFFFF0000
 #define TYPE_MASK 0x0000F000
-#define FLAGS_MASK 0x00000FFE
-#define INTEGER_MASK 0x00000001
+#define FLAGS_MASK 0x00000FFF
 
 
 /* Objects are just pointers */
@@ -243,7 +242,7 @@ int vm_new(
     self -> heap_next += size + 1;
 
     /* Write the object header (it pretends to be an integer) */
-    header = (size & 0xFFFF) << 16 | (type & 0xF) << 12 | (flags & 0x7FF) << 1 | 1;
+    header = (size & 0xFFFF) << 16 | (type & 0xF) << 12 | (flags & 0xFFF);
     object[0] = (void *)header;
 
     /* Push the object onto the stack */
@@ -272,8 +271,23 @@ int vm_push_long(vm_t self, int64_t value, elvin_error_t error)
 /* Pushes a float onto the vm's stack */
 int vm_push_float(vm_t self, double value, elvin_error_t error)
 {
-    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "vm_push_float");
-    return 0;
+    object_t object;
+
+    /* Create a new float object on the heap */
+    if (! vm_new(self, sizeof(double) / POINTER_SIZE, SEXP_FLOAT, 0, error))
+    {
+	return 0;
+    }
+
+    /* Find the object on the top of the stack */
+    if (! vm_top(self, &object, error))
+    {
+	return 0;
+    }
+
+    /* Copy the value bytes into place */
+    memcpy(object + 1, &value, sizeof(double));
+    return 1;
 }
 
 /* Pushes a string onto the vm's stack */
@@ -289,7 +303,7 @@ int vm_push_string(vm_t self, char *value, elvin_error_t error)
 	return 0;
     }
 
-    /* Grab the object off of the top of the stack */
+    /* Find the object on the top of the stack */
     if (! vm_top(self, &object, error))
     {
 	return 0;
@@ -413,6 +427,13 @@ int vm_unwind_list(vm_t self, elvin_error_t error)
     return vm_push(self, cdr, error);
 }
 
+/* Evaluates the top of the stack, leaving the result in its place */
+int vm_eval(vm_t self, elvin_error_t error)
+{
+    object_t result;
+    return vm_pop(self, &result, error);
+}
+
 
 
 /* Prints a single object */
@@ -440,7 +461,7 @@ static void do_print(object_t object)
 
 	case SEXP_FLOAT:
 	{
-	    printf("<float>");
+	    printf("%f", *(double *)(object + 1));
 	    break;
 	}
 
@@ -515,6 +536,23 @@ static void do_print(object_t object)
 	    break;
 	}
     }
+}
+
+/* Prints the top of the stack onto stdout */
+int vm_print(vm_t self, elvin_error_t error)
+{
+    object_t result;
+
+    /* Pop the top off the stack */
+    if (! vm_pop(self, &result, error))
+    {
+	return 0;
+    }
+
+    /* Print it */
+    do_print(result);
+    printf("\n");
+    return 1;
 }
 
 /* For debugging only */
