@@ -72,6 +72,185 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 }
 
 
+/* Evaluate a list of args and put the results into an array */
+static int eval_args(
+    env_t env,
+    sexp_t args,
+    sexp_t *values,
+    uint32_t count,
+    elvin_error_t error)
+{
+    uint32_t i;
+
+    /* Go through the args */
+    for (i = 0; i < count; i++)
+    {
+	sexp_t arg;
+
+	/* Make sure we have an arg */
+	if (sexp_get_type(args) != SEXP_CONS)
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	    while (i > 0)
+	    {
+		sexp_free(values[i - 1], NULL);
+		i--;
+	    }
+
+	    return 0;
+	}
+
+	/* Extract the arg, evaluate it and move on to the next */
+	if ((arg = cons_car(args, error)) == NULL ||
+	    sexp_eval(arg, env, values + i, error) == 0 ||
+	    (args = cons_cdr(args, error)) == 0)
+	{
+	    while (i > 0)
+	    {
+		sexp_free(values[i - 1], NULL);
+		i--;
+	    }
+
+	    return 0;
+	}
+    }
+
+    /* Make sure there are no more args */
+    if (sexp_get_type(args) != SEXP_NIL)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
+	while (i > 0)
+	{
+	    sexp_free(values[i - 1], NULL);
+	    i--;
+	}
+    }
+
+    return 1;
+}
+
+
+/* The `car' primitive function */
+static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t value;
+
+    /* Evaluate the arg */
+    if (! eval_args(env, args, &value, 1, error))
+    {
+	return 0;
+    }
+
+    /* Make sure the cons really is a cons cell */
+    if (sexp_get_type(value) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
+	return 0;
+    }
+
+    /* Extract the car of the cons cell */
+    if ((*result = cons_car(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the cons cell */
+    if (sexp_free(value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Grab a reference to it */
+    return sexp_alloc_ref(*result, error);
+}
+
+/* The `car' primitive function */
+static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t value;
+
+    /* Evaluate the arg */
+    if (! eval_args(env, args, &value, 1, error))
+    {
+	return 0;
+    }
+
+    /* Make sure the cons really is a cons cell */
+    if (sexp_get_type(value) != SEXP_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
+	return 0;
+    }
+
+    /* Extract the car of the cons cell */
+    if ((*result = cons_cdr(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the cons cell */
+    if (sexp_free(value, error) == 0)
+    {
+	return 0;
+    }
+
+    /* Grab a reference to it */
+    return sexp_alloc_ref(*result, error);
+}
+
+/* The `cons' primitive function */
+static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t values[2];
+
+    /* Evaluate the args */
+    if (! eval_args(env, args, values, 2, error))
+    {
+	return 0;
+    }
+
+    /* Construct a cons cell */
+    if ((*result = cons_alloc(values[0], values[1], error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the car */
+    if (sexp_free(values[0], error) == 0)
+    {
+	return 0;
+    }
+
+    /* Free our reference to the cdr */
+    return sexp_free(values[1], error);
+}
+
+/* The `eq' primitive function */
+static int prim_eq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
+{
+    sexp_t values[2];
+
+    /* Evaluate the args */
+    if (! eval_args(env, args, values, 2, error))
+    {
+	return 0;
+    }
+
+    /* Construct our result */
+    if ((*result = values[0] == values[1] ? symbol_alloc("t", error) : nil_alloc(error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Free the arg values */
+    if (sexp_free(values[0], error) == 0)
+    {
+	return 0;
+    }
+
+    return sexp_free(values[1], error);
+}
+
 /* The `lambda' primitive function */
 static int prim_lambda(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
 {
@@ -144,204 +323,6 @@ static int prim_quote(env_t env, sexp_t args, sexp_t *result, elvin_error_t erro
 
     /* Increase the reference count */
     return sexp_alloc_ref(*result, error);
-}
-
-/* The `car' primitive function */
-static int prim_car(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
-{
-    sexp_t cons, value;
-
-    /* Make sure we have at least one arg */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract the cons cell */
-    if ((cons = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure there are no more ags */
-    if (sexp_get_type(args) != SEXP_NIL)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
-	return 0;
-    }
-
-    /* Evaluate the arg */
-    if (sexp_eval(cons, env, &value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Make sure the cons really is a cons cell */
-    if (sexp_get_type(value) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
-	return 0;
-    }
-
-    /* Extract the car of the cons cell */
-    if ((*result = cons_car(value, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Free our reference to the cons cell */
-    if (sexp_free(value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Grab a reference to it */
-    return sexp_alloc_ref(*result, error);
-}
-
-/* The `car' primitive function */
-static int prim_cdr(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
-{
-    sexp_t cons, value;
-
-    /* Make sure we have at least one arg */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract the cons cell */
-    if ((cons = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure there are no more ags */
-    if (sexp_get_type(args) != SEXP_NIL)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
-	return 0;
-    }
-
-    /* Evaluate the arg */
-    if (sexp_eval(cons, env, &value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Make sure the cons really is a cons cell */
-    if (sexp_get_type(value) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad cons");
-	return 0;
-    }
-
-    /* Extract the car of the cons cell */
-    if ((*result = cons_cdr(value, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Free our reference to the cons cell */
-    if (sexp_free(value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Grab a reference to it */
-    return sexp_alloc_ref(*result, error);
-}
-
-/* The `cons' primitive function */
-static int prim_cons(env_t env, sexp_t args, sexp_t *result, elvin_error_t error)
-{
-    sexp_t car, cdr;
-    sexp_t car_value, cdr_value;
-
-    /* Make sure we have at least one arg */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
-	return 0;
-    }
-
-    /* Extract the car */
-    if ((car = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure there are no more args */
-    if (sexp_get_type(args) != SEXP_CONS)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
-	return 0;
-    }
-
-    /* Extract the cdr */
-    if ((cdr = cons_car(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Move on to the next arg */
-    if ((args = cons_cdr(args, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Make sure it's nil */
-    if (sexp_get_type(args) != SEXP_NIL)
-    {
-	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too many args");
-	return 0;
-    }
-
-    /* Evaluate the car */
-    if (sexp_eval(car, env, &car_value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Evaluate the cdr */
-    if (sexp_eval(cdr, env, &cdr_value, error) == 0)
-    {
-	return 0;
-    }
-
-    /* Construct a cons cell */
-    if ((*result = cons_alloc(car_value, cdr_value, error)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Free our references to the car and cdr */
-    if (sexp_free(car, error) == 0 || sexp_free(cdr, error) == 0)
-    {
-	return 0;
-    }
-
-    return 1;
 }
 
 
@@ -418,6 +399,7 @@ static int prim_setq(env_t env, sexp_t args, sexp_t *result, elvin_error_t error
     return 1;
 }
 
+
 /* Initializes the Lisp evaluation engine */
 static env_t root_env_alloc(elvin_error_t error)
 {
@@ -440,6 +422,7 @@ static env_t root_env_alloc(elvin_error_t error)
     if (env_set_builtin(env, "car", prim_car, error) == 0 ||
 	env_set_builtin(env, "cdr", prim_cdr, error) == 0 ||
 	env_set_builtin(env, "cons", prim_cons, error) == 0 ||
+	env_set_builtin(env, "eq", prim_eq, error) == 0 ||
 	env_set_builtin(env, "lambda", prim_lambda, error) == 0 ||
 	env_set_builtin(env, "quote", prim_quote, error) == 0 ||
 	env_set_builtin(env, "setq", prim_setq, error) == 0)
