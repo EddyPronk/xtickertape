@@ -63,8 +63,15 @@ if test "$with_elvin" = no ; then
     exit 1
 fi
 
+# Where are we supposed to look for elvin-config?
+if test "$with_elvin" = yes; then
+    elvin_config_path=$PATH
+else
+    elvin_config_path=$with_elvin/bin
+fi
+
 # Locate the elvin-config script
-AC_PATH_PROG(ELVIN_CONFIG, elvin-config, not found, $withval/bin:$PATH)
+AC_PATH_PROG(ELVIN_CONFIG, elvin-config, not found, $elvin_config_path)
 if test "$ELVIN_CONFIG" = "not found" ; then
     echo "WARNING: \`elvin-config' is missing on your system.  It"
     echo "         is normally installed as part of the elvin4 libraries,"
@@ -77,7 +84,13 @@ CPPFLAGS="$CPPFLAGS `$ELVIN_CONFIG --cflags vin4Xt`"
 LIBS="`$ELVIN_CONFIG --libs vin4Xt` $LIBS"
 
 # Make sure we link with the elvin libraries
-AC_SEARCH_LIBS(elvin_xt_init, c)
+AC_TRY_LINK_FUNC(elvin_xt_init, ok=yes, ok=no)
+if test "$ok" = "no" ; then
+    echo "WARNING: \`libvin4Xt' is missing on your system.  This is probably"
+    echo "         due to the elvin4 libraries being compiled without xt"
+    echo "         support.  See the elvin4's --with-xt configure option."
+    exit 1
+fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
