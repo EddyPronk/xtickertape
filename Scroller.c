@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.34 1999/06/22 08:18:56 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.35 1999/06/22 08:24:07 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -950,14 +950,17 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
 	offset = next;
     }
 
+    /* If the internal state is inconsistent then let's bail right now */
     if (offset - self -> core.width != self -> scroller.right_offset)
     {
 	printf("offset=%d, right_offset=%d\n", offset, self -> scroller.right_offset);
+	printf("%s", (char *)NULL);
     }
 
     if (glyph -> previous != self -> scroller.right_glyph)
     {
 	printf("previous=%p, right_glyph=%p\n", glyph -> previous, self -> scroller.right_glyph);
+	printf("%s", (char *)NULL);
     }
 }
 
