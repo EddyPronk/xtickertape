@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message_glyph.c,v 1.22 1999/09/22 02:48:33 phelps Exp $";
+static const char cvsid[] = "$Id: message_glyph.c,v 1.23 1999/09/27 05:08:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,6 +40,8 @@ static const char cvsid[] = "$Id: message_glyph.c,v 1.22 1999/09/22 02:48:33 phe
 
 #define SEPARATOR ":"
 #define MAX(x, y) ((x > y) ? x : y)
+
+static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
 typedef struct message_glyph *message_glyph_t;
 struct message_glyph
@@ -226,20 +228,8 @@ static XCharStruct *per_char(XFontStruct *font, int ch)
 	return font -> per_char + ch - first;
     }
 
-    /* If the font's default char is valid then use it */
-    if ((first <= font -> default_char) && (font -> default_char <= last))
-    {
-	return font -> per_char + font -> default_char - first;
-    }
-
-    /* Ok, try using a space */
-    if ((first <= ' ') && (' ' <= last))
-    {
-	return font -> per_char + ' ' - first;
-    }
-
-    /* If all else fails, default to the first character in the font */
-    return font -> per_char;
+    /* If the character doesn't have a glyph, then return a pointer to an empty_char */
+    return &empty_char;
 }
 
 /* Measure all of the characters in a string */
