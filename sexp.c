@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: sexp.c,v 2.13 2000/11/13 08:06:46 phelps Exp $";
+static const char cvsid[] = "$Id: sexp.c,v 2.14 2000/11/13 12:54:06 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -81,10 +81,10 @@ struct sexp
     /* Everything else is part of the big union */
     union
     {
-	int32_t i;
 	int64_t h;
 	double d;
 	char *s;
+	char ch;
 	struct cons c;
 	struct builtin b;
 	struct lambda l;
@@ -107,20 +107,6 @@ struct env
 
 /* Some predefined sexps */
 static struct sexp nil = { SEXP_NIL, 1, { 0 } };
-static struct sexp minus_one = { SEXP_INT32, 1, { -1 } };
-static struct sexp numbers[] =
-{
-    { SEXP_INT32, 1, { 0 } },
-    { SEXP_INT32, 1, { 1 } },
-    { SEXP_INT32, 1, { 2 } },
-    { SEXP_INT32, 1, { 3 } },
-    { SEXP_INT32, 1, { 4 } },
-    { SEXP_INT32, 1, { 5 } },
-    { SEXP_INT32, 1, { 6 } },
-    { SEXP_INT32, 1, { 7 } },
-    { SEXP_INT32, 1, { 8 } },
-    { SEXP_INT32, 1, { 9 } }
-};
 
 /* Hash function for a symbol */
 static uint32_t symbol_hashfunc(elvin_hashtable_t table, elvin_hashkey_t key)
@@ -237,36 +223,14 @@ sexp_t sexp_alloc(sexp_type_t type, elvin_error_t error)
 /* Allocates and initializes a new 32-bit integer sexp */
 sexp_t int32_alloc(int32_t value, elvin_error_t error)
 {
-    sexp_t sexp;
-
-    /* See if we already have the value cached */
-    if (0 <= value && value < 10)
-    {
-	numbers[value].ref_count++;
-	return &numbers[value];
-    }
-
-    /* We also cache -1 */
-    if (value == -1)
-    {
-	minus_one.ref_count++;
-	return &minus_one;
-    }
-
-    /* Allocate a new sexp */
-    if ((sexp = sexp_alloc(SEXP_INT32, error)) == NULL)
-    {
-	return NULL;
-    }
-
-    sexp -> value.i = value;
-    return sexp;
+    /* Wrap up the value as a pointer */
+    return (sexp_t)((value << 1) | 1);
 }
 
 /* Answers the integer's value */
 int32_t int32_value(sexp_t sexp, elvin_error_t error)
 {
-    return sexp -> value.i;
+    return ((int32_t)sexp) >> 1;
 }
 
 /* Allocates and initializes a new 64-bit integer sexp */
@@ -350,14 +314,14 @@ sexp_t char_alloc(char ch, elvin_error_t error)
 	return NULL;
     }
 
-    sexp -> value.i = (int32_t)ch;
+    sexp -> value.ch = ch;
     return sexp;
 }
 
 /* Answers the char's char */
 char char_value(sexp_t sexp, elvin_error_t error)
 {
-    return (char)sexp->value.i;
+    return sexp->value.ch;
 }
 
 
@@ -450,7 +414,7 @@ sexp_t cons_reverse(sexp_t sexp, sexp_t end, elvin_error_t error)
 	sexp -> value.c.cdr = cdr;
 
 	/* See if we're done */
-	if (car -> type == SEXP_NIL)
+	if (sexp_get_type(car) == SEXP_NIL)
 	{
 	    return sexp;
 	}
@@ -505,12 +469,24 @@ sexp_t lambda_alloc(env_t env, sexp_t arg_list, sexp_t body, elvin_error_t error
 /* Returns an sexp's type */
 sexp_type_t sexp_get_type(sexp_t sexp)
 {
+    if (((int32_t)sexp) & 1)
+    {
+	return SEXP_INT32;
+    }
+
     return sexp -> type;
 }
 
 /* Allocates another reference to an sexp */
 int sexp_alloc_ref(sexp_t sexp, elvin_error_t error)
 {
+    sexp_type_t type = sexp_get_type(sexp);
+
+    if (type == SEXP_INT32)
+    {
+	return 1;
+    }
+
     sexp -> ref_count++;
     return 1;
 }
@@ -518,6 +494,14 @@ int sexp_alloc_ref(sexp_t sexp, elvin_error_t error)
 /* Frees an sexp */
 int sexp_free(sexp_t sexp, elvin_error_t error)
 {
+    sexp_type_t type = sexp_get_type(sexp);
+
+    /* Never free an int32 */
+    if (type == SEXP_INT32)
+    {
+	return 1;
+    }
+
     /* Delete a reference to the sexp */
     if (--sexp -> ref_count > 0)
     {
@@ -525,7 +509,7 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
     }
 
     /* Then free the sexp */
-    switch (sexp -> type)
+    switch (type)
     {
 	case SEXP_NIL:
 	{
@@ -595,7 +579,7 @@ int sexp_free(sexp_t sexp, elvin_error_t error)
 /* Prints the body of a list */
 static void print_cdrs(sexp_t sexp)
 {
-    while (sexp -> type == SEXP_CONS)
+    while (sexp_get_type(sexp) == SEXP_CONS)
     {
 	/* Print the car */
 	fputc(' ', stdout);
@@ -604,7 +588,7 @@ static void print_cdrs(sexp_t sexp)
     }
 
     /* Watch for dotted lists */
-    if (sexp -> type != SEXP_NIL)
+    if (sexp_get_type(sexp) != SEXP_NIL)
     {
 	fputs(" . ", stdout);
 	sexp_print(sexp);
@@ -614,7 +598,7 @@ static void print_cdrs(sexp_t sexp)
 /* Prints an sexp to stdout */
 int sexp_print(sexp_t sexp)
 {
-    switch (sexp -> type)
+    switch (sexp_get_type(sexp))
     {
 	case SEXP_NIL:
 	{
@@ -624,7 +608,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_INT32:
 	{
-	    printf("%d", sexp -> value.i);
+	    printf("%d", int32_value(sexp, NULL));
 	    return 1;
 	}
 
@@ -648,7 +632,7 @@ int sexp_print(sexp_t sexp)
 
 	case SEXP_CHAR:
 	{
-	    printf("?%c", sexp -> value.i);
+	    printf("?%c", sexp -> value.ch);
 	    return 1;
 	}
 
@@ -700,12 +684,12 @@ static int init_env_with_args(
     elvin_error_t error)
 {
     /* Go through each of the args in arg_list */
-    while (arg_list -> type == SEXP_CONS)
+    while (sexp_get_type(arg_list) == SEXP_CONS)
     {
 	sexp_t value;
 
 	/* Make sure we have enough args */
-	if (args -> type != SEXP_CONS)
+	if (sexp_get_type(args) != SEXP_CONS)
 	{
 	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
 	    return 0;
@@ -729,7 +713,7 @@ static int init_env_with_args(
     }
 
     /* Make sure we terminate cleanly */
-    if (arg_list -> type != SEXP_NIL || args -> type != SEXP_NIL)
+    if (sexp_get_type(arg_list) != SEXP_NIL || sexp_get_type(args) != SEXP_NIL)
     {
 	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad args");
 	return 0;
@@ -747,7 +731,7 @@ static int funcall(
     elvin_error_t error)
 {
     /* What we do depends on the type */
-    switch (function->type)
+    switch (sexp_get_type(function))
     {
 	/* Built-in function? */
 	case SEXP_BUILTIN:
@@ -780,7 +764,7 @@ static int funcall(
 
 	    /* Evaluate each sexp in the body of the lambda */
 	    body = function -> value.l.body;
-	    while (body -> type == SEXP_CONS)
+	    while (sexp_get_type(body) == SEXP_CONS)
 	    {
 		if (sexp_eval(cons_car(body, error), lambda_env, result, error) == 0)
 		{
@@ -791,7 +775,7 @@ static int funcall(
 	    }
 
 	    /* Make sure we end cleanly */
-	    if (body -> type != SEXP_NIL)
+	    if (sexp_get_type(body) != SEXP_NIL)
 	    {
 		ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "dotted func body");
 		env_free(lambda_env, NULL);
@@ -818,11 +802,10 @@ static int funcall(
 /* Evaluates an sexp */
 int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
 {
-    switch (sexp -> type)
+    switch (sexp_get_type(sexp))
     {
 	/* Most things evaluate to themselves */
 	case SEXP_NIL:
-	case SEXP_INT32:
 	case SEXP_INT64:
 	case SEXP_FLOAT:
 	case SEXP_STRING:
@@ -834,6 +817,14 @@ int sexp_eval(sexp_t sexp, env_t env, sexp_t *result, elvin_error_t error)
 	    *result = sexp;
 	    return 1;
 	}
+
+	/* Integers evaluate to themselves but don't do reference counting */
+	case SEXP_INT32:
+	{
+	    *result = sexp;
+	    return 1;
+	}
+
 
 	/* Symbols get extracted from the environment */
 	case SEXP_SYMBOL:
