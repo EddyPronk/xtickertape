@@ -28,13 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.56 1999/08/17 18:04:50 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.57 1999/08/19 04:40:42 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
@@ -46,7 +45,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.56 1999/08/17 18:04:50 phelps E
 /* FIX THIS: should compute based on the width of some number of 'n's */
 #define END_SPACING 30
 #define MAX_VISIBLE 8
-#define TMP_PREFIX "/tmp/ticker"
 
 /*
  * Resources
@@ -990,8 +988,8 @@ static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigne
     /* If the internal state is inconsistent then let's bail right now */
     if (offset - self -> core.width != self -> scroller.right_offset)
     {
-	printf("offset - self -> core.width=%d\n", offset - self -> core.width);
-	printf("self -> scroller.right_offset=%d\n", self -> scroller.right_offset);
+	fprintf(stderr, "*** Internal scroller state is inconsistent\n");
+	fprintf(stderr, "*** Please alert Ted Phelps <phelps@pobox.com>\n");
 
 	/* Force a core dump */
 	abort();
@@ -1279,9 +1277,9 @@ static void decode_mime(Widget widget, XEvent *event)
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
     Message message;
-    char filename[sizeof(TMP_PREFIX) + 16];
     char *mime_type;
     char *mime_args;
+    char *filename;
     char *buffer;
     FILE *file;
 
@@ -1318,13 +1316,11 @@ static void decode_mime(Widget widget, XEvent *event)
     printf("MIME: %s %s\n", mime_type, mime_args);
 #endif /* DEBUG */
 
-    /* Write the mime_args to a file (assumes 16-digit pids) */
-    sprintf(filename, "%s%ld", TMP_PREFIX, (long) getpid());
-
     /* If we can't open the file then print an error and give up */
-    if ((file = fopen(filename,"wb")) == NULL)
+    filename = tmpnam(NULL);
+    if ((file = fopen(filename, "wb")) == NULL)
     {
-	fprintf(stderr, "*** unable to open temporary file %s\n", filename);
+	perror("unable to open a temporary file");
 	return;
     }
 
