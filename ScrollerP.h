@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.31 2000/04/21 12:40:03 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.32 2000/04/23 13:31:19 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -155,8 +155,8 @@ typedef struct
      * message at varying degrees of fading */
     Pixel *stringPixels;
 
-    /* If nonzero, then the window is up-to-date */
-    int ready;
+    /* The serial number of the last CopyArea request */
+    unsigned long serial;
 
 } ScrollerPart;
 

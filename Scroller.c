@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.91 2000/04/22 03:24:29 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.92 2000/04/23 13:31:19 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,6 +42,10 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.91 2000/04/22 03:24:29 phelps E
 #include "ScrollerP.h"
 #include "glyph.h"
 
+
+/* If two serial number numbers differ by this much then we assume
+ * that they've rolled over */
+#define SERIAL_MARGIN (1 << 30)
 
 /*
  * Resources
@@ -430,22 +434,19 @@ static void SetClock(ScrollerWidget self)
 /* One interval has passed */
 static void Tick(XtPointer widget, XtIntervalId *interval)
 {
-    ScrollerWidget self = (ScrollerWidget) widget;
+    ScrollerWidget self = (ScrollerWidget)widget;
+    unsigned long serial = LastKnownRequestProcessed(XtDisplay((Widget)widget));
 
     /* Set the clock *before* we start scrolling so that if we
      * encounter an end condition we can cancel the timer there
      * and then. */
     SetClock(self);
 
-    /* Make sure the window doesn't fall behind */
-    if (! self -> scroller.use_pixmap)
+    /* Bail out now if the server hasn't processed our last CopyArea
+     * request, watching for serial number rollover */
+    if (serial < self -> scroller.serial && self -> scroller.serial < serial + SERIAL_MARGIN)
     {
-	if (self -> scroller.ready == 0)
-	{
-	    return;
-	}
-
-	self -> scroller.ready = 0;
+	return;
     }
 
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
@@ -792,7 +793,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
     self -> scroller.clip_width = 0;
-    self -> scroller.ready = 1;
+    self -> scroller.serial = 0L;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1098,17 +1099,22 @@ static void adjust_right(ScrollerWidget self)
 /* Scrolls the glyphs in the widget to the left */
 static void scroll_left(ScrollerWidget self, int offset)
 {
+    Display *display = XtDisplay((Widget)self);
     self -> scroller.left_offset += offset;
     self -> scroller.right_offset -= offset;
 
     /* Update the glyph_holders list */
     adjust_left(self);
 
+    /* Record the copy area's request number */
+    self -> scroller.serial = NextRequest(display);
+
+    /* Copy the existing bits of the scroller */
     if (self -> scroller.use_pixmap)
     {
 	/* Scroll the pixmap */
 	XCopyArea(
-	    XtDisplay(self), self -> scroller.pixmap, self -> scroller.pixmap,
+	    display, self -> scroller.pixmap, self -> scroller.pixmap,
 	    self -> scroller.backgroundGC,
 	    0, 0, self -> core.width, self -> core.height, -offset, 0);
 
@@ -1119,7 +1125,7 @@ static void scroll_left(ScrollerWidget self, int offset)
     {
 	/* Scroll the window's contents */
 	XCopyArea(
-	    XtDisplay(self), XtWindow(self), XtWindow(self),
+	    display, XtWindow(self), XtWindow(self),
 	    self -> scroller.backgroundGC,
 	    offset, 0, self -> core.width, self -> core.height, 0, 0);
     }
@@ -1290,7 +1296,6 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	/* If there are no more GraphicsExpose events then exit the loop */
 	if (g_event -> count < 1)
 	{
-	    self -> scroller.ready = 1;
 	    return;
 	}
 
