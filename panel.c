@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.8 1999/10/07 03:45:06 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.9 1999/10/07 04:58:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -602,10 +602,11 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
 
 
 /* Show a tool-tip window */
-static void show_tool_tip(control_panel_t self, char *tip, Position x, Position y)
+static void show_tool_tip(control_panel_t self, Widget widget, char *tip, Position x, Position y)
 {
     Position absolute_x, absolute_y;
     XmString string;
+    int screen_width;
     Dimension width;
     Dimension height;
 
@@ -618,18 +619,33 @@ static void show_tool_tip(control_panel_t self, char *tip, Position x, Position 
     XtVaGetValues(self -> tool_tip_label, XmNwidth, &width, XmNheight, &height, NULL);
 
     /* Figure out where the pointer is */
-    XtTranslateCoords(self -> history, x, y, &absolute_x, &absolute_y);
+    XtTranslateCoords(widget, x, y, &absolute_x, &absolute_y);
 
-    /* And move the tool-tip somewhere near there without going out of the screen */
-    if (absolute_x + width + 10 < WidthOfScreen(XtScreen(self -> top)))
+    /* Find a good x position for the tool-tip */
+    screen_width = WidthOfScreen(XtScreen(self -> top));
+
+    /* Try to the right of the pointer */
+    if (absolute_x + width + 10 < screen_width)
     {
 	absolute_x += 10;
     }
+    /* Then try to the right of the pointer */
+    else if (width + 10 < absolute_x)
+    {
+	absolute_x -= width + 10;
+    }
+    /* Then try with the right edge flush with the right edge of the screen */
+    else if (width < screen_width)
+    {
+	absolute_x = screen_width - width;
+    }
+    /* Otherwise give up an go with 0 */
     else
     {
-	absolute_x -= (10 + width);
+	absolute_x = 0;
     }
 
+    /* Find a convenient y position */
     if (absolute_y + height + 10 < HeightOfScreen(XtScreen(self -> top)))
     {
 	absolute_y += 10;
@@ -675,7 +691,7 @@ static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
     }
 
     /* Show them in a tool-tip */
-    show_tool_tip(self, mime_args, self -> x, self -> y);
+    show_tool_tip(self, self -> history, mime_args, self -> x, self -> y);
 }
 
     
@@ -725,6 +741,23 @@ static void history_motion_callback(
 	    return;
 	}
 
+	/* Treat a button release as an enter event */
+	case ButtonRelease:
+	{
+	    XButtonEvent *button_event = (XButtonEvent *)event;
+
+	    /* Set the timer for a short pause before we show the tool-tip */
+	    self -> timer = XtAppAddTimeOut(
+		XtWidgetToApplicationContext(widget),
+		TOOL_TIP_DELAY,
+		(XtTimerCallbackProc)history_timer_callback,
+		(XtPointer)self);
+	    self -> x = button_event -> x;
+	    self -> y = button_event -> y;
+	    return;
+	}
+
+	case ButtonPress:
 	case LeaveNotify:
 	{
 	    /* If we have a timer cancel it.  Otherwise just hide the tool-tip */
@@ -738,7 +771,6 @@ static void history_motion_callback(
 	    hide_tool_tip(self);
 	    return;
 	}
-    }
 }
 
 /* Constructs the history list */
@@ -766,7 +798,8 @@ static void create_history_box(control_panel_t self, Widget parent)
 	(XtCallbackProc)history_action_callback, (XtPointer)self);
     XtAddEventHandler(
  	self -> history,
-	EnterWindowMask | LeaveWindowMask | PointerMotionMask,
+	EnterWindowMask | LeaveWindowMask | PointerMotionMask | 
+	ButtonPressMask | ButtonReleaseMask,
 	False,
 	(XtEventHandler)history_motion_callback,
 	(XtPointer)self);
