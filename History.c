@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.63 2002/04/23 16:22:22 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.64 2002/04/23 16:56:18 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -52,6 +52,7 @@ static const char cvsid[] = "$Id: History.c,v 1.63 2002/04/23 16:22:22 phelps Ex
 #include <X11/Xaw/SimpleP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
+#include "replace.h"
 #include "message.h"
 #include "message_view.h"
 #include "History.h"

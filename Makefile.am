@@ -24,7 +24,7 @@ xtickertape_SOURCES = \
 	key_table.h key_table.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	mask.xbm red.xbm white.xbm \
-	errors.h main.c
+	errors.h replace.h replace.c main.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 usenet.5

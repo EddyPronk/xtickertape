@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.67 2002/04/23 16:22:25 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.68 2002/04/23 16:56:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -48,10 +48,10 @@ static const char cvsid[] = "$Id: panel.c,v 1.67 2002/04/23 16:22:25 phelps Exp 
 #include <ctype.h> /* isprint */
 #endif
 #include <elvin/elvin.h>
-#include "panel.h"
-
 #include <Xm/XmAll.h>
 #include <X11/Xmu/Editres.h>
+#include "replace.h"
+#include "panel.h"
 #include "History.h"
 
 /* Make sure ELVIN_SHA1DIGESTLEN is defined */

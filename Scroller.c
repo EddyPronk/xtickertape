@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.132 2002/04/23 16:22:23 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.133 2002/04/23 16:56:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -47,6 +47,7 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.132 2002/04/23 16:22:23 phelps 
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
+#include "replace.h"
 #include "ScrollerP.h"
 #include "message_view.h"
 

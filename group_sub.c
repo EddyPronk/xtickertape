@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.40 2002/04/23 16:22:23 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.41 2002/04/23 16:56:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -46,6 +46,7 @@ static const char cvsid[] = "$Id: group_sub.c,v 1.40 2002/04/23 16:22:23 phelps 
 #endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
+#include "replace.h"
 #include "group_sub.h"
 
 #define F3_USER_AGENT "User-Agent"

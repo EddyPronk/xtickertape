@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.3 2002/04/23 16:22:23 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.4 2002/04/23 16:56:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -40,6 +40,7 @@ static const char cvsid[] = "$Id: key_table.c,v 1.3 2002/04/23 16:22:23 phelps E
 #ifdef HAVE_STRING_H
 #include <string.h> /* memcpy, memset, strcmp, strdup */
 #endif
+#include "replace.h"
 #include "key_table.h"
 
 #define TABLE_MIN_SIZE 8

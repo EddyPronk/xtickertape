@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.24 2002/04/23 16:22:23 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.25 2002/04/23 16:56:20 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,7 @@ static const char cvsid[] = "$Id: groups_parser.c,v 1.24 2002/04/23 16:22:23 phe
 #endif
 #include <elvin/elvin.h>
 #include <elvin/sha1.h>
+#include "replace.h"
 #include "key_table.h"
 #include "groups_parser.h"
 
