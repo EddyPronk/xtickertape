@@ -1,4 +1,4 @@
-/* $Id: MailSubscription.c,v 1.1 1998/10/30 08:13:09 phelps Exp $ */
+/* $Id: MailSubscription.c,v 1.2 1998/10/30 09:15:41 phelps Exp $ */
 
 #include <stdlib.h>
 #include "StringBuffer.h"
@@ -53,38 +53,40 @@ static void HandleNotify(MailSubscription self, en_notify_t notification);
 /* Locate the portion of an e-mail address and put in into the StringBuffer */
 static void GetNameFromEmail(StringBuffer buffer, char *email)
 {
-    char last = email[strlen(email) - 1];
+    char *end = email + strlen(email) - 1;
 
-
-    printf("last='%c'\n", last);
     /* Is the e-mail address of the form Nice Name <email.address> ? */
-    if (last == '>')
+    if (*end == '>')
     {
 	char *pointer;
 
-	for (pointer = email; *pointer != '\0'; pointer++)
+	/* Find the open '<' if it exists */
+	for (pointer = end; pointer > email; pointer--)
 	{
-	    /* If we get the '<', then we're done */
 	    if (*pointer == '<')
 	    {
-		return;
-	    }
+		/* Found it.  Now trim spaces and quotes */
+		while ((pointer > email) && ((*(pointer - 1) == ' ') || (*(pointer - 1) == '\"')))
+		{
+		    pointer--;
+		}
 
-	    /* Copy everything but quotation marks */
-	    if (*pointer != '\"')
-	    {
-		StringBuffer_appendChar(buffer, *pointer);
+		*pointer = '\0';
+
+		for (pointer = email; *pointer != '\0'; pointer++)
+		{
+		    if ((*pointer != ' ') && (*pointer != '\"'))
+		    {
+			StringBuffer_append(buffer, pointer);
+			return;
+		    }
+		}
 	    }
 	}
-
-	/* If we get here, then we ran out of string before finding a '<',
-	 * which means that we've copied the entire e-mail address.
-	 * That's ok. */
-	return;
     }
 
     /* Is it of the form email.address (Nice Name) ? */
-    if (last == ')')
+    if (*end == ')')
     {
 	char *pointer;
 
