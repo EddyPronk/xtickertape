@@ -42,6 +42,7 @@ static int lex_name(lexer_t self, int ch);
 static int lex_dash(lexer_t self, int ch);
 static int lex_ws(lexer_t self, int ch);
 static int lex_body(lexer_t self, int ch);
+static int lex_body_ws(lexer_t self, int ch);
 static int lex_fold(lexer_t self, int ch);
 static int lex_skip_body(lexer_t self, int ch);
 static int lex_skip_fold(lexer_t self, int ch);
@@ -646,6 +647,13 @@ static int lex_body(lexer_t self, int ch)
 	return 0;
     }
 
+    /* Compress whitespace */
+    if (isspace(ch))
+    {
+	self -> state = lex_body_ws;
+	return 0;
+    }
+
     /* Anything else is part of the body */
     if (append_char(self, ch) < 0)
     {
@@ -655,6 +663,33 @@ static int lex_body(lexer_t self, int ch)
 
     self -> state = lex_body;
     return 0;
+}
+
+/* Compressing whitespace in the body */
+static int lex_body_ws(lexer_t self, int ch)
+{
+    /* Watch for linefeeds */
+    if (ch == '\n')
+    {
+	self -> state = lex_fold;
+	return 0;
+    }
+
+    /* Discard other whitespace */
+    if (isspace(ch))
+    {
+	self -> state = lex_body_ws;
+	return 0;
+    }
+
+    /* Insert an actual space first */
+    if (append_char(self, ' ') < 0)
+    {
+	return -1;
+    }
+
+    /* Anything else is part of the body */
+    return lex_body(self, ch);
 }
 
 /* Try to fold */
@@ -676,13 +711,7 @@ static int lex_fold(lexer_t self, int ch)
     /* Other whitespace means a folded body */
     if (isspace(ch))
     {
-	if (append_char(self, ' ') < 0)
-	{
-	    self -> state = lex_error;
-	    return -1;
-	}
-
-	self -> state = lex_body;
+	self -> state = lex_body_ws;
 	return 0;
     }
 
