@@ -1,4 +1,4 @@
-/* $Id: MessageView.c,v 1.19 1998/05/16 05:49:11 phelps Exp $ */
+/* $Id: MessageView.c,v 1.20 1998/08/26 06:01:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -359,6 +359,14 @@ void MessageView_freeReference(MessageView self)
 
 
 
+
+/* Answers the receiver's Message */
+Message MessageView_getMessage(MessageView self)
+{
+    SANITY_CHECK(self);
+
+    return self -> message;
+}
 
 /* Answers the width (in pixels) of the receiver */
 unsigned int MessageView_getWidth(MessageView self)

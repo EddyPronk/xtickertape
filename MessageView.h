@@ -1,4 +1,4 @@
-/* $Id: MessageView.h,v 1.6 1998/02/16 06:21:32 phelps Exp $ */
+/* $Id: MessageView.h,v 1.7 1998/08/26 06:01:12 phelps Exp $ */
 
 #ifndef MESSAGEVIEW_H
 #define MESSAGEVIEW_H
@@ -22,6 +22,9 @@ MessageView MessageView_allocReference(MessageView self);
 /* Removes a reference from the count */
 void MessageView_freeReference(MessageView self);
 
+
+/* Answers the receiver's Message */
+Message MessageView_getMessage(MessageView self);
 
 /* Answers the width (in pixels) of the receiver */
 unsigned int MessageView_getWidth(MessageView self);
