@@ -20,10 +20,6 @@ int parsed(void *rock, parser_t parser, atom_t sexp, elvin_error_t error)
 {
     atom_t result;
 
-    printf("eval: ");
-    atom_print(sexp, error);
-    printf("\n");
-
     /* Evaluate the s-expression */
     if (atom_eval(sexp, root_env, &result, error) == 0)
     {
@@ -105,7 +101,8 @@ static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t erro
 	return 0;
     }
 
-    return 1;
+    /* Increase the reference count */
+    return atom_alloc_ref(*result, error);
 }
 
 /* The `setq' primitive function */
