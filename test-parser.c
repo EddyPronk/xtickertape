@@ -72,6 +72,47 @@ static int parse_file(parser_t parser, int fd, char *filename, elvin_error_t err
 }
 
 
+/* The `lambda' primitive function */
+static int prim_lambda(env_t env, atom_t args, atom_t *result, elvin_error_t error)
+{
+    atom_t arg_list;
+    atom_t body;
+
+    /* Make sure we have at least one arg */
+    if (atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "too few args");
+	return 0;
+    }
+
+    /* Extract it */
+    if ((arg_list = cons_car(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Move on to the next arg */
+    if ((body = cons_cdr(args, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Make sure that we have a valid body */
+    if (atom_get_type(body) != ATOM_NIL && atom_get_type(args) != ATOM_CONS)
+    {
+	ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "bad thingo");
+	return 0;
+    }
+
+    /* Create a lambda node from the args and body */
+    if ((*result = lambda_alloc(arg_list, body, error)) == NULL)
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
 /* The `quote' primitive function */
 static int prim_quote(env_t env, atom_t args, atom_t *result, elvin_error_t error)
 {
@@ -315,13 +356,6 @@ static env_t root_env_alloc(elvin_error_t error)
 	return NULL;
     }
 
-    /* Register the built-in function `quote' */
-    if (env_set_builtin(env, "quote", prim_quote, error) == 0)
-    {
-	env_free(env, NULL);
-	return NULL;
-    }
-
     /* Register the built-in function `car' */
     if (env_set_builtin(env, "car", prim_car, error) == 0)
     {
@@ -331,6 +365,20 @@ static env_t root_env_alloc(elvin_error_t error)
 
     /* Register the built-in function `cdr' */
     if (env_set_builtin(env, "cdr", prim_cdr, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `lambda' */
+    if (env_set_builtin(env, "lambda", prim_lambda, error) == 0)
+    {
+	env_free(env, NULL);
+	return NULL;
+    }
+
+    /* Register the built-in function `quote' */
+    if (env_set_builtin(env, "quote", prim_quote, error) == 0)
     {
 	env_free(env, NULL);
 	return NULL;
