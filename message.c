@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.21 2003/01/22 14:29:52 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.22 2003/01/27 17:33:14 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -40,6 +40,9 @@ static const char cvsid[] = "$Id: message.c,v 1.21 2003/01/22 14:29:52 phelps Ex
 #endif
 #ifdef HAVE_STRING_H
 #include <string.h> /* memset, strdup */
+#endif
+#ifdef HAVE_CTYPE_H
+#include <ctype.h> /* isspace */
 #endif
 #ifdef HAVE_TIME_H
 #include <time.h> /* time */
@@ -54,6 +57,8 @@ static const char cvsid[] = "$Id: message.c,v 1.21 2003/01/22 14:29:52 phelps Ex
 #ifdef DEBUG
 static long message_count;
 #endif /* DEBUG */
+
+#define CONTENT_TYPE "Content-Type:"
 
 struct message
 {
@@ -337,6 +342,102 @@ size_t message_get_attachment(message_t self, char **attachment_out)
 {
     *attachment_out = self -> attachment;
     return self -> length;
+}
+
+/* Decodes the attachment into a content type, character set and body */
+int message_decode_attachment(
+    message_t self,
+    char **type_out,
+    char **body_out,
+    size_t *length_out)
+{
+    unsigned char *point = (unsigned char *)self -> attachment;
+    unsigned char *mark = point;
+    unsigned char *end = point + self -> length;
+    size_t ct_length = sizeof(CONTENT_TYPE) - 1;
+
+    *type_out = NULL;
+    *body_out = NULL;
+    *length_out = 0;
+
+    /* If no attachment then return lots of NULLs */
+    if (self -> attachment == NULL)
+    {
+	return 0;
+    }
+
+    /* Look through the attachment's MIME header */
+    while (point < end)
+    {
+	/* End of line? */
+	if (*point == '\r' || *point == '\n')
+	{
+	    /* Is this the Content-Type line? */
+	    if (ct_length < point - mark &&
+		strncasecmp(mark, CONTENT_TYPE, ct_length) == 0)
+	    {
+		unsigned char *p;
+
+		/* Skip to the beginning of the value */
+		mark += ct_length;
+		while (mark < point && isspace(*mark))
+		{
+		    mark++;
+		}
+
+		/* Look for a ';' in the content type */
+		if ((p = memchr(mark, ';', point - mark)) == NULL)
+		{
+		    p = point;
+		}
+
+		/* If multiple content-types are given then use the last */
+		if (*type_out != NULL)
+		{
+		    free(*type_out);
+		}
+
+		/* Allocate a string to hold the content type */
+		if ((*type_out = (char *)malloc(p - mark + 1)) == NULL)
+		{
+		    return -1;
+		}
+		memcpy(*type_out, mark, p - mark);
+		(*type_out)[p - mark] = 0;
+	    }
+	    else if (point - mark == 0)
+	    {
+		/* If the CR-LF linefeed is used then skip the LF */
+		if (*point == '\r' && point + 1 < end && *(point + 1) == '\n')
+		{
+		    point += 2;
+		}
+		else
+		{
+		    point += 1;
+		}
+
+		*body_out = (char *)point;
+		*length_out = end - point;
+		return 0;
+	    }
+
+	    /* If the CR-LF linefeed is used then skip the LF */
+	    if (*point == '\r' && point + 1 < end && *(point + 1) == '\n')
+	    {
+		mark = point + 2;
+	    }
+	    else
+	    {
+		mark = point + 1;
+	    }
+	}
+
+	point++;
+    }
+
+    /* No body found */
+    return 0;
 }
 
 /* Answers the receiver's tag */
