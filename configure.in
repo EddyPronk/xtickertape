@@ -144,7 +144,7 @@ AC_TYPE_SIZE_T
 dnl Checks for library functions.
 dnl =============================
 dnl AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memmove memset mkdir setlocale socket strcasecmp strchr strdup strerror strrchr uname])
-AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir strcasecmp strchr strdup strerror strrchr uname])
+AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname])
 
 
 dnl Checks for misc features
