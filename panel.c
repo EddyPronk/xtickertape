@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.36 2000/10/25 07:25:50 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.37 2000/10/26 05:21:40 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -72,26 +72,8 @@ char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 /* The default message timeout */
 #define DEFAULT_TIMEOUT "5"
 
-/* The number of milliseconds to wait before showing a tool-tip */
-#define TOOL_TIP_DELAY 1000
-
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
-
-/* The combination of all button masks */
-#define AnyButtonMask \
-(Button1Mask | Button2Mask | Button3Mask | Button4Mask | Button5Mask)
-
-/* The event masks for any button but the indexed one */
-static unsigned int button_masks[] =
-{
-    AnyButtonMask,
-    Button1Mask ^ AnyButtonMask,
-    Button2Mask ^ AnyButtonMask,
-    Button3Mask ^ AnyButtonMask,
-    Button4Mask ^ AnyButtonMask,
-    Button5Mask ^ AnyButtonMask,
-};
 
 /* The characters to use when converting a hex digit to ASCII */
 static char hex_chars[] = "0123456789abcdef";
@@ -650,229 +632,6 @@ void history_action_callback(Widget widget, control_panel_t self, XmListCallback
     tickertape_show_attachment(self -> tickertape, message);
 }
 
-
-
-/* Show a tool-tip window */
-static void show_tool_tip(control_panel_t self, Widget widget, char *tip, Position x, Position y)
-{
-    Position absolute_x, absolute_y;
-    Position target_x, target_y;
-    XmString string;
-    int screen_width;
-    Dimension width;
-    Dimension height;
-
-    /* Set the tool-tip label's text */
-    string = XmStringCreateSimple(tip);
-    XtVaSetValues(self -> tool_tip_label, XmNlabelString, string, NULL);
-    XmStringFree(string);
-
-    /* Figure out how big the tool-tip window is */
-    XtVaGetValues(self -> tool_tip_label, XmNwidth, &width, XmNheight, &height, NULL);
-
-    /* Figure out where the pointer is */
-    XtTranslateCoords(widget, x, y, &absolute_x, &absolute_y);
-
-    /* Find a good x position for the tool-tip */
-    screen_width = WidthOfScreen(XtScreen(self -> top));
-
-    /* Try starting at the pointer */
-    if (absolute_x + width < screen_width)
-    {
-	target_x = absolute_x;
-    }
-    /* No good.  Try ending at the pointer */
-    else if (width < absolute_x)
-    {
-	target_x = absolute_x - width;
-    }
-    /* Then try with the right edge flush with the right edge of the screen */
-    else if (width < screen_width)
-    {
-	target_x = screen_width - width;
-    }
-    /* Otherwise give up an go with 0 */
-    else
-    {
-	target_x = 0;
-    }
-
-    /* Try putting the tool-tip below the pointer */
-    if (absolute_y + 20 + height < HeightOfScreen(XtScreen(self -> top)))
-    {
-	target_y = absolute_y + 20;
-    }
-    /* Otherwise put it above */
-    else
-    {
-	target_y = absolute_y - 10 - height;
-    }
-
-    XtVaSetValues(self -> tool_tip, XmNx, target_x, XmNy, target_y, NULL);
-
-    /* Show the tool-tip */
-    XtPopup(self -> tool_tip, XtGrabNone);
-}
-
-/* Hide the tool-tip window */
-static void hide_tool_tip(control_panel_t self)
-{
-    XtPopdown(self -> tool_tip);
-}
-
-
-/* Show a tool-tip for the selected list item */
-static void history_timer_callback(control_panel_t self, XtIntervalId *ignored)
-{
-    message_t message;
-    char *mime_args;
-
-    /* Clear the timer */
-    self -> timer = 0;
-
-    /* Locate the message under the pointer */
-    message = history_get_at_point(tickertape_history(self -> tickertape), self -> x, self -> y);
-    if (message == NULL)
-    {
-	return;
-    }
-
-    /* Get its mime args to use for the tool tip */
-    if ((mime_args = message_get_mime_args(message)) == NULL)
-    {
-	return;
-    }
-
-    /* Show them in a tool-tip */
-    show_tool_tip(self, self -> history, mime_args, self -> x, self -> y);
-}
-
-
-/* Set the tool-tip timer */
-static void set_tool_tip_timer(control_panel_t self, int x, int y)
-{
-    /* Create a new timer */
-    self -> timer = XtAppAddTimeOut(
-	XtWidgetToApplicationContext(self -> top),
-	TOOL_TIP_DELAY,
-	(XtTimerCallbackProc)history_timer_callback,
-	(XtPointer)self);
-    self -> x = x;
-    self -> y = y;
-}
-
-/* Cancels a tool-tip timer */
-static void cancel_tool_tip_timer(control_panel_t self)
-{
-    if (self -> timer != 0)
-    {
-	XtRemoveTimeOut(self -> timer);
-	self -> timer = 0;
-    }
-}
-
-#if 0    
-/* This is called when the mouse enters or leaves or moves around
- * inside the history widget */
-static void history_motion_callback(
-    Widget widget,
-    control_panel_t self,
-    XEvent *event)
-{
-    switch (event -> type)
-    {
-	case MotionNotify:
-	{
-	    XMotionEvent *motion_event = (XMotionEvent *)event;
-
-	    /* Make sure the tool-tip is not visible */
-	    hide_tool_tip(self);
-
-	    /* Ensure that the timer is not set */
-	    cancel_tool_tip_timer(self);
-
-	    /* If no mouse buttons are down then restart the timer */
-	    if ((motion_event -> state & AnyButtonMask) == 0)
-	    {
-		set_tool_tip_timer(self, motion_event -> x, motion_event -> y);
-	    }
-
-	    return;
-	}
-
-	/* When the mouse enters the window we set the timer */
-	case EnterNotify:
-	{
-	    XCrossingEvent *crossing_event = (XEnterWindowEvent *)event;
-
-	    /* If no mouse buttons are down then restart the timer */
-	    if ((crossing_event -> state & AnyButtonMask) == 0)
-	    {
-		set_tool_tip_timer(self, crossing_event -> x, crossing_event -> y);
-	    }
-
-	    return;
-	}
-
-	/* Treat a button release as an enter event */
-	case ButtonRelease:
-	{
-	    XButtonEvent *button_event = (XButtonEvent *)event;
-
-	    /* If no buttons are pressed then restart the timer */
-	    if ((button_event -> state & button_masks[button_event -> button]) == 0)
-	    {
-		set_tool_tip_timer(self, button_event -> x, button_event -> y);
-	    }
-
-	    return;
-	}
-
-	/* Treat a key release as an enter if it was within our bounds */
-	case KeyRelease:
-	{
-	    XKeyEvent *key_event = (XKeyEvent *)event;
-
-	    /* Disable any existing timer */
-	    cancel_tool_tip_timer(self);
-
-	    /* Make sure no buttons are pressed */
-	    if ((key_event -> state & AnyButtonMask) == 0)
-	    {
-		Dimension width, height;
-
-		/* Determine the history list's bounds */
-		XtVaGetValues(
-		    self -> history,
-		    XmNwidth, &width,
-		    XmNheight, &height,
-		    NULL);
-
-		/* Make sure the key was released within the window */
-		if ((0 <= key_event -> x) && (key_event -> x < width) &&
-		    (0 <= key_event -> y) && (key_event -> y < height))
-		{
-		    set_tool_tip_timer(self, key_event -> x, key_event -> y);
-		}
-	    }
-
-	    return;
-	}
-
-	/* Treat KeyPress, ButtonPress and LeaveNotify as identical */
-	case KeyPress:
-	case ButtonPress:
-	case LeaveNotify:
-	{
-	    cancel_tool_tip_timer(self);
-	    hide_tool_tip(self);
-	    return;
-	}
-    }
-}
-#endif
-
-
 /* Displays a message in the status line */
 static void show_status(
     control_panel_t self,
@@ -1011,7 +770,7 @@ static void create_status_line(control_panel_t self, Widget parent)
 	NULL);
 
     /* Create an empty string for the status line */
-    string = XmStringCreateSimple(PACKAGE "-" VERSION);
+    string = XmStringCreateSimple(PACKAGE " version " VERSION);
     self -> status_line = XtVaCreateManagedWidget(
 	"statusLabel", xmLabelWidgetClass, frame,
 	XmNalignment, XmALIGNMENT_BEGINNING,
