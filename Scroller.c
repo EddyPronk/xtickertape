@@ -1,6 +1,6 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2001.
+  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1997-2003.
   Unpublished work.  All Rights Reserved.
 
   The software contained on this media is the property of the
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.143 2003/01/27 10:36:05 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.144 2003/01/27 15:20:26 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2204,7 +2204,7 @@ static void start_drag(Widget widget, XEvent *event, String *params, Cardinal *n
     ScrollerWidget self = (ScrollerWidget) widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
 
-    DPRINTF((stderr, "start_drag()\n"));
+    DPRINTF((stderr, "start-drag()\n"));
 
     /* Record the postion of the click for future reference */
     self -> scroller.start_drag_x = button_event -> x;
@@ -2217,11 +2217,11 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     ScrollerWidget self = (ScrollerWidget) widget;
     XMotionEvent *motion_event = (XMotionEvent *) event;
 
+    DPRINTF((stderr, "drag()\n"));
+
     /* Aren't we officially dragging yet? */
     if (! self -> scroller.is_dragging)
     {
-	DPRINTF((stderr, "drag()\n"));
-
 	/* Give a little leeway so that a wobbly click doesn't become a drag */
 	if (self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x &&
 	    motion_event -> x < self -> scroller.start_drag_x + self -> scroller.drag_delta)
@@ -2245,6 +2245,8 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 static void stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
+
+    DPRINTF((stderr, "stop-drag()\n"));
 
     /* If we were dragging then stop */
     if (self -> scroller.is_dragging)
