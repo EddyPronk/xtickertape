@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.72 2000/12/09 01:42:40 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.73 2000/12/09 04:54:22 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1073,18 +1073,26 @@ static int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
 
 /* The function to call when the control panel sends a message to the
  * scheme interpreter group */
-static void interp_cb(void *rock, message_t message)
+static void interp_cb(XtPointer rock, int *source, XtInputId *id)
 {
     tickertape_t self = (tickertape_t)rock;
-    char *string = message_get_string(message);
+    char buffer[4096];
+    ssize_t length;
 
-    printf("interp_cb: %s\n", string);
-    if (parser_read_buffer(self -> parser, string, strlen(string), self -> error) == 0 ||
-	parser_read_buffer(self -> parser, NULL, 0, self -> error) == 0)
+    /* Read from stdin */
+    if ((length = read(*source, buffer, 4096)) < 0)
+    {
+	perror("read(): failed");
+	exit(1);
+    }
+
+    /* Send the info to the parser */
+    if (! parser_read_buffer(self -> parser, buffer, length, self -> error))
     {
 	elvin_error_fprintf(stderr, self -> error);
-	return;
     }
+
+    printf("> "); fflush(stdout);
 }
 
 
@@ -1589,13 +1597,13 @@ tickertape_t tickertape_alloc(
 	exit(1);
     }
 
-    /* Add a special interpreter group to the control panel */
-    if (control_panel_add_subscription(
-	    self -> control_panel, "interp", "interp",
-	    interp_cb, self) == NULL)
-    {
-	exit(1);
-    }
+    /* Add an I/O handler for stdin */
+    XtAppAddInput(
+	XtWidgetToApplicationContext(self -> top),
+	STDIN_FILENO,
+	(XtPointer)XtInputReadMask,
+	interp_cb, self);
+    printf("> "); fflush(stdout);
 
     /* Set the handle's status callback */
     handle -> status_cb = status_cb;
