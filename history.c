@@ -28,11 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.1 1999/08/15 05:37:12 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.2 1999/08/17 17:53:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <Xm/XmAll.h>
 #include "Message.h"
 #include "history.h"
 
@@ -74,6 +75,7 @@ static history_node_t history_node_alloc(Message message)
     self -> previous = NULL;
     self -> previous_response = NULL;
     self -> last_response = NULL;
+
     return self;
 }
 
@@ -81,6 +83,22 @@ static history_node_t history_node_alloc(Message message)
 static void history_node_free(history_node_t self)
 {
     free(self);
+}
+
+/* Constructs a Motif string representation of the receiver's message */
+static XmString history_node_get_string(history_node_t self)
+{
+    XmString result;
+    char *group = Message_getGroup(self -> message);
+    char *user = Message_getUser(self -> message);
+    char *string = Message_getString(self -> message);
+    char *buffer = (char *) malloc(strlen(group) + strlen(user) + strlen(string)+ 3);
+
+    sprintf(buffer, "%s:%s:%s", group, user, string);
+    result = XmStringCreateSimple(buffer);
+    free(buffer);
+
+    return result;
 }
 
 /* Prints the receiver to the output file */
@@ -174,8 +192,8 @@ struct history
     /* The last node in the history (in receipt order) */
     history_node_t last;
 
-    /* The last node in the history which isn't a response */
-    history_node_t thread_last;
+    /* The receiver's Motif List widget */
+    Widget list;
 };
 
 
@@ -193,6 +211,7 @@ history_t history_alloc()
     /* Initialize the fields to sane values */
     self -> count = 0;
     self -> last = NULL;
+    self -> list = NULL;
     return self;
 }
 
@@ -211,6 +230,12 @@ void history_free(history_t self)
     }
 
     free(self);
+}
+
+/* Sets the receiver's Motif List widget */
+void history_set_list(history_t self, Widget list)
+{
+    self -> list = list;
 }
 
 /* Finds the node whose Message has the given id */
@@ -232,11 +257,52 @@ static history_node_t find_by_id(history_t self, long id)
     return NULL;
 }
 
+/* Sets up pointers to cope with threaded messages */
+static void history_thread_node(history_t self, history_node_t node)
+{
+    long reply_id;
+    history_node_t parent;
+
+    /* If the message is not a reply then we're done */
+    if ((reply_id = Message_getReplyId(node -> message)) == 0)
+    {
+	return;
+    }
+
+    /* If the message's parent node isn't in the history then we're done */
+    if ((parent = find_by_id(self, reply_id)) == NULL)
+    {
+	return;
+    }
+
+    /* Append this node to the end of the parent's replies */
+    node -> previous_response = parent -> last_response;
+    parent -> last_response = node;
+}
+
+
+/* Updates the history's list widget after a message was added */
+static void history_update_list(history_t self, history_node_t node)
+{
+    XmString string;
+
+    /* Make sure the list doesn't grow without bound */
+    if (! (self -> count < 30))
+    {
+	XmListDeletePos(self -> list, 1);
+    }
+
+    /* Add the string to the end of the list */
+    string = history_node_get_string(node);
+    XmListAddItem(self -> list, string, 0);
+    XmStringFree(string);
+}
+
+
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message)
 {
-    history_node_t node, parent;
-    long reply_id;
+    history_node_t node;
 
     /* Allocate a node to hold the message */
     if ((node = history_node_alloc(message)) == NULL)
@@ -244,27 +310,16 @@ int history_add(history_t self, Message message)
 	return -1;
     }
 
+    /* If the message is part of a thread then deal with it */
+    history_thread_node(self, node);
+
     /* Append the node to the end of the history */
     self -> count++;
     node -> previous = self -> last;
     self -> last = node;
 
-    /* If the message isn't a response then we're done */
-    if ((reply_id = Message_getReplyId(message)) == 0)
-    {
-	return 0;
-    }
-
-    /* See if we have the parent message in the history */
-    if ((parent = find_by_id(self, reply_id)) == NULL)
-    {
-	return 0;
-    }
-
-    /* Append this node to the end of the parent's replies */
-    node -> previous_response = parent -> last_response;
-    parent -> last_response = node;
-
+    /* Update the List widget */
+    history_update_list(self, node);
     return 0;
 }
 

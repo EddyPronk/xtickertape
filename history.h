@@ -43,7 +43,12 @@ history_t history_alloc();
 /* Frees the history */
 void history_free(history_t self);
 
+/* Sets the history's Motif List widget */
+void history_set_list(history_t self, Widget list);
+
 /* Adds a message to the end of the history */
 int history_add(history_t self, Message message);
+
+
 
 #endif /* HISTORY_H */
