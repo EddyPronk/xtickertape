@@ -28,13 +28,14 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.5 1999/09/26 14:05:14 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.6 1999/10/05 06:01:58 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
 #include "mbox_parser.h"
 #include "mail_sub.h"
 
+#define MAIL_SUB "exists(elvinmail) && user == \"%s\""
 
 /* The MailSubscription data type */
 struct mail_sub
@@ -96,10 +97,13 @@ static void handle_notify(mail_sub_t self, en_notify_t notification)
     else
     {
 	/* Prepend a `+' to the folder name */
-	char *buffer = (char *)malloc(strlen(folder) + 2);
-	*buffer = '+';
-	strcpy(buffer + 1, folder);
-	folder = buffer;
+	if ((folder = (char *)malloc(strlen(folder) + 2)) == NULL)
+	{
+	    return;
+	}
+
+	*folder = '+';
+	strcpy(folder + 1, folder);
     }
 
     /* Get the subject from the "Subject" field */
@@ -200,8 +204,14 @@ void mail_sub_set_connection(mail_sub_t self, connection_t connection)
     /* Subscribe with the new connection */
     if (self -> connection != NULL)
     {
-	char *buffer = (char *)malloc(sizeof("exists(elvinmail) && user == \"\"") + strlen(self->user));
-	sprintf(buffer, "exists(elvinmail) && user == \"%s\"", self -> user);
+	char *buffer;
+
+	if ((buffer = (char *)malloc(strlen(MAIL_SUB) + strlen(self -> user) - 1)) == NULL)
+	{
+	    return;
+	}
+
+	sprintf(buffer, MAIL_SUB, self -> user);
 
 	/* Subscribe to elvinmail notifications */
 	self -> connection_info = connection_subscribe(

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.1 1999/09/09 14:29:50 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.2 1999/10/05 06:02:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -87,8 +87,15 @@ message_t message_alloc(
     char *id,
     char *reply_id)
 {
-    message_t self = (message_t) malloc(sizeof(struct message));
+    message_t self;
 
+    /* Allocate some space for the message_t */
+    if ((self = (message_t)malloc(sizeof(struct message))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Initialize the contents to sane values */
     self -> ref_count = 1;
     self -> info = info;
     self -> group = strdup(group);
@@ -99,43 +106,12 @@ message_t message_alloc(
     printf("allocated message_t %p (%ld)\n", self, ++message_count);
 #endif /* DEBUG */
 
-    if (mime_type == NULL)
-    {
-	self -> mime_type = NULL;
-    }
-    else
-    {
-	self -> mime_type = strdup(mime_type);
-    }
-
-    if (mime_args == NULL)
-    {
-	self -> mime_args = NULL;
-    }
-    else
-    {
-	self -> mime_args = strdup(mime_args);
-    }
-
+    self -> mime_type = (mime_type == NULL) ? NULL : strdup(mime_type);
+    self -> mime_args = (mime_args == NULL) ? NULL : strdup(mime_args);
     self -> timeout = timeout;
 
-    if (id != NULL)
-    {
-	self -> id = strdup(id);
-    }
-    else
-    {
-	self -> id = NULL;
-    }
-
-    if (reply_id != NULL)
-    {
-	self -> reply_id = strdup(reply_id);
-    }
-    else
-    {
-	self -> reply_id = NULL;
-    }
+    self -> id = (id == NULL) ? NULL : strdup(id);
+    self -> reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
 
     return self;
 }

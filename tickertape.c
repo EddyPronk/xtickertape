@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.30 1999/10/05 05:39:11 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.31 1999/10/05 06:02:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -84,7 +84,7 @@ struct tickertape
     char *domain;
 
     /* The receiver's ticker directory */
-    char *tickerDir;
+    char *ticker_dir;
 
     /* The group file from which we read our subscriptions */
     char *groups_file;
@@ -937,7 +937,7 @@ static void subscribe_to_orbit(tickertape_t self)
  * her groups file and connecting to the notification service
  * specified by host and port */
 tickertape_t tickertape_alloc(
-    char *user, char *tickerDir,
+    char *user, char *ticker_dir,
     char *groups_file, char *usenet_file,
     char *host, int port,
     Widget top)
@@ -947,7 +947,7 @@ tickertape_t tickertape_alloc(
     
     self -> user = strdup(user);
     self -> domain = strdup(get_domain());
-    self -> tickerDir = (tickerDir == NULL) ? NULL : strdup(tickerDir);
+    self -> ticker_dir = (ticker_dir == NULL) ? NULL : strdup(ticker_dir);
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
     self -> top = top;
@@ -1024,6 +1024,11 @@ void tickertape_free(tickertape_t self)
 	free(self -> user);
     }
 
+    if (self -> domain)
+    {
+	free(self -> domain);
+    }
+
     if (self -> groups_file)
     {
 	free(self -> groups_file);
@@ -1031,10 +1036,14 @@ void tickertape_free(tickertape_t self)
 
     for (index = 0; index < self -> groups_count; index++)
     {
+	group_sub_set_connection(self -> groups[index], NULL);
 	group_sub_free(self -> groups[index]);
     }
 
     free(self -> groups);
+
+    usenet_sub_set_connection(self -> usenet_sub, NULL);
+    usenet_sub_free(self -> usenet_sub);
 
 #ifdef ORBIT
     for (index = 0; index < self -> orbit_sub_count; index++)
@@ -1068,7 +1077,7 @@ void tickertape_debug(tickertape_t self)
 {
     printf("tickertape_t\n");
     printf("  user = \"%s\"\n", self -> user);
-    printf("  tickerDir = \"%s\"\n", (self -> tickerDir == NULL) ? "null" : self -> tickerDir);
+    printf("  ticker_dir = \"%s\"\n", (self -> ticker_dir == NULL) ? "null" : self -> ticker_dir);
     printf("  groups_file = \"%s\"\n", (self -> groups_file == NULL) ? "null" : self -> groups_file);
     printf("  usenet_file = \"%s\"\n", (self -> usenet_file == NULL) ? "null" : self -> usenet_file);
     printf("  top = 0x%p\n", self -> top);
@@ -1102,17 +1111,17 @@ void tickertape_quit(tickertape_t self)
     exit(0);
 }
 
-/* Answers the receiver's tickerDir filename */
+/* Answers the receiver's ticker_dir filename */
 static char *tickertape_ticker_dir(tickertape_t self)
 {
     /* See if we've already looked it up */
-    if (self -> tickerDir != NULL)
+    if (self -> ticker_dir != NULL)
     {
-	return self -> tickerDir;
+	return self -> ticker_dir;
     }
 
     /* Use the TICKERDIR environment variable if it is set */
-    if ((self -> tickerDir = getenv("TICKERDIR")) == NULL)
+    if ((self -> ticker_dir = getenv("TICKERDIR")) == NULL)
     {
 	char *home;
 
@@ -1123,22 +1132,22 @@ static char *tickertape_ticker_dir(tickertape_t self)
 	}
 
 	/* And append /.ticker to it to construct the directory name */
-	self -> tickerDir = (char *)malloc(strlen(home) + sizeof(DEFAULT_TICKERDIR) + 1);
-	strcpy(self -> tickerDir, home);
-	strcat(self -> tickerDir, "/");
-	strcat(self -> tickerDir, DEFAULT_TICKERDIR);
+	self -> ticker_dir = (char *)malloc(strlen(home) + sizeof(DEFAULT_TICKERDIR) + 1);
+	strcpy(self -> ticker_dir, home);
+	strcat(self -> ticker_dir, "/");
+	strcat(self -> ticker_dir, DEFAULT_TICKERDIR);
     }
 
     /* Make sure the TICKERDIR exists 
      * Note: we're being clever here and assuming that nothing will
      * call tickertape_ticker_dir() if both groups_file and usenet_file
      * are set */
-    if (mkdirhier(self -> tickerDir) < 0)
+    if (mkdirhier(self -> ticker_dir) < 0)
     {
 	perror("unable to create tickertape directory");
     }
 
-    return self -> tickerDir;
+    return self -> ticker_dir;
 }
 
 /* Answers the receiver's groups file filename */
