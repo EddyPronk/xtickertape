@@ -28,10 +28,13 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.19 1999/05/28 03:09:56 phelps Exp $";
+static const char cvsid[] = "$Id: UsenetSubscription.c,v 1.20 1999/07/27 02:10:28 phelps Exp $";
 #endif /* lint */
 
 #include <stdlib.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif /* HAVE_ALLOCA_H */
 #include "UsenetSubscription.h"
 #include "FileStreamTokenizer.h"
 #include "StringBuffer.h"
