@@ -1,4 +1,4 @@
-/* $Id: Subscription.h,v 1.5 1998/10/24 04:56:46 phelps Exp $ */
+/* $Id: Subscription.h,v 1.6 1998/11/05 01:52:17 phelps Exp $ */
 
 #ifndef SUBSCRIPTION_H
 #define SUBSCRIPTION_H
@@ -42,10 +42,25 @@ void Subscription_free(Subscription self);
 /* Prints debugging information */
 void Subscription_debug(Subscription self);
 
+/* Answers the receiver's subscription expression */
+char *Subscription_expression(Subscription self);
+
+/* Updates the receiver to look just like subscription in terms of
+ * group, inMenu, autoMime, minTime, maxTime, callback and context,
+ * but NOT expression */
+void Subscription_updateFromSubscription(Subscription self, Subscription subscription);
+
 /* Sets the receiver's ElvinConnection */
 void Subscription_setConnection(Subscription self, ElvinConnection connection);
 
 /* Registers the receiver with the ControlPanel */
 void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel);
+
+/* Makes the receiver visible in the ControlPanel's group menu iff
+ * inMenu is set, and makes sure it appears at the proper index */
+void Subscription_updateControlPanelIndex(
+    Subscription self,
+    ControlPanel controlPanel,
+    int *index);
 
 #endif /* SUBSCRIPTION_H */

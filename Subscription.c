@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.18 1998/10/24 15:35:05 phelps Exp $ */
+/* $Id: Subscription.c,v 1.19 1998/11/05 01:52:17 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -290,7 +290,6 @@ static void HandleNotify(Subscription self, en_notify_t notification)
 	    char *timeoutString;
 	    en_search(notification, "TIMEOUT", &type, (void **)&timeoutString);
 	    timeout = atoi(timeoutString);
-	    printf("timeout=%d\n", timeout);
 	}
 
 	timeout = (timeout == 0) ? 10 : timeout;
@@ -494,9 +493,40 @@ void Subscription_debug(Subscription self)
 }
 
 
+/* Answers the receiver's subscription expression */
+char *Subscription_expression(Subscription self)
+{
+    SANITY_CHECK(self);
+    return self -> expression;
+}
+
+
+/* Updates the receiver to look just like subscription in terms of
+ * group, inMenu, autoMime, minTime, maxTime, callback and context,
+ * but NOT expression */
+void Subscription_updateFromSubscription(Subscription self, Subscription subscription)
+{
+    SANITY_CHECK(self);
+
+    /* Release any dynamically allocated strings in the receiver */
+    free(self -> group);
+    
+    /* Copy various fields */
+    self -> group = strdup(subscription -> group);
+    self -> inMenu = subscription -> inMenu;
+    self -> hasNazi = subscription -> hasNazi;
+    self -> minTime = subscription -> minTime;
+    self -> maxTime = subscription -> maxTime;
+    self -> callback = subscription -> callback;
+    self -> context = subscription -> context;
+}
+
+
 /* Sets the receiver's ElvinConnection */
 void Subscription_setConnection(Subscription self, ElvinConnection connection)
 {
+    SANITY_CHECK(self);
+
     if (self -> connection != NULL)
     {
 	ElvinConnection_unsubscribe(self -> connection, self -> connectionInfo);
@@ -514,8 +544,7 @@ void Subscription_setConnection(Subscription self, ElvinConnection connection)
 
 
 /* Registers the receiver with the ControlPanel */
-void Subscription_setControlPanel(
-    Subscription self, ControlPanel controlPanel)
+void Subscription_setControlPanel(Subscription self, ControlPanel controlPanel)
 {
     SANITY_CHECK(self);
 
@@ -528,16 +557,63 @@ void Subscription_setControlPanel(
     if (self -> controlPanel != NULL)
     {
 	ControlPanel_removeSubscription(self -> controlPanel, self -> controlPanelInfo);
+	self -> controlPanelInfo = NULL;
     }
 
     self -> controlPanel = controlPanel;
 
-    if ((self -> controlPanel != NULL) && (self -> inMenu))
+    if (self -> controlPanel != NULL)
     {
-	self -> controlPanelInfo = ControlPanel_addSubscription(
-	    controlPanel,
-	    self -> group,
-	    (ControlPanelCallback) SendMessage,
-	    self);
+	if (self -> inMenu)
+	{
+	    self -> controlPanelInfo = ControlPanel_addSubscription(
+		controlPanel, self -> group,
+		(ControlPanelCallback)SendMessage, self);
+	}
+	else
+	{
+	    self -> controlPanelInfo = NULL;
+	}
+    }
+}
+
+/* Makes the receiver visible in the ControlPanel's group menu iff
+ * inMenu is set, and makes sure it appears at the proper index */
+void Subscription_updateControlPanelIndex(
+    Subscription self,
+    ControlPanel controlPanel,
+    int *index)
+{
+    SANITY_CHECK(self);
+
+    /* If the ControlPanel is changing, then simply forward this to setControlPanel */
+    if (self -> controlPanel != controlPanel)
+    {
+	Subscription_setControlPanel(self, controlPanel);
+    }
+    else
+    {
+	/* If we were in the ControlPanel's menu but aren't now, then remove us */
+	if ((self -> controlPanelInfo != NULL) && (! self -> inMenu))
+	{
+	    ControlPanel_removeSubscription(self -> controlPanel, self -> controlPanelInfo);
+	    self -> controlPanelInfo = NULL;
+	}
+
+	/* If we weren't in the ControlPanel's menu but are now, then add us */
+	if ((self -> controlPanelInfo == NULL) && (self -> inMenu))
+	{
+	    self -> controlPanelInfo = ControlPanel_addSubscription(
+		controlPanel, self -> group,
+		(ControlPanelCallback)SendMessage, self);
+	}
+    }
+
+    /* If the receiver is now in the ControlPanel's group menu, make
+     * sure it's at the appropriate index */
+    if (self -> controlPanelInfo != NULL)
+    {
+	ControlPanel_setSubscriptionIndex(self -> controlPanel, self -> controlPanelInfo, *index);
+	(*index)++;
     }
 }
