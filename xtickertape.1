@@ -7,11 +7,12 @@ xtickertape \- scrolling text chat tool
 .SH SYNOPSIS
 .nf
 xtickertape [-h host] [--host=host] [-p port] [--port=port]
-            [-u user] [--user=user] [-g groupsfile] [--groups=groupsfile]
-            [-n newsfile] [--news=newsfile] [-v] [--version] [--help]
+            [-u user] [--user=user] [-f groupsfile] [--groups=groupsfile]
+            [-s newsfile] [--news=newsfile] [-v] [--version] [--help]
 .fi
 .SH OPTIONS
-\*(Xt may be invoked with the following command-line options:
+In addition to the standard X Toolkit command-line options, \*(xt may
+be invoked with the following:
 .TP
 .B -h \fIhost\fP
 .TP
@@ -28,12 +29,12 @@ Connect to the elvin server listening on \fIport\fP.
 .BI --user= user
 Use \fIuser\fP as the default name when sending messages.
 .TP
-.B -g \fIfilename\fP
+.B -f \fIfilename\fP
 .TP
 .BI --groups= filename
 Read the group subscriptions out of \fIfilename\fP.
 .TP
-.B -n \fIfilename\fP
+.B -s \fIfilename\fP
 .TP
 .BI --news= filename
 Read the usenet news subscriptions out of \fIfilename\fP.
@@ -75,31 +76,40 @@ MIME attachment (typically a URL).  If they do, they will be
 underlined so that you can identify them, and you may click on them
 with the middle mouse button to view the attachment.  If you are so
 inclined, you may specify in your \fIgroups\fP file that any
-notification with a MIME attachment sent to a given group should
-automatically be displayed, thus saving you the trouble of clicking on 
-it.  \*(Xt invokes \fImetamail\fP in order to view MIME attachments.
-The \fIshow-url\fP script is included in the \*(xt distribution as a
-viewer for URL attachements.  We reommend that you specify it as your 
+notification with an attachment sent to a given group should
+automatically be displayed, thus saving you the trouble of clicking on
+it.  \*(Xt invokes \fImetamail\fP in order to view attachments.  The
+\fIshow-url\fP script is included in the \*(xt distribution as a
+viewer for URL attachements.  We reommend that you specify it as your
 \fBtext/uri-list\fP viewer and, for backwards compatibility, as your
 \fBx-elvin/url\fP viewer in your .mailcap file.
 .PP
-The scrolling speed of the tickertape can be adjusted with the `-' and 
+The scrolling speed of the tickertape can be adjusted with the `-' and
 `=' keys.  These increment and decrement the number of pixels a
 message should move each time the scroller is updated (see the
-\fBstepSize()\fP resource below).
+\fBstepSize()\fP resource below).  Direct control of the tickertape
+position may be obtained by dragging the pointer with the left mouse
+button pressed.  The tickertape is capable of scrolling backwards.
 .PP
 To send a notification you should bring up the \fIcontrol panel\fP
 window.  This is done by clicking in the \*(xt window with the left
 mouse button.  The control panel allows you to compose the four
-attributes and optional MIME attachment of your notification and send
-it.  If you clicked on a notification scrolling across your \*(xt
-window, then the control panel will be configured to reply to that
-message.
+attributes and optional attachment of your notification and send it.
+If you clicked on a notification scrolling across your \*(xt window,
+then the control panel will be configured to reply to that message.
 .PP
 The control panel also allows you to tell \*(xt to re-read your
 \fIgroups\fP or \fIusenet\fP files if you have changed them since you
-started \*(xt from the File menu.  You may also exit the program from
-this menu (or by pressing the `q' key in the scroller window).
+started \*(xt from the `File' menu.  You may also exit the program
+from this menu (or by pressing the `q' key in the scroller window).
+At the bottom of the control panel is a history of the last thirty
+notifications received.  These may be displayed either in threaded
+order (with replies indented and under the original message) or in
+chronological order.  The user may toggle between these two views from
+the `Thread History' item on the `Options' menu.  Messages which are
+displayed in a bold font have an attachment, which may be viewed by
+double-clicking on the message.
+
 .SH RESOURCES
 \*(Xt understands all of the core X Toolkit and Motif resource names
 and classes.  Additionally, the Scroller widget understands the
@@ -140,12 +150,22 @@ at which notifications are scrolled.
 You can also customize the keystrokes and mouse clicks which control
 \*(xt.  The Scroller widget recognizes the following actions:
 .TP
-.B menu()
+.B start-drag()
+Records the current pointer position for reference during an ensuing
+drag.  Since a drag action cancels any other action (show-menu, for
+example), the pointer must move a minimum distance away from this
+reference position before a drag officially begins.
+.TP
+.B drag()
+Moves the Scroller's horizontal position to match the pointer's
+motion.  This should be used in conjunction with start-drag above.
+.TP
+.B show-menu()
 Pops up the \fIcontrol panel\fP window and uses the notification under 
 the pointer (if there is one) to configure the group menu.
 .TP
-.B decodeMime()
-Displays the MIME attachment of the notification under the pointer.
+.B show-attachment()
+Displays the attachment of the notification under the pointer.
 .TP
 .B expire()
 Deletes the notification under the pointer by quickly fading it away.
@@ -161,25 +181,22 @@ quickly.
 Decreases the step size of the scroller, making message scroll more
 slowly.
 .PP
-For example, to bind the left mouse button to
+As an example, the left mouse button could be bound to
 .B delete()
 and the `m' key to
-.B menu()
-put something like the following in your .Xdefaults (or
-equivalent) file:
+.B show-menu()
+by placing the following in one's .Xdefaults file.
 .TP
 Tickertape.scroller.translations: #override \en\e
 <Btn1Down>: delete() \en\e
 .br
-<Key>m: menu() \en
+<Key>m: show-menu() \en
 .SH ENVIRONMENT VARIABLES
 If
 .B TICKERDIR
 exists in the environment, then \*(xt will look in the directory it
 names for the files \fBgroups\fP and \fBusenet\fP.  If it is not set,
-then \*(xt will look in the directory specified by the \fBHOME\fP
-environment variable for a directory named \fB.ticker\fP under which
-it will look for \fBgroups\fP and \fBusenet\fP.
+it defaults to \fB$HOME/.ticker\fP.
 .SH FILES
 .PP
 .TP
