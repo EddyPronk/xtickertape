@@ -1,4 +1,9 @@
-1999-09-08  Ted Phelps  <phelps@pobox.com>
+1999-09-10  Ted Phelps <phelps@pobox.com>
+
+	* *.h, *.c: renamed Message to message_t and Message.[hc] to
+		  message.[hc] throughout.  The great name reform has begun!
+
+1999-09-08  Ted Phelps <phelps@pobox.com>
 
 	* Scroller.c: fixed a bogus unsigned comparison which could result 
 		  in a negative width for the gap
@@ -17,7 +22,7 @@
 
 	* history.c: fixed an obscure threading bug.
 
-1999-08-30  Ted Phelps  <phelps@pobox.com>
+1999-08-30  Ted Phelps <phelps@pobox.com>
 
 	* Version-1.6 released
 	* history.c: added an #include and a prototype to get rid of some
