@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.1 1999/09/12 07:34:26 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.2 1999/09/12 13:57:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -37,7 +37,7 @@ static const char cvsid[] = "$Id: mbox_parser.c,v 1.1 1999/09/12 07:34:26 phelps
 #include "mbox_parser.h"
 
 /* The type of a lexer state */
-typedef int (*lexer_state_t)(mbox_parser_t self, char ch);
+typedef int (*lexer_state_t)(mbox_parser_t self, int ch);
 
 
 /* The type of a parser state */
@@ -58,34 +58,34 @@ struct mbox_parser
     /* The current parse state */
     parser_state_t parser_state;
 
-    /* A pointer to the character being scanned at the moment */
-    char *pointer;
-
-    /* One of the strings */
+    /* The buffer in which the `name' string is constructed */
     char *name;
 
-    /* The end of name */
-    char *end_name;
+    /* The next free character in the `name' buffer */
+    char *name_pointer;
 
-    /* The other string */
+    /* The buffer in which the `email' string is constructed */
     char *email;
 
-    /* The end of email */
-    char *end_email;
+    /* The next free character in the `email' buffer */
+    char *email_pointer;
 };
 
 
 /* Static function declarations */
-static int lex_start(mbox_parser_t self, char ch);
-static int lex_string(mbox_parser_t self, char ch);
-static int lex_string_esc(mbox_parser_t self, char ch);
-static int lex_comment(mbox_parser_t self, char ch);
-static int lex_comment_esc(mbox_parser_t self, char ch);
-static int lex_domain_lit(mbox_parser_t self, char ch);
-static int lex_domain_lit_esc(mbox_parser_t self, char ch);
+static int lex_start(mbox_parser_t self, int ch);
+static int lex_white(mbox_parser_t self, int ch);
+static int lex_string(mbox_parser_t self, int ch);
+static int lex_string_esc(mbox_parser_t self, int ch);
+static int lex_comment(mbox_parser_t self, int ch);
+static int lex_comment_esc(mbox_parser_t self, int ch);
+static int lex_ignored_comment(mbox_parser_t self, int ch);
+static int lex_ignored_comment_esc(mbox_parser_t self, int ch);
+static int lex_domain_lit(mbox_parser_t self, int ch);
+static int lex_domain_lit_esc(mbox_parser_t self, int ch);
 
 /* Awaiting the first character of a token*/
-static int lex_start(mbox_parser_t self, char ch)
+static int lex_start(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
@@ -99,19 +99,22 @@ static int lex_start(mbox_parser_t self, char ch)
 	/* Watch for a comment */
 	case '(':
 	{
-	    if (self -> end_name == NULL)
+	    /* If we don't already have a name then use the comment as the name */
+	    if (*self -> name_pointer == '\0')
 	    {
-		self -> end_name = self -> pointer;
+		self -> lexer_state = lex_comment;
+		return 0;
 	    }
 
-	    self -> email = self -> pointer + 1;
-	    self -> lexer_state = lex_comment;
+	    /* Otherwise throw the comment away */
+	    self -> lexer_state = lex_ignored_comment;
 	    return 0;
 	}
 
 	/* Watch for a domain-literal */
 	case '[':
 	{
+	    *(self -> email_pointer++) = ch;
 	    self -> lexer_state = lex_domain_lit;
 	    return 0;
 	}
@@ -119,13 +122,22 @@ static int lex_start(mbox_parser_t self, char ch)
 	/* Watch for the start of a route-addr */
 	case '<':
 	{
-	    self -> end_name = self -> pointer;
-	    self -> email = self -> pointer + 1;
+	    char *pointer;
 
+	    /* Don't allow multiple route-addrs */
 	    if (self -> parser_state != PRE_ROUTE_ADDR)
 	    {
 		return -1;
 	    }
+
+	    /* We're looking at a `name <address>' format mailbox */
+	    *self -> email_pointer = '\0';
+
+	    /* Exchange the email and name buffers */
+	    pointer = self -> name;
+	    self -> name = self -> email;
+	    self -> email = pointer;
+	    self -> email_pointer = self -> name_pointer;
 
 	    self -> parser_state = ROUTE_ADDR;
 	    return 0;
@@ -139,21 +151,120 @@ static int lex_start(mbox_parser_t self, char ch)
 		return -1;
 	    }
 
-	    self -> end_email = self -> pointer;
+	    /* Null-terminate the email string */
+	    *self -> email_pointer = '\0';
 	    self -> parser_state = POST_ROUTE_ADDR;
 	    return 0;
 	}
+    }
 
-	/* Let anything else through */
-	default:
+    /* Compress whitespace */
+    if (isspace(ch))
+    {
+	self -> lexer_state = lex_white;
+	return 0;
+    }
+
+    /* Copy anything else */
+    *(self -> email_pointer++) = ch;
+    return 0;
+}
+
+/* Skipping additional whitespace */
+static int lex_white(mbox_parser_t self, int ch)
+{
+    switch (ch)
+    {
+	/* Watch for a quoted string */
+	case '"':
 	{
+	    *(self -> email_pointer++) = ' ';
+	    self -> lexer_state = lex_string;
+	    return 0;
+	}
+
+	/* Watch for a comment */
+	case '(':
+	{
+	    /* If we don't already have a name then use the comment */
+	    if (*self -> name == '\0')
+	    {
+		self -> lexer_state = lex_comment;
+		return 0;
+	    }
+
+	    /* Otherwise throw the comment away */
+	    self -> lexer_state = lex_ignored_comment;
+	    return 0;
+	}
+
+	/* Watch for a domain-literal */
+	case '[':
+	{
+	    *(self -> email_pointer++) = ' ';
+	    *(self -> email_pointer++) = ch;
+	    self -> lexer_state = lex_domain_lit;
+	    return 0;
+	}
+
+	/* Watch for the start of a route-addr */
+	case '<':
+	{
+	    char *pointer;
+
+	    /* Don't allow multiple route-addrs */
+	    if (self -> parser_state != PRE_ROUTE_ADDR)
+	    {
+		return -1;
+	    }
+
+	    /* We're looking a a `name <address>' format mailbox */
+	    *self -> email_pointer = '\0';
+
+	    /* Exchange the email and name buffers */
+	    pointer = self -> name;
+	    self -> name = self -> email;
+	    self -> email = pointer;
+	    self -> email_pointer = self -> name_pointer;
+
+	    self -> lexer_state = lex_start;
+	    self -> parser_state = ROUTE_ADDR;
+	    return 0;
+	}
+
+	/* Watch for the end of a route-addr */
+	case '>':
+	{
+	    if (self -> parser_state != ROUTE_ADDR)
+	    {
+		return -1;
+	    }
+
+	    /* Null-terminate the email string */
+	    *self -> email_pointer = '\0';
+
+	    /* No longer skipping whitespace... */
+	    self -> lexer_state = lex_start;
+	    self -> parser_state = POST_ROUTE_ADDR;
 	    return 0;
 	}
     }
+
+    /* Ignore additional whitespace */
+    if (isspace(ch))
+    {
+	return 0;
+    }
+
+    /* Anything else gets a space in front of it */
+    *(self -> email_pointer++) = ' ';
+    *(self -> email_pointer++) = ch;
+    self -> lexer_state = lex_start;
+    return 0;
 }
 
 /* Awaiting characters within the body of a string */
-static int lex_string(mbox_parser_t self, char ch)
+static int lex_string(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
@@ -174,6 +285,7 @@ static int lex_string(mbox_parser_t self, char ch)
 	/* Let anything else through */
 	default:
 	{
+	    *(self -> email_pointer++) = ch;
 	    return 0;
 	}
     }
@@ -181,21 +293,22 @@ static int lex_string(mbox_parser_t self, char ch)
 
 
 /* Awaiting the character after a string escape */
-static int lex_string_esc(mbox_parser_t self, char ch)
+static int lex_string_esc(mbox_parser_t self, int ch)
 {
+    *(self -> email_pointer++) = ch;
     self -> lexer_state = lex_string;
     return 0;
 }
 
 /* Awaiting a character within the body of a comment */
-static int lex_comment(mbox_parser_t self, char ch)
+static int lex_comment(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
 	/* End of comment? */
 	case ')':
 	{
-	    self -> end_email = self -> pointer;
+	    *self -> name_pointer = '\0';
 	    self -> lexer_state = lex_start;
 	    return 0;
 	}
@@ -216,26 +329,69 @@ static int lex_comment(mbox_parser_t self, char ch)
 	/* Anything else is part of the comment */
 	default:
 	{
+	    *(self -> name_pointer++) = ch;
 	    return 0;
 	}
     }
 }
 
 /* Awaiting an escaped comment character */
-static int lex_comment_esc(mbox_parser_t self, char ch)
+static int lex_comment_esc(mbox_parser_t self, int ch)
 {
+    *(self -> name_pointer++) = ch;
     self -> lexer_state = lex_string;
     return 0;
 }
 
+/* Awaiting a character within the body of a comment */
+static int lex_ignored_comment(mbox_parser_t self, int ch)
+{
+    switch (ch)
+    {
+	/* end of comment? */
+	case ')':
+	{
+	    self -> lexer_state = lex_start;
+	    return 0;
+	}
+
+	/* escape character? */
+	case '\\':
+	{
+	    self -> lexer_state = lex_ignored_comment_esc;
+	    return 0;
+	}
+
+	/* bogus character? */
+	case '(':
+	{
+	    return -1;
+	}
+
+	/* Anything else is part of the comment */
+	default:
+	{
+	    return 0;
+	}
+    }
+}
+
+/* Awaiting an escaped comment character */
+static int lex_ignored_comment_esc(mbox_parser_t self, int ch)
+{
+    self -> lexer_state = lex_ignored_comment;
+    return 0;
+}
+
 /* Awaiting a character within a domain-literal */
-static int lex_domain_lit(mbox_parser_t self, char ch)
+static int lex_domain_lit(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
 	/* End of domain literal? */
 	case ']':
 	{
+	    *(self -> email_pointer++) = ch;
 	    self -> lexer_state = lex_start;
 	    return 0;
 	}
@@ -243,6 +399,7 @@ static int lex_domain_lit(mbox_parser_t self, char ch)
 	/* Escape character? */
 	case '\\':
 	{
+	    *(self -> email_pointer++) = ch;
 	    self -> lexer_state = lex_domain_lit_esc;
 	    return 0;
 	}
@@ -256,14 +413,16 @@ static int lex_domain_lit(mbox_parser_t self, char ch)
 	/* Anything else is permitted */
 	default:
 	{
+	    *(self -> email_pointer++) = ch;
 	    return 0;
 	}
     }
 }
 
 /* Awaiting an escaped domain-literal characer */
-static int lex_domain_lit_esc(mbox_parser_t self, char ch)
+static int lex_domain_lit_esc(mbox_parser_t self, int ch)
 {
+    *(self -> email_pointer++) = ch;
     self -> lexer_state = lex_domain_lit;
     return 0;
 }
@@ -293,6 +452,8 @@ mbox_parser_t mbox_parser_alloc()
     /* Initialize its state */	
     self -> lexer_state = lex_start;
     self -> parser_state = PRE_ROUTE_ADDR;
+    self -> name = NULL;
+    self -> email = NULL;
     return self;
 }
 
@@ -310,8 +471,9 @@ void mbox_parser_debug(mbox_parser_t self, FILE *out)
     fprintf(out, "  parser_state = %d\n", self -> parser_state);
 }
 
-/* Parses the given string (THIS MODIFIES THE STRING), and returns
- * pointers to the e-mail address and user name portions
+/* Parses `mailbox' as an RFC 822 mailbox, separating out the name and
+ * e-mail address portions which can subsequently be accessed with the 
+ * mbox_parser_get_name() and mbox_parser_get_email() functions.
  *
  * return values:
  *     success: 0
@@ -319,18 +481,28 @@ void mbox_parser_debug(mbox_parser_t self, FILE *out)
  */
 int mbox_parser_parse(mbox_parser_t self, char *mailbox)
 {
+    int length;
+    char *pointer;
+
+    /* Make sure we have enough room in our buffers */
+    length = strlen(mailbox) + 1;
+
+    self -> name = (char *)realloc(self -> name, length);
+    self -> name_pointer = self -> name;
+    *self -> name = '\0';
+
+    self -> email = (char *)realloc(self -> email, length);
+    self -> email_pointer = self -> email;
+    *self -> email = '\0';
+
     /* Initialize the receiver's state */
     self -> lexer_state = lex_start;
     self -> parser_state = PRE_ROUTE_ADDR;
-    self -> name = mailbox;
-    self -> end_name = NULL;
-    self -> email = NULL;
-    self -> end_email = NULL;
 
     /* Send each character to the lexer */
-    for (self -> pointer = mailbox; *self -> pointer != '\0'; self -> pointer++)
+    for (pointer = mailbox; *pointer != '\0'; pointer++)
     {
-	if ((self -> lexer_state)(self, *self -> pointer) < 0)
+	if ((self -> lexer_state)(self, *pointer) < 0)
 	{
 	    return -1;
 	}
@@ -342,52 +514,7 @@ int mbox_parser_parse(mbox_parser_t self, char *mailbox)
 	return -1;
     }
 
-    /* Trim whitespace off the end of the name */
-    if (self -> end_name == NULL)
-    {
-	self -> end_name = self -> pointer;
-    }
-
-    while (isspace((int) *(self -> end_name - 1)))
-    {
-	self -> end_name--;
-    }
-
-    *self -> end_name = '\0';
-
-    /* Determine what was the e-mail address and what was the name */
-    switch (self -> parser_state)
-    {
-	case PRE_ROUTE_ADDR:
-	{
-	    char *pointer;
-
-	    /* End the email string */
-	    if (self -> email != NULL)
-	    {
-		*self -> end_email = '\0';
-	    }
-
-	    /* Swap the name and e-mail strings */
-	    pointer = self -> email;
-	    self -> email = self -> name;
-	    self -> name = pointer;
-	    return 0;
-	}
-
-	case POST_ROUTE_ADDR:
-	{
-	    *self -> end_email = '\0';
-	    return 0;
-	}
-
-	default:
-	{
-	    self -> email = NULL;
-	    self -> name = NULL;
-	    return -1;
-	}
-    }
+    return 0;
 }
 
 /*

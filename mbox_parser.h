@@ -31,7 +31,7 @@
 #define MBOX_PARSER_H
 
 #ifndef lint
-static const char cvs_MBOX_PARSER_H[] = "$Id: mbox_parser.h,v 1.1 1999/09/12 07:34:27 phelps Exp $";
+static const char cvs_MBOX_PARSER_H[] = "$Id: mbox_parser.h,v 1.2 1999/09/12 13:57:21 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -55,8 +55,9 @@ void mbox_parser_free(mbox_parser_t self);
 /* Prints out debugging information about the receiver */
 void mbox_parser_debug(mbox_parser_t self, FILE *out);
 
-/* Parses the given string (THIS MODIFIES THE STRING), and returns
- * pointers to the e-mail address and user name portions
+/* Parses `mailbox' as an RFC 822 mailbox, separating out the name and
+ * e-mail address portions which can subsequently be accessed with the 
+ * mbox_parser_get_name() and mbox_parser_get_email() functions.
  *
  * return values:
  *     success: 0
