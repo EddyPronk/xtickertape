@@ -31,8 +31,11 @@
 #define ATOM_H
 
 #ifndef lint
-static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.6 2000/11/07 04:01:21 phelps Exp $";
+static const char cvs_ATOM_H[] = "$Id: atom.h,v 2.7 2000/11/08 07:23:54 phelps Exp $";
 #endif /* lint */
+
+/* An env_t is an opaque struct as well */
+typedef struct env *env_t;
 
 /* The types of atoms */
 typedef enum
@@ -44,14 +47,16 @@ typedef enum
     ATOM_STRING,
     ATOM_CHAR,
     ATOM_SYMBOL,
-    ATOM_CONS
+    ATOM_CONS,
+    ATOM_BUILTIN,
+    ATOM_LAMBDA
 } atom_type_t;
 
 /* An atom_t is a an opaque struct */
 typedef struct atom *atom_t;
 
-/* An env_t is an opaque struct as well */
-typedef struct env *env_t;
+/* The built-in function type */
+typedef int (*builtin_t)(env_t env, atom_t args, atom_t *result, elvin_error_t error);
 
 /* Answers the unique nil instance */
 atom_t nil_alloc(elvin_error_t error);
@@ -77,6 +82,8 @@ atom_t char_alloc(char ch, elvin_error_t error);
 /* Allocates and initializes a new cons atom */
 atom_t cons_alloc(atom_t car, atom_t cdr, elvin_error_t error);
 
+/* Allocates and initializes a new built-in atom */
+atom_t builtin_alloc(builtin_t value, elvin_error_t error);
 
 /* Returns the atom's type */
 atom_type_t atom_get_type(atom_t atom);
@@ -141,5 +148,7 @@ int env_set_float(env_t env, char *name, double value, elvin_error_t error);
 /* Sets the named symbol's value to the string value in env */
 int env_set_string(env_t env, char *name, char *value, elvin_error_t error);
 
+/* Sets the named symbol's value to the built-in function in env */
+int env_set_builtin(env_t env, char *name, builtin_t value, elvin_error_t error);
 
 #endif /* ATOM_H */

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifdef lint
-static const char cvsid[] = "$Id: atom.c,v 2.8 2000/11/07 04:01:21 phelps Exp $";
+static const char cvsid[] = "$Id: atom.c,v 2.9 2000/11/08 07:23:54 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -66,6 +66,7 @@ struct atom
 	double d;
 	char *s;
 	struct cons c;
+	builtin_t b;
     } value;
 };
 
@@ -343,6 +344,22 @@ atom_t cons_reverse(atom_t atom, atom_t end, elvin_error_t error)
     }
 }
 
+/* Allocates and initializes a new built-in atom */
+atom_t builtin_alloc(builtin_t value, elvin_error_t error)
+{
+    atom_t atom;
+
+    /* Allocate an atom */
+    if ((atom = atom_alloc(ATOM_BUILTIN, error)) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Record the function */
+    atom -> value.b = value;
+    return atom;
+}
+
 
 /* Frees an atom */
 int atom_free(atom_t atom, elvin_error_t error)
@@ -378,6 +395,18 @@ int atom_free(atom_t atom, elvin_error_t error)
 	    result = atom_free(atom -> value.c.car, error);
 	    result = atom_free(atom -> value.c.cdr, result ? error : NULL) && result;
 	    return ELVIN_FREE(atom, error);
+	}
+
+	case ATOM_BUILTIN:
+	{
+	    fprintf(stderr, PACKAGE ": attempted to free a built-in function!\n");
+	    abort();
+	}
+
+	case ATOM_LAMBDA:
+	{
+	    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_free");
+	    return 0;
 	}
 
 	default:
@@ -462,6 +491,12 @@ int atom_print(atom_t atom)
 	    return 1;
 	}
 
+	case ATOM_BUILTIN:
+	{
+	    printf("<builtin>");
+	    return 1;
+	}
+
 	default:
 	{
 	    fprintf(stderr, "unknown atom type: %d\n", atom -> type);
@@ -483,6 +518,8 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 	case ATOM_FLOAT:
 	case ATOM_STRING:
 	case ATOM_CHAR:
+	case ATOM_BUILTIN:
+	case ATOM_LAMBDA:
 	{
 	    atom->ref_count++;
 	    *result = atom;
@@ -505,9 +542,35 @@ int atom_eval(atom_t atom, env_t env, atom_t *result, elvin_error_t error)
 
 	case ATOM_CONS:
 	{
-	    nil.ref_count++;
-	    *result = &nil;
-	    return 1;
+	    atom_t function;
+
+	    /* First we evaluate the car to get the function */
+	    if (atom_eval(cons_car(atom, error), env, &function, error) == 0)
+	    {
+		return 0;
+	    }
+
+	    /* What we do depends on the type */
+	    switch (function->type)
+	    {
+		case ATOM_BUILTIN:
+		{
+		    /* Call the built-in with the cdr as args */
+		    return function->value.b(env, cons_cdr(atom, error), result, error);
+		}
+
+		case ATOM_LAMBDA:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "lambda_eval");
+		    return 0;
+		}
+
+		default:
+		{
+		    ELVIN_ERROR_ELVIN_NOT_YET_IMPLEMENTED(error, "foo");
+		    return 0;
+		}
+	    }
 	}
 
 	default:
@@ -695,6 +758,25 @@ int env_set_string(env_t env, char *name, char *value, elvin_error_t error)
 
     /* Create a string */
     if ((atom = string_alloc(value, error)) == NULL)
+    {
+	return 0;
+    }
+
+    /* Register it */
+    result = env_set_value(env, name, atom, error);
+
+    /* Lose our reference to it */
+    return atom_free(atom, result ? error : NULL) && result;
+}
+
+/* Sets the named symbol's value to the built-in function in env */
+int env_set_builtin(env_t env, char *name, builtin_t value, elvin_error_t error)
+{
+    atom_t atom;
+    int result;
+
+    /* Create a built-in */
+    if ((atom = builtin_alloc(value, error)) == NULL)
     {
 	return 0;
     }
