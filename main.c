@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.116 2003/01/27 15:54:51 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.117 2003/01/28 15:58:47 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -94,11 +94,68 @@ static struct option long_options[] =
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
     { "keys", required_argument, NULL, 'K' },
+    { "keys-dir", required_argument, NULL, 'k' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, '\0' }
 };
 #endif /* GETOPT_LONG */
+
+#if defined(ENABLE_LISP_INTERPRETER)
+#define OPTIONS "e:c:D:G:H:hI:K:S:u:U:v"
+#else
+#define OPTIONS "e:D:G:H:hI:K:k:S:u:U:v"
+#endif
+
+#if defined(HAVE_GETOPT_LONG)
+/* Print out usage message */
+static void usage(int argc, char *argv[])
+{
+    fprintf(
+	stderr,
+	"usage: %s [OPTION]...\n"
+	"  -e elvin-url,   --elvin=elvin-url\n"
+	"  -S scope,       --scope=scope\n"
+	"  -H http-proxy,  --proxy=http-proxy\n"
+	"  -I idle-period, --idle=idle-period\n"
+	"  -u user,        --user=user\n"
+	"  -D domain,      --domain=domain\n"
+#if defined(ENABLE_LISP_INTERPRETER)
+	"  -c config-file, --config=config-file\n"
+#endif
+	"  -G groups-file, --groups=groups-file\n"
+	"  -U usenet-file, --usenet=usenet-file\n"
+	"  -K keys-file,   --keys=keys-file\n"
+	"  -k keys-dir,    --keys-dir=keys-dir\n"
+	"  -v,             --version\n"
+	"  -h,             --help\n",
+	argv[0]);
+}
+#else
+/* Print out usage message */
+static void usage(int argc, char *argv[])
+{
+    fprintf(
+	stderr,
+	"usage: %s [OPTION]...\n"
+	"  -e elvin-url\n"
+	"  -S scope\n"
+	"  -H http-proxy\n"
+	"  -I idle-period\n"
+	"  -u user\n"
+	"  -D domain\n"
+#if defined(ENABLE_LISP_INTERPRETER)
+	"  -c config-file\n"
+#endif
+	"  -G groups-file\n"
+	"  -U usenet-file\n"
+	"  -K keys-file\n"
+	"  -k keys-dir\n"
+	"  -v\n"
+	"  -h\n",
+	argv[0]);
+}
+#endif
 
 
 #define XtNversionTag "versionTag"
@@ -182,52 +239,6 @@ static void do_history_next(Widget widget, XEvent *event, String *params, Cardin
     tickertape_history_next(tickertape);
 }
 
-#if defined(HAVE_GETOPT_LONG)
-/* Print out usage message */
-static void usage(int argc, char *argv[])
-{
-    fprintf(stderr,
-	"usage: %s [OPTION]...\n"
-	"  -e elvin-url,   --elvin=elvin-url\n"
-	"  -S scope,       --scope=scope\n"
-	"  -H http-proxy,  --proxy=http-proxy\n"
-	"  -I idle-period, --idle=idle-period\n"
-	"  -u user,        --user=user\n"
-	"  -D domain,      --domain=domain\n"
-#if defined(ENABLE_LISP_INTERPRETER)
-	"  -c config-file, --config=config-file\n"
-#endif
-	"  -G groups-file, --groups=groups-file\n"
-	"  -U usenet-file, --usenet=usenet-file\n"
-	"  -K keys-file,   --keys=keys-file\n"
-	"  -v,             --version\n"
-	"  -h,             --help\n",
-	argv[0]);
-}
-#else
-/* Print out usage message */
-static void usage(int argc, char *argv[])
-{
-    fprintf(stderr,
-	"usage: %s [OPTION]...\n"
-	"  -e elvin-url\n"
-	"  -S scope\n"
-	"  -H http-proxy\n"
-	"  -I idle-period\n"
-	"  -u user\n"
-	"  -D domain\n"
-#if defined(ENABLE_LISP_INTERPRETER)
-	"  -c config-file\n"
-#endif
-	"  -G groups-file\n"
-	"  -U usenet-file\n"
-	"  -K keys-file\n"
-	"  -v\n"
-	"  -h\n",
-	argv[0]);
-}
-#endif
-
 /* Returns the name of the user who started this program */
 static char *get_user()
 {
@@ -306,12 +317,6 @@ static char *get_domain()
 #endif /* UNAME */
 }
 
-#if defined(ENABLE_LISP_INTERPRETER)
-#define OPTIONS "e:c:D:G:H:hI:K:S:u:U:v"
-#else
-#define OPTIONS "e:D:G:H:hI:K:S:u:U:v"
-#endif
-
 /* Parses arguments and sets stuff up */
 static void parse_args(
     int argc, char *argv[],
@@ -322,6 +327,7 @@ static void parse_args(
     char **groups_file_return,
     char **usenet_file_return,
     char **keys_file_return,
+    char **keys_dir_return,
     elvin_error_t error)
 {
     char *http_proxy = NULL;
@@ -333,6 +339,7 @@ static void parse_args(
     *config_file_return = NULL;
     *groups_file_return = NULL;
     *keys_file_return = NULL;
+    *keys_dir_return = NULL;
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
@@ -439,6 +446,13 @@ static void parse_args(
 	    case 'K':
 	    {
 		*keys_file_return = optarg;
+		break;
+	    }
+
+	    /* --keys-dir= or -k */
+	    case 'k':
+	    {
+		*keys_dir_return = optarg;
 		break;
 	    }
 
@@ -579,6 +593,7 @@ int main(int argc, char *argv[])
     char *groups_file;
     char *usenet_file;
     char *keys_file;
+    char *keys_dir;
     Widget top;
 
 #ifdef HAVE_XTVAOPENAPPLICATION
@@ -685,7 +700,8 @@ int main(int argc, char *argv[])
     /* Scan what's left of the arguments */
     parse_args(argc, argv, handle, &user, &domain,
 	       &ticker_dir, &config_file,
-	       &groups_file, &usenet_file, &keys_file,
+	       &groups_file, &usenet_file,
+	       &keys_file, &keys_dir,
 	       error);
 
     /* Create an Icon for the root shell */
@@ -696,7 +712,8 @@ int main(int argc, char *argv[])
 	&rc, handle,
 	user, domain,
 	ticker_dir, config_file,
-	groups_file, usenet_file, keys_file,
+	groups_file, usenet_file,
+	keys_file, keys_dir,
 	top,
 	error);
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.106 2003/01/28 13:58:43 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.107 2003/01/28 15:58:47 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -172,6 +172,10 @@ struct tickertape
     /* The keys file from which we read ours and others' key locations */
     char *keys_file;
 
+    /* The directory in which to start looking for key files with relative paths */
+    char *keys_dir;
+
+
     /* The top-level widget */
     Widget top;
 
@@ -216,6 +220,7 @@ static char *tickertape_config_filename(tickertape_t self);
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
 static char *tickertape_keys_filename(tickertape_t self);
+static char *tickertape_keys_directory(tickertape_t self);
 
 
 /*
@@ -701,7 +706,7 @@ static int parse_keys_file(tickertape_t self)
 
     /* Allocate a new keys file parser */
     if ((parser = keys_parser_alloc(
-	     tickertape_ticker_dir(self),
+	     tickertape_keys_directory(self),
 	     parse_keys_callback, self,
 	     filename)) == NULL)
     {
@@ -1927,6 +1932,7 @@ tickertape_t tickertape_alloc(
     char *groups_file,
     char *usenet_file,
     char *keys_file,
+    char *keys_dir,
     Widget top,
     elvin_error_t error)
 {
@@ -1949,6 +1955,7 @@ tickertape_t tickertape_alloc(
     self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
     self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
     self -> keys_file = (keys_file == NULL) ? NULL : strdup(keys_file);
+    self -> keys_dir = (keys_dir == NULL) ? NULL : strdup(keys_dir);
     self -> top = top;
     self -> groups = NULL;
     self -> groups_count = 0;
@@ -2247,6 +2254,37 @@ static char *tickertape_keys_filename(tickertape_t self)
     }
 
     return self -> keys_file;
+}
+
+/* Answers the receiver's keys directory */
+static char *tickertape_keys_directory(tickertape_t self)
+{
+    if (self -> keys_dir == NULL)
+    {
+	char *file = tickertape_keys_filename(self);
+	char *point;
+	size_t length;
+
+	/* Default to the directory name from the keys filename */
+	if ((point = strrchr(file, '/')) == NULL)
+	{
+	    self -> keys_dir = strdup("");
+	}
+	else
+	{
+	    length = point - file;
+	    if ((self -> keys_dir = (char *)malloc(length + 1)) == NULL)
+	    {
+		perror("Unable to allocate memory");
+		exit(1);
+	    }
+
+	    memcpy(self -> keys_dir, file, length);
+	    self -> keys_dir[length] = 0;
+	}
+    }
+
+    return self -> keys_dir;
 }
 
 
