@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.9 1999/06/21 07:16:55 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.10 1999/06/21 11:59:21 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -97,9 +97,6 @@ typedef struct
 
     /* The queue containing glyphs which need to be added */
     glyph_t pending;
-
-    /* The total width of the pending glyphs */
-    unsigned long pending_width;
 
 
     /* The off-screen pixmap */
@@ -178,11 +175,8 @@ XtIntervalId ScStartTimer(ScrollerWidget self, unsigned long interval,
 /* Stops a timer from going off */
 void ScStopTimer(ScrollerWidget self, XtIntervalId timer);
 
-/* Repaints the given MessageView (if visible */
-void ScRepaintMessageView(ScrollerWidget self, MessageView view);
-
-/* Callback for when a glyph_t expires */
-void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
+/* Repaints the given glyph (if visible) */
+void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);
 
 /* Answers the width of the gap glyph */
 int ScGapWidth(ScrollerWidget self);
