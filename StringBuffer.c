@@ -1,4 +1,4 @@
-/* $Id: StringBuffer.c,v 1.2 1998/10/23 10:03:56 phelps Exp $ */
+/* $Id: StringBuffer.c,v 1.3 1998/10/24 04:55:07 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +10,7 @@ char *sanity_value = "StringBuffer";
 char *sanity_freed = "Freed StringBuffer";
 #endif /* SANITY */
 
-#define INITIAL_BUFFER_SIZE 1024
+#define INITIAL_BUFFER_SIZE 64
 
 struct StringBuffer_t
 {
@@ -125,6 +125,12 @@ void StringBuffer_clear(StringBuffer self)
     self -> pointer = self -> buffer;
 }
 
+/* Answers the number of characters in the receiver's buffer */
+unsigned long StringBuffer_length(StringBuffer self)
+{
+    return self -> pointer - self -> buffer;
+}
+
 /* Appends a single character to the receiver */
 void StringBuffer_appendChar(StringBuffer self, char ch)
 {
@@ -136,31 +142,26 @@ void StringBuffer_appendChar(StringBuffer self, char ch)
     *(self -> pointer++) = ch;
 }
 
+/* Appends an integer to the receiver */
+void StringBuffer_appendInt(StringBuffer self, int value)
+{
+    /* FIX THIS: there must be a nicer way to do this... */
+    char buffer[128];
+
+    sprintf(buffer, "%d", value);
+    StringBuffer_append(self, buffer);
+}
+
 
 /* Appends a null-terminated character array to the receiver */
 void StringBuffer_append(StringBuffer self, char *string)
 {
-    char *in = string;
+    char *pointer = string;
 
     /* Keep copying until we reach the null character */
-    while (1)
+    for (pointer = string; *pointer != '\0'; pointer++)
     {
-	/* Keep copying until we get to the end of the buffer */
-	while (self -> pointer < self -> end)
-	{
-	    char ch = *(in++);
-
-	    /* When we get the null character we're done */
-	    if (ch == '\0')
-	    {
-		return;
-	    }
-
-	    *(self -> pointer++) = ch;
-	}
-
-	/* We've reached the end of the buffer, so grow */
-	Grow(self);
+	StringBuffer_appendChar(self, *pointer);
     }
 }
 
