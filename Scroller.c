@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.90 2000/04/21 12:40:02 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.91 2000/04/22 03:24:29 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1243,6 +1243,7 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 /* Repaint the bits of the scroller that didn't get copied */
 static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 {
+    XEvent event_holder;
     XGraphicsExposeEvent *g_event;
     ScrollerWidget self = (ScrollerWidget)widget;
 
@@ -1251,6 +1252,9 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     {
 	return;
     }
+
+    /* Coerce the event */
+    g_event = (XGraphicsExposeEvent *)event;
 
     /* Get all of the GExpose events so that we don't accidentally get
      * a timeout in the middle (which could lead to blank spots) */
@@ -1261,9 +1265,6 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	{
 	    return;
 	}
-
-	/* Coerce the event and paint it */
-	g_event = (XGraphicsExposeEvent *)event;
 
 #ifdef DEBUG_GLYPH
 	{
@@ -1292,6 +1293,12 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	    self -> scroller.ready = 1;
 	    return;
 	}
+
+	/* Get the next GraphicsExpose event */
+	XNextEvent(XtDisplay(widget), &event_holder);
+
+	/* Coerce the event */
+	g_event = (XGraphicsExposeEvent *)&event_holder;
     }
 }
 
