@@ -2,10 +2,6 @@
 bin_PROGRAMS = xtickertape
 bin_SCRIPTS = show-url
 
-# Make sure we include the app-defaults file in the distribution
-# and also the show-url script
-EXTRA_DIST = Tickertape.ad show-url
-
 # xtickertape has many sources
 xtickertape_SOURCES = \
 	config.h \
@@ -26,6 +22,13 @@ xtickertape_SOURCES = \
 	List.h List.c \
 	mask.xbm red.xbm white.xbm \
 	main.c
+
+# Indicate what the man pages are
+man_MANS = xtickertape.1 groups.5 usenet.5
+
+# Make sure we include the app-defaults file in the distribution
+# and also the show-url script
+EXTRA_DIST = Tickertape.ad show-url $(man_MANS)
 
 
 # Put the app-defaults somewhere...
