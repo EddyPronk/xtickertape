@@ -1,60 +1,61 @@
-"-*- elvin-mode -*-"
-
+"-*-elvin-*-"
+---
 TICKERTAPE: "elvin"
 USER: "phelps"
 TICKERTEXT: "What's the status on our MP3 hard drive?  Anyone know?"
 TIMEOUT: 10
 Message-Id: (bignum 116 107 159 190)
-
+---
 TICKERTAPE: "elvin"
 USER: "d@pobox.com"
 TICKERTEXT: "blaize is the expert"
 TIMEOUT: 10
 Message-Id: (bignum 89 173 181 224)
 In-Reply-To: (bignum 116 107 159 190)
-
+---
 TICKERTAPE: "elvin"
 USER: "phelps"
 TICKERTEXT: "Where is `expert boy?'"
 TIMEOUT: 10
 Message-Id: (bignum 45 4 65 127)
 In-Reply-To: (bignum 89 173 181 224)
-
+---
 TICKERTAPE: "elvin"
 USER: "d@pobox.com"
 TICKERTEXT: "sleeping?"
 TIMEOUT: 10
 Message-Id: (bignum 91 85 224 246)
 In-Reply-To: (bignum 45 4 65 127)
-
+---
 TICKERTAPE: "Chat"
 USER: "phelps"
 TICKERTEXT: "I've got more XTickertape cuteness..."
 TIMEOUT: 10
 Message-Id: (bignum 123 233 193 189)
-
+---
 TICKERTAPE: "Chat"
 USER: "sjm@hq"
 TICKERTEXT: "Yay!"
 TIMEOUT: 10
 Message-Id: (bignum 94 99 146 182)
-
+---
 TICKERTAPE: "Chat"
 USER: "phelps"
 TICKERTEXT: "C'mon down and see..."
 TIMEOUT: 10
 Message-Id: (bignum 123 233 193 189)
-
+---
 TICKERTAPE: "Chat"
 USER: "sjm"
 TICKERTEXT: "OK."
 TIMEOUT: 10
 Message-Id: (bignum 102 185 3 72)
 In-Reply-To: (bignum 123 233 193 189)
-
+---
 TICKERTAPE: "elvin"
 USER: "d@pobox.com"
 TICKERTEXT: "last i'd heard..."
 TIMEOUT: 10
 Message-Id: (bignum 33 204 216 150)
 In-Reply-To: (bignum 91 85 224 246)
+---
