@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.85 2004/01/20 12:46:15 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.86 2004/08/02 16:52:16 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -302,6 +302,7 @@ struct control_panel
  */
 static void file_groups(Widget widget, control_panel_t self, XtPointer unused);
 static void file_usenet(Widget widget, control_panel_t self, XtPointer unused);
+static void file_keys(Widget widget, control_panel_t self, XtPointer unused);
 static void file_exit(Widget widget, control_panel_t self, XtPointer unused);
 static void create_file_menu(control_panel_t self, Widget parent);
 
@@ -372,6 +373,11 @@ static void file_usenet(Widget widget, control_panel_t self, XtPointer unused)
     tickertape_reload_usenet(self -> tickertape);
 }
 
+static void file_keys(Widget widget, control_panel_t self, XtPointer unused)
+{
+    tickertape_reload_keys(self -> tickertape);
+}
+
 
 /* This gets called when the user selects the "exit" menu item from the file menu */
 static void file_exit(Widget widget, control_panel_t self, XtPointer unused)
@@ -395,6 +401,10 @@ static void create_file_menu(control_panel_t self, Widget parent)
     /* Create the `reload usenet' menu item */
     item = XtVaCreateManagedWidget("reloadUsenet", xmPushButtonGadgetClass, menu, NULL);
     XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_usenet, (XtPointer)self);
+
+    /* Create the `reload keys' menu item */
+    item = XtVaCreateManagedWidget("reloadKeys", xmPushButtonGadgetClass, menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_keys, (XtPointer)self);
 
     /* Create a separator */
     XtVaCreateManagedWidget("separator", xmSeparatorGadgetClass, menu, NULL);
