@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.61 2002/04/09 22:32:23 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.62 2002/04/09 22:43:08 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -189,8 +189,8 @@ struct control_panel
     /* The current status message string */
     char *status;
 
-    /* The overriding status message string */
-    char *status_override;
+    /* The message whose URL is overriding the current status */
+    message_t status_message;
 
     /* The uuid counter */
     int uuid_count;
@@ -651,79 +651,6 @@ static void history_attachment_callback(
     tickertape_show_attachment(self -> tickertape, message);
 }
 
-/* Copies from the attachment into the buffer */
-static void decode_attachment(
-    char *attachment, size_t length,
-    char *buffer, size_t buflen)
-{
-    char *end = attachment + length;
-    char *point;
-    char *out = buffer;
-    int state = 0;
-    int ch;
-
-    /* Find the start of the body */
-    for (point = attachment; point < end; point++)
-    {
-	ch = *point;
-
-	/* Decide how to treat the character depending on our state */
-	switch (state)
-	{
-	    /* Skipping the MIME header */
-	    case 0:
-	    {
-		if (ch == '\n')
-		{
-		    state = 1;
-		    break;
-		}
-
-		break;
-	    }
-
-	    /* Looking at the ch after a linefeed in the header */
-	    case 1:
-	    {
-		if (ch == '\n')
-		{
-		    state = 2;
-		    break;
-		}
-
-		state = 0;
-		break;
-	    }
-
-	    /* Looking at a character in the body */
-	    case 2:
-	    {
-		if (isprint(ch))
-		{
-		    if (out < buffer + buflen)
-		    {
-			*(out++) = ch;
-		    }
-		    else
-		    {
-			*(buffer + buflen - 1) = '\0';
-			return;
-		    }
-		}
-
-		break;
-	    }
-
-	    default:
-	    {
-		abort();
-	    }
-	}
-    }
-
-    *out = '\0';
-}
-
 /* This is called when the mouse has moved in the history widget */
 static void history_motion_callback(
     Widget widget,
@@ -732,22 +659,8 @@ static void history_motion_callback(
 {
     control_panel_t self = (control_panel_t)closure;
     message_t message = (message_t)call_data;
-    char buffer[BUFFER_SIZE];
-    char *string = NULL;
-    size_t length;
 
-    /* If the message has an URL then show it in the status bar */
-    if (message && message_has_attachment(message))
-    {
-	/* Get the attachment */
-	length = message_get_attachment(message, &string);
-
-	/* Decode it */
-	decode_attachment(string, length, buffer, BUFFER_SIZE);
-	string = buffer;
-    }
-
-    control_panel_show_status(self, string);
+    control_panel_set_status_message(self, message);
 }
 
 
@@ -1575,6 +1488,13 @@ void control_panel_set_status(
     control_panel_t self,
     char *message)
 {
+    /* Free the old status message */
+    if (self -> status != NULL)
+    {
+	free(self -> status);
+	self -> status = NULL;
+    }
+
     /* Record the status message */
     if (message != NULL)
     {
@@ -1582,37 +1502,126 @@ void control_panel_set_status(
     }
 
     /* If there's no overriding status message then show this one */
-    if (self -> status_override == NULL)
+    if (self -> status_message == NULL)
     {
 	show_status(self, message);
     }
 }
 
+/* Copies from the attachment into the buffer */
+static void decode_attachment(
+    char *attachment, size_t length,
+    char *buffer, size_t buflen)
+{
+    char *end = attachment + length;
+    char *point;
+    char *out = buffer;
+    int state = 0;
+    int ch;
+
+    /* Find the start of the body */
+    for (point = attachment; point < end; point++)
+    {
+	ch = *point;
+
+	/* Decide how to treat the character depending on our state */
+	switch (state)
+	{
+	    /* Skipping the MIME header */
+	    case 0:
+	    {
+		if (ch == '\n')
+		{
+		    state = 1;
+		    break;
+		}
+
+		break;
+	    }
+
+	    /* Looking at the ch after a linefeed in the header */
+	    case 1:
+	    {
+		if (ch == '\n')
+		{
+		    state = 2;
+		    break;
+		}
+
+		state = 0;
+		break;
+	    }
+
+	    /* Looking at a character in the body */
+	    case 2:
+	    {
+		if (isprint(ch))
+		{
+		    if (out < buffer + buflen)
+		    {
+			*(out++) = ch;
+		    }
+		    else
+		    {
+			*(buffer + buflen - 1) = '\0';
+			return;
+		    }
+		}
+
+		break;
+	    }
+
+	    default:
+	    {
+		abort();
+	    }
+	}
+    }
+
+    *out = '\0';
+}
+
 /* Displays a message in the status line.  If `message' is NULL then
  * the message will revert to the message set from
  * control_set_status(). */
-void control_panel_show_status(
+void control_panel_set_status_message(
     control_panel_t self,
-    char *message)
+    message_t message)
 {
+    char buffer[BUFFER_SIZE];
+    size_t length;
+    char *string;
+
     /* Bail if we're already displaying that message */
-    if (self -> status_override == message)
+    if (self -> status_message == message)
     {
 	return;
     }
 
-    /* Record the status */
-    self -> status_override = message;
+    /* Lose our reference to the old status message */
+    if (self -> status_message != NULL)
+    {
+	message_free(self -> status_message);
+	self -> status_message = NULL;
+    }
 
-    /* Display the `official' status if this one is NULL */
-    if (self -> status_override == NULL)
+    /* Record which message we're showing */
+    if (message)
+    {
+	self -> status_message = message_alloc_reference(message);
+    }
+
+    /* If no attachment then show the original status message */
+    if (! message || ! message_has_attachment(message) || 
+	! (length = message_get_attachment(message, &string)))
     {
 	show_status(self, self -> status);
+	return;
     }
-    else
-    {
-	show_status(self, message);
-    }
+
+    /* Yank out the interesting bits and display them */
+    decode_attachment(string, length, buffer, BUFFER_SIZE);
+    show_status(self, buffer);
 }
 
 /* This is called when the elvin connection status changes */

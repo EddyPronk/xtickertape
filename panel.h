@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.8 2002/04/08 14:55:59 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.9 2002/04/09 22:43:08 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -58,9 +58,9 @@ void control_panel_set_status(
     char *message);
 
 /* Displays a message in the status line */
-void control_panel_show_status(
+void control_panel_set_status_message(
     control_panel_t self,
-    char *message);
+    message_t message);
 
 /* This is called when the elvin connection status changes */
 void control_panel_set_connected(
