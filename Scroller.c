@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.26 1999/06/21 04:46:15 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.27 1999/06/21 06:00:00 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -111,24 +111,24 @@ static XtResource resources[] =
 /*
  * Action declarations
  */
-static void Menu(Widget widget, XEvent *event);
-static void DecodeMime(Widget widget, XEvent *event);
-static void Expire(Widget widget, XEvent *event);
-static void Delete(Widget widget, XEvent *event);
-static void Faster(Widget widget, XEvent *event);
-static void Slower(Widget widget, XEvent *event);
+static void menu(Widget widget, XEvent *event);
+static void decode_mime(Widget widget, XEvent *event);
+static void expire(Widget widget, XEvent *event);
+static void delete(Widget widget, XEvent *event);
+static void faster(Widget widget, XEvent *event);
+static void slower(Widget widget, XEvent *event);
 
 /*
  * Actions table
  */
 static XtActionsRec actions[] =
 {
-    { "menu", (XtActionProc)Menu },
-    { "decodeMime", (XtActionProc)DecodeMime },
-    { "expire", (XtActionProc)Expire },
-    { "delete", (XtActionProc)Delete },
-    { "faster", (XtActionProc)Faster },
-    { "slower", (XtActionProc)Slower }
+    { "menu", (XtActionProc)menu },
+    { "decodeMime", (XtActionProc)decode_mime },
+    { "expire", (XtActionProc)expire },
+    { "delete", (XtActionProc)delete },
+    { "faster", (XtActionProc)faster },
+    { "slower", (XtActionProc)slower }
 };
 
 
@@ -645,8 +645,6 @@ static void adjust_left_left(ScrollerWidget self)
 	    self -> scroller.glyphs_width = self -> scroller.next_glyphs_width;
 	}
     }
-
-    self -> scroller.left_offset = 0;
 }
 
 /* Update the state of the scroller's right edge after a shift of zero
@@ -665,6 +663,8 @@ static void adjust_left_right(ScrollerWidget self)
 	{
 	    return;
 	}
+
+/*	printf("R is too far left\n");*/
 
 	/* If the right_glyph is the gap and glyphs_width needs to
 	 * shrink (the gap needs to grow) then now is a good time to
@@ -717,6 +717,7 @@ static void adjust_left_right(ScrollerWidget self)
 	}
     }
 
+    self -> scroller.left_offset = 0;
     self -> scroller.right_offset = 0;
     StopClock(self);
 }
@@ -762,8 +763,6 @@ static void adjust_right_right(ScrollerWidget self)
 	    self -> scroller.glyphs_width = self -> scroller.next_glyphs_width;
 	}
     }
-
-    self -> scroller.right_offset = 0;
 }
 
 /* Update the state of the scroller's left edge after a shift of zero
@@ -833,6 +832,7 @@ static void adjust_right_left(ScrollerWidget self)
     }
 
     self -> scroller.left_offset = 0;
+    self -> scroller.right_offset = 0;
     StopClock(self);
 }
 
@@ -1223,19 +1223,16 @@ static MessageView MessageAtEvent(ScrollerWidget self, XEvent *event)
  */
 
 /* Called when the button is pressed */
-void Menu(Widget widget, XEvent *event)
+void menu(Widget widget, XEvent *event)
 {
-    printf("menu\n");
-#if 0
     ScrollerWidget self = (ScrollerWidget) widget;
-    MessageView view = MessageAtEvent(self, event);
-    Message message = view ? MessageView_getMessage(view) : NULL;
-    XtCallCallbackList((Widget)self, self -> scroller.callbacks, (XtPointer) message);
-#endif /* 0 */
+    glyph_t glyph = glyph_at_event(self, event);
+
+    XtCallCallbackList(widget, self -> scroller.callbacks, (XtPointer)glyph -> get_message(glyph));
 }
 
 /* Spawn metamail to decode the Message's MIME attachment */
-static void DecodeMime(Widget widget, XEvent *event)
+static void decode_mime(Widget widget, XEvent *event)
 {
     printf("decode mime\n");
 #if 0
@@ -1257,7 +1254,7 @@ static void DecodeMime(Widget widget, XEvent *event)
 
 
 /* Expires a Message in short order */
-static void Expire(Widget widget, XEvent *event)
+static void expire(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph;
@@ -1267,7 +1264,7 @@ static void Expire(Widget widget, XEvent *event)
 }
 
 /* Simple remove the message from the scroller NOW */
-static void Delete(Widget widget, XEvent *event)
+static void delete(Widget widget, XEvent *event)
 {
     printf("delete\n");
 #if 0
@@ -1290,7 +1287,7 @@ static void Delete(Widget widget, XEvent *event)
 }
 
 /* Scroll more quickly */
-static void Faster(Widget widget, XEvent *event)
+static void faster(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     int step = self -> scroller.step + 1;
@@ -1298,7 +1295,7 @@ static void Faster(Widget widget, XEvent *event)
 }
 
 /* Scroll more slowly */
-static void Slower(Widget widget, XEvent *event)
+static void slower(Widget widget, XEvent *event)
 {
     ScrollerWidget self = (ScrollerWidget) widget;
     int step = self -> scroller.step -1;
