@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.c,v 1.3 1998/10/23 17:00:17 phelps Exp $ */
+/* $Id: FileStreamTokenizer.c,v 1.4 1998/10/23 17:37:45 phelps Exp $ */
 
 #include "FileStreamTokenizer.h"
 #include <stdlib.h>
@@ -40,14 +40,14 @@ struct FileStreamTokenizer_t
  */
 
 /* Skips all whitespace characters */
-static void SkipWhitespace(FileStreamTokenizer self)
+static void SkipWhitespace(FileStreamTokenizer self, char *whitespace)
 {
     char ch;
 
     while ((ch = fgetc(self -> file)) != EOF)
     {
 	/* If we encounter a non-whitespace character, then put it back and return */
-	if (strchr(self -> whitespace, ch) == NULL)
+	if (strchr(whitespace, ch) == NULL)
 	{
 	    ungetc(ch, self -> file);
 	    return;
@@ -121,21 +121,10 @@ void FileStreamTokenizer_debug(FileStreamTokenizer self)
 }
 
 
-/* Sets the list of whitespace characters recognized by the receiver */
-void FileStreamTokenizer_setWhitespace(FileStreamTokenizer self, char *whitespace)
-{
-    if (self -> whitespace)
-    {
-	free(self -> whitespace);
-    }
-
-    self -> whitespace = strdup(whitespace);
-}
-
-
 /* Answers the receiver's next token (dynamically allocated) or NULL
  * if at the end of the file */
-char *FileStreamTokenizer_next(FileStreamTokenizer self)
+char *FileStreamTokenizer_nextWithSpec(
+    FileStreamTokenizer self, char *whitespace, char *special)
 {
     int ch;
 
@@ -150,14 +139,14 @@ char *FileStreamTokenizer_next(FileStreamTokenizer self)
     ungetc(ch, self -> file);
 
     /* Skip over whitespace */
-    SkipWhitespace(self);
+    SkipWhitespace(self, self -> whitespace);
 
     /* Clear out the StringBuffer */
     StringBuffer_clear(self -> buffer);
 
     /* See if the next character is a special character */
     ch = fgetc(self -> file);
-    if (strchr(self -> special, ch) != NULL)
+    if (strchr(special, ch) != NULL)
     {
 	StringBuffer_appendChar(self -> buffer, ch);
 	return StringBuffer_getBuffer(self -> buffer);
@@ -170,7 +159,7 @@ char *FileStreamTokenizer_next(FileStreamTokenizer self)
     while ((ch = fgetc(self -> file)) != EOF)
     {
 	/* If we get a special character or whitespace, then put it back and return */
-	if ((strchr(self -> whitespace, ch) != NULL) || (strchr(self -> special, ch) != NULL))
+	if ((strchr(whitespace, ch) != NULL) || (strchr(special, ch) != NULL))
 	{
 	    ungetc(ch, self -> file);
 	    return StringBuffer_getBuffer(self -> buffer);
@@ -181,6 +170,13 @@ char *FileStreamTokenizer_next(FileStreamTokenizer self)
 
     /* If we get here, then we've reached the end of the file */
     return StringBuffer_getBuffer(self -> buffer);
+}
+
+/* Answers the receiver's next token (dynamically allocated) or NULL
+ * if at the end of the file */
+char *FileStreamTokenizer_next(FileStreamTokenizer self)
+{
+    return FileStreamTokenizer_nextWithSpec(self, self -> whitespace, self -> special);
 }
 
 

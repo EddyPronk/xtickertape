@@ -1,4 +1,4 @@
-/* $Id: FileStreamTokenizer.h,v 1.3 1998/10/23 17:00:18 phelps Exp $
+/* $Id: FileStreamTokenizer.h,v 1.4 1998/10/23 17:37:46 phelps Exp $
  * COPYRIGHT!
  *
  * Reads tokens from a FILE, coping with whitespace, linefeeds
@@ -23,8 +23,10 @@ void FileStreamTokenizer_free(FileStreamTokenizer self);
 void FileStreamTokenizer_debug(FileStreamTokenizer self);
 
 
-/* Sets the list of whitespace characters recognized by the receiver */
-void FileStreamTokenizer_setWhitespace(FileStreamTokenizer self, char *whitespace);
+/* Answers the receiver's next token (dynamically allocated) or NULL
+ * if at the end of the file */
+char *FileStreamTokenizer_nextWithSpec(
+    FileStreamTokenizer self, char *whitespace, char *special);
 
 /* Answers the receiver's next token (dynamically allocated) or NULL
  * if at the end of the file */
