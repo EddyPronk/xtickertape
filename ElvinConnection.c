@@ -1,4 +1,4 @@
-/* $Id: ElvinConnection.c,v 1.10 1998/02/10 23:40:48 phelps Exp $ */
+/* $Id: ElvinConnection.c,v 1.11 1998/05/16 05:45:27 phelps Exp $ */
 
 
 #include <stdio.h>
@@ -95,6 +95,10 @@ ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptio
 #ifdef SANITY
     self -> sanity_check = sanity_value;
 #endif /* SANITY */
+
+#ifdef DEBUG
+    fprintf(stderr, "connecting to elvin at %s:%d...", hostname, port);
+#endif /* DEBUG */
     if ((self -> connection = elvin_connect(
 	EC_NAMEDHOST, hostname, port,
 	quenchCallback, NULL,
@@ -104,7 +108,9 @@ ElvinConnection ElvinConnection_alloc(char *hostname, int port, List subscriptio
 	fprintf(stderr, "*** Unable to connect to elvin server at %s:%d\n", hostname, port);
 	exit(0);
     }
-
+#ifdef DEBUG
+    fprintf(stderr, "  done\n");
+#endif /* DEBUG */
     self -> subscriptions = subscriptions;
     List_doWith(self -> subscriptions, subscribeToItem, self);
     return self;
