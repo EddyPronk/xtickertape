@@ -28,3 +28,7 @@ Things that would be nice to have in future versions of xtickertape:
 
 - It should be possible to specify the location of `metamail' at
   both configure-time and run-time.
+
+- The Scroller's DRAG_DELTA should be a resource
+
+- There should be an option to have send close the window or not.
