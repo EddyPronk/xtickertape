@@ -20,5 +20,6 @@ sparc-sun-solaris2.5
 sparc-sun-solaris2.6
 stamp-h
 stamp-h.in
+test-parser
 xtickertape
 xtickertape-*.tar.gz
