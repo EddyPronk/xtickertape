@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.18 1999/10/02 09:40:30 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.19 1999/10/02 16:07:27 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -47,6 +47,8 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.18 1999/10/02 09:40:30 phelps
 #include "StringBuffer.h"
 #include "Scroller.h"
 #include "Control.h"
+#include "groups.h"
+#include "groups_parser.h"
 #include "Subscription.h"
 #include "UsenetSubscription.h"
 #include "mail_sub.h"
@@ -66,6 +68,7 @@ static char *sanity_freed = "Freed Ticker";
 
 #define METAMAIL_OPTIONS "-B -q -b -c"
 
+#define BUFFER_SIZE 1024
 
 /* The tickertape data type */
 struct tickertape
@@ -73,20 +76,26 @@ struct tickertape
     /* The user's name */
     char *user;
 
+    /* The local domain name */
+    char *domain;
+
     /* The receiver's ticker directory */
     char *tickerDir;
 
     /* The group file from which we read our subscriptions */
-    char *groupsFile;
+    char *groups_file;
 
     /* The usenet file from which we read our usenet subscription */
-    char *usenetFile;
+    char *usenet_file;
 
     /* The top-level widget */
     Widget top;
 
-    /* The receiver's subscriptions (from the groups file) */
-    List subscriptions;
+    /* The receiver's groups subscriptions (from the groups file) */
+    Subscription *groups;
+
+    /* The number of groups subscriptions the receiver has */
+    int groups_count;
 
     /* The receiver's usenet subscription (from the usenet file) */
     UsenetSubscription usenetSubscription;
@@ -122,7 +131,7 @@ static int mkdirhier(char *dirname);
 static void publish_startup_notification(tickertape_t self);
 static void menu_callback(Widget widget, tickertape_t self, message_t message);
 static void receive_callback(tickertape_t self, message_t message);
-static List read_groups_file(tickertape_t self);
+static int parse_groups_file(tickertape_t self);
 static void init_ui(tickertape_t self);
 static void disconnect_callback(tickertape_t self, connection_t connection);
 static void reconnect_callback(tickertape_t self, connection_t connection);
@@ -133,7 +142,6 @@ static void subscribe_to_orbit(tickertape_t self);
 static char *tickertape_ticker_dir(tickertape_t self);
 static char *tickertape_groups_filename(tickertape_t self);
 static char *tickertape_usenet_filename(tickertape_t self);
-static FILE *tickertape_groups_file(tickertape_t self);
 static FILE *tickertape_usenet_file(tickertape_t self);
 
 
@@ -261,25 +269,179 @@ static void receive_callback(tickertape_t self, message_t message)
     }
 }
 
-/* Read from the Groups file.  Returns a List of subscriptions if
- * successful, NULL otherwise */
-static List read_groups_file(tickertape_t self)
-{
-    FILE *file;
-    List subscriptions;
 
-    /* Open the groups file and read */
-    if ((file = tickertape_groups_file(self)) == NULL)
+/* Write the template to the given file, doing some substitutions */
+static int write_default_file(tickertape_t self, FILE *out, char *template)
+{
+    char *pointer;
+
+    for (pointer = template; *pointer != '\0'; pointer++)
     {
-	return List_alloc();
+	if (*pointer == '%')
+	{
+	    switch (*(++pointer))
+	    {
+		/* Don't freak out on a terminal `%' */
+		case '\0':
+		{
+		    fputc(*pointer, out);
+		    return 0;
+		}
+
+		/* user name */
+		case 'u':
+		{
+		    fputs(self -> user, out);
+		    break;
+		}
+
+		/* domain name */
+		case 'd':
+		{
+		    fputs(self -> domain, out);
+		    break;
+		}
+
+		/* Anything else */
+		default:
+		{
+		    fputc('%', out);
+		    fputc(*pointer, out);
+		    break;
+		}
+	    }
+	}
+	else
+	{
+	    fputc(*pointer, out);
+	}
     }
 
-    /* Read the file */
-    subscriptions = Subscription_readFromGroupFile(
-	file, (SubscriptionCallback)receive_callback, self);
+    return 0;
+}
 
-    fclose(file);
-    return subscriptions;
+/* Open the groups file.  If the file doesn't exist, try to create it
+ * and fill it with the default groups file information.  Returns the
+ * file descriptor of the groups file on success, -1 on failure */
+static int open_groups_file(tickertape_t self, char *filename)
+{
+    int fd;
+    FILE *out;
+
+    /* Try to just open the file */
+    if (! ((fd = open(filename, O_RDONLY)) < 0))
+    {
+	return fd;
+    }
+
+    /* If the file exists, then bail now */
+    if (errno != ENOENT)
+    {
+	return -1;
+    }
+
+    /* Otherwise, try to create a default groups file */
+    if ((out = fopen(filename, "w")) == NULL)
+    {
+	return -1;
+    }
+
+    /* Write the default groups file */
+    if (write_default_file(self, out, default_groups_file) < 0)
+    {
+	fclose(out);
+	return -1;
+    }
+
+    fclose(out);
+
+    /* Try to open the file again */
+    if ((fd = open(filename, O_RDONLY)) < 0)
+    {
+	perror("unable to read from groups file");
+	return -1;
+    }
+
+    /* Success */
+    return fd;
+}
+
+
+/* The callback for the groups file parser */
+static int parse_groups_callback(
+    tickertape_t self, char *name,
+    int in_menu, int has_nazi,
+    int min_time, int max_time)
+{
+    Subscription subscription;
+    char *expression = (char *)malloc(sizeof("TICKERTAPE == \"\"") + strlen(name));
+    sprintf(expression, "TICKERTAPE == \"%s\"", name);
+
+    /* Allocate us a subscription */
+    if ((subscription = Subscription_alloc(
+	    name, expression, in_menu, has_nazi, min_time, max_time,
+	    (SubscriptionCallback)receive_callback, self)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Add it to the end of the array */
+    self -> groups = (Subscription *)realloc(
+	self -> groups, sizeof(Subscription) * (self -> groups_count + 1));
+    self -> groups[self -> groups_count++] = subscription;
+
+    return 0;
+}
+
+/* Parse the groups file and update the groups table accordingly */
+static int parse_groups_file(tickertape_t self)
+{
+    char *filename = tickertape_groups_filename(self);
+    groups_parser_t parser;
+    int fd;
+
+    /* Allocate a new groups file parser */
+    if ((parser = groups_parser_alloc(
+	(groups_parser_callback_t)parse_groups_callback, self, filename)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Make sure we can read the groups file */
+    if ((fd = open_groups_file(self, filename)) < 0)
+    {
+	groups_parser_free(parser);
+	return -1;
+    }
+
+    /* Keep reading from the file until we've read it all or got an error */
+    while (1)
+    {
+	char buffer[BUFFER_SIZE];
+	ssize_t length;
+
+	/* Read from the file */
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+	{
+	    close(fd);
+	    groups_parser_free(parser);
+	    return -1;
+	}
+
+	/* Send it to the parser */
+	if (groups_parser_parse(parser, buffer, length) <0)
+	{
+	    close(fd);
+	    groups_parser_free(parser);
+	    return -1;
+	}
+
+	/* Watch for end-of-file */
+	if (length == 0)
+	{
+	    return 0;
+	}
+    }
 }
 
 
@@ -304,76 +466,85 @@ static UsenetSubscription read_usenet_file(tickertape_t self)
 }
 
 
-
-
-/* Adds the subscription into the Hashtable using the expression as its key */
-static void map_by_expression(Subscription subscription, Hashtable hashtable)
+/* Returns the index of the group with the given expression (-1 it none) */
+static int find_group(Subscription *groups, int count, char *expression)
 {
-    Hashtable_put(hashtable, Subscription_expression(subscription), subscription);
-}
+    Subscription *pointer;
 
-/* Make sure that we're subscribed to the right stuff, but share elvin
- * subscriptions whenever possible */
-static void update_elvin(
-    Subscription subscription,
-    tickertape_t self,
-    Hashtable hashtable,
-    List list)
-{
-    Subscription match;
-    SANITY_CHECK(self);
+    for (pointer = groups; pointer < groups + count; pointer++)
+    {
+	if ((*pointer != NULL) && (strcmp(Subscription_expression(*pointer), expression) == 0))
+	{
+	    return pointer - groups;
+	}
+    }
 
-    /* Is there already a subscription for this? */
-    if ((match = Hashtable_remove(hashtable, Subscription_expression(subscription))) == NULL)
-    {
-	/* No subscription yet.  Subscribe via elvin */
-	Subscription_setConnection(subscription, self -> connection);
-    }
-    else
-    {
-	/* Subscription found.  Replace the new subscription with the old one */
-	Subscription_updateFromSubscription(match, subscription);
-	List_replaceAll(list, subscription, match);
-	Subscription_free(subscription);
-    }
+    return -1;
 }
 
 /* Request from the ControlPanel to reload groups file */
 void tickertape_reload_groups(tickertape_t self)
 {
-    Hashtable hashtable;
-    List newSubscriptions;
+    Subscription *old_groups = self -> groups;
+    int old_count = self -> groups_count;
     int index;
-    SANITY_CHECK(self);
+    int count;
 
-    /* Read the new list of subscriptions */
-    newSubscriptions = read_groups_file(self);
+    self -> groups = NULL;
+    self -> groups_count = 0;
 
-    /* Reuse any elvin subscriptions if we can, create new ones we need */
-    hashtable = Hashtable_alloc(37);
-    List_doWith(self -> subscriptions, map_by_expression, hashtable);
-    List_doWithWithWith(newSubscriptions, update_elvin, self, hashtable, newSubscriptions);
+    /* Read the new-and-improved groups file */
+    parse_groups_file(self);
 
-    /* Delete any elvin subscriptions we're no longer listening to,
-     * remove them from the ControlPanel and free the corresponding
-     * Subscriptions. */
-    Hashtable_doWith(hashtable, Subscription_setConnection, NULL);
-    Hashtable_doWith(hashtable, Subscription_setControlPanel, NULL);
-    Hashtable_do(hashtable, Subscription_free);
-    Hashtable_free(hashtable);
-    List_free(self -> subscriptions);
+    /* Reuse elvin subscriptions whenever possible */
+    for (index = 0; index < self -> groups_count; index++)
+    {
+	Subscription group = self -> groups[index];
+	int old_index;
 
-    /* Set the list of group subscriptions to the new list */
-    self -> subscriptions = newSubscriptions;
+	/* Look for a match */
+	if ((old_index = find_group(old_groups, old_count, Subscription_expression(group))) < 0)
+	{
+	    /* None found.  Set the subscription's connection */
+	    Subscription_setConnection(group, self -> connection);
+	}
+	else
+	{
+	    Subscription old_group = old_groups[old_index];
 
-    /* Make sure that exactly those Subscriptions which should appear
-     * the in groups menu do, and that they're in the right order */
-    index = 0;
-    List_doWithWith(
-	self -> subscriptions,
-	Subscription_updateControlPanelIndex,
-	self -> control_panel,
-	&index);
+	    printf("match: %s and %s\n", 
+		   Subscription_expression(old_group),
+		   Subscription_expression(group));
+
+	    Subscription_updateFromSubscription(old_group, group);
+	    Subscription_free(group);
+	    self -> groups[index] = old_group;
+	    old_groups[old_index] = NULL;
+	}
+    }
+
+    /* Free the remaining old subscriptions */
+    for (index = 0; index < old_count; index++)
+    {
+	Subscription old_group = old_groups[index];
+
+	if (old_group != NULL)
+	{
+	    Subscription_setConnection(old_group, NULL);
+	    Subscription_setControlPanel(old_group, NULL);
+	    Subscription_free(old_group);
+	}
+    }
+
+    /* Release the old array */
+    free(old_groups);
+
+    /* Renumber the items in the control panel */
+    count = 0;
+    for (index = 0; index < self -> groups_count; index++)
+    {
+	Subscription_setControlPanelIndex(self -> groups[index], self -> control_panel, &count);
+    }
 }
 
 
@@ -406,12 +577,14 @@ void tickertape_reload_usenet(tickertape_t self)
 /* Initializes the User Interface */
 static void init_ui(tickertape_t self)
 {
+    int index;
+
     self -> control_panel = ControlPanel_alloc(self, self -> top);
 
-    List_doWith(
-	self -> subscriptions,
-	Subscription_setControlPanel,
-	self -> control_panel);
+    for (index = 0; index < self -> groups_count; index++)
+    {
+	Subscription_setControlPanel(self -> groups[index], self -> control_panel);
+    }
 
     self -> scroller = (ScrollerWidget) XtVaCreateManagedWidget(
 	"scroller", scrollerWidgetClass, self -> top,
@@ -619,25 +792,34 @@ static void subscribe_to_orbit(tickertape_t self)
  * specified by host and port */
 tickertape_t tickertape_alloc(
     char *user, char *tickerDir,
-    char *groupsFile, char *usenetFile,
+    char *groups_file, char *usenet_file,
     char *host, int port,
     Widget top)
 {
+    int index;
     tickertape_t self = (tickertape_t) malloc(sizeof(struct tickertape));
-#ifdef SANITY
-    self -> sanity_check = sanity_value;
-#endif /* SANITY */
+    
     self -> user = strdup(user);
+    self -> domain = "this.domain.name";
     self -> tickerDir = (tickerDir == NULL) ? NULL : strdup(tickerDir);
-    self -> groupsFile = (groupsFile == NULL) ? NULL : strdup(groupsFile);
-    self -> usenetFile = (usenetFile == NULL) ? NULL : strdup(usenetFile);
+    self -> groups_file = (groups_file == NULL) ? NULL : strdup(groups_file);
+    self -> usenet_file = (usenet_file == NULL) ? NULL : strdup(usenet_file);
     self -> top = top;
-    self -> subscriptions = read_groups_file(self);
+
+    self -> groups = NULL;
+    self -> groups_count = 0;
+
     self -> usenetSubscription = read_usenet_file(self);
     self -> mail_sub = mail_sub_alloc(
 	user, (mail_sub_callback_t)receive_callback, self);
     self -> connection = NULL;
     self -> history = history_alloc();
+
+    /* Read the subscriptions from the groups file */
+    if (parse_groups_file(self) < 0)
+    {
+	exit(1);
+    }
 
     init_ui(self);
 
@@ -646,7 +828,11 @@ tickertape_t tickertape_alloc(
 	host, port, 	XtWidgetToApplicationContext(top),
 	(disconnect_callback_t)disconnect_callback, self,
 	(reconnect_callback_t)reconnect_callback, self);
-    List_doWith(self -> subscriptions, Subscription_setConnection, self -> connection);
+
+    for (index = 0; index < self -> groups_count; index++)
+    {
+	Subscription_setConnection(self -> groups[index], self -> connection);
+    }
 
     /* Subscribe to the Usenet subscription if we have one */
     if (self -> usenetSubscription != NULL)
@@ -673,23 +859,26 @@ tickertape_t tickertape_alloc(
 /* Free the resources consumed by a tickertape */
 void tickertape_free(tickertape_t self)
 {
-    SANITY_CHECK(self);
+    int index;
+
+    /* How do we free a Widget? */
 
     if (self -> user)
     {
 	free(self -> user);
     }
 
-    if (self -> groupsFile)
+    if (self -> groups_file)
     {
-	free(self -> groupsFile);
+	free(self -> groups_file);
     }
 
-    /* How do we free a Widget? */
-    if (self -> subscriptions)
+    for (index = 0; index < self -> groups_count; index++)
     {
-	List_free(self -> subscriptions);
+	Subscription_free(self -> groups[index]);
     }
+
+    free(self -> groups);
 
 #ifdef ORBIT
     if (self -> orbitSubscriptionsById)
@@ -717,6 +906,7 @@ void tickertape_free(tickertape_t self)
 #endif /* SANITY */
 }
 
+#ifdef DEBUG
 /* Debugging */
 void tickertape_debug(tickertape_t self)
 {
@@ -725,10 +915,11 @@ void tickertape_debug(tickertape_t self)
     printf("tickertape_t\n");
     printf("  user = \"%s\"\n", self -> user);
     printf("  tickerDir = \"%s\"\n", (self -> tickerDir == NULL) ? "null" : self -> tickerDir);
-    printf("  groupsFile = \"%s\"\n", (self -> groupsFile == NULL) ? "null" : self -> groupsFile);
-    printf("  usenetFile = \"%s\"\n", (self -> usenetFile == NULL) ? "null" : self -> usenetFile);
+    printf("  groups_file = \"%s\"\n", (self -> groups_file == NULL) ? "null" : self -> groups_file);
+    printf("  usenet_file = \"%s\"\n", (self -> usenet_file == NULL) ? "null" : self -> usenet_file);
     printf("  top = 0x%p\n", self -> top);
-    printf("  subscriptions = 0x%p\n", self -> subscriptions);
+    printf("  groups = 0x%p\n", self -> groups);
+    printf("  groups_count = %d\n", self -> groups_count);
 #ifdef ORBIT
     printf("  orbitSubscriptionsById = 0x%p\n", self -> orbitSubscriptionsById);
 #endif /* ORBIT */
@@ -736,6 +927,7 @@ void tickertape_debug(tickertape_t self)
     printf("  control_panel = 0x%p\n", self -> control_panel);
     printf("  scroller = 0x%p\n", self -> scroller);
 }
+#endif /* DEBUG */
 
 /* Answers the tickertape's user name */
 char *tickertape_user_name(tickertape_t self)
@@ -785,7 +977,7 @@ static char *tickertape_ticker_dir(tickertape_t self)
 
     /* Make sure the TICKERDIR exists 
      * Note: we're being clever here and assuming that nothing will
-     * call tickertape_ticker_dir() if both groupsFile and usenetFile
+     * call tickertape_ticker_dir() if both groups_file and usenet_file
      * are set */
     if (mkdirhier(self -> tickerDir) < 0)
     {
@@ -798,72 +990,33 @@ static char *tickertape_ticker_dir(tickertape_t self)
 /* Answers the receiver's groups file filename */
 static char *tickertape_groups_filename(tickertape_t self)
 {
-    if (self -> groupsFile == NULL)
+    if (self -> groups_file == NULL)
     {
 	char *dir = tickertape_ticker_dir(self);
-	self -> groupsFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
-	strcpy(self -> groupsFile, dir);
-	strcat(self -> groupsFile, "/");
-	strcat(self -> groupsFile, DEFAULT_GROUPS_FILE);
+	self -> groups_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_GROUPS_FILE) + 1);
+	strcpy(self -> groups_file, dir);
+	strcat(self -> groups_file, "/");
+	strcat(self -> groups_file, DEFAULT_GROUPS_FILE);
     }
 
-    return self -> groupsFile;
+    return self -> groups_file;
 }
 
 /* Answers the receiver's usenet filename */
 static char *tickertape_usenet_filename(tickertape_t self)
 {
-    if (self -> usenetFile == NULL)
+    if (self -> usenet_file == NULL)
     {
 	char *dir = tickertape_ticker_dir(self);
-	self -> usenetFile = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
-	strcpy(self -> usenetFile, dir);
-	strcat(self -> usenetFile, "/");
-	strcat(self -> usenetFile, DEFAULT_USENET_FILE);
+	self -> usenet_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_USENET_FILE) + 1);
+	strcpy(self -> usenet_file, dir);
+	strcat(self -> usenet_file, "/");
+	strcat(self -> usenet_file, DEFAULT_USENET_FILE);
     }
 
-    return self -> usenetFile;
+    return self -> usenet_file;
 }
 
-
-/* Answers the receiver's groups file */
-static FILE *tickertape_groups_file(tickertape_t self)
-{
-    char *filename = tickertape_groups_filename(self);
-    FILE *file;
-    int result;
-
-    /* Try to open the file */
-    if ((file = fopen(filename, "r")) != NULL)
-    {
-	return file;
-    }
-
-    /* If failure was not due to a missing file, then fail */
-    if (errno != ENOENT)
-    {
-	return NULL;
-    }
-
-    /* Try to create the file */
-    if ((file = fopen(filename, "w")) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Try to write a default groups file for the current user */
-    result = Subscription_writeDefaultGroupsFile(file, self -> user);
-    fclose(file);
-
-    if (result < 0)
-    {
-	unlink(filename);
-	return NULL;
-    }
-
-    /* Try to open the newly created file */
-    return fopen(filename, "r");
-}
 
 /* Answers the receiver's usenet file */
 static FILE *tickertape_usenet_file(tickertape_t self)
