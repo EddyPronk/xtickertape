@@ -17,3 +17,7 @@ Things that would be nice to have in future versions of xtickertape:
 
 - You should be able to traverse the list of messages you have sent by 
   using C-p and C-n like you can with every GNU program
+
+- It should be possible to have the scrolling speed change when the
+  mouse enters/leaves the scroller.  I'm not sure yet how '=' and '-'
+  should affect this...
