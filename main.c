@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.78 2000/04/11 09:36:26 phelps Exp $";
+static const char cvsid[] = "$Id: main.c,v 1.79 2000/04/22 03:24:52 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -191,7 +191,7 @@ static void parse_args(
 	    /* --elvin= or -e */
 	    case 'e':
 	    {
-		if (elvin_hdl_insert_server(handle, 0, optarg, error) == 0)
+		if (elvin_hdl_insert_server(handle, -1, optarg, error) == 0)
 		{
 		    fprintf(stderr, "Bad URL: no doughnut \"%s\"\n", optarg);
 		    exit(1);
