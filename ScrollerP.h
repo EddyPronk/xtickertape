@@ -34,7 +34,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.32 2000/04/23 13:31:19 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.33 2000/04/28 06:44:19 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -59,6 +59,24 @@ typedef struct _ScrollerClassRec
 
 
 typedef struct glyph_holder *glyph_holder_t;
+
+/* Indicates how much of the last scroll request has completed */
+enum scroller_state
+{
+    /* The Scroller window is entirely obscured */
+    SS_OBSCURED,
+
+    /* Everything is ready for redraw */
+    SS_READY,
+
+    /* The last timer-initiated CopyArea request hasn't been completed */
+    SS_PENDING,
+
+    /* The timer went off before our last CopyArea request completed */
+    SS_OVERFLOW,
+};
+
+typedef enum scroller_state scroller_state_t;
 
 /* New fields for the Scroller widget record */
 typedef struct
@@ -155,8 +173,8 @@ typedef struct
      * message at varying degrees of fading */
     Pixel *stringPixels;
 
-    /* The serial number of the last CopyArea request */
-    unsigned long serial;
+    /* The `readyness' state of the scroller. */
+    scroller_state_t state;
 
 } ScrollerPart;
 

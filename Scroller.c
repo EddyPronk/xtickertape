@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.92 2000/04/23 13:31:19 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.93 2000/04/28 06:44:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -42,10 +42,6 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.92 2000/04/23 13:31:19 phelps E
 #include "ScrollerP.h"
 #include "glyph.h"
 
-
-/* If two serial number numbers differ by this much then we assume
- * that they've rolled over */
-#define SERIAL_MARGIN (1 << 30)
 
 /*
  * Resources
@@ -435,19 +431,19 @@ static void SetClock(ScrollerWidget self)
 static void Tick(XtPointer widget, XtIntervalId *interval)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
-    unsigned long serial = LastKnownRequestProcessed(XtDisplay((Widget)widget));
 
-    /* Set the clock *before* we start scrolling so that if we
-     * encounter an end condition we can cancel the timer there
-     * and then. */
-    SetClock(self);
+    printf("."); fflush(stdout);
 
-    /* Bail out now if the server hasn't processed our last CopyArea
-     * request, watching for serial number rollover */
-    if (serial < self -> scroller.serial && self -> scroller.serial < serial + SERIAL_MARGIN)
+    /* If we haven't yet finished our last scroll then arrange to call
+     * Tick again once it has finished */
+    if (self -> scroller.state == SS_PENDING)
     {
+	self -> scroller.state = SS_OVERFLOW;
 	return;
     }
+
+    /* Set the clock now so that we get consistent scrolling speed */
+    SetClock(self);
 
     /* Don't scroll if we're in the midst of a drag or if the scroller is stopped */
     if (self -> scroller.step != 0)
@@ -793,7 +789,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
     self -> scroller.start_drag_x = 0;
     self -> scroller.last_x = 0;
     self -> scroller.clip_width = 0;
-    self -> scroller.serial = 0L;
+    self -> scroller.state = SS_OBSCURED;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1106,9 +1102,6 @@ static void scroll_left(ScrollerWidget self, int offset)
     /* Update the glyph_holders list */
     adjust_left(self);
 
-    /* Record the copy area's request number */
-    self -> scroller.serial = NextRequest(display);
-
     /* Copy the existing bits of the scroller */
     if (self -> scroller.use_pixmap)
     {
@@ -1123,11 +1116,15 @@ static void scroll_left(ScrollerWidget self, int offset)
     }
     else
     {
-	/* Scroll the window's contents */
-	XCopyArea(
-	    display, XtWindow(self), XtWindow(self),
-	    self -> scroller.backgroundGC,
-	    offset, 0, self -> core.width, self -> core.height, 0, 0);
+	if (self -> scroller.state == SS_READY)
+	{
+	    /* Scroll the window's contents */
+	    XCopyArea(
+		display, XtWindow(self), XtWindow(self),
+		self -> scroller.backgroundGC,
+		offset, 0, self -> core.width, self -> core.height, 0, 0);
+	    self -> scroller.state = SS_PENDING;
+	}
     }
 }
 
@@ -1158,6 +1155,7 @@ static void scroll_right(ScrollerWidget self, int offset)
 	    XtDisplay(self), XtWindow(self), XtWindow(self),
 	    self -> scroller.backgroundGC,
 	    offset, 0, self -> core.width, self -> core.height, 0, 0);
+	self -> scroller.state = SS_PENDING;
     }
 }
 
@@ -1243,6 +1241,8 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
 	    XClipBox(region, &rectangle);
 	    Paint(self, rectangle.x, 0, rectangle.width, self -> core.height);
 	}
+
+	self -> scroller.state = SS_READY;
     }
 }
 
@@ -1252,9 +1252,39 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     XEvent event_holder;
     XGraphicsExposeEvent *g_event;
     ScrollerWidget self = (ScrollerWidget)widget;
+    scroller_state_t old_state = self -> scroller.state;
 
     /* Sanity check */
     if (self -> scroller.use_pixmap)
+    {
+	return;
+    }
+
+    /* Watch for no expose events */
+    if (event -> type == NoExpose)
+    {
+	self -> scroller.state = SS_OBSCURED;
+	printf("GExpose: OBSCURED\n");
+
+	/* Do we need to recover from an overflow? */
+	if (old_state == SS_OVERFLOW)
+	{
+	    if (self -> scroller.is_dragging)
+	    {
+		printf("drag overflow!\n");
+		abort();
+	    }
+	    else
+	    {
+		Tick(widget, NULL);
+	    }
+	}
+
+	return;
+    }
+
+    /* Ignore anything that isn't a graphics expose event */
+    if (event -> type != GraphicsExpose)
     {
 	return;
     }
@@ -1266,12 +1296,6 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
      * a timeout in the middle (which could lead to blank spots) */
     while (1)
     {
-	/* Make sure we have an actual GraphicsExpose event */
-	if (event -> type != GraphicsExpose)
-	{
-	    return;
-	}
-
 #ifdef DEBUG_GLYPH
 	{
 	    XGCValues values;
@@ -1291,11 +1315,28 @@ static void GExpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
 	}
 #endif
 
+	/* Update this portion of the scroller */
 	Paint(self, g_event -> x, 0, g_event -> width, self -> core.height);
 
 	/* If there are no more GraphicsExpose events then exit the loop */
 	if (g_event -> count < 1)
 	{
+	    self -> scroller.state = SS_READY;
+
+	    /* Do we need to restart the timer? */
+	    if (old_state == SS_OVERFLOW)
+	    {
+		if (self -> scroller.is_dragging)
+		{
+		    printf("drag overflow!\n");
+		    abort();
+		}
+		else
+		{
+		    Tick(widget, NULL);
+		}
+	    }
+
 	    return;
 	}
 
@@ -1989,22 +2030,31 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
 	return;
     }
 
-    /* If we're more than drag_delta pixels from the position of the
-     * mouse down event, then we must be dragging */
-    if ((! self -> scroller.is_dragging) &&
-	(self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x) &&
-	(motion_event -> x < self -> scroller.start_drag_x + self -> scroller.drag_delta))
+    /* Do we know if we're dragging yet? */
+    if (! self -> scroller.is_dragging)
+    {
+	/* Give a little leeway so that a wobbly click doesn't become a drag */
+	if (self -> scroller.start_drag_x - self -> scroller.drag_delta < motion_event -> x &&
+	    motion_event -> x < self -> scroller.start_drag_x + self -> scroller.drag_delta)
+	{
+	    return;
+	}
+
+	/* Otherwise we're not definitely dragging */
+	self -> scroller.is_dragging = True;
+
+	/* Disable the timer until the drag is done */
+	DisableClock(self);
+    }
+
+    /* Don't try to scroll by zero pixels or we'll generate a NoExpose
+     * event and get confused */
+    if (self -> scroller.last_x - motion_event -> x == 0)
     {
 	return;
     }
 
-    /* Ok, we're definitely dragging */
-    self -> scroller.is_dragging = True;
-
-    /* Disable the timer until the drag is done */
-    DisableClock(self);
-
-    /* Otherwise scroll by the difference */
+    /* Scroll by the difference */
     scroll(self, self -> scroller.last_x - motion_event -> x);
     self -> scroller.last_x = motion_event -> x;
 
