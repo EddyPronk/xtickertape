@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.53 2004/08/02 15:29:19 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.54 2004/08/02 16:51:11 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -988,31 +988,32 @@ static void send_message(group_sub_t self, message_t message)
 /* Updates a group sub's keys to match a new list */
 static void group_sub_update_keys(
     group_sub_t self,
+    key_table_t old_keys,
+    key_table_t new_keys,
     char **key_names,
     int key_count,
     elvin_keys_t *keys_to_add_out,
     elvin_keys_t *keys_to_remove_out)
 {
+    char **old_names;
     int i;
+
+    self -> key_table = new_keys;
 
     /* Compute the required changes */
     key_table_diff(
-        self -> key_table,
+        old_keys,
         self -> key_names,
         self -> key_count,
-        self -> key_table,
+        new_keys,
         key_names,
         key_count,
         0,
         keys_to_add_out,
         keys_to_remove_out);
 
-    /* Discard the old key names */
-    for (i = 0; i < self -> key_count; i++)
-    {
-        free(self -> key_names[i]);
-    }
-    free(self -> key_names);
+    /* Hang on to the old key names */
+    old_names = self -> key_names;
 
     /* Duplicate the new key names */
     if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL) 
@@ -1028,6 +1029,14 @@ static void group_sub_update_keys(
             abort();
         }
     }
+
+    /* Discard the old key names */
+    for (i = 0; i < self -> key_count; i++)
+    {
+        free(old_names[i]);
+    }
+
+    free(old_names);
 }
 
 
@@ -1152,49 +1161,60 @@ char *group_sub_expression(group_sub_t self)
 /* Updates the receiver to look just like subscription in terms of
  * name, expression, in_menu, has_nazi, min_time, max_time, keys,
  * callback and rock */
-void group_sub_update_from_sub(group_sub_t self, group_sub_t subscription)
+void group_sub_update_from_sub(
+    group_sub_t self,
+    group_sub_t subscription,
+    key_table_t old_keys,
+    key_table_t new_keys)
 {
     char *expression = NULL;
     elvin_keys_t keys_to_add = NULL;
     elvin_keys_t keys_to_remove = NULL;
     int accept_insecure;
 
-    /* Update the subscription name */
-    if (strcmp(self -> name, subscription -> name) != 0)
+    if (self != subscription)
     {
-        free(self -> name);
-        if ((self -> name = strdup(subscription -> name)) == NULL)
+        /* Update the subscription name */
+        if (strcmp(self -> name, subscription -> name) != 0)
         {
-            /* FIX THIS: error reporting?! */
-            abort();
-        }
-    }
-
-    /* Update the expression if it has changed */
-    if (strcmp(self -> expression, subscription -> expression) != 0)
-    {
-        free(self -> expression);
-        if ((self -> expression = strdup(subscription -> expression)) == NULL)
-        {
-            /* FIX THIS: error reporting? */
-            abort();
+            free(self -> name);
+            if ((self -> name = strdup(subscription -> name)) == NULL)
+            {
+                /* FIX THIS: error reporting?! */
+                abort();
+            }
         }
 
-        /* We have a new epxression */
-        expression = self -> expression;
+        /* Update the expression if it has changed */
+        if (strcmp(self -> expression, subscription -> expression) != 0)
+        {
+            free(self -> expression);
+            if ((self -> expression = strdup(subscription -> expression)) == NULL)
+            {
+                /* FIX THIS: error reporting? */
+                abort();
+            }
+
+            /* We have a new epxression */
+            expression = self -> expression;
+        }
+
+        /* Copy various fields */
+        self -> in_menu = subscription -> in_menu;
+        self -> has_nazi = subscription -> has_nazi;
+        self -> min_time = subscription -> min_time;
+        self -> max_time = subscription -> max_time;
+        self -> callback = subscription -> callback;
+        self -> rock = subscription -> rock;
     }
 
-    group_sub_update_keys(self, subscription -> key_names, subscription -> key_count,
+    group_sub_update_keys(self,
+                          old_keys,
+                          new_keys,
+                          subscription -> key_names,
+                          subscription -> key_count,
                           &keys_to_add, &keys_to_remove);
     accept_insecure = (self -> key_count == 0);
-
-    /* Copy various fields */
-    self -> in_menu = subscription -> in_menu;
-    self -> has_nazi = subscription -> has_nazi;
-    self -> min_time = subscription -> min_time;
-    self -> max_time = subscription -> max_time;
-    self -> callback = subscription -> callback;
-    self -> rock = subscription -> rock;
 
     /* Update the subscription if necessary */
     if (expression != NULL ||
