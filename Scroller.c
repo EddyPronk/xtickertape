@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.30 1999/06/21 12:38:37 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.31 1999/06/21 12:54:29 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -39,12 +39,12 @@ static const char cvsid[] = "$Id: Scroller.c,v 1.30 1999/06/21 12:38:37 phelps E
 #include <X11/StringDefs.h>
 
 #include "ScrollerP.h"
-#include "StringBuffer.h"
 #include "glyph.h"
 
 
 /* FIX THIS: should compute based on the width of some number of 'n's */
 #define END_SPACING 30
+#define TMP_PREFIX "/tmp/ticker"
 
 /*
  * Resources
@@ -1132,10 +1132,10 @@ static void decode_mime(Widget widget, XEvent *event)
     ScrollerWidget self = (ScrollerWidget) widget;
     glyph_t glyph = glyph_at_event(self, event);
     Message message = glyph -> get_message(glyph);
-    StringBuffer buffer;
+    char filename[sizeof(TMP_PREFIX) + 16];
     char *mime_type;
     char *mime_args;
-    char *filename;
+    char *buffer;
     FILE *file;
 
     /* If there's no message, then we can't decode any mime */
@@ -1161,16 +1161,8 @@ static void decode_mime(Widget widget, XEvent *event)
     printf("MIME: %s %s\n", mime_type, mime_args);
 #endif /* DEBUG */
 
-    /* Write the mime_args to a file */
-    buffer = StringBuffer_alloc();
-    StringBuffer_append(buffer, "/tmp/ticker");
-    StringBuffer_appendInt(buffer, getpid());
-#ifdef HAVE_ALLOCA
-    filename = (char *)alloca(StringBuffer_length(buffer) + 1);
-    strcpy(filename, StringBuffer_getBuffer(buffer));
-#else /* HAVE_ALLOCA */
-    filename = strdup(StringBuffer_getBuffer(buffer));
-#endif /* HAVE_ALLOCA */
+    /* Write the mime_args to a file (assumes 16-digit pids) */
+    sprintf(filename, "%s%d", TMP_PREFIX, getpid());
 
     /* If we can't open the file then print an error and give up */
     if ((file = fopen(filename,"wb")) == NULL)
@@ -1183,22 +1175,17 @@ static void decode_mime(Widget widget, XEvent *event)
     fclose(file);
 
     /* Invoke metamail to display the message */
-    StringBuffer_clear(buffer);
-    StringBuffer_append(buffer, METAMAIL);
-    StringBuffer_append(buffer, " -B -q -b -c ");
-    StringBuffer_append(buffer, mime_type);
-    StringBuffer_appendChar(buffer, ' ');
-    StringBuffer_append(buffer, filename);
-    StringBuffer_append(buffer, " > /dev/null 2>&1");
-    system(StringBuffer_getBuffer(buffer));
+    buffer = (char *) malloc(
+	sizeof(METAMAIL) + sizeof(" -B -q -b -c   > /dev/null 2>&1")
+	+ strlen(mime_type) + strlen(filename));
+
+    sprintf(buffer, "%s -B -q -b -c %s %s > /dev/null 2>&1",
+	    METAMAIL, mime_type, filename);
+    system(buffer);
 
     /* Remove the temporary file */
     unlink(filename);
-#ifndef HAVE_ALLOCA
-    free(filename);
-#endif /* HAVE_ALLOCA */
-
-    StringBuffer_free(buffer);
+    free(buffer);
 #endif /* METAMAIL */
 }
 
