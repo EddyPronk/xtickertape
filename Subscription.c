@@ -1,4 +1,4 @@
-/* $Id: Subscription.c,v 1.16 1998/10/23 17:40:10 phelps Exp $ */
+/* $Id: Subscription.c,v 1.17 1998/10/24 04:56:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,12 +64,13 @@ struct Subscription_t
  * Static function headers
  *
  */
-static void GetFromGroupFileLine(
-    List list,
+
+static int TranslateMenu(char *token);
+static int TranslateMime(char *token);
+static int TranslateTime(char *token);
+static Subscription ReadNextSubscription(
     FileStreamTokenizer tokenizer, char *firstToken,
     SubscriptionCallback callback, void *context);
-static List GetFromGroupFile(
-    FILE *file, SubscriptionCallback callback, void *context);
 static void HandleNotify(Subscription self, en_notify_t notification);
 static void SendMessage(Subscription self, Message message);
 
@@ -181,8 +182,7 @@ static int TranslateTime(char *token)
 }
 
 /* Create a subscription from a line of the group file */
-static void GetFromGroupFileLine(
-    List list,
+static Subscription ReadNextSubscription(
     FileStreamTokenizer tokenizer, char *firstToken,
     SubscriptionCallback callback, void *context)
 {
@@ -227,46 +227,17 @@ static void GetFromGroupFileLine(
 	    callback, context);
 	StringBuffer_free(buffer);
     }
-    else /* token should be the subscription expression */
+    else /* token must be a ':' followed by the subscription expression */
     {
 	subscription = Subscription_alloc(
-	    group, token,
+	    group, (token + 1),
 	    inMenu, hasNazi,
 	    minTime, maxTime,
 	    callback, context);
 	FileStreamTokenizer_skipToEndOfLine(tokenizer);
     }
 
-    List_addLast(list, subscription);
-}
-
-
-/* Read the next subscription from file (answers NULL if EOF) */
-static List GetFromGroupFile(
-    FILE *file,
-    SubscriptionCallback callback, void *context)
-{
-    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(file, ":", "\n");
-    List list = List_alloc();
-    char *token;
-
-    /* Locate a non-empty line that doesn't begin with a '#' */
-    while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
-    {
-	/* Comment line? */
-	if (*token == '#')
-	{
-	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
-	}
-	/* Useful line? */
-	else if (*token != '\n')
-	{
-	    GetFromGroupFileLine(list, tokenizer, token, callback, context);
-	}
-    }
-
-    FileStreamTokenizer_free(tokenizer);
-    return list;
+    return subscription;
 }
 
 
@@ -421,7 +392,28 @@ static void SendMessage(Subscription self, Message message)
 List Subscription_readFromGroupFile(
     FILE *groups, SubscriptionCallback callback, void *context)
 {
-    return GetFromGroupFile(groups, callback, context);
+    FileStreamTokenizer tokenizer = FileStreamTokenizer_alloc(groups, ":", "\n");
+    List list = List_alloc();
+    char *token;
+
+    /* Locate a non-empty line that doesn't begin with a '#' */
+    while ((token = FileStreamTokenizer_next(tokenizer)) != NULL)
+    {
+	/* Comment line? */
+	if (*token == '#')
+	{
+	    FileStreamTokenizer_skipToEndOfLine(tokenizer);
+	}
+	/* Useful line? */
+	else if (*token != '\n')
+	{
+	    /* Read the line's Subscription and add it to the List */
+	    List_addLast(list, ReadNextSubscription(tokenizer, token, callback, context));
+	}
+    }
+
+    FileStreamTokenizer_free(tokenizer);
+    return list;
 }
 
 
@@ -492,38 +484,6 @@ void Subscription_debug(Subscription self)
     printf("  controlPanelInfo = %p\n", self -> controlPanelInfo);
     printf("  callback = %p\n", self -> callback);
     printf("  context = %p\n", self -> context);
-}
-
-
-/* Answers the receiver's group */
-char *Subscription_getGroup(Subscription self)
-{
-    SANITY_CHECK(self);
-    return self -> group;
-}
-
-
-/* Answers the receiver's subscription expression */
-char *Subscription_getExpression(Subscription self)
-{
-    SANITY_CHECK(self);
-    return self -> expression;
-}
-
-
-/* Answers if the receiver should appear in the Control Panel menu */
-int Subscription_isInMenu(Subscription self)
-{
-    SANITY_CHECK(self);
-    return self -> inMenu;
-}
-
-
-/* Answers true if the receiver should automatically show mime messages */
-int Subscription_isAutoMime(Subscription self)
-{
-    SANITY_CHECK(self);
-    return self -> hasNazi;
 }
 
 
