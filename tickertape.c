@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.70 2000/12/08 06:54:25 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.71 2000/12/08 07:45:20 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1261,6 +1261,12 @@ static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
 	vm_make_lambda(vm, error);
 }
 
+/* The `list' subroutine */
+static int prim_list(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    return vm_make_list(vm, argc, error);
+}
+
 /* The `or' special form */
 static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
 {
@@ -1302,6 +1308,28 @@ static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
     return vm_eval(vm, error);
 }
 
+/* The `+' subroutine */
+static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
+{
+    uint32_t i;
+
+    /* Return 0 if there are no args */
+    if (argc == 0)
+    {
+	return vm_push_integer(vm, 0, error);
+    }
+
+    /* Add up all of the args */
+    for (i = 1; i < argc; i++)
+    {
+	if (! vm_add(vm, error))
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
+}
 
 /* The `quote' special form */
 static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
@@ -1431,17 +1459,12 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 #endif
 	define_subr(vm, "gc", prim_gc, error) &&
 	define_special(vm, "lambda", prim_lambda, error) &&
+	define_subr(vm, "list", prim_list, error) &&
 	define_special(vm, "or", prim_or, error) &&
-#if 0
 	define_subr(vm, "+", prim_plus, error) &&
-#endif
 	define_special(vm, "progn", prim_progn, error) &&
 	define_special(vm, "quote", prim_quote, error) &&
-	define_special(vm, "setq", prim_setq, error) &&
-#if 0
-	define_special(vm, "print-state", prim_print_state, error);
-#endif
-    1;
+	define_special(vm, "setq", prim_setq, error);
 }
 
 
