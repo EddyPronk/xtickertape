@@ -28,18 +28,16 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.2 1999/10/02 16:02:58 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.3 1999/10/03 03:22:22 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
 #include "groups_parser.h"
 
 #define INITIAL_TOKEN_SIZE 64
-#define BUFFER_SIZE 2048
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(groups_parser_t self, int ch);
@@ -66,7 +64,7 @@ struct groups_parser
     char *token_end;
 
     /* The current lexical state */
-    lexer_state_t lexer_state;
+    lexer_state_t state;
 
     /* The current line-number within the file */
     int line_num;
@@ -154,28 +152,28 @@ static int lex_start(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
+	self -> state = lex_start;
 	return 0;
     }
 
     /* Watch for comments */
     if (ch == '#')
     {
-	self -> lexer_state = lex_comment;
+	self -> state = lex_comment;
 	return 0;
     }
 
     /* Watch for blank lines */
     if (ch == '\n')
     {
-	self -> lexer_state = lex_start;
-	self -> line_num++;
+	self -> state = lex_start;
 	return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	self -> lexer_state = lex_start;
+	self -> state = lex_start;
 	return 0;
     }
 
@@ -183,7 +181,7 @@ static int lex_start(groups_parser_t self, int ch)
     if (ch == '\\')
     {
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_name_esc;
+	self -> state = lex_name_esc;
 	return 0;
     }
 
@@ -192,14 +190,14 @@ static int lex_start(groups_parser_t self, int ch)
     {
 	self -> name = strdup("");
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_menu;
+	self -> state = lex_menu;
 	return 0;
     }
 
 
     /* Anything else is part of the group name */
     self -> token_pointer = self -> token;
-    self -> lexer_state = lex_name;
+    self -> state = lex_name;
     return append_char(self, ch);
 }
 
@@ -215,8 +213,7 @@ static int lex_comment(groups_parser_t self, int ch)
     /* Watch for end-of-line */
     if (ch == '\n')
     {
-	self -> lexer_state = lex_start;
-	self -> line_num++;
+	self -> state = lex_start;
 	return 0;
     }
 
@@ -244,7 +241,7 @@ static int lex_name(groups_parser_t self, int ch)
     /* Watch for the magical escape character */
     if (ch == '\\')
     {
-	self -> lexer_state = lex_name_esc;
+	self -> state = lex_name_esc;
 	return 0;
     }
 
@@ -259,7 +256,7 @@ static int lex_name(groups_parser_t self, int ch)
 
 	self -> name = strdup(self -> token);
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_menu;
+	self -> state = lex_menu;
 	return 0;
     }
 
@@ -280,12 +277,12 @@ static int lex_name_esc(groups_parser_t self, int ch)
     /* Linefeeds are ignored */
     if (ch == '\n')
     {
-	self -> lexer_state = lex_name;
+	self -> state = lex_name;
 	return 0;
     }
 
     /* Anything else is part of the name */
-    self -> lexer_state = lex_name;
+    self -> state = lex_name;
     return append_char(self, ch);
 }
 
@@ -336,7 +333,7 @@ static int lex_menu(groups_parser_t self, int ch)
 
 	/* Move along to the mime nazi option */
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_nazi;
+	self -> state = lex_nazi;
 	return 0;
     }
 
@@ -391,7 +388,7 @@ static int lex_nazi(groups_parser_t self, int ch)
 
 	/* Move along to the minimum-time token */
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_min_time;
+	self -> state = lex_min_time;
 	return 0;
     }
 
@@ -428,7 +425,7 @@ static int lex_min_time(groups_parser_t self, int ch)
 	/* Read the min-time from the token */
 	self -> min_time = atoi(self -> token);
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_max_time;
+	self -> state = lex_max_time;
 	return 0;
     }
 
@@ -439,7 +436,7 @@ static int lex_min_time(groups_parser_t self, int ch)
     }
 
     /* Otherwise we go to the error state for a bit */
-    self -> lexer_state = lex_bad_time;
+    self -> state = lex_bad_time;
     return append_char(self, ch);
 }
 
@@ -485,12 +482,12 @@ static int lex_max_time(groups_parser_t self, int ch)
     if (ch == ':')
     {
 	self -> token_pointer = self -> token;
-	self -> lexer_state = lex_superfluous;
+	self -> state = lex_superfluous;
 	return append_char(self, ch);
     }
 
     /* Otherwise we go to the error state for a bit */
-    self -> lexer_state = lex_bad_time;
+    self -> state = lex_bad_time;
     return append_char(self, ch);
 }
 
@@ -547,6 +544,30 @@ static int lex_superfluous(groups_parser_t self, int ch)
     return append_char(self, ch);
 }
 
+/* Parses the given character, ignoring CRs and counting LFs */
+static int parse_char(groups_parser_t self, int ch)
+{
+    /* Ignore CRs */
+    if (ch == '\r')
+    {
+	return 0;
+    }
+
+    /* Parse the character */
+    if (self -> state(self, ch) < 0)
+    {
+	return -1;
+    }
+
+    /* Count LFs */
+    if (ch == '\n')
+    {
+	self -> line_num++;
+    }
+
+    return 0;
+}
+
 
 
 
@@ -561,9 +582,17 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
 	return NULL;
     }
 
+    /* Copy the tag string */
+    if ((self -> tag = strdup(tag)) == NULL)
+    {
+	free(self);
+	return NULL;
+    }
+
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
+	free(self -> tag);
 	free(self);
 	return NULL;
     }
@@ -571,10 +600,9 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
     /* Initialize everything else to sane values */
     self -> callback = callback;
     self -> rock = rock;
-    self -> tag = tag;
     self -> token_pointer = self -> token;
     self -> token_end = self -> token + INITIAL_TOKEN_SIZE;
-    self -> lexer_state = lex_start;
+    self -> state = lex_start;
     self -> line_num = 1;
     return self;
 }
@@ -582,12 +610,14 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
 /* Frees the resources consumed by the receiver */
 void groups_parser_free(groups_parser_t self)
 {
+    free(self -> tag);
     free(self -> token);
     free(self);
 }
 
-/* Parses the given file into an array of subscriptions.  A zero-
- * length buffer is interpreted as an end of input marker */
+/* Parses the given buffer, calling callbacks for each subscription
+ * expression that is successfully read.  A zero-length buffer is
+ * interpreted as an end-of-input marker */
 int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length)
 {
     char *pointer;
@@ -595,13 +625,13 @@ int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length)
     /* Length of 0 indicates EOF */
     if (length == 0)
     {
-	return (self -> lexer_state)(self, EOF);
+	return parse_char(self, EOF);
     }
 
     /* Parse the buffer */
     for (pointer = buffer; pointer < buffer + length; pointer++)
     {
-	if ((self -> lexer_state)(self, *pointer) < 0)
+	if (parse_char(self, *pointer) < 0)
 	{
 	    return -1;
 	}

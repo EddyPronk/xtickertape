@@ -35,7 +35,7 @@
 #define GROUPS_PARSER_H
 
 #ifndef lint
-static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.2 1999/10/02 16:02:58 phelps Exp $";
+static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.3 1999/10/03 03:22:22 phelps Exp $";
 #endif /* lint */
 
 /* The groups parser data type */
@@ -53,8 +53,9 @@ groups_parser_t groups_parser_alloc(groups_parser_callback_t callback, void *roc
 /* Frees the resources consumed by the receiver */
 void groups_parser_free(groups_parser_t self);
 
-/* Parses the given file into an array of subscriptions.  A zero-
- * length buffer is interpreted as an end of input marker */
+/* Parses the given buffer, calling callbacks for each subscription
+ * expression that is successfully read.  A zero-length buffer is
+ * interpreted as an end-of-input marker */
 int groups_parser_parse(groups_parser_t self, char *buffer, ssize_t length);
 
 #endif /* GROUPS_PARSER_H */
