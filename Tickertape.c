@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.24 1998/08/19 04:45:27 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.25 1998/08/19 06:38:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -246,30 +246,28 @@ static void ViewHolder_redisplay(ViewHolder self, void *context[])
     }
     else /* Fill the background color */
     {
-	XFillRectangle(XtDisplay(widget), drawable, widget -> tickertape.backgroundGC, x, y, self -> width, widget -> core.height);
+	XFillRectangle(
+	    XtDisplay(widget), drawable, widget -> tickertape.backgroundGC,
+	    x, y, self -> width, widget -> core.height);
     }
 
     context[2] = (void *)(x + self -> width);
 }
 
 /* Locates the Message at the given offset */
-static void ViewHolder_locate(ViewHolder self, void *context[])
+static void ViewHolder_locate(ViewHolder self, long *x, MessageView *view_return)
 {
-    int x = (int) context[0];
-
-    if (x < 0)
+    if (*x < 0)
     {
 	return;
     }
 
-    x = x - self -> width;
+    *x -= self -> width;
 
-    if (x < 0)
+    if (*x < 0)
     {
-	context[1] = self -> view;
+	*view_return = self -> view;
     }
-
-    context[0] = (void *) x;
 }
 
 
@@ -579,24 +577,30 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 	display, colormap, &colors[3], &colors[0], self -> tickertape.fadeLevels);
     self -> tickertape.separatorPixels = CreateFadedColors(
 	display, colormap, &colors[4], &colors[0], self -> tickertape.fadeLevels);
-
-    EnqueueViewHolder(self, ViewHolder_alloc(NULL, self -> core.width));
 }
 
 
 /* Dequeue a ViewHolder if it is no longer visible */
 static void OutWithTheOld(TickertapeWidget self)
 {
-    ViewHolder holder = List_first(self -> tickertape.holders);
+    ViewHolder holder;
 
-    if (holder -> width <= self -> tickertape.offset)
+    while ((holder = List_first(self -> tickertape.holders)) != NULL)
     {
-	ViewHolder holder = DequeueViewHolder(self);
-	
+	/* See if the first holder has scrolled off the left edge */
+	if (self -> tickertape.offset < holder -> width)
+	{
+	    return;
+	}
+
+	/* It has -- remove it from the queue */
+	holder = DequeueViewHolder(self);
+	    
 	if (holder -> view)
 	{
 	    self -> tickertape.realCount--;
 	}
+
 	self -> tickertape.offset = 0;
 	ViewHolder_free(holder);
     }
@@ -623,19 +627,30 @@ static void InWithTheNew(TickertapeWidget self)
 	{
 	    ViewHolder last = List_last(self -> tickertape.holders);
 	    ViewHolder holder;
+	    unsigned long lastWidth;
 	    unsigned long width;
 
-	    if (self -> core.width < last -> width + END_SPACING)
+	    if (last == NULL)
 	    {
-		width = END_SPACING;
+		width = self -> core.width;
+		lastWidth = 0;
 	    }
 	    else
 	    {
-		width = self -> core.width - last -> width;
+		lastWidth = last -> width;
+		if (self -> core.width < last -> width + END_SPACING)
+		{
+		    width = END_SPACING;
+		}
+		else
+		{
+		    width = self -> core.width - last -> width;
+		}
 	    }
+
 	    self -> tickertape.nextVisible = 0;
 	    holder = ViewHolder_alloc(NULL, width);
-	    holder -> previous_width = last -> width;
+	    holder -> previous_width = lastWidth;
 	    EnqueueViewHolder(self, holder);
 	}
 	/* otherwise add message */
@@ -670,6 +685,12 @@ static void Redisplay(Widget widget, XEvent *event, Region region)
     TickertapeWidget self = (TickertapeWidget)widget;
     void *context[4];
 
+#ifdef DEBUG
+    /* Fill in any areas that aren't redrawn so we can spot redisplay bugs... */
+    XFillRectangle(
+	XtDisplay(widget), XtWindow(self), self -> tickertape.gc,
+	0, 0, self -> core.width, self -> core.height);
+#endif /* 0 */
     context[0] = (void *)widget;
     context[1] = (void *)XtWindow(self);
     context[2] = (void *)(0 - self -> tickertape.offset);
@@ -688,33 +709,47 @@ static void Destroy(Widget widget)
 
 
 /* Update the widget of the blank view */
-static void ViewHolder_Resize(ViewHolder self, TickertapeWidget tickertape)
+static void ViewHolder_Resize(ViewHolder self, TickertapeWidget widget, long *x)
 {
-    /* Skip any holders with actual views */
-    if (self -> view)
+    long width;
+
+    /* If x < 0 then we don't want to resize (but we do want to update x) */
+    if (*x < 0)
+    {
+	*x += self -> width;
+	return;
+    }
+
+    /* Skip any ViewHolders with actual text */
+    if (self -> view != NULL)
     {
 	return;
     }
 
-    /* Ok, we've got the blank one.  Update its size */
-    if (tickertape -> core.width < self -> previous_width + END_SPACING)
-    {
-	self -> width = END_SPACING;
-    }
-    else
-    {
-	self -> width = tickertape -> core.width - self -> previous_width;
-    }
+    /* Ok, we've got the blank one.  Update its size (and make sure
+       the visibleWidth is properly updated */
+    widget -> tickertape.visibleWidth -= self -> width;
+    width = widget -> core.width - self -> previous_width;
+    self -> width = (width < END_SPACING) ? END_SPACING : width;
+    widget -> tickertape.visibleWidth += self -> width;
 }
+
 
 /* Find the empty view and update its width */
 static void Resize(Widget widget)
 {
     TickertapeWidget self = (TickertapeWidget) widget;
+    long x = 0 - self -> tickertape.offset;
+
 #ifdef DEBUG
     fprintf(stderr, "Resize %p\n", widget);
 #endif /* DEBUG */
-    List_doWith(self -> tickertape.holders, ViewHolder_Resize, self);
+
+    List_doWithWith(self -> tickertape.holders, ViewHolder_Resize, self, &x);
+
+    /* Make sure we have the right number of things visible */
+    OutWithTheOld(self);
+    InWithTheNew(self);
 }
 
 /* What should this do? */
@@ -741,13 +776,11 @@ static XtGeometryResult QueryGeometry(
 /* Locates the message at the given offset (NULL if none) */
 static MessageView messageAtOffset(TickertapeWidget self, int offset)
 {
-    void *context[2];
+    long x = offset + self -> tickertape.offset;
+    MessageView view = NULL;
 
-    context[0] = (void *) (offset + self -> tickertape.offset);
-    context[1] = NULL;
-    List_doWith(self -> tickertape.holders, ViewHolder_locate, context);
-
-    return context[1];
+    List_doWithWith(self -> tickertape.holders, ViewHolder_locate, &x, &view);
+    return view;
 }
 
 /* Answers the message under the mouse in the given event */
