@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: keys_parser.c,v 1.8 2003/01/23 12:03:30 phelps Exp $";
+static const char cvsid[] = "$Id: keys_parser.c,v 1.9 2003/01/28 15:56:43 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -84,8 +84,8 @@ struct keys_parser
     /* The client data for the callback */
     void *rock;
 
-    /* The tickertape preferences directory */
-    char *ticker_dir;
+    /* The directory to start looking in for keys with relative paths */
+    char *keys_dir;
 
     /* The tag for error messages */
     char *tag;
@@ -157,14 +157,14 @@ static int accept_key(keys_parser_t self)
 	    char *string;
 
 	    /* Allocate memory for the absolute path */
-	    length = strlen(self -> ticker_dir) + 1 + strlen(self -> key_data) + 1;
+	    length = strlen(self -> keys_dir) + 1 + strlen(self -> key_data) + 1;
 	    if ((string = (char *)malloc(length)) == NULL)
 	    {
 		return -1;
 	    }
 
 	    /* Construct the absolute path */
-	    snprintf(string, length, "%s/%s", self -> ticker_dir, self -> key_data);
+	    snprintf(string, length, "%s/%s", self -> keys_dir, self -> key_data);
 
 	    /* Replace key_data with the absolute path */
 	    free(self -> key_data);
@@ -660,7 +660,7 @@ static int parse_char(keys_parser_t self, int ch)
 
 /* Allocates and initializes a new keys file parser */
 keys_parser_t keys_parser_alloc(
-    char *ticker_dir,
+    char *keys_dir,
     keys_parser_callback_t callback,
     void *rock,
     char *tag)
@@ -674,8 +674,8 @@ keys_parser_t keys_parser_alloc(
     }
     memset(self, 0, sizeof(struct keys_parser));
 
-    /* Copy the ticker_dir string */
-    if ((self -> ticker_dir = strdup(ticker_dir)) == NULL)
+    /* Copy the keys_dir string */
+    if ((self -> keys_dir = strdup(keys_dir)) == NULL)
     {
 	keys_parser_free(self);
 	return NULL;
