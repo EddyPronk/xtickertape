@@ -1,4 +1,4 @@
-/* $Id: Tickertape.c,v 1.19 1998/04/21 05:05:37 phelps Exp $ */
+/* $Id: Tickertape.c,v 1.20 1998/05/09 06:19:45 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,36 +33,43 @@ static XtResource resources[] =
 	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
 	offset(tickertape.font), XtRString, XtDefaultFont
     },
+
     /* Pixel groupPixel */
     {
 	XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
 	offset(tickertape.groupPixel), XtRString, "Blue"
     },
+
     /* Pixel userPixel */
     {
 	XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
 	offset(tickertape.userPixel), XtRString, "Green"
     },
+
     /* Pixel stringPixel */
     {
 	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
 	offset(tickertape.stringPixel), XtRString, "Red"
     },
+
     /* Pixel separatorPixel */
     {
 	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
 	offset(tickertape.separatorPixel), XtRString, XtDefaultForeground
     },
+
     /* Dimension fadeLevels */
     {
 	XtNfadeLevels, XtCFadeLevels, XtRDimension, sizeof(Dimension),
 	offset(tickertape.fadeLevels), XtRImmediate, (XtPointer)5
     },
+
     /* Dimension frequency (in Hz) */
     {
 	XtNfrequency, XtCFrequency, XtRDimension, sizeof(Dimension),
 	offset(tickertape.frequency), XtRImmediate, (XtPointer)24
     },
+
     /* Dimension stepSize (in pixels) */
     {
 	XtNstepSize, XtCStepSize, XtRDimension, sizeof(Dimension),
