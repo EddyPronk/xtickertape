@@ -64,7 +64,7 @@ if test "$with_elvin" = no ; then
 fi
 
 # Where are we supposed to look for elvin-config?
-if test "$with_elvin" = yes; then
+if test "$with_elvin" = yes -o -z "$with_elvin"; then
     elvin_config_path=$PATH
 else
     elvin_config_path=$with_elvin/bin
