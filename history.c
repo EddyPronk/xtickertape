@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.10 1999/08/22 07:55:59 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.11 1999/08/22 08:14:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -110,7 +110,7 @@ static int history_node_indent(history_node_t self)
 }
 
 /* Constructs a Motif string representation of the receiver's message */
-static XmString history_node_get_string(history_node_t self, int is_threaded)
+static XmString history_node_string(history_node_t self, int is_threaded)
 {
     char *group = Message_getGroup(self -> message);
     char *user = Message_getUser(self -> message);
@@ -299,9 +299,53 @@ void history_set_list(history_t self, Widget list)
     self -> list = list;
 }
 
+
+/* Constructs a threaded version of the history */
+static void history_node_get_strings_threaded(history_node_t self, XmString *items, int max)
+{
+    int index;
+
+    for (index = 0; index < max; index++)
+    {
+	items[index] = XmStringCreateSimple("not yet implemented");
+    }
+}
+
+/* Constructs an unthreaded version of the history */
+static void history_node_get_strings_unthreaded(history_node_t self, XmString *items, int max)
+{
+    int index;
+
+    for (index = 0; index < max; index++)
+    {
+	items[index] = XmStringCreateSimple("not yet implemented");
+    }
+}
+
+/* Allocates and returns an array of XmStrings to be used for the receiver's list */
+static XmString *history_get_strings(history_t self, int count)
+{
+    XmString *items = (XmString *)calloc(count, sizeof(XmString));
+
+    if (self -> is_threaded)
+    {
+	history_node_get_strings_threaded(self -> last_thread, items, count);
+	return items;
+    }
+    else
+    {
+	history_node_get_strings_unthreaded(self -> last, items, count);
+	return items;
+    }
+}
+
 /* Sets the history's threadedness */
 void history_set_threaded(history_t self, int is_threaded)
 {
+    int count;
+    XmString *items;
+    int index;
+
     /* Make sure we're changing the value */
     if (self -> is_threaded == is_threaded)
     {
@@ -318,7 +362,23 @@ void history_set_threaded(history_t self, int is_threaded)
     }
 
     /* Update the list */
-    printf("should update the list!\n");
+    /* FIX THIS: this can be much more efficient */
+    count = (self -> count < MAX_LIST_COUNT) ? self -> count : MAX_LIST_COUNT;
+    items = history_get_strings(self, count);
+
+    /* Replace the old list with the new one */
+    XmListReplaceItemsPos(self -> list, items, count, 1);
+
+    /* Free the strings */
+    for (index = 0; index < count; index++)
+    {
+	XmStringFree(items[index]);
+    }
+
+    /* Free the array */
+    free(items);
+
+    /* Probably need to reselect */
 }
 
 
@@ -340,7 +400,7 @@ static void history_update_list(history_t self, history_node_t node)
     }
 
     /* Add the string to the end of the list */
-    string = history_node_get_string(node, self -> is_threaded);
+    string = history_node_string(node, self -> is_threaded);
     XmListAddItem(self -> list, string, history_index(self, node -> message));
     XmStringFree(string);
 }
