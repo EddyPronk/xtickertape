@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.20 1999/10/02 16:46:10 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.21 1999/10/04 03:08:15 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -51,6 +51,8 @@ static const char cvsid[] = "$Id: tickertape.c,v 1.20 1999/10/02 16:46:10 phelps
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
+#include "usenet.h"
+#include "usenet_parser.h"
 #include "UsenetSubscription.h"
 #include "mail_sub.h"
 #include "connect.h"
@@ -350,10 +352,11 @@ static int write_default_file(tickertape_t self, FILE *out, char *template)
     return 0;
 }
 
-/* Open the groups file.  If the file doesn't exist, try to create it
- * and fill it with the default groups file information.  Returns the
- * file descriptor of the groups file on success, -1 on failure */
-static int open_groups_file(tickertape_t self, char *filename)
+/* Open a subscriptions file.  If the file doesn't exist, try to
+ * create it and fill it with the default groups file information.
+ * Returns the file descriptor of the groups file on success,
+ * -1 on failure */
+static int open_subscription_file(tickertape_t self, char *filename, char *template)
 {
     int fd;
     FILE *out;
@@ -376,8 +379,8 @@ static int open_groups_file(tickertape_t self, char *filename)
 	return -1;
     }
 
-    /* Write the default groups file */
-    if (write_default_file(self, out, default_groups_file) < 0)
+    /* Write the default subscriptions file */
+    if (write_default_file(self, out, template) < 0)
     {
 	fclose(out);
 	return -1;
@@ -440,7 +443,7 @@ static int parse_groups_file(tickertape_t self)
     }
 
     /* Make sure we can read the groups file */
-    if ((fd = open_groups_file(self, filename)) < 0)
+    if ((fd = open_subscription_file(self, filename, default_groups_file)) < 0)
     {
 	groups_parser_free(parser);
 	return -1;
@@ -461,7 +464,7 @@ static int parse_groups_file(tickertape_t self)
 	}
 
 	/* Send it to the parser */
-	if (groups_parser_parse(parser, buffer, length) <0)
+	if (groups_parser_parse(parser, buffer, length) < 0)
 	{
 	    close(fd);
 	    groups_parser_free(parser);
@@ -477,11 +480,65 @@ static int parse_groups_file(tickertape_t self)
 }
 
 
+
+/* Parse the usenet file and update the usenet subscription accordingly */
+static int parse_usenet_file(tickertape_t self)
+{
+    char *filename = tickertape_usenet_filename(self);
+    usenet_parser_t parser;
+    int fd;
+
+    /* Allocate a new usenet file parser */
+    if ((parser = usenet_parser_alloc(filename)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Make sure we can read the usenet file */
+    if ((fd = open_subscription_file(self, filename, defaultUsenetFile)) < 0)
+    {
+	usenet_parser_free(parser);
+	return -1;
+    }
+
+    /* Keep reading from the file until we've read it all or got an error */
+    while (1)
+    {
+	char buffer[BUFFER_SIZE];
+	ssize_t length;
+
+	/* Read from the fiel */
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+	{
+	    close(fd);
+	    usenet_parser_free(parser);
+	    return -1;
+	}
+
+	/* Send it to the parser */
+	if (usenet_parser_parse(parser, buffer, length) < 0)
+	{
+	    close(fd);
+	    usenet_parser_free(parser);
+	    return -1;
+	}
+
+	/* Watch for end-of-file */
+	if (length == 0)
+	{
+	    return 0;
+	}
+    }
+}
+
 /* Read from the usenet file.  Returns a Usenet subscription. */
 static UsenetSubscription read_usenet_file(tickertape_t self)
 {
     FILE *file;
     UsenetSubscription subscription;
+
+    /* Test our other parser */
+    parse_usenet_file(self);
 
     /* Open the usenet file and read */
     if ((file = tickertape_usenet_file(self)) == NULL)
