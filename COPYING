@@ -1,63 +1,33 @@
+Copyright (C) 1997-2004 Mantara Software (ABN 17 105 665 594).
+All rights reserved.
 
-    Elvin License
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
 
-    Copyright (C) DSTC Pty Ltd (ABN 48 052 372 577) 1995-2001.
-    All Rights Reserved.
+* Redistributions of source code must retain the above
+  copyright notice, this list of conditions and the following
+  disclaimer.
 
-    The software contained on this media (Software) is the property of the
-    DSTC Pty Ltd.  The following conditions apply:
+* Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following
+  disclaimer in the documentation and/or other materials
+  provided with the distribution.
 
-    - The DSTC grants you (hereafter, Licensee) a license to use the
-      Software for academic, research and non-commercial purposes only,
-      without a fee. Licensees may distribute unmodified versions of the
-      binary and source code of the Software to third parties under the
-      terms of this license but must ensure that such distribution is under
-      the terms of this license and this license is distributed along with
-      the binaries and source.
-      
-    - The DSTC imposes the following restrictions on any code developed
-      using the Software:
-      - DSTC retains a non-exclusive royalty-free license, including the
-        right of redistribution, to any modifications to the Software made
-        by the licensee.
-      - You may not distribute modified versions of the Software.
+* Neither the name of the Mantara Software nor the names
+  of its contributors may be used to endorse or promote
+  products derived from this software without specific prior
+  written permission.
 
-    - Any Licensee wishing to make commercial use of the Software should
-      contact the DSTC to negotiate an appropriate license for such
-      commercial use. Commercial use includes but is not limited to:
-      - integration of all or part of the source code into a product for
-        sale or commercial license by or on behalf of Licensee to third
-        parties, or,
-      - distribution of the binary code or source code to third parties
-        that need it to utilize a commercial product sold or licensed by or
-        on behalf of Licensee, or
-      - use in an internal operational environment.
-
-      Please contact elvin-licensing@dstc.com for details.
-
-    - This software is being provided "AS IS" without warranty of
-      any kind, express, implied or otherwise, including without
-      limitation, any warranty of merchantability or fitness for a
-      particular purpose
-
-    - In no event shall DSTC Pty Ltd be liable for any special,
-      incidental, indirect or consequential damages of any kind, or any
-      damages whatsoever resulting from loss of use, data or profits,
-      whether or not advised of the possibility of damage, and on any
-      theory of liability, arising out of or in connection with the use or
-      performance of the Software.
-
-    DSTC Pty Ltd welcomes comments and bug fixes related to the Software.
-    Please address any queries, comments or bug fixes (please include the
-    name and version of the Software you are using and details of your
-    operating system version) to the address below:
-
-          DSTC
-          Level 7, General Purpose South
-          University of Queensland, 4072
-	  Australia
-          Tel: +61 7 3365 4310
-          Fax: +61 7 3365 4311
-          Email: elvin@dstc.com
-
-          Web: http://elvin.dstc.com
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
