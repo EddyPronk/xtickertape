@@ -31,7 +31,7 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.10 2002/04/12 13:22:35 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.11 2003/01/27 15:20:01 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -97,5 +97,11 @@ void control_panel_show(control_panel_t self);
 
 /* Handle notifications */
 void control_panel_handle_notify(control_panel_t self, Widget widget);
+
+/* Show the previous item the user has sent */
+void control_panel_history_prev(control_panel_t self);
+
+/* Show the next item the user has sent */
+void control_panel_history_next(control_panel_t self);
 
 #endif /* CONTROLPANEL_H */

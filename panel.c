@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.75 2003/01/22 15:08:41 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.76 2003/01/27 15:20:01 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -79,6 +79,8 @@ static const char cvsid[] = "$Id: panel.c,v 1.75 2003/01/22 15:08:41 phelps Exp 
 
 #define TO_CODE "UTF-8"
 
+#define SEND_HISTORY_COUNT 10
+
 /*
  *
  * Layout (range: [0-3])
@@ -102,7 +104,10 @@ static const char cvsid[] = "$Id: panel.c,v 1.75 2003/01/22 15:08:41 phelps Exp 
 char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 
 /* The default message timeout */
-#define DEFAULT_TIMEOUT "5"
+#define DEFAULT_TIMEOUT 5
+
+/* The list of mime types */
+char *mime_types[] = { "x-elvin/url", "text/uri-list", NULL };
 
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
@@ -192,11 +197,14 @@ struct control_panel
     /* The receiver's timeout menu button */
     Widget timeout;
 
-    /* The receiver's default timeout menu button */
-    Widget default_timeout;
+    /* The widgets representing each of the possible timeouts */
+    Widget timeouts[XtNumber(timeouts)];
 
     /* The receiver's mime menu button */
     Widget mime_type;
+
+    /* The widgets representing the possible mime types */
+    Widget mime_types[XtNumber(mime_types)];
 
     /* The receiver's mime args text widget */
     Widget mime_args;
@@ -258,9 +266,6 @@ struct control_panel
     /* The currently selected subscription (group) */
     menu_item_tuple_t selection;
 
-    /* The list of timeouts to appear in the timeout menu */
-    char **timeouts;
-
     /* The message to which we are replying (NULL if none) */
     char *message_id;
 
@@ -274,6 +279,15 @@ struct control_panel
     /* Non-zero indicates that the elvin connection is currently
      * capable of sending a notification. */
     int is_connected;
+
+    /* The last few messages sent by the user */
+    message_t send_history[SEND_HISTORY_COUNT];
+
+    /* The index of the current item in the send history */
+    int send_history_point;
+
+    /* The next item in the send history */
+    int send_history_next;
 };
 
 
@@ -317,18 +331,20 @@ static void init_ui(control_panel_t self, Widget parent);
 
 static void select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignored);
 static void set_group_selection(control_panel_t self, menu_item_tuple_t tuple);
+static menu_item_tuple_t get_tuple_from_tag(control_panel_t self, char *tag);
 static void set_user(control_panel_t self, char *user);
 static char *get_user(control_panel_t self);
 static void set_text(control_panel_t self, char *text);
 static char *get_text(control_panel_t self);
 static void reset_timeout(control_panel_t self);
 static int get_timeout(control_panel_t self);
-static void set_mime_args(control_panel_t self, char *args);
 static char *get_mime_type(control_panel_t self);
+static void set_mime_args(control_panel_t self, char *args);
 static char *get_mime_args(control_panel_t self);
 
 static void create_uuid(control_panel_t self, char *uuid);
 static message_t construct_message(control_panel_t self);
+static void deconstruct_message(control_panel_t self, message_t message);
 
 static void action_send(Widget button, control_panel_t self, XtPointer ignored);
 static void action_clear(Widget button, control_panel_t self, XtPointer ignored);
@@ -658,7 +674,7 @@ static Widget create_timeout_menu(control_panel_t self, Widget parent)
 {
     Widget menu, widget;
     Arg args[2];
-    char **pointer;
+    int i;
 
     /* Create a pulldown menu */
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
@@ -669,19 +685,11 @@ static Widget create_timeout_menu(control_panel_t self, Widget parent)
     widget = XmCreateOptionMenu(parent, "timeout", args, 2);
 
     /* Fill in the recommended timeout values */
-    for (pointer = timeouts; *pointer != NULL; pointer++)
+    for (i = 0; timeouts[i] != NULL; i++)
     {
-	Widget item;
-
-	item = XtVaCreateManagedWidget(
-	    *pointer, xmPushButtonWidgetClass, menu,
+	self -> timeouts[i] = XtVaCreateManagedWidget(
+	    timeouts[i], xmPushButtonWidgetClass, menu,
 	    NULL);
-
-	/* Watch for the default */
-	if (strcmp(*pointer, DEFAULT_TIMEOUT) == 0)
-	{
-	    self -> default_timeout = item;
-	}
     }
 
     /* Manage the option button and return it */
@@ -943,6 +951,7 @@ static Widget create_mime_type_menu(control_panel_t self, Widget parent)
 {
     Widget pulldown, widget;
     Arg args[2];
+    int i;
 
     /* Create a pulldown menu */
     pulldown = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
@@ -952,15 +961,14 @@ static Widget create_mime_type_menu(control_panel_t self, Widget parent)
     XtSetArg(args[1], XmNtraversalOn, False);
     widget = XmCreateOptionMenu(parent, "mime_type", args, 2);
 
-    /* Add the old URL mime type to it */
-    XtVaCreateManagedWidget(
-	"x-elvin/url", xmPushButtonGadgetClass, pulldown,
-	NULL);
-
-    /* Add the accepted URL mime type to it */
-    XtVaCreateManagedWidget(
-	"text/uri-list", xmPushButtonGadgetClass, pulldown,
-	NULL);
+    /* Add each of the supported mime types to it */
+    for (i = 0; mime_types[i] != NULL; i++)
+    {
+	/* Add the  mime type to it */
+	self -> mime_types[i] = XtVaCreateManagedWidget(
+	    mime_types[i], xmPushButtonWidgetClass, pulldown,
+	    NULL);
+    }
 
     /* Manage the option button and return it */
     XtManageChild(widget);
@@ -1293,13 +1301,30 @@ static char *get_text(control_panel_t self)
 
 
 /* Sets the receiver's timeout */
+static void set_timeout(control_panel_t self, int value)
+{
+    int i;
+
+    /* Find the widget for the timeout */
+    for (i = 0; timeouts[i] != NULL; i++)
+    {
+	if (atoi(timeouts[i]) == value)
+	{
+	    XtCallActionProc(
+		self -> timeouts[i],
+		"ArmAndActivate", NULL,
+		NULL, 0);
+	    return;
+	} 
+    }
+
+    fprintf(stderr, "Timeout %d not found\n", value);
+}
+
+/* Sets the receiver's timeout to the default */
 static void reset_timeout(control_panel_t self)
 {
-    /* Pretend that the user selected the default timeout item */
-    XtCallActionProc(
-	self -> default_timeout,
-	"ArmAndActivate", NULL,
-	NULL, 0);
+    set_timeout(self, DEFAULT_TIMEOUT);
 }
 
 /* Answers the receiver's timeout */
@@ -1317,12 +1342,39 @@ static int get_timeout(control_panel_t self)
     }
     else
     {
-	result = atoi(DEFAULT_TIMEOUT);
+	result = DEFAULT_TIMEOUT;
     }
 
     /* Clean up */
     XmStringFree(string);
     return result;
+}
+
+/* Sets the receiver's MIME type. */
+static void set_mime_type(control_panel_t self, char *string)
+{
+    int i;
+
+    /* Find the widget */
+    for (i = 0; mime_types[i] != NULL; i++)
+    {
+	if (strcmp(mime_types[i], string) == 0)
+	{
+	    XtCallActionProc(
+		self -> mime_types[i],
+		"ArmAndActivate", NULL,
+		NULL, 0);
+	    return;
+	}
+    }
+
+    fprintf(stderr, "Mime Type `%s' not found\n", string);
+}
+
+/* Sets the receiver's MIME type to the default */
+static void reset_mime_type(control_panel_t self)
+{
+    set_mime_type(self, mime_types[0]);
 }
 
 /* Answers the receiver's MIME type.  Note: this string will need to
@@ -1506,6 +1558,92 @@ static message_t construct_message(control_panel_t self)
     return message;
 }
 
+/* Copy the message's Content-Type into the buffer and return a
+ * pointer to the MIME arg.  Note: this is a very dodgy hack that only
+ * works because we generate the buffer to begin with and can
+ * therefore be confident of its format.  FIX THIS: make this less of
+ * a hack and move it into message.c where we can share it. */
+static void extract_attachment(
+    char *attachment,
+    size_t length,
+    char *buffer, size_t buflen,
+    char **pointer_out)
+{
+    char *point;
+    char *mark;
+    int count;
+    int ch;
+
+    /* The Content-Type field starts a fixed distance from the start */
+    point = attachment + 32;
+    mark = strchr(point, ';');
+    if (mark == NULL)
+    {
+	abort();
+    }
+
+    count = length - 1 < mark - point ? length - 1 : mark - point;
+    strncpy(buffer, point, count);
+    buffer[count] = '\0';
+
+    /* Replace the last byte of the body (a newline) with a null */
+    ch = attachment[length - 1];
+    if (ch != '\n')
+    {
+	abort();
+    }
+
+    attachment[length - 1] = '\0';
+
+    /* The body starts a fixed distance from the semicolon */
+    *pointer_out = strdup(mark + 20);
+
+    /* Put the byte back */
+    attachment[length - 1] = ch;
+}
+
+/* Sets the control panel's state from the given message */
+static void deconstruct_message(control_panel_t self, message_t message)
+{
+    menu_item_tuple_t tuple;
+    char *attachment;
+    char mime_type[BUFFER_SIZE];
+    char *point;
+    size_t length;
+
+    /* Set the user field */
+    set_user(self, message_get_user(message));
+
+    /* Set the text field */
+    set_text(self, message_get_string(message));
+
+    /* Set the timeout */
+    set_timeout(self, message_get_timeout(message));
+
+    /* Select the message to which we're replying */
+    HistorySelectId(self -> history, message_get_reply_id(message));
+
+    /* Set the group */
+    if ((tuple = get_tuple_from_tag(self, message_get_info(message))) != NULL)
+    {
+	set_group_selection(self, tuple);
+    }
+
+    /* Decode the mime type and mime arg */
+    if (message_has_attachment(message))
+    {
+	length = message_get_attachment(message, &attachment);
+	extract_attachment(attachment, length, mime_type, BUFFER_SIZE, &point);
+	set_mime_type(self, mime_type);
+	set_mime_args(self, point);
+    }
+    else
+    {
+	reset_mime_type(self);
+	set_mime_args(self, "");
+    }
+}
+
 /*
  *
  * Actions
@@ -1518,9 +1656,24 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
     /* Make sure a group is selected */
     if (self -> selection != NULL)
     {
-	message_t message = construct_message(self);
+	message_t message;
+
+	/* Clear a spot in the message history */
+	if ((message = self -> send_history[self -> send_history_next]) != NULL)
+	{
+	    message_free(message);
+	}
+
+	/* Construct a new message */
+	message = construct_message(self);
+
+	/* Record it in the send history */
+	self -> send_history[self -> send_history_next] = message;
+	self -> send_history_next = (self -> send_history_next + 1) % SEND_HISTORY_COUNT;
+	self -> send_history_point = self -> send_history_next;
+
+	/* And send it too */
 	self -> selection -> callback(self -> selection -> rock, message);
-	message_free(message);
     }
 
     /* Clear the message field */
@@ -1617,7 +1770,6 @@ control_panel_t control_panel_alloc(tickertape_t tickertape, Widget parent)
     /* Set the receiver's contents to something sane */
     memset(self, 0, sizeof(struct control_panel));
     self -> tickertape = tickertape;
-    self -> timeouts = timeouts;
 
     /* Initialize the UI */
     init_ui(self, parent);
@@ -1670,6 +1822,8 @@ void control_panel_set_status(
 }
 
 /* Copies from the attachment into the buffer */
+/* FIX THIS: make this less of a hack and move it into message.c where
+ * we can share it */
 static void decode_attachment(
     char *attachment, size_t length,
     char *buffer, size_t buflen)
@@ -2121,4 +2275,48 @@ void control_panel_handle_notify(control_panel_t self, Widget widget)
 {
     /* Press the magic OK button */
     action_send(widget, self, NULL);
+}
+
+/* Show the previous item the user has sent */
+void control_panel_history_prev(control_panel_t self)
+{
+    message_t message;
+    int new_point;
+
+    /* See if there is a previous message to visit */
+    new_point = (SEND_HISTORY_COUNT + self -> send_history_point - 1) % SEND_HISTORY_COUNT;
+    if (new_point == self -> send_history_next || self -> send_history[new_point] == NULL)
+    {
+	return;
+    }
+
+    /* If we're leaving the current item then record what's there so far */
+    if (self -> send_history_point == self -> send_history_next)
+    {
+	/* Free the previous contents */
+	if ((message = self -> send_history[self -> send_history_next]) != NULL)
+	{
+	    message_free(message);
+	}
+
+	/* Record the current message in the history */
+	self -> send_history[self -> send_history_next] = construct_message(self);
+    }
+
+    /* Update the send history's point */
+    self -> send_history_point = new_point;
+    deconstruct_message(self, self -> send_history[self -> send_history_point]);
+}
+
+/* Show the next item the user has sent */
+void control_panel_history_next(control_panel_t self)
+{
+    /* Don't go past the end */
+    if (self -> send_history_point == self -> send_history_next)
+    {
+	return;
+    }
+
+    self -> send_history_point = (self -> send_history_point + 1) % SEND_HISTORY_COUNT;
+    deconstruct_message(self, self -> send_history[self -> send_history_point]);
 }
