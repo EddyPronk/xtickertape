@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: history.c,v 1.9 1999/08/22 06:22:43 phelps Exp $";
+static const char cvsid[] = "$Id: history.c,v 1.10 1999/08/22 07:55:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -297,6 +297,28 @@ static void history_thread_node(history_t self, history_node_t node)
 void history_set_list(history_t self, Widget list)
 {
     self -> list = list;
+}
+
+/* Sets the history's threadedness */
+void history_set_threaded(history_t self, int is_threaded)
+{
+    /* Make sure we're changing the value */
+    if (self -> is_threaded == is_threaded)
+    {
+	return;
+    }
+
+    /* Set our `threadedness' */
+    self -> is_threaded = is_threaded;
+
+    /* If we don't have a list to update then we're done */
+    if (self -> list == NULL)
+    {
+	return;
+    }
+
+    /* Update the list */
+    printf("should update the list!\n");
 }
 
 
