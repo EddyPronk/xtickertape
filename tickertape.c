@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.46 1999/12/16 07:52:11 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.47 2000/01/10 01:26:42 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -562,7 +562,15 @@ void tickertape_reload_groups(tickertape_t self)
     /* Read the new-and-improved groups file */
     if (parse_groups_file(self) < 0)
     {
-	perror("trouble reading groups file");
+	/* Clean up the mess */
+	for (index = 0; index < self -> groups_count; index++)
+	{
+	    group_sub_free(self -> grous[index]);
+	}
+
+	/* Put the old groups back into place */
+	self -> groups = old_groups;
+	self -> groups_count = old_count;
 	return;
     }
 
