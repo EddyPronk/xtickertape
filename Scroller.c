@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.17 1999/06/15 06:03:59 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.18 1999/06/15 07:54:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -148,7 +148,7 @@ static void Initialize(Widget request, Widget widget, ArgList args, Cardinal *nu
 static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes *attributes);
 static void Rotate(ScrollerWidget self);
 static void Redisplay(Widget widget, XEvent *event, Region region);
-static void Paint(ScrollerWidget self);
+static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height);
 static void Destroy(Widget widget);
 static void Resize(Widget widget);
 static Boolean SetValues(
@@ -366,7 +366,6 @@ static void Tick(XtPointer widget, XtIntervalId *interval)
     ScrollerWidget self = (ScrollerWidget) widget;
 
     Rotate(self);
-    Paint(self);
     Redisplay((Widget)self, NULL, 0);
     SetClock(self);
 }
@@ -648,7 +647,7 @@ static void Realize(Widget widget, XtValueMask *value_mask, XSetWindowAttributes
 	self -> core.depth);
 
     /* Clear the offscreen pixmap to the background color */
-    Paint(self);
+    Paint(self, 0, 0, self -> core.width, self -> core.height);
 
     /* Allocate colors */
     self -> scroller.groupPixels = CreateFadedColors(
@@ -684,11 +683,11 @@ static void OutWithTheOld(ScrollerWidget self)
 	    self -> scroller.realCount--;
 	}
 
+	/* Update the offset */
+	self -> scroller.offset -= holder -> width;
+
 	/* Free the view_holder_t */
 	view_holder_free(holder);
-
-	/* Reset the scroller offset to zero */
-	self -> scroller.offset = 0;
     }
 }
 
@@ -757,6 +756,15 @@ static void Rotate(ScrollerWidget self)
 {
     self -> scroller.offset += self -> scroller.step;
 
+    /* Scroll the pixmap */
+    XCopyArea(
+	XtDisplay(self), self -> scroller.pixmap,
+	self -> scroller.pixmap, self -> scroller.backgroundGC,
+	self -> scroller.step, 0,
+	self -> core.width - self -> scroller.step, self -> core.height,
+	0, 0);
+
+    /* Update any leftover bits */
     OutWithTheOld(self);
     InWithTheNew(self);
 
@@ -764,42 +772,56 @@ static void Rotate(ScrollerWidget self)
     if ((self -> scroller.realCount == 0) && List_isEmpty(self -> scroller.messages))
     {
 	StopClock(self);
+	return;
     }
+
+    /* Otherwise, update the ones on the rightmost edge */
+    Paint(
+	self, self -> core.width - self -> scroller.step, 0, 
+	self -> scroller.step, self -> core.height);
 }
 
 
 /* Repaints the view of each view_holder_t */
-static void Paint(ScrollerWidget self)
+static void Paint(ScrollerWidget self, int x, int y, unsigned int width, unsigned int height)
 {
     Widget widget = (Widget)self;
     view_holder_t holder;
-    long x;
+    long offset;
+    long next;
 
-    /* Reset the pixmap to the background color */
+    /* Reset this portion of the pixmap to the background color */
     XFillRectangle(
 	XtDisplay(widget), self -> scroller.pixmap, self -> scroller.backgroundGC,
-	0, 0, self -> core.width, self -> core.height);
+	x, y, width, height);
 
     /* Draw each visible view_holder_t */
-    x = -self -> scroller.offset;
+    offset = -self -> scroller.offset;
     for (holder = self -> scroller.holders; holder != NULL; holder = holder -> next)
     {
-	if (holder -> view != NULL)
-	{
-	    MessageView_redisplay(holder -> view, self -> scroller.pixmap, x, 0);
-	}
+	next = offset + holder -> width;
+	if (x <= next)
+	{	
+	    if (holder -> view != NULL)
+	    {
+		MessageView_redisplay(
+		    holder -> view, self -> scroller.pixmap, offset,
+		    x, y, width, height);
+	    }
 
 #ifdef DEBUG
-	if (self -> scroller.separatorPixels != NULL)
-	{
-	    ScGCForSeparator(self, 0);
+	    if (self -> scroller.separatorPixels != NULL)
+	    {
+		ScGCForSeparator(self, 0);
+	    }
+
+	    XDrawRectangle(
+		XtDisplay(widget), self -> scroller.pixmap, self -> scroller.gc,
+		offset, 0, holder -> width - 1, self -> core.height - 1);
+#endif /* DEBUG */
 	}
 
-	XDrawRectangle(
-	    XtDisplay(widget), self -> scroller.pixmap, self -> scroller.gc,
-	    x, 0, holder -> width - 1, self -> core.height - 1);
-#endif /* DEBUG */
-	x += holder -> width;
+	offset = next;
     }
 }
 
@@ -866,7 +888,7 @@ static void Resize(Widget widget)
     InWithTheNew(self);
 
     /* Repaint our offscreen pixmap and copy it to the display*/
-    Paint(self);
+    Paint(self, 0, 0, self -> core.width, self -> core.height);
     Redisplay(widget, NULL, 0);
 }
 
