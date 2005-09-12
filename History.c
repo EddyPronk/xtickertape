@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.79 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.80 2005/09/12 05:01:29 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -187,6 +187,8 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
 static void show_attachment(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_previous(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void scroll_up(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void scroll_down(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void scroll_left(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams);
 
@@ -199,6 +201,8 @@ static XtActionsRec actions[] =
     { "show-attachment", show_attachment },
     { "select-previous", select_previous },
     { "select-next", select_next },
+    { "scroll-up", scroll_up },
+    { "scroll-down", scroll_down },
     { "scroll-left", scroll_left },
     { "scroll-right", scroll_right }
 };
@@ -2247,6 +2251,42 @@ static void select_next(Widget widget, XEvent *event, String *params, Cardinal *
 
     /* Select the next item */
     set_selection_index(self, index);
+}
+
+/* Scroll the window up if we can */
+static void scroll_up(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    int increment;
+
+    /* Get the vertical scrollbar's increment */
+    XtVaGetValues(self -> history.vscrollbar, XmNincrement, &increment, NULL);
+
+    /* Move that far to the up */
+    set_origin(
+	self,
+	self -> history.x,
+	MAX(self -> history.y - increment, 0),
+	1);
+}
+
+/* Scroll the window down if we can */
+static void scroll_down(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    int increment;
+
+    /* Get the vertical scrollbar's increment */
+    XtVaGetValues(self -> history.vscrollbar, XmNincrement, &increment, NULL);
+
+    /* Move that far down */
+    set_origin(
+	self,
+	self -> history.x,
+	MIN(self -> history.y + increment,
+	self->history.height < self->core.height ?
+	    0 : self->history.height - self->core.height),
+	1);
 }
 
 /* Scroll the window left if we can */
