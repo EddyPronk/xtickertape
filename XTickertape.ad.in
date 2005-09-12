@@ -230,6 +230,8 @@ XTickertape.sendHistoryCapacity: 32
 	<Btn2Down>: select()\n\
 	<Btn2Motion>: drag()\n\
 	<Btn2Up>: show-attachment()\n\
+	<Btn4Down>: scroll-up()\n\
+	<Btn5Down>: scroll-down()\n\
 	<Key>Return: show-attachment()\n\
 	Ctrl<Key>p: select-previous()\n\
 	Ctrl<Key>n: select-next()\n\
