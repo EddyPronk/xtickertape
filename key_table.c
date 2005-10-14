@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.8 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.9 2005/10/14 07:29:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -544,6 +544,7 @@ static void get_sorted_entries(
             if (do_warn) {
                 fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n", key_names[i]);
             }
+            entries[i] = NULL;
         } else {
             entries[i] = *entry;
         }
