@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.90 2004/11/24 11:39:25 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.91 2006/01/12 17:52:12 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -61,6 +61,7 @@ static const char cvsid[] = "$Id: panel.c,v 1.90 2004/11/24 11:39:25 phelps Exp 
 #endif
 #include <elvin/elvin.h>
 #include <Xm/XmAll.h>
+#include <Xm/RowColumnP.h>
 #include <X11/Xmu/Editres.h>
 #include "globals.h"
 #include "replace.h"
@@ -686,6 +687,12 @@ static Widget create_group_menu(control_panel_t self, Widget parent)
     XtSetArg(args[0], XmNsubMenuId, self -> group_menu);
     XtSetArg(args[1], XmNtraversalOn, False);
     widget = XmCreateOptionMenu(parent, "group", args, 2);
+
+    /* HACK: tell the RowColumn widget what its cascade button is.
+     * Normally this is set when the Option is clicked on, but we need
+     * it to work before that happens, so we force it. */
+    ((XmRowColumnWidget)self->group_menu)->row_column.cascadeBtn =
+        XmOptionButtonGadget(widget);
 
     /* Manage the option button and return it */
     XtManageChild(widget);
