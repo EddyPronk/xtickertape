@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.91 2006/01/12 17:52:12 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.92 2006/01/13 15:42:14 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -115,7 +115,7 @@ char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 #define DEFAULT_TIMEOUT 5
 
 /* The list of mime types */
-char *mime_types[] = { "x-elvin/url", "text/uri-list", NULL };
+char *mime_types[] = { "text/uri-list", "x-elvin/url", NULL };
 
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
