@@ -7,7 +7,7 @@ Overview of changes in xtickertape-2.0
   the current selection even before the user clicks on it for the first time.
 
 * Changed the default attachment type from x-elvin/url to the standard
-* text/uri-list for better interoperation with other tickertape clients.
+  text/uri-list for better interoperation with other tickertape clients.
 
 Overview of changes in xtickertape-2.0rc1
 
