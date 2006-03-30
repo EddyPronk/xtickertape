@@ -296,6 +296,7 @@ static int begin_name(lexer_t self)
 static int end_name(lexer_t self)
 {
     char *name;
+    int length;
 
     /* Tidy up the string */
     if (end_string(self) < 0) {
@@ -305,8 +306,6 @@ static int end_name(lexer_t self)
     /* Check if we've already seen this name */
     name = self -> first_name_point;
     while (name < self -> length_point) {
-	int length;
-
 	/* Look for a match */
 	if (lstring_eq(name, self -> length_point)) {
 	    /* Already have this attribute.  Discard the new one. */
@@ -488,6 +487,8 @@ static int lex_name(lexer_t self, int ch)
 /* We've read a `-' in a name */
 static int lex_dash(lexer_t self, int ch)
 {
+    int result;
+
     /* Spaces are bogus in field names */
     if (isspace(ch)) {
 	self -> state = lex_error;
@@ -496,8 +497,6 @@ static int lex_dash(lexer_t self, int ch)
 
     /* A colon indicates the end of the field name */
     if (ch == ':') {
-	int result;
-
 	if ((result = end_name(self)) < 0)
 	{
 	    self -> state = lex_error;
