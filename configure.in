@@ -144,9 +144,9 @@ LIBS="$LIBS `$ELVIN_CONFIG --libs elvinXt`"
 # Make sure we link with the elvin libraries
 AC_TRY_LINK_FUNC(elvin_xt_init, ok=yes, ok=no)
 if test "$ok" = "no" ; then
-    echo "WARNING: \`libelvinXt' is missing on your system.  This is probably"
+    echo "WARNING: \`elvinXt' is missing on your system.  This is probably"
     echo "         due to the elvin4 libraries being compiled without xt"
-    echo "         support.  See the elvin4's --with-xt configure option."
+    echo "         support.  See the elvin's --with-xt configure option."
     exit 1
 fi
 
