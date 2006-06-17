@@ -6,7 +6,7 @@
 show-url \- show a URL in netscape
 .SH SYNOPSIS
 .nf
-show-url [OPTION]... filename
+show-url [OPTION]... [filename]
 show-url [OPTION]... -u url
 .fi
 .SH OPTIONS
@@ -46,7 +46,8 @@ and then exit.
 .SH DESCRIPTION
 \*(Su is deigned to be a handler for the text/uri-list MIME type.  It
 attempts to display the URL listed in the first line of \fIfilename\fP
-in a web browser.
+in a web browser.  If \fIfilename\fP is "-" or neither \fIfilename\fP
+or \fIurl\fP is given then the URL is read from stdin.
 .PP
 The command used to invoke the web browser is specified by the BROWSER
 environment variable, which is a colon-separated list of Bourne shell

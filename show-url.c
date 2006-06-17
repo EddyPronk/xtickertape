@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.16 2004/08/03 12:29:17 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.17 2006/06/17 10:23:11 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -566,17 +566,19 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /* If no URL provided then make sure there's a filename */
+    /* If no URL or filename provided then read from stdin */
     if (url == NULL)
     {
-	if (! (optind < argc))
-	{
-	    usage();
-	    exit(1);
-	}
+	if (optind < argc)
+        {
+            /* Get the filename */
+            filename = argv[optind++];
 
-	/* Get the filename */
-	filename = argv[optind++];
+            /* Treat '-' as a synonym for stdin */
+            if (strcmp(filename, "-") == 0) {
+                filename = NULL;
+            }
+        }
     }
 
     /* Make sure there are no more arguments */
@@ -587,34 +589,42 @@ int main(int argc, char *argv[])
     }
 
     /* Extract the URL from the file */
-    if (filename != NULL)
-    {
-	dprintf(3, "%s: reading URL from %s\n", progname, filename);
+    if (url == NULL) {
+        if (filename == NULL)
+        {
+            dprintf(3, "%s: reading URL from stdin\n", progname);
+            filename = "<stdin>";
+            file = stdin;
+        }
+        else 
+        {
+            dprintf(3, "%s: reading URL from %s\n", progname, filename);
+            
+            /* Read the URL from the file */
+            if ((file = fopen(filename, "r")) == NULL)
+            {
+                perror("Unable to open URL file");
+                exit(1);
+            }
+        }
 
-	/* Read the URL from the file */
-	if ((file = fopen(filename, "r")) == NULL)
-	{
-	    perror("Unable to open URL file");
-	    exit(1);
-	}
+        /* Read up to MAX_URL_SIZE bytes of it */
+        length = fread(buffer, 1, MAX_URL_SIZE, file);
+        buffer[length] = 0;
 
-	/* Read up to MAX_URL_SIZE bytes of it */
-	length = fread(buffer, 1, MAX_URL_SIZE, file);
-	buffer[length] = 0;
+        dprintf(2, "%s: raw URL: %s\n", progname, buffer);
 
-	dprintf(2, "%s: raw URL: %s\n", progname, buffer);
+        /* Clean up */
+        fclose(file);
 
-	/* Clean up */
-	fclose(file);
+        /* Duplicate its contents */
+        if ((url = strdup(buffer)) == NULL)
+        {
+            perror("malloc() failed");
+            exit(1);
+        }
 
-	/* Duplicate its contents */
-	if ((url = strdup(buffer)) == NULL)
-	{
-	    perror("malloc() failed");
-	    exit(1);
-	}
-
-	strcpy(url, buffer);
+        strcpy(url, buffer);
     }
 
     /* Initialize the command buffer */
