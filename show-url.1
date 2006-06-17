@@ -1,52 +1,52 @@
-.TH SHOW-URL 1 "1999 January 8"
-.ds su \fIshow-url\fP
-.ds Su \fIShow-url\fP
+.TH SHOW\-URL 1 "2006 June 17"
+.ds su \fIshow\-url\fP
+.ds Su \fIShow\-url\fP
 .UC 4
 .SH NAME
-show-url \- show a URL in netscape
+show\-url \- show a URL in netscape
 .SH SYNOPSIS
 .nf
-show-url [OPTION]... [filename]
-show-url [OPTION]... -u url
+show\-url [OPTION]... [filename]
+show\-url [OPTION]... \-u url
 .fi
 .SH OPTIONS
 \*(Su may be invoked with the following command-line option:
 .TP
-.B -b \fIbrowser\fP
+.B \-b \fIbrowser\fP
 .TP
-.BI --browser= browser
+.BI \-\-browser= browser
 Override the value of the BROWSER environment variable.  See
 DESCRIPTION below for details.
 .TP
-.B -d
+.B \-d
 .TP
-.B --debug
+.B \-\-debug
 .TP
-.BI --debug= level
+.BI \-\-debug= level
 Set the debug level.  Without a level, this will increase the
 debugging level by one.
 .TP
-.B -u \fIurl\fP
+.B \-u \fIurl\fP
 .TP
-.BI --url= url
+.BI \-\-url= url
 Display \fIurl\fP rather than reading one from a file.  If \fIurl\fP
 names a readable file then a corresponding file url will be
 constructed.  Otherwise \fIurl\fP will be passed to the browser
 without modification.
 .TP
-.B -v
+.B \-v
 .TP
-.B --version
-Print out the show-url version and exit.
-.B -h
+.B \-\-version
+Print out the show\-url version and exit.
+.B \-h
 .TP
-.B --help
+.B \-\-help
 Print a usage message briefly summarizing these command-line options
 and then exit.
 .SH DESCRIPTION
-\*(Su is deigned to be a handler for the text/uri-list MIME type.  It
+\*(Su is deigned to be a handler for the text/uri\-list MIME type.  It
 attempts to display the URL listed in the first line of \fIfilename\fP
-in a web browser.  If \fIfilename\fP is "-" or neither \fIfilename\fP
+in a web browser.  If \fIfilename\fP is "\-" or neither \fIfilename\fP
 or \fIurl\fP is given then the URL is read from stdin.
 .PP
 The command used to invoke the web browser is specified by the BROWSER
@@ -72,18 +72,18 @@ w3m
 This will open the URL in w3m in the current terminal window.
 .TP
 .B
-mozilla -raise -remote "openURL(%s,new-window)"
+mozilla \-raise \-remote "openURL(%s,new\-window)"
 Requests that the running mozilla process open the URL in a new
 window.
 .TP
 .B
-mozilla -raise -remote "openURL(%s,new-window)":w3m
+mozilla \-raise \-remote "openURL(%s,new\-window)":w3m
 A combination of the above two.  If mozilla cannot open the window
 because it isn't running or there's not even an X session, then w3m is
 invoked to display the URL.
 .TP
 .B
-netscape -raise -remote "openURL(%s,new-window)":lynx
+netscape \-raise \-remote "openURL(%s,new\-window)":lynx
 This is effectively the same as the previous example except that
 netscape replaces mozilla as the graphical browser, and lynx replaces
 w3m as the text-based one.
@@ -100,7 +100,7 @@ http://tuxedo.org/~esr/BROWSER/index.html
 .SH BUGS
 E-mail bug reports to
 .BR phelps@pobox.com .
-Be sure to include the word "show-url" somewhere in the "Subject:"
+Be sure to include the word "show\-url" somewhere in the "Subject:"
 field.
 .SH AUTHORS
 \*(Su was written by Ted Phelps <phelps@pobox.com>.  Additional help
