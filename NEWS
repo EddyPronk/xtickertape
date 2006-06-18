@@ -9,6 +9,8 @@ Overview of changes in xtickertape-2.0
 * Changed the default attachment type from x-elvin/url to the standard
   text/uri-list for better interoperation with other tickertape clients.
 
+* The show-url program can now read a URL from stdin.
+
 Overview of changes in xtickertape-2.0rc1
 
 * Notification format upgraded to conform to version 3.1 of the
