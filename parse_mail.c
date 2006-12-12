@@ -253,8 +253,10 @@ int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
     }
 
     /* Write the folder's name */
-    if (append_string_tuple(self, N_FOLDER, folder) < 0) {
-	return -1;
+    if (folder) {
+	if (append_string_tuple(self, N_FOLDER, folder) < 0) {
+	    return -1;
+	}
     }
 
     /* The first name will go next */
