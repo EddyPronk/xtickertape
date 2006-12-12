@@ -32,7 +32,6 @@
 /* Forward declarations for the state machine states */
 static int lex_error(lexer_t self, int ch);
 static int lex_start(lexer_t self, int ch);
-static int lex_first_name(lexer_t self, int ch);
 static int lex_name(lexer_t self, int ch);
 static int lex_dash(lexer_t self, int ch);
 static int lex_ws(lexer_t self, int ch);
@@ -367,10 +366,11 @@ static int lex_start(lexer_t self, int ch)
 	return 0;
     }
 
-    self->state = lex_first_name;
+    self->state = lex_name;
     return 0;
 }
 
+#if 0
 /* Reading the first field name */
 static int lex_first_name(lexer_t self, int ch)
 {
@@ -428,13 +428,48 @@ static int lex_first_name(lexer_t self, int ch)
     self->state = lex_first_name;
     return 0;
 }
+#endif
 
 /* Reading a field name */
 static int lex_name(lexer_t self, int ch)
 {
+    /* The first line of a the message may be an out-of-band
+     * 'From' line which doesn't end with a ':'.  In addition, MH
+     * will sometimes prepend additional header lines to a stored
+     * message and we don't want to choke on those, so we let that
+     * specific field slide. */
+    if (ch == ' ') {
+	/* Complete the name string */
+	if (end_string(self) < 0) {
+	    self->state = lex_error;
+	    return -1;
+	}
+
+	/* Is it a 'From' line? */
+	if (lstring_eq(self->length_point, from_string)) {
+	    /* Convert the first character to lowercase */
+	    self->length_point[4] = 'f';
+
+	    /* Discard the field if we've seen it before */
+	    if (have_name(self, self->length_point)) {
+		self->point = self->length_point;
+		self->state = lex_skip_body;
+		return 0;
+	    }
+
+	    /* Otherwise read the field body */
+	    self->state = lex_ws;
+	    return 0;
+	}
+    }
+
+    /* If we find whitespace in a header field name there's a good
+     * chance that we're actualy in the message body, so just pretend
+     * that we are. */
     if (isspace(ch)) {
-	self->state = lex_error;
-	return -1;
+	self->point = self->length_point;
+	self->state = lex_end;
+	return 0;
     }
 
     /* A colon is the end of the field name */
@@ -475,10 +510,13 @@ static int lex_name(lexer_t self, int ch)
 /* We've read a `-' in a name */
 static int lex_dash(lexer_t self, int ch)
 {
-    /* Spaces are bogus in field names */
+    /* If we find whitespace in a header field name there's a good
+     * chance that we're actualy in the message body, so just pretend
+     * that we are. */
     if (isspace(ch)) {
-	self->state = lex_error;
-	return -1;
+	self->point = self->length_point;
+	self->state = lex_end;
+	return 0;
     }
 
     /* A colon indicates the end of the field name */
@@ -619,9 +657,11 @@ static int lex_fold(lexer_t self, int ch)
 	return -1;
     }
 
-    /* A colon here is an error */
+    /* Colons aren't allowed here, so if we see one we're probably
+     * just in the message body. */
     if (ch == ':') {
-	self->state = lex_error;
+	self->point = self->length_point;
+	self->state = lex_end;
 	return 0;
     }
 
