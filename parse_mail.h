@@ -47,4 +47,7 @@ int lex(lexer_t self, char *buffer, ssize_t length);
 /* Writes the UNotify packet footer */
 int lexer_append_unotify_footer(lexer_t self, int msg_num);
 
+/* Returns the size of the buffer */
+size_t lexer_size(lexer_t self);
+
 #endif /* PARSE_MAIL_H */

@@ -719,7 +719,11 @@ static int lex_end(lexer_t self, int ch)
     return 0;
 }
 
-
+/* Returns the size of the buffer */
+size_t lexer_size(lexer_t self)
+{
+    return self->point - self->buffer;
+}
 
 /* Run the buffer through the lexer */
 int lex(lexer_t self, char *buffer, ssize_t length)
