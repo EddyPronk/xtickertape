@@ -370,66 +370,6 @@ static int lex_start(lexer_t self, int ch)
     return 0;
 }
 
-#if 0
-/* Reading the first field name */
-static int lex_first_name(lexer_t self, int ch)
-{
-    /* SPECIAL CASE: the first line of may an out-of-band `From' line
-     * in which the `From' doesn't end in a colon. */
-    if (ch == ' ') {
-	/* Complete the name string */
-	if (end_string(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
-
-	/* Make sure it matches `From' */
-	if (!lstring_eq(self->length_point, from_string)) {
-	    self->state = lex_error;
-	    return -1;
-	}
-
-	/* Convert the first character to lowercase */
-	self->length_point[4] = 'f';
-
-	self->state = lex_ws;
-	return 0;
-    }
-
-    /* Other whitespace is an error */
-    if (isspace(ch)) {
-	self->state = lex_error;
-	return -1;
-    }
-
-    /* A colon is the end of the field name */
-    if (ch == ':') {
-	if (end_string(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
-
-	self->state = lex_ws;
-	return 0;
-    }
-
-    /* Anything else is part of the field name */
-    if (append_char(self, tolower(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
-    }
-
-    /* Watch for dashes */
-    if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
-    }
-
-    self->state = lex_first_name;
-    return 0;
-}
-#endif
-
 /* Reading a field name */
 static int lex_name(lexer_t self, int ch)
 {
