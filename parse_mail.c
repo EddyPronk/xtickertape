@@ -287,32 +287,18 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
 }
 
 
-
-/* Begin an attribute name */
-static int begin_name(lexer_t self)
-{
-    return begin_string(self);
-}
-
-/* End an attribute name */
-static int end_name(lexer_t self)
+/* Determine whether or not we have a field with a given name */
+static int
+have_name(lexer_t self, const char *lstring)
 {
     char *name;
     int length;
-
-    /* Tidy up the string */
-    if (end_string(self) < 0) {
-	return -1;
-    }
 
     /* Check if we've already seen this name */
     name = self->first_name_point;
     while (name < self->length_point) {
 	/* Look for a match */
-	if (lstring_eq(name, self -> length_point)) {
-	    /* Already have this attribute.  Discard the new one. */
-	    self->point = self -> length_point;
-	    self->state = lex_skip_body;
+	if (lstring_eq(name, lstring)) {
 	    return 1;
 	}
 
@@ -364,7 +350,7 @@ static int lex_start(lexer_t self, int ch)
     }
 
     /* Start a name field */
-    if (begin_name(self) < 0) {
+    if (begin_string(self) < 0) {
 	self->state = lex_error;
 	return -1;
     }
@@ -392,13 +378,13 @@ static int lex_first_name(lexer_t self, int ch)
      * in which the `From' doesn't end in a colon. */
     if (ch == ' ') {
 	/* Complete the name string */
-	if (end_name(self) < 0) {
+	if (end_string(self) < 0) {
 	    self->state = lex_error;
 	    return -1;
 	}
 
 	/* Make sure it matches `From' */
-	if (! lstring_eq(self->length_point, from_string)) {
+	if (!lstring_eq(self->length_point, from_string)) {
 	    self->state = lex_error;
 	    return -1;
 	}
@@ -418,7 +404,7 @@ static int lex_first_name(lexer_t self, int ch)
 
     /* A colon is the end of the field name */
     if (ch == ':') {
-	if (end_name(self) < 0) {
+	if (end_string(self) < 0) {
 	    self->state = lex_error;
 	    return -1;
 	}
@@ -446,8 +432,6 @@ static int lex_first_name(lexer_t self, int ch)
 /* Reading a field name */
 static int lex_name(lexer_t self, int ch)
 {
-    int result;
-
     if (isspace(ch)) {
 	self->state = lex_error;
 	return -1;
@@ -455,13 +439,15 @@ static int lex_name(lexer_t self, int ch)
 
     /* A colon is the end of the field name */
     if (ch == ':') {
-	if ((result = end_name(self)) < 0) {
+	/* Finish the string */
+	if (end_string(self) < 0) {
 	    self->state = lex_error;
 	    return -1;
 	}
 
-	/* Watch for repeated names */
-	if (result) {
+	/* Discard the field if we've seen it before */
+	if (have_name(self, self->length_point)) {
+	    self->point = self->length_point;
 	    self->state = lex_skip_body;
 	    return 0;
 	}
@@ -489,8 +475,6 @@ static int lex_name(lexer_t self, int ch)
 /* We've read a `-' in a name */
 static int lex_dash(lexer_t self, int ch)
 {
-    int result;
-
     /* Spaces are bogus in field names */
     if (isspace(ch)) {
 	self->state = lex_error;
@@ -499,13 +483,15 @@ static int lex_dash(lexer_t self, int ch)
 
     /* A colon indicates the end of the field name */
     if (ch == ':') {
-	if ((result = end_name(self)) < 0) {
+	/* Finish the string */
+	if (end_string(self) < 0) {
 	    self->state = lex_error;
 	    return -1;
 	}
 
-	/* Watch for repeated names */
-	if (result) {
+	/* Discard the field if we've seen it before */
+	if (have_name(self, self->length_point)) {
+	    self->point = self->length_point;
 	    self->state = lex_skip_body;
 	    return 0;
 	}
@@ -640,7 +626,7 @@ static int lex_fold(lexer_t self, int ch)
     }
 
     /* Anything else is the start of the next field */
-    if (begin_name(self) < 0) {
+    if (begin_string(self) < 0) {
 	self->state = lex_error;
 	return -1;
     }
@@ -691,7 +677,7 @@ static int lex_skip_fold(lexer_t self, int ch)
     }
 
     /* Anything else is the beginning of the next name */
-    if (begin_name(self) < 0) {
+    if (begin_string(self) < 0) {
 	self->state = lex_error;
 	return -1;
     }
