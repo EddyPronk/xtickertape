@@ -761,7 +761,7 @@ int lex(lexer_t self, char *buffer, ssize_t length)
 	return self->state(self, EOF);
     }
 
-    for (point = buffer; point < buffer + length; point++) {
+    for (point = buffer; point < buffer + length && self->state != lex_end; point++) {
 	if (self->state(self, *point) < 0) {
 	    return -1;
 	}
