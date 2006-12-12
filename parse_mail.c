@@ -44,7 +44,7 @@ static int lex_skip_fold(lexer_t self, int ch);
 static int lex_end(lexer_t self, int ch);
 
 /* The length-prefixed string `From' */
-static char from_string[] = { 0, 0, 0, 4, 'F', 'r', 'o', 'm' };
+static const char *from_string = "\0\0\0\4From";
 
 /* Initializes a lexer's state */
 void lexer_init(lexer_t self, char *buffer, ssize_t length)
@@ -69,7 +69,7 @@ static void write_int32(char *buffer, int value)
 }
 
 /* Reads an int32 from a buffer */
-static int read_int32(char *buffer)
+static int read_int32(const char *buffer)
 {
     unsigned char *point = (unsigned char *)buffer;
     return (point[0] << 24) | (point[1] << 16) | (point[2] << 8) | (point[3] << 0);
@@ -147,7 +147,7 @@ static int append_string(lexer_t self, char *string)
 }
 
 /* Compares two length-prefixed strings for equality */
-static int lstring_eq(char *string1, char *string2)
+static int lstring_eq(const char *string1, const char *string2)
 {
     int len, i;
 
