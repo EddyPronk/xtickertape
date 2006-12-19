@@ -32,6 +32,18 @@ struct lexer
 
     /* The position of the length of the current string */
     char *length_point;
+
+    /* The RFC 1522-encoded word lexer state */
+    int rfc1522_state;
+
+    /* The start of the encoded word */
+    char *enc_word_point;
+
+    /* The start of the encoding field */
+    char *enc_enc_point;
+
+    /* The start of the encoded text */
+    char *enc_text_point;
 };
 
 
