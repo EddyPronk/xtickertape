@@ -266,12 +266,13 @@ ascii_to_utf8(const char *string, char *buffer, size_t buflen)
     while (out < end) {
 	/* Copy the character */
 	ch = *(unsigned char *)in++;
-	*out++ = ch;
-
 	if (ch == 0) {
+	    *out = ch;
 	    return out - buffer;
 	} else if (ch & 0x80) {
 	    return -1;
+	} else {
+	    *out++ = ch;
 	}
     }
 
@@ -328,7 +329,7 @@ utf8_to_utf8(const char *string, char *buffer, size_t buflen)
 	/* Make sure it's legal */
 	if (state == 0) {
 	    if (ch == 0) {
-		return out - buffer;
+		return out - buffer - 1;
 	    } else if (~ch & 0x80) {
 		state = 0;
 	    } else if (~ch & 0x40) {
