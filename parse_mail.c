@@ -37,13 +37,19 @@
 
 #define ALIGN_4(x) ((((x) + 3) >> 2) << 2)
 
-#define ENC_BASE64 1
-#define ENC_QPRINT 2
+typedef enum
+{
+    ENC_BASE64,
+    ENC_QPRINT
+} enc_t;
 
-#define CSET_OTHER 0
-#define CSET_US_ASCII 1
-#define CSET_UTF_8 2
-#define CSET_ISO_8859_1 3
+typedef enum
+{
+    CSET_OTHER,
+    CSET_US_ASCII,
+    CSET_UTF_8,
+    CSET_ISO_8859_1
+} charset_t;
 
 /* Forward declarations for the state machine states */
 static int lex_error(lexer_t self, int ch);
@@ -378,8 +384,10 @@ rfc1522_decode(const char *charset,
 	       char *buffer, size_t buflen)
 {
     char buf[256];
-    int enc, cset, i;
+    enc_t enc;
+    charset_t cset;
     ssize_t len;
+    int i;
 #if defined(HAVE_ICONV)
     iconv_t cd = (iconv_t)-1;
 #endif /* HAVE_ICONV */
@@ -422,11 +430,14 @@ rfc1522_decode(const char *charset,
 
     /* We recognize the encoding and character set, so we should be
      * good to go.  Decode the string. */
-    if (enc == ENC_BASE64) {
+    switch (enc) {
+    case ENC_BASE64:
 	len = base64_decode(text, buf, sizeof(buf));
-    } else {
-	assert(enc == ENC_QPRINT);
+	break;
+
+    case ENC_QPRINT:
 	len = qprint_decode(text, buf, sizeof(buf));
+	break;
     }
 
     /* Bail out if the decoding failed */
@@ -452,14 +463,14 @@ rfc1522_decode(const char *charset,
 	len = ascii_to_utf8(buf, buffer, buflen);
 	break;
 
-    default:
+    case CSET_OTHER:
 #if defined(HAVE_ICONV)
 	assert(cset == CSET_OTHER);
 	len = other_to_utf8(cd, buf, len, buffer, buflen);
+	break;
 #else /* !HAVE_ICONV */
 	abort();
 #endif /* HAVE_ICONV */
-	break;
     }
 
 #if defined(HAVE_ICONV)
