@@ -973,29 +973,28 @@ static int lex_body(lexer_t self, int ch)
     int len;
     char buffer[256];
 
-    /* Try to fold on LF */
-    if (ch == '\n') {
-	self->state = lex_fold;
-	return 0;
-    }
-
     /* Watch for RFC 1522-encoded words */
     switch (self->rfc1522_state) {
     case 0:
-	self->rfc1522_state = (ch == '=') ? 1 : 0;
+    case 10:
+	self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
 	self->enc_word_point = self->point;
 	break;
 
     case 1:
-	self->rfc1522_state = (ch == '?') ? 2 : (ch == '=') ? 1 : 0;
+    case 11:
+	self->rfc1522_state = (ch == '?') ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
 	break;
 
     case 2:
-	self->rfc1522_state = istoken(ch) ? 3 : (ch == '=') ? 1 : 0;
+    case 12:
+	self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
 	break;
 
     case 3:
+    case 13:
     case 5:
+    case 15:
 	if (ch == '?') {
 	    self->rfc1522_state++;
 	} else if (!istoken(ch)) {
@@ -1004,18 +1003,21 @@ static int lex_body(lexer_t self, int ch)
 	break;
 
     case 4:
+    case 14:
 	self->enc_enc_point = self->point;
-	self->rfc1522_state = istoken(ch) ? 5 : (ch == '=') ? 1 : 0;
+	self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
 	break;
 
     case 6:
+    case 16:
 	self->enc_text_point = self->point;
-	self->rfc1522_state = isenc(ch) ? 7 : (ch == '=') ? 1 : 0;
+	self->rfc1522_state = isenc(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
 	break;
 
     case 7:
+    case 17:
 	if (ch == '?') {
-	    self->rfc1522_state = 8;
+	    self->rfc1522_state++;
 	} else if (!isenc(ch)) {
 	    self->point[0] = 0;
 	    self->rfc1522_state = (ch == '=') ? 1 : 0;
@@ -1023,47 +1025,54 @@ static int lex_body(lexer_t self, int ch)
 	break;
 
     case 8:
-	self->rfc1522_state = 0;
-	if (ch == '=') {
+    case 18:
+	self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
+	break;
+
+    case 9:
+    case 19:
+#ifdef DEBUG
+	*self->point = 0;
+	printf("encoded word: \"%s\"\n", self->enc_word_point);
+#endif /* DEBUG */
+
+	/* Null-terminate the component strings */
+	assert(self->enc_text_point[-1] == '?');
+	self->enc_text_point[-1] = 0;
+	assert(self->enc_enc_point[-1] == '?');
+	self->enc_enc_point[-1] = 0;
+	assert(self->point[-2] == '?');
+	self->point[-2] = 0;
+
+	/* Decode the string */
+	len = rfc1522_decode(self->enc_word_point + 2,
+			     self->enc_enc_point,
+			     self->enc_text_point,
+			     buffer, sizeof(buffer));
+	if (len < 0) {
+	    /* Unable to decode; revert the string and carry on */
+#ifdef DEBUG
+	    printf("decoding failed\n");
+#endif /* DEBUG */
+	    self->enc_text_point[-1] = '?';
+	    self->enc_enc_point[-1] = '?';
+	    self->point[-2] = '?';
 	    self->rfc1522_state = 0;
-
-#ifdef DEBUG
-	    self->point[0] = ch;
-	    self->point[1] = 0;
-	    printf("encoded word: %s\n", self->enc_word_point);
-#endif /* DEBUG */
-
-	    /* Null-terminate the component strings */
-	    assert(self->enc_text_point[-1] == '?');
-	    self->enc_text_point[-1] = 0;
-	    assert(self->enc_enc_point[-1] == '?');
-	    self->enc_enc_point[-1] = 0;
-	    assert(self->point[-1] == '?');
-	    self->point[-1] = 0;
-
-	    /* Decode the string */
-	    len = rfc1522_decode(self->enc_word_point + 2,
-				 self->enc_enc_point,
-				 self->enc_text_point,
-				 buffer, sizeof(buffer));
-	    if (len < 0) {
-		/* Unable to decode; revert the string and carry on */
-#ifdef DEBUG
-		printf("decoding failed\n");
-#endif /* DEBUG */
-		self->enc_text_point[-1] = '?';
-		self->enc_enc_point[-1] = '?';
-		self->point[-1] = '?';
-	    } else {
-		/* Decoded; copy it into place */
-		memcpy(self->enc_word_point, buffer, len);
-		self->point = self->enc_word_point + len;
-#ifdef DEBUG
-		*self->point = 0;
-		printf("decoded word: %s\n", self->enc_word_point);
-#endif /* DEBUG */
-		return 0;
+	} else {
+	    /* Decoded; copy it into place.  If we're in state 19 then
+	     * we need to overwrite the preceding space too. */
+	    if (self->rfc1522_state == 19) {
+		self->enc_word_point--;
 	    }
+	    memcpy(self->enc_word_point, buffer, len);
+	    self->point = self->enc_word_point + len;
+#ifdef DEBUG
+	    *self->point = 0;
+	    printf("decoded w%crd: \"%s\"\n", 
+		   self->rfc1522_state == 19 ? '*' : 'o',
+		   self->enc_word_point);
+#endif /* DEBUG */
+	    self->rfc1522_state = isspace(ch) ? 10 : 0;
 	}
 	break;
 
@@ -1071,9 +1080,9 @@ static int lex_body(lexer_t self, int ch)
 	abort();
     }
 
-    /* Compress whitespace */
+    /* Try to fold on LF */
     if (isspace(ch)) {
-	self->state = lex_body_ws;
+	self->state = (ch == '\n') ? lex_fold : lex_body_ws;
 	return 0;
     }
 
