@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     char *path = NULL;
     char *folder = NULL;
     char *point;
-    int err, i, choice;
+    int err, choice;
     int fd = STDIN_FILENO;
     int sock = -1;
     ssize_t len;
@@ -167,6 +167,9 @@ int main(int argc, char *argv[])
 	}
     }
 
+    /* Set the filename if reading from stdin */
+    path = path ? path : "<stdin>";
+
     /* See if a host name was given */
     if (optind < argc) {
 	host = argv[optind++];
@@ -218,13 +221,13 @@ int main(int argc, char *argv[])
     do {
 	if ((len = read(fd, buffer, sizeof(buffer))) < 0) {
 	    fprintf(stderr, "%s: unable to read from file %s: %s\n",
-		    progname, argv[i], strerror(errno));
+		    progname, path, strerror(errno));
 	    exit(1);
 	}
 
 	if (lex(&lexer, buffer, len) < 0) {
 	    fprintf(stderr, "%s: error parsing file %s: %d\n",
-		    progname, argv[i], errno);
+		    progname, path, errno);
 	    break;
 	}
 
@@ -238,7 +241,7 @@ int main(int argc, char *argv[])
     /* Close the input file */
     if (close(fd) < 0) {
 	fprintf(stderr, "%s: error: unable to close file %s: %s\n",
-		progname, argv[i], strerror(errno));
+		progname, path, strerror(errno));
     }
 
     if (do_send) {
