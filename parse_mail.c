@@ -207,7 +207,7 @@ qprint_decode(const char *string, char *buffer, size_t buflen)
     char *end = buffer + buflen;
     int ch, state, digit, num;
 
-    state = 0;
+    state = num = 0;
     while (out < end) {
 	ch = *in++;
 
@@ -439,6 +439,9 @@ rfc1522_decode(const char *charset,
     case ENC_QPRINT:
 	len = qprint_decode(text, buf, sizeof(buf));
 	break;
+
+    default:
+	abort();
     }
 
     /* Bail out if the decoding failed */
