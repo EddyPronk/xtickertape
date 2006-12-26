@@ -188,7 +188,9 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
-    if (do_send) {
+    if (!do_send) {
+	addr = NULL;
+    } else {
 	/* Look up the address */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = SOCK_DGRAM;
