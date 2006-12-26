@@ -91,7 +91,7 @@ xwrite(int fd, const char *buffer, size_t len)
     end = point + len;
     while (point < end) {
 	if ((res = write(fd, point, end - point)) < 0) {
-	    exit(77);
+	    exit(1);
 	}
 
 	assert(res != 0);
