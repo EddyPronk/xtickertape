@@ -443,9 +443,11 @@ rfc1522_decode(const char *charset,
 
     /* Bail out if the decoding failed */
     if (len < 0) {
+#if defined(HAVE_ICONV)
 	if (cd != (iconv_t)-1) {
 	    iconv_close(cd);
 	}
+#endif /* HAVE_ICONV */
 	return -1;
     }
 
