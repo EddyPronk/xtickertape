@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <assert.h>
+#include <pwd.h>
 #include "parse_mail.h"
 
 #define DEFAULT_HOST "localhost"
@@ -19,7 +20,7 @@
 #define MAX_PACKET_SIZE 8192
 #define BUFFER_SIZE 4096
 
-#define OPTIONS "df:hi:nv"
+#define OPTIONS "df:hi:nu:v"
 
 static const char *progname;
 
@@ -31,6 +32,7 @@ usage(void)
 	    "    -f folder\tinclude the folder name in the notification\n"
 	    "    -d\t\tproduce a hexdump of the notification\n"
 	    "    -n\t\tdon't actually send the notification\n"
+	    "    -u user\tsend notification for user\n"
 	    "    -h\t\tprint this brief help message\n"
 	    "    -v\t\tprint version information and exit\n",
 	    progname);
@@ -103,12 +105,14 @@ int main(int argc, char *argv[])
 {
     struct lexer lexer;
     struct addrinfo *addrinfo, *addr, hints;
+    struct passwd *pwent;
     char packet[MAX_PACKET_SIZE];
     char buffer[BUFFER_SIZE];
     char *host = DEFAULT_HOST;
     char *serv = DEFAULT_SERV;
     char *path = NULL;
     char *folder = NULL;
+    char *user = NULL;
     char *point;
     int err, choice;
     int fd = STDIN_FILENO;
@@ -154,6 +158,10 @@ int main(int argc, char *argv[])
 	    do_send = 0;
 	    break;
 
+	case 'u':
+	    user = optarg;
+	    break;
+
 	case 'v':
  	    printf("%s (" PACKAGE ") version " VERSION "\n", progname);
 	    exit(0);
@@ -188,6 +196,26 @@ int main(int argc, char *argv[])
 	exit(1);
     }
 
+    /* If no user was specified then guess one. */
+    if (user == NULL) {
+	user = getenv("USER");
+    }
+
+    if (user == NULL) {
+	user = getenv("LOGNAME");
+    }
+
+    if (user == NULL) {
+	pwent = getpwuid(getuid());
+	if (pwent) {
+	    user = pwent->pw_name;
+	}
+    }
+
+    if (user == NULL) {
+	user = "unknown";
+    }
+
     if (!do_send) {
 	addr = NULL;
     } else {
@@ -217,7 +245,7 @@ int main(int argc, char *argv[])
 
     /* Initialize the lexer */
     lexer_init(&lexer, packet, sizeof(packet));
-    lexer_append_unotify_header(&lexer, "phelps", folder);
+    lexer_append_unotify_header(&lexer, user, folder);
 
     /* Digest the message while copying it to stdout */
     do {
