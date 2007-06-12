@@ -20,7 +20,7 @@
 #define MAX_PACKET_SIZE 8192
 #define BUFFER_SIZE 4096
 
-#define OPTIONS "df:hi:nu:v"
+#define OPTIONS "df:hi:Nnu:v"
 
 static const char *progname;
 
@@ -32,6 +32,7 @@ usage(void)
 	    "    -f folder\tinclude the folder name in the notification\n"
 	    "    -d\t\tproduce a hexdump of the notification\n"
 	    "    -n\t\tdon't actually send the notification\n"
+	    "    -N\t\tdon't copy stdin to stdout\n"
 	    "    -u user\tsend notification for user\n"
 	    "    -h\t\tprint this brief help message\n"
 	    "    -v\t\tprint version information and exit\n",
@@ -120,6 +121,7 @@ int main(int argc, char *argv[])
     ssize_t len;
     int do_hexdump = 0;
     int do_send = 1;
+    int do_pipe = 1;
 
     /* Determine the basename of the executable */
     point = strrchr(argv[0], '/');
@@ -156,6 +158,10 @@ int main(int argc, char *argv[])
 
 	case 'n':
 	    do_send = 0;
+	    break;
+
+	case 'N':
+	    do_pipe = 0;
 	    break;
 
 	case 'u':
@@ -262,7 +268,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* Copy the input to stdout */
-	xwrite(STDOUT_FILENO, buffer, len);
+	if (do_pipe) {
+	    xwrite(STDOUT_FILENO, buffer, len);
+	}
     } while (len != 0);
 
     /* Add the footer */
