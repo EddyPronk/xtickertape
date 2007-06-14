@@ -595,7 +595,7 @@ static int append_string(lexer_t self, const char *string)
 /* Compares two length-prefixed strings for equality */
 static int lstring_eq(const char *string1, const char *string2)
 {
-    int len, i;
+    int len;
 
     /* First compare the lengths */
     len = read_int32(string1);
@@ -607,13 +607,7 @@ static int lstring_eq(const char *string1, const char *string2)
     string2 += 4;
 
     /* Then compare all chars */
-    for (i = 0; i < len; i++) {
-	if (string1[i] != string2[i]) {
-	    return 0;
-	}
-    }
-
-    return 1;
+    return memcmp(string1, string2, len) == 0;
 }
 
 /* Appends an int32 attribute to the buffer */
