@@ -29,11 +29,11 @@
 #define VERSION_MAJOR 2
 #define VERSION_MINOR 0
 
+#define N_FOLDER "folder"
+#define N_INDEX "index"
+#define N_USER "user"
 #define N_VERSION_MAJOR "elvinmail"
 #define N_VERSION_MINOR "elvinmail.minor"
-#define N_FOLDER "folder"
-#define N_USER "user"
-#define N_INDEX "index"
 
 #define ALIGN_4(x) ((((x) + 3) >> 2) << 2)
 
