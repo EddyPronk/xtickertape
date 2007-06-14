@@ -744,8 +744,8 @@ have_name(lexer_t self, const char *lstring)
 
 	/* Skip to the next name */
 	length = read_int32(name);
-	name += ALIGN_4(length) + 8;
-	length = read_int32(name);
+	length = ALIGN_4(length) + 8;
+	length += read_int32(name + length);
 	name += ALIGN_4(length) + 4;
     }
 
