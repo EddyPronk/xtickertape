@@ -575,9 +575,9 @@ static int append_char(lexer_t self, int ch)
 }
 
 /* Appends a C string to the buffer */
-static int append_string(lexer_t self, char *string)
+static int append_string(lexer_t self, const char *string)
 {
-    char *point;
+    const char *point;
 
     begin_string(self);
     for (point = string; *point != '\0'; point++) {
@@ -639,7 +639,7 @@ static int append_int32_tuple(lexer_t self, char *name, int value)
 }
 
 /* Appends a string attribute to the buffer */
-static int append_string_tuple(lexer_t self, char *name, char *value)
+static int append_string_tuple(lexer_t self, const char *name, const char *value)
 {
     /* Write the name */
     if (append_string(self, name) < 0) {
