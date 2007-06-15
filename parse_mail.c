@@ -610,6 +610,32 @@ static int lstring_eq(const char *string1, const char *string2)
     return memcmp(string1, string2, len) == 0;
 }
 
+/* Find a string value in the buffer. */
+static const char *
+find_name(lexer_t self, const char *lstring)
+{
+    char *name;
+    int length;
+
+    /* Look for the name. */
+    name = self->first_name_point;
+    while (name < self->length_point) {
+	/* Look for the match. */
+	if (lstring_eq(name, lstring)) {
+	    length = read_int32(name);
+	    return name + ALIGN_4(length) + 8;
+	}
+
+	/* Skip to the next name. */
+	length = read_int32(name);
+	length = ALIGN_4(length) + 8;
+	length += read_int32(name + length);
+	name += ALIGN_4(length) + 4;
+    }
+
+    return NULL;
+}
+
 /* Appends an int32 attribute to the buffer */
 static int append_int32_tuple(lexer_t self, char *name, int value)
 {
@@ -726,33 +752,6 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
     return append_int32(self, 0);
 }
 
-
-/* Determine whether or not we have a field with a given name */
-static int
-have_name(lexer_t self, const char *lstring)
-{
-    char *name;
-    int length;
-
-    /* Check if we've already seen this name */
-    name = self->first_name_point;
-    while (name < self->length_point) {
-	/* Look for a match */
-	if (lstring_eq(name, lstring)) {
-	    return 1;
-	}
-
-	/* Skip to the next name */
-	length = read_int32(name);
-	length = ALIGN_4(length) + 8;
-	length += read_int32(name + length);
-	name += ALIGN_4(length) + 4;
-    }
-
-    return 0;
-}
-
-
 /* Begin an attribute string value */
 static int begin_string_value(lexer_t self)
 {
@@ -832,7 +831,7 @@ static int lex_name(lexer_t self, int ch)
 	    self->length_point[4] = 'f';
 
 	    /* Discard the field if we've seen it before */
-	    if (have_name(self, self->length_point)) {
+	    if (find_name(self, self->length_point)) {
 		self->point = self->length_point;
 		self->state = lex_skip_body;
 		return 0;
@@ -862,7 +861,7 @@ static int lex_name(lexer_t self, int ch)
 	}
 
 	/* Discard the field if we've seen it before */
-	if (have_name(self, self->length_point)) {
+	if (find_name(self, self->length_point)) {
 	    self->point = self->length_point;
 	    self->state = lex_skip_body;
 	    return 0;
@@ -909,7 +908,7 @@ static int lex_dash(lexer_t self, int ch)
 	}
 
 	/* Discard the field if we've seen it before */
-	if (have_name(self, self->length_point)) {
+	if (find_name(self, self->length_point)) {
 	    self->point = self->length_point;
 	    self->state = lex_skip_body;
 	    return 0;
