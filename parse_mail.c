@@ -30,7 +30,9 @@
 #define VERSION_MINOR 0
 
 #define N_FOLDER "folder"
+#define N_GROUP "Group"
 #define N_INDEX "index"
+#define N_MESSAGE "Message"
 #define N_USER "user"
 #define N_VERSION_MAJOR "elvinmail"
 #define N_VERSION_MINOR "elvinmail.minor"
@@ -502,6 +504,7 @@ void lexer_init(lexer_t self, char *buffer, ssize_t length)
     self->count = 0;
     self->count_point = NULL;
     self->length_point = NULL;
+    self->send_to_tickertape = 0;
 }
 
 /* Writes an int32 into a buffer */
@@ -683,7 +686,8 @@ static int append_string_tuple(lexer_t self, const char *name, const char *value
 
 
 /* Writes a UNotify packet header */
-int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
+int lexer_append_unotify_header(lexer_t self, const char *user,
+				const char *folder, const char *group)
 {
     /* Write the packet type */
     if (append_int32(self, UNOTIFY_PACKET) < 0) {
@@ -725,6 +729,14 @@ int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 	}
     }
 
+    /* Write the tickertape group name */
+    if (group) {
+	if (append_string_tuple(self, N_GROUP, group) < 0) {
+	    return -1;
+	}
+	self->send_to_tickertape = 1;
+    }
+
     /* The first name will go next */
     self->first_name_point = self->point;
     return 0;
@@ -733,6 +745,16 @@ int lexer_append_unotify_header(lexer_t self, char *user, char *folder)
 /* Writes the UNotify packet footer */
 int lexer_append_unotify_footer(lexer_t self, int msg_num)
 {
+    const char *subject;
+
+    /* Look up the Subject field. */
+    subject = find_name(self, "\0\0\0\7Subject");
+    if (subject) {
+	if (append_string_tuple(self, N_MESSAGE, subject + 4) < 0) {
+	    return -1;
+	}
+    }
+
     /* Append the message number (if provided) */
     if (! (msg_num < 0)) {
 	if (append_int32_tuple(self, N_INDEX, msg_num) < 0) {

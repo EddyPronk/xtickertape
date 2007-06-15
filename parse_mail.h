@@ -44,6 +44,9 @@ struct lexer
 
     /* The start of the encoded text */
     char *enc_text_point;
+
+    /* Non-zero if the message is being posted to a tickertape group. */
+    int send_to_tickertape;
 };
 
 
@@ -51,7 +54,8 @@ struct lexer
 void lexer_init(lexer_t self, char *buffer, ssize_t length);
 
 /* Writes a UNotify packet header */
-int lexer_append_unotify_header(lexer_t self, char *user, char *folder);
+int lexer_append_unotify_header(lexer_t self, const char *user,
+				const char *folder, const char *group);
 
 /* Run the buffer through the lexer */
 int lex(lexer_t self, char *buffer, ssize_t length);

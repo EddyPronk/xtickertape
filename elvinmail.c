@@ -20,7 +20,7 @@
 #define MAX_PACKET_SIZE 8192
 #define BUFFER_SIZE 4096
 
-#define OPTIONS "df:hi:Nnu:v"
+#define OPTIONS "df:g:hi:Nnu:v"
 
 static const char *progname;
 
@@ -30,6 +30,7 @@ usage(void)
     fprintf(stderr, "usage: %s [OPTION]... [host [port]]\n"
 	    "    -i file\tread the message from file rather than stdin\n"
 	    "    -f folder\tinclude the folder name in the notification\n"
+	    "    -g group\tpost message to a tickertape group too\n"
 	    "    -d\t\tproduce a hexdump of the notification\n"
 	    "    -n\t\tdon't actually send the notification\n"
 	    "    -N\t\tdon't copy stdin to stdout\n"
@@ -113,6 +114,7 @@ int main(int argc, char *argv[])
     char *serv = DEFAULT_SERV;
     char *path = NULL;
     char *folder = NULL;
+    char *group = NULL;
     char *user = NULL;
     char *point;
     int err, choice;
@@ -136,6 +138,10 @@ int main(int argc, char *argv[])
 
 	case 'f':
 	    folder = optarg;
+	    break;
+
+	case 'g':
+	    group = optarg;
 	    break;
 
 	case 'h':
@@ -251,7 +257,7 @@ int main(int argc, char *argv[])
 
     /* Initialize the lexer */
     lexer_init(&lexer, packet, sizeof(packet));
-    lexer_append_unotify_header(&lexer, user, folder);
+    lexer_append_unotify_header(&lexer, user, folder, group);
 
     /* Digest the message while copying it to stdout */
     do {
