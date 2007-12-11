@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.60 2004/11/24 11:38:44 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.61 2007/12/11 22:14:42 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1126,7 +1126,6 @@ static void group_sub_update_keys(
         abort();
     }
 
-    self -> key_count = key_count;
     for (i = 0; i < key_count; i++)
     {
         if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
@@ -1144,6 +1143,9 @@ static void group_sub_update_keys(
     if (old_names != NULL) {
         free(old_names);
     }
+
+    /* Record the new number of keys. */
+    self -> key_count = key_count;
 }
 
 
