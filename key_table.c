@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.9 2005/10/14 07:29:19 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.10 2007/12/14 21:52:00 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -658,7 +658,7 @@ void key_table_diff(
         }
         else
         {
-            if (old_entries[old_index] -> is_private == new_entries[old_index] -> is_private)
+            if (old_entries[old_index] -> is_private == new_entries[new_index] -> is_private)
             {
                 DPRINTF((stdout, "keeping key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index] -> name,
@@ -674,7 +674,7 @@ void key_table_diff(
                                   is_for_notify,
                                   keys_to_remove, NULL);
             }
-            else if (new_entries[old_index] -> is_private)
+            else if (new_entries[new_index] -> is_private)
             {
                 DPRINTF((stdout, "promoting key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index] -> name,
