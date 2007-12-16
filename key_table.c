@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.10 2007/12/14 21:52:00 phelps Exp $";
+static const char cvsid[] = "$Id: key_table.c,v 1.11 2007/12/16 23:54:28 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -107,7 +107,8 @@ struct key_entry
 static void key_entry_free(key_entry_t self);
 
 /* Allocates and initializes a new key_entry_t */
-static key_entry_t key_entry_alloc(
+static key_entry_t
+key_entry_alloc(
     char *name,
     char *data,
     int length,
@@ -168,7 +169,8 @@ static key_entry_t key_entry_alloc(
 }
 
 /* Releases the resources consumed by the receiver */
-static void key_entry_free(key_entry_t self)
+static void
+key_entry_free(key_entry_t self)
 {
     /* Free the key name. */
     if (self -> name != NULL)
@@ -192,7 +194,8 @@ static void key_entry_free(key_entry_t self)
     free(self);
 }
 
-void key_entry_add_to_keys(
+static void
+key_entry_add_to_keys(
     key_entry_t self,
     int is_for_notify,
     elvin_keys_t keys,
@@ -246,7 +249,8 @@ void key_entry_add_to_keys(
     }
 }
 
-void key_entry_promote(
+static void
+key_entry_promote(
     key_entry_t self,
     int is_for_notify,
     elvin_keys_t keys,
@@ -334,7 +338,8 @@ void key_table_free(key_table_t self)
 }
 
 /* Returns the position of the key with the given name in the table. */
-static key_entry_t *key_table_search(key_table_t self, char *name)
+static key_entry_t *
+key_table_search(key_table_t self, char *name)
 {
     int i;
 
@@ -353,7 +358,8 @@ static key_entry_t *key_table_search(key_table_t self, char *name)
 }
 
 /* Returns the information about the named key. */
-int key_table_lookup(
+int
+key_table_lookup(
     key_table_t self,
     char *name,
     char **data_out,
@@ -404,7 +410,8 @@ int key_table_lookup(
 }
 
 /* Adds a new key to the table. */
-int key_table_add(
+int
+key_table_add(
     key_table_t self,
     char *name,
     char *data,
@@ -440,7 +447,8 @@ int key_table_add(
 }
 
 /* Remove the key with the given name from the table. */
-int key_table_remove(key_table_t self, char *name)
+int
+key_table_remove(key_table_t self, char *name)
 {
     key_entry_t *position;
 
@@ -460,7 +468,8 @@ int key_table_remove(key_table_t self, char *name)
 
 /* Order two key entries by their hashed value.  NULL entries are
  * considered to be larger than non-NULL ones. */
-static int entry_compare(const void *val1, const void *val2)
+static int
+entry_compare(const void *val1, const void *val2)
 {
     key_entry_t entry1 = *(key_entry_t *)val1;
     key_entry_t entry2 = *(key_entry_t *)val2;
@@ -512,7 +521,8 @@ static int entry_compare(const void *val1, const void *val2)
     }
 }
 
-static void get_sorted_entries(
+static void
+get_sorted_entries(
     key_table_t self,
     char **key_names,
     int key_count,
@@ -588,14 +598,16 @@ static void get_sorted_entries(
     *count_out = i;
 }
 
-void ensure_keys(elvin_keys_t *keys_in_out)
+static void
+ensure_keys(elvin_keys_t *keys_in_out)
 {
     if (*keys_in_out == NULL) {
         *keys_in_out = ELVIN_KEYS_ALLOC(NULL, NULL);
     }
 }
 
-void key_table_diff(
+void
+key_table_diff(
     key_table_t old_key_table,
     char **old_key_names,
     int old_key_count,
