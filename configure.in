@@ -1,5 +1,5 @@
 dnl
-dnl   Copyright (C) 1998-2000, 2002, 2004 by Mantara Software
+dnl   Copyright (C) 1998-2007 by Mantara Software
 dnl   (ABN 17 105 665 594). All Rights Reserved.
 dnl
 dnl    Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ dnl
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 2.0rc1)
+AM_INIT_AUTOMAKE(xtickertape, 2.0rc2)
 
 dnl Checks for programs.
 AC_PROG_AWK
