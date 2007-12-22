@@ -1,4 +1,4 @@
-Overview of changes in xtickertape-2.0
+Overview of changes in xtickertape-2.0rc2
 
 * Plugged 3 memory leaks found by valgrind, and removed a zero-length
   malloc which would result in an abort on platforms which return NULL.
@@ -10,6 +10,12 @@ Overview of changes in xtickertape-2.0
   text/uri-list for better interoperation with other tickertape clients.
 
 * The show-url program can now read a URL from stdin.
+
+* Fixed two bugs related to reloading groups and keys files which
+  could cause xtickertape to crash.
+
+* Fixed iconv library management.  Mac OS X users should no longer
+  need to hack the link lines to make xtickertape compile.
 
 Overview of changes in xtickertape-2.0rc1
 
