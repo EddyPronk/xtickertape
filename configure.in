@@ -50,6 +50,8 @@ dnl Checks for libraries.
 
 # Iconv is just ugly
 AM_ICONV
+CPPFLAGS="$CPPFLAGS $INCICONV"
+LIBS="$LIBICONV $LIBS"
 
 # Figure out where X11 lives.
 AC_PATH_XTRA
