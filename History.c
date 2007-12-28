@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.81 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.82 2007/12/28 16:46:24 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -928,7 +928,6 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
     /* Record our new location */
     self -> history.x = x;
     self -> history.y = y;
-
 }
 
 /* Callback for the vertical scrollbar */
