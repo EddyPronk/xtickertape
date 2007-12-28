@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.28 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.29 2007/12/28 23:49:54 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -472,9 +472,9 @@ size_t message_get_attachment(message_t self, char **attachment_out)
 /* Decodes the attachment into a content type, character set and body */
 int message_decode_attachment(message_t self, char **type_out, char **body_out)
 {
-    unsigned char *point = (unsigned char *)self -> attachment;
-    unsigned char *mark = point;
-    unsigned char *end = point + self -> length;
+    char *point = self -> attachment;
+    char *mark = point;
+    char *end = point + self -> length;
     size_t ct_length = sizeof(CONTENT_TYPE) - 1;
 
     *type_out = NULL;
@@ -496,11 +496,11 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 	    if (ct_length < point - mark &&
 		strncasecmp(mark, CONTENT_TYPE, ct_length) == 0)
 	    {
-		unsigned char *p;
+		char *p;
 
 		/* Skip to the beginning of the value */
 		mark += ct_length;
-		while (mark < point && isspace(*mark))
+		while (mark < point && isspace(*(unsigned char *)mark))
 		{
 		    mark++;
 		}

@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: groups_parser.c,v 1.33 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: groups_parser.c,v 1.34 2007/12/28 23:53:55 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -838,8 +838,8 @@ void groups_parser_free(groups_parser_t self)
  * interpreted as an end-of-input marker */
 int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
 {
-    unsigned char *end = (unsigned char *)buffer + length;
-    unsigned char *pointer;
+    char *end = buffer + length;
+    char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0)
@@ -848,9 +848,9 @@ int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
     }
 
     /* Parse the buffer */
-    for (pointer = (unsigned char *)buffer; pointer < end; pointer++)
+    for (pointer = buffer; pointer < end; pointer++)
     {
-	if (parse_char(self, *pointer) < 0)
+	if (parse_char(self, *(unsigned char *)pointer) < 0)
 	{
 	    return -1;
 	}

@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.15 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.16 2007/12/28 23:47:21 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -648,13 +648,13 @@ void utf8_renderer_measure_string(
 	/* Measure the characters */
 	if (self -> dimension == 1)
 	{
-	    unsigned char *point = (unsigned char *)buffer;
+	    char *point = buffer;
 
 	    /* Set the initial measurements */
 	    if (is_first)
 	    {
 		is_first = False;
-		info = per_char(self -> font, 0, *point);
+		info = per_char(self -> font, 0, *(unsigned char *)point);
 		lbearing = info -> lbearing;
 		rbearing = info -> rbearing;
 		width = info -> width;
@@ -662,9 +662,9 @@ void utf8_renderer_measure_string(
 	    }
 
 	    /* Adjust for the rest of the string */
-	    while (point < (unsigned char *)out_point)
+	    while (point < out_point)
 	    {
-		info = per_char(self -> font, 0, *point);
+		info = per_char(self -> font, 0, *(unsigned char *)point);
 		lbearing = MIN(lbearing, width + (long)info -> lbearing);
 		rbearing = MAX(rbearing, width + (long)info -> rbearing);
 		width += (long)info -> width;
@@ -750,14 +750,14 @@ void utf8_renderer_draw_string(
 	/* Are characters in this code set one byte wide? */
 	if (renderer -> dimension == 1)
 	{
-	    unsigned char *first;
-	    unsigned char *last;
+	    char *first;
+	    char *last;
 
 	    /* Look for visible characters in the buffer */
-	    first = (unsigned char *)buffer;
-	    while (first < (unsigned char *)out_point)
+	    first = buffer;
+	    while (first < out_point)
 	    {
-		info = per_char(renderer -> font, 0, *first);
+		info = per_char(renderer -> font, 0, *(unsigned char *)first);
 
 		/* Skip anything to the left of the bounding box */
 		if (left + info -> rbearing < bbox -> x)
@@ -770,9 +770,9 @@ void utf8_renderer_draw_string(
 		    /* Look for the last visible character */
 		    last = first;
 		    right = left;
-		    while (last < (unsigned char *)out_point)
+		    while (last < out_point)
 		    {
-			info = per_char(renderer -> font, 0, *last);
+			info = per_char(renderer -> font, 0, *(unsigned char*)last);
 
 			if (right + info -> lbearing < bbox -> x + bbox -> width)
 			{

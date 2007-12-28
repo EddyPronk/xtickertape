@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_parser.c,v 1.17 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: usenet_parser.c,v 1.18 2007/12/28 23:53:55 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1055,8 +1055,8 @@ void usenet_parser_free(usenet_parser_t self)
  * buffer is interpreted as an end-of-input marker */
 int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length)
 {
-    unsigned char *end = (unsigned char *)buffer + length;
-    unsigned char *pointer;
+    char *end = buffer + length;
+    char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0)
@@ -1065,9 +1065,9 @@ int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length)
     }
 
     /* Parse the buffer */
-    for (pointer = (unsigned char *)buffer; pointer < end; pointer++)
+    for (pointer = buffer; pointer < end; pointer++)
     {
-	if (self -> state(self, *pointer) < 0)
+	if (self -> state(self, *(unsigned char *)pointer) < 0)
 	{
 	    return -1;
 	}

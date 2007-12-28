@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mbox_parser.c,v 1.12 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: mbox_parser.c,v 1.13 2007/12/28 23:53:55 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -499,7 +499,7 @@ void mbox_parser_debug(mbox_parser_t self, FILE *out)
 int mbox_parser_parse(mbox_parser_t self, char *mailbox)
 {
     int length;
-    unsigned char *pointer;
+    char *pointer;
 
     /* Make sure we have enough room in our buffers */
     length = strlen(mailbox) + 1;
@@ -517,9 +517,9 @@ int mbox_parser_parse(mbox_parser_t self, char *mailbox)
     self -> parser_state = PRE_ROUTE_ADDR;
 
     /* Send each character to the lexer */
-    for (pointer = (unsigned char *)mailbox; *pointer != '\0'; pointer++)
+    for (pointer = mailbox; *pointer != '\0'; pointer++)
     {
-	if (self -> lexer_state(self, *pointer) < 0)
+	if (self -> lexer_state(self, *(unsigned char *)pointer) < 0)
 	{
 	    return -1;
 	}
