@@ -35,14 +35,20 @@ Summary: A chat tool based around a single line of scrolling text
 Name: @PACKAGE@
 Version: @VERSION@
 Release: 1
-Copyright: Copyright (C) DSTC.  Details at http://elvin.dstc.com/download/licence.txt
-# FIX THIS: this is wrong, but the script doesn't like the correct URL
-Source: http://elvin.dstc.com/download/@PACKAGE@-@VERSION@.tar.gz
+Copyright: Copyright (C) 1998-2007 Mantara Software.  All Rights Reserved.
+# FIXME: the Source line should read thusly:
+#
+#    Source: http://www.tickertape.org/download/get.jsp?package=xtickertape-src-2.0rc1.tar.gz
+#
+# unfortunately, RPM just uses everything after the last slash, so
+# it's not really feasible to work around it.
+
+Source: xtickertape-2.0rc2.tar.gz
 Group: Applications/Internet
 Icon: xtickertape.gif
-URL: http://elvin.dstc.com/
-Distribution: Elvin
-Vendor: The Elvin Krewe <elvin@dstc.com>
+URL: http://www.tickertape.org/
+Distribution: Mantara
+Vendor: Mantara Software <http://www.mantara.com/>
 BuildRoot: /var/tmp/%{name}-buildroot
 
 %description
