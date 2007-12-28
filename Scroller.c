@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: Scroller.c,v 1.147 2004/08/03 12:29:16 phelps Exp $";
+static const char cvsid[] = "$Id: Scroller.c,v 1.148 2007/12/28 14:50:31 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1030,6 +1030,12 @@ static void realize(
     {
 	/* Register an event handler for GraphicsExpose events */
 	XtAddEventHandler(widget, 0, True, gexpose, NULL);
+    }
+
+    /* Avoid pathological numbers of fade levels. */
+    if (self -> scroller.fade_levels < 1)
+    {
+        self -> scroller.fade_levels = 1;
     }
 
     /* Allocate colors */
