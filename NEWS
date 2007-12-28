@@ -31,6 +31,10 @@ Overview of changes in xtickertape-2.0rc1
 * Fixed a thinko in the metamail invocation which caused the first
   argument to be lost and thus metamail would cause it to hang.
 
+* Now accepts string attachments (previously only opaque ones were
+  permitted) for better interoperability with other tickertape
+  implementations. Fixed bug #1265.
+
 Overview of changes in xtickertape-2.0b2
 
 * Fixed a bug that prevented the connection status from being updated
