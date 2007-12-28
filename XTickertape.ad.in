@@ -150,7 +150,7 @@ XTickertape.sendHistoryCapacity: 32
 ! titleLabel.labelString is set in the Control.c from the PACKAGE and
 ! VERSION compile-time variables
 *titleLabel.fontList: -adobe-helvetica-bold-r-normal--18-180-75-75-p-*-iso8859-1
-*copyrightLabel.labelString: Copyright © 1997-2004 Mantara Software
+*copyrightLabel.labelString: Copyright (C) 1997-2007 Mantara Software
 *authorLabel.labelString: Ted Phelps (phelps@mantara.com)
 *dismiss.labelString: Dismiss
 
