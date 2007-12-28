@@ -21,6 +21,10 @@ Overview of changes in xtickertape-2.0rc2
   permitted) for better interoperability with other tickertape
   implementations. Fixed bug #1265.
 
+* Fixed a bug that would cause the history widget to display
+  incorrectly if the history size multiplied by the font spacing
+  exceeded 32768 pixels.
+
 Overview of changes in xtickertape-2.0rc1
 
 * Notification format upgraded to conform to version 3.1 of the

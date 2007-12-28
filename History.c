@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: History.c,v 1.82 2007/12/28 16:46:24 phelps Exp $";
+static const char cvsid[] = "$Id: History.c,v 1.83 2007/12/28 17:11:18 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -888,6 +888,9 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
     GC gc = self -> history.gc;
     XGCValues values;
 
+    dprintf(("History.set_origin(x=%ld, y=%ld, update_scrollbars=%d)\n",
+	     x, y, update_scrollbars));
+
     /* Skip this part if we're not visible */
     if (gc != None)
     {
@@ -911,7 +914,7 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
 	{
 	    XtVaSetValues(
 		self -> history.hscrollbar,
-		XmNvalue, x,
+		XmNvalue, (int)x,
 		NULL);
 	}
 
@@ -920,7 +923,7 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
 	{
 	    XtVaSetValues(
 		self -> history.vscrollbar,
-		XmNvalue, y,
+		XmNvalue, (int)y,
 		NULL);
 	}
     }
@@ -1088,11 +1091,11 @@ static unsigned int index_of_y(HistoryWidget self, long y)
 
 /* Updates the scrollbars after either the widget or the data it is
  * displaying is resized */
-static void update_scrollbars(Widget widget, Position *x_out, Position *y_out)
+static void update_scrollbars(Widget widget, long *x_out, long *y_out)
 {
     HistoryWidget self = (HistoryWidget)widget;
     Dimension width, height;
-    Position x, y;
+    long x, y;
 
     /* Figure out how big the widget is now */
     XtVaGetValues(widget, XmNwidth, &width, XmNheight, &height, NULL);
@@ -1465,7 +1468,7 @@ static void recompute_dimensions(HistoryWidget self)
     long width = 0;
     long height = 0;
     unsigned int i;
-    Position x, y;
+    long x, y;
 
     /* Measure each message */
     for (i = 0; i < self -> history.message_count; i++)
@@ -1505,7 +1508,7 @@ static void insert_message(HistoryWidget self,
     XGCValues values;
     GC gc = self -> history.gc;
     int show_timestamps = self -> history.show_timestamps;
-    Position xpos, ypos;
+    long xpos, ypos;
 
     /* Sanity check */
     assert(index <= self -> history.message_count);
@@ -1871,7 +1874,7 @@ static void resize(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
     int page_inc;
-    Position x, y;
+    long x, y;
 
     dprintf(("History.resize(w=%d, h=%d)\n", self -> core.width, self -> core.height));
 
