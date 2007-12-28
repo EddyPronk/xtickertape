@@ -155,17 +155,6 @@ fi
 dnl Checks for header files.
 AC_CHECK_HEADERS([assert.h ctype.h errno.h fcntl.h getopt.h iconv.h netdb.h pwd.h stdio.h stdlib.h string.h strings.h signal.h stdarg.h sys/time.h sys/types.h sys/utsname.h time.h unistd.h])
 
-dnl Check for the metamail program
-AH_TEMPLATE(METAMAIL, [Define to the path to the metamail program])
-AC_PATH_PROG(METAMAIL, metamail)
-if test x"$METAMAIL" = x ; then
-    echo "WARNING: \`metamail' is missing on your system. Without it,"
-    echo "          xtickertape will be unable to decode MIME messages"
-    echo "          Grab it from ftp://ftp.funet.fi/pub/unix/mail/metamail/mm2.7.tar.Z"
-else
-    AC_DEFINE_UNQUOTED(METAMAIL, "$METAMAIL")
-fi
-
 dnl Checks for header files.
 dnl ========================
 AC_HEADER_STDC
