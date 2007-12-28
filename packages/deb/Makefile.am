@@ -6,7 +6,7 @@ BUILT_SOURCES = changelog control rules
 # Building the deb packages requires the devscripts and debhelper packages.
 # There are fairly standard packages for a development debian box to have
 # so i dont see this as a problem.
-deb: rules control changelog
+deb: $(srcdir)/rules $(srcdir)/control $(srcdir)/changelog
 	ln -sf @top_srcdir@/COPYING copyright
 	ln -sf ./packages/deb @top_srcdir@/debian
 	(cd @top_srcdir@; $(MAKE) -f debian/rules binary)
