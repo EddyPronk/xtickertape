@@ -1,5 +1,5 @@
-EXTRA_DIST = changelog.in control.in rules.in
 BUILT_SOURCES = changelog control rules
+EXTRA_DIST = changelog.in control.in rules.in $(BUILT_SOURCES)
 
 .PHONY: clean deb
 
