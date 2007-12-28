@@ -17,13 +17,16 @@ Overview of changes in xtickertape-2.0rc2
 * Fixed iconv library management.  Mac OS X users should no longer
   need to hack the link lines to make xtickertape compile.
 
-* Now accepts string attachments (previously only opaque ones were
-  permitted) for better interoperability with other tickertape
-  implementations. Fixed bug #1265.
+* String attachments are now accepted (previously only opaque ones
+  were recognized) for better interoperability with other tickertape
+  implementations.
 
 * Fixed a bug that would cause the history widget to display
-  incorrectly if the history size multiplied by the font spacing
-  exceeded 32768 pixels.
+  incorrectly if the size of its contents exceeded 32767 pixels in
+  either dimension.
+
+* Fixed a bug that would cause xtickertape to crash on start-up if the
+  number of fade levels was set to zero.
 
 Overview of changes in xtickertape-2.0rc1
 
