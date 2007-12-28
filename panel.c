@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: panel.c,v 1.93 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: panel.c,v 1.94 2007/12/28 23:25:58 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -1618,7 +1618,7 @@ static void deconstruct_message(control_panel_t self, message_t message)
     set_text(self, message_get_string(message));
 
     /* Set the timeout */
-    set_timeout(self, message_get_timeout(message));
+    set_timeout(self, message_get_timeout(message) / 60);
 
     /* Select the message to which we're replying */
     HistorySelectId(self -> history, message_get_reply_id(message));
