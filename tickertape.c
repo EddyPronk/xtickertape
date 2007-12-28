@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: tickertape.c,v 1.118 2004/09/07 16:31:41 phelps Exp $";
+static const char cvsid[] = "$Id: tickertape.c,v 1.119 2007/12/28 13:47:07 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -2490,7 +2490,7 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 	return -1;
     }
 
-    fprintf(stderr, METAMAIL " died badly\n");
+    fprintf(stderr, "%s died badly\n", self -> resources -> metamail);
 #endif
 #endif /* METAMAIL & DUP2 & FORK */
 
