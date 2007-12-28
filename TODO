@@ -18,17 +18,12 @@ Configuration
 
 Control Panel:
 
-- Add a menu item to allow the keys file to be reloaded.
-
 - Add an Edit menu with Cut, Paste and Copy options which apply to the
   widget with focus.  This should allow us to cut and paste messages
   from the history into another application. [Thanks David Arnold]
 
 - The message in the status bar should include the time when of last
   change.
-
-- Strip CRs from the MIME header of an attachment before handing it
-  over to metamail, which isn't able to cope with such silliness.
 
 
 Scroller:
@@ -70,12 +65,3 @@ History Widget
 - Check the max ascent and descent rather than blindly trusting the
   font description since it's known to have incorrect values for some
   fonts.
-
-
-Scheme Interpreter [ABANDONED]:
-
-- This needs to be connected to everything so that we can do
-  amusing things.
-
-- It should be possible to evaluate the contents of the file.
-
