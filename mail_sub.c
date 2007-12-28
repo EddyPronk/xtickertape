@@ -1,7 +1,7 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2004.
-  Unpublished work.  All Rights Reserved.
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  All Rights Reserved.
 
   The software contained on this media is the property of the
   DSTC Pty Ltd.  Use of this software is strictly in accordance
@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.38 2004/08/02 20:54:07 phelps Exp $";
+static const char cvsid[] = "$Id: mail_sub.c,v 1.39 2007/12/28 15:34:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H

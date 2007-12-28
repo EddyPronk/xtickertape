@@ -1,7 +1,7 @@
 /***********************************************************************
 
-  Copyright (C) 1999, 2001-2002, 2004 by Mantara Software
-  (ABN 17 105 665 594). All Rights Reserved.
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions

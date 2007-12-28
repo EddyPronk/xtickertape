@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 2003-2004 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: utf8.c,v 1.14 2004/11/24 11:40:08 phelps Exp $";
+static const char cvsid[] = "$Id: utf8.c,v 1.15 2007/12/28 15:34:19 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H

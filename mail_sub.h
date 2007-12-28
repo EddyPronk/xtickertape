@@ -1,7 +1,7 @@
 /***************************************************************
 
-  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1999-2000.
-  Unpublished work.  All Rights Reserved.
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  All Rights Reserved.
 
   The software contained on this media is the property of the
   DSTC Pty Ltd.  Use of this software is strictly in accordance
@@ -35,7 +35,7 @@
 #define MAIL_SUB_H
 
 #ifndef lint
-static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.7 2001/08/25 14:04:43 phelps Exp $";
+static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.8 2007/12/28 15:34:19 phelps Exp $";
 #endif /* lint */
 
 /* The mail_sub_t data type */

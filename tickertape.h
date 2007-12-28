@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 1999-2004 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@
 #define TICKERTAPE_H
 
 #ifndef lint
-static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.23 2004/08/03 12:29:17 phelps Exp $";
+static const char cvs_TICKERTAPE_H[] = "$Id: tickertape.h,v 1.24 2007/12/28 15:34:19 phelps Exp $";
 #endif /* lint */
 
 typedef struct tickertape *tickertape_t;

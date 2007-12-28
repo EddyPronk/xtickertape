@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 2003-2004 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.8 2004/08/03 12:29:17 phelps Exp $";
+static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.9 2007/12/28 15:34:19 phelps Exp $";
 #endif /* lint */
 
 /* Make sure that ICONV_CONST is defined */

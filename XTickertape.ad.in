@@ -1,6 +1,6 @@
 !
-!   Copyright (C) 2001-2003 by Mantara Software (ABN 17 105 665 594).
-!   All Rights Reserved.
+!  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+!  All Rights Reserved.
 !
 !    Redistribution and use in source and binary forms, with or without
 !    modification, are permitted provided that the following conditions
@@ -150,7 +150,7 @@ XTickertape.sendHistoryCapacity: 32
 ! titleLabel.labelString is set in the Control.c from the PACKAGE and
 ! VERSION compile-time variables
 *titleLabel.fontList: -adobe-helvetica-bold-r-normal--18-180-75-75-p-*-iso8859-1
-*copyrightLabel.labelString: Copyright (C) 1997-2007 Mantara Software
+*copyrightLabel.labelString: Copyright (C) 1997-2008 Mantara Software
 *authorLabel.labelString: Ted Phelps (phelps@mantara.com)
 *dismiss.labelString: Dismiss
 
