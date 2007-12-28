@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: group_sub.c,v 1.61 2007/12/11 22:14:42 phelps Exp $";
+static const char cvsid[] = "$Id: group_sub.c,v 1.62 2007/12/28 00:41:24 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -684,19 +684,27 @@ static int notify_cb(
     }
 
     /* Get the `Attachment' field from the notification */
-    if (! elvin_notification_get_opaque(
-	    notification,
-	    F3_ATTACHMENT,
-	    &found,
-	    &attachment,
-	    &length,
-	    error))
+    if (!elvin_notification_get(notification, F3_ATTACHMENT, &found, &type, &value, error))
     {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        fprintf(stderr, "elvin_notification_get(): failed\n");
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
-    if (! found)
+    if (found)
+    {
+        if (type == ELVIN_STRING)
+        {
+            attachment = value.s;
+            length = strlen(value.s);
+        }
+        else if (type == ELVIN_OPAQUE)
+        {
+            attachment = value.o.data;
+            length = value.o.length;
+        }
+    }
+    else
     {
 	/* Try the backward compatible `MIME-TYPE' field */
 	if (! elvin_notification_get_string(
