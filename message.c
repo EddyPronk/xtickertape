@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.29 2007/12/28 23:49:54 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.30 2007/12/29 06:10:03 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -136,7 +136,7 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
     state = ST_START;
     for (in = attachment; in < end; in++)
     {
-        ch = *(unsigned char *)in;
+        ch = *in;
 
         switch (state)
         {
