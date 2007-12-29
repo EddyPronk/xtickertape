@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: show-url.c,v 1.18 2007/12/28 15:34:19 phelps Exp $";
+static const char cvsid[] = "$Id: show-url.c,v 1.19 2007/12/29 07:06:41 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
     char *url = NULL;
     char *filename = NULL;
     FILE *file;
-    size_t length;
+    size_t length, i;
     char *point;
 
     /* Extract the program name from argv[0] */
@@ -610,7 +610,14 @@ int main(int argc, char *argv[])
 
         /* Read up to MAX_URL_SIZE bytes of it */
         length = fread(buffer, 1, MAX_URL_SIZE, file);
-        buffer[length] = 0;
+
+        /* Find the first CR or LF and truncate the string there. */
+        for (i = 0; i < length; i++) {
+            if (buffer[i] == '\r' || buffer[i] == '\n') {
+                break;
+            }
+        }
+        buffer[i] = '\0';
 
         dprintf(2, "%s: raw URL: %s\n", progname, buffer);
 
