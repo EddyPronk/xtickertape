@@ -1,5 +1,8 @@
 Overview of changes in xtickertape-2.0rc2
 
+* Added support for the mouse wheel via the scroll-up() and
+  scroll-down() translations.
+
 * Plugged 3 memory leaks found by valgrind, and removed a zero-length
   malloc which would result in an abort on platforms which return NULL.
 
