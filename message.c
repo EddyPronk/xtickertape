@@ -37,7 +37,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.30 2007/12/29 06:10:03 phelps Exp $";
+static const char cvsid[] = "$Id: message.c,v 1.31 2007/12/29 06:12:01 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
@@ -136,97 +136,97 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
     state = ST_START;
     for (in = attachment; in < end; in++)
     {
-        ch = *in;
+	ch = *in;
 
-        switch (state)
-        {
-            case ST_START:
-            {
-                if (ch == '\r')
-                {
-                    *out++ = '\n';
-                    state = ST_CR;
-                }
-                else if (ch == '\n')
-                {
-                    *out++ = ch;
-                    state = ST_CRLF;
-                }
-                else
-                {
-                    *out++ = ch;
-                }
+	switch (state)
+	{
+	    case ST_START:
+	    {
+		if (ch == '\r')
+		{
+		    *out++ = '\n';
+		    state = ST_CR;
+		}
+		else if (ch == '\n')
+		{
+		    *out++ = ch;
+		    state = ST_CRLF;
+		}
+		else
+		{
+		    *out++ = ch;
+		}
 
-                break;
-            }
+		break;
+	    }
 
-            case ST_CR:
-            {
-                if (ch == '\r')
-                {
-                    *out++ = '\n';
-                    state = ST_BODY;
-                }
-                else if (ch == '\n')
-                {
-                    state = ST_CRLF;
-                }
-                else
-                {
-                    *out++ = ch;
-                    state = ST_START;
-                }
+	    case ST_CR:
+	    {
+		if (ch == '\r')
+		{
+		    *out++ = '\n';
+		    state = ST_BODY;
+		}
+		else if (ch == '\n')
+		{
+		    state = ST_CRLF;
+		}
+		else
+		{
+		    *out++ = ch;
+		    state = ST_START;
+		}
 
-                break;
-            }
+		break;
+	    }
 
-            case ST_CRLF:
-            {
-                if (ch == '\r')
-                {
-                    *out++ = '\n';
-                    state = ST_CRLFCR;
-                }
-                else if (ch == '\n')
-                {
-                    *out++ = ch;
-                    state = ST_BODY;
-                }
-                else
-                {
-                    *out++ = ch;
-                    state = ST_START;
-                }
+	    case ST_CRLF:
+	    {
+		if (ch == '\r')
+		{
+		    *out++ = '\n';
+		    state = ST_CRLFCR;
+		}
+		else if (ch == '\n')
+		{
+		    *out++ = ch;
+		    state = ST_BODY;
+		}
+		else
+		{
+		    *out++ = ch;
+		    state = ST_START;
+		}
 
-                break;
-            }
+		break;
+	    }
 
-            case ST_CRLFCR:
-            {
-                if (ch == '\n')
-                {
-                    state = ST_BODY;
-                }
-                else
-                {
-                    *out++ = ch;
-                    state = ST_BODY;
-                }
+	    case ST_CRLFCR:
+	    {
+		if (ch == '\n')
+		{
+		    state = ST_BODY;
+		}
+		else
+		{
+		    *out++ = ch;
+		    state = ST_BODY;
+		}
 
-                break;
-            }
+		break;
+	    }
 
-            case ST_BODY:
-            {
-                *out++ = ch;
-                break;
-            }
+	    case ST_BODY:
+	    {
+		*out++ = ch;
+		break;
+	    }
 
-            default:
-            {
-                abort();
-            }
-        }
+	    default:
+	    {
+		abort();
+	    }
+	}
     }
 
     *length_out = out - copy;
@@ -289,7 +289,7 @@ message_t message_alloc(
 	}
 	else
 	{
-            cleanse_header(attachment, length, self->attachment, &self->length);
+	    cleanse_header(attachment, length, self->attachment, &self->length);
 	}
     }
 
@@ -527,7 +527,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 	    }
 	    else if (point - mark == 0)
 	    {
-                point++;
+		point++;
 
 		/* Trim any CRs and LFs from the end of the body */
 		while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
@@ -542,7 +542,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 		return 0;
 	    }
 
-            mark = point + 1;
+	    mark = point + 1;
 	}
 
 	point++;
@@ -587,4 +587,3 @@ void message_set_killed(message_t self, int is_killed)
 {
     self -> is_killed = is_killed;
 }
-
