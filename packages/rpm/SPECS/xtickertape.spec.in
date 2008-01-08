@@ -35,7 +35,7 @@ Summary: A chat tool based around a single line of scrolling text
 Name: @PACKAGE@
 Version: @VERSION@
 Release: 1
-Copyright: Copyright (C) 1997-2008 Mantara Software.  All Rights Reserved.
+License: Copyright (C) 1997-2008 Mantara Software.  All Rights Reserved.
 # FIXME: the Source line should read thusly:
 #
 #    Source: http://www.tickertape.org/download/get.jsp?package=xtickertape-src-2.0rc1.tar.gz
