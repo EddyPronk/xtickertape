@@ -25,6 +25,8 @@ Control Panel:
 - The message in the status bar should include the time when of last
   change.
 
+- A menu option to kill from the selected message would be very nice.
+
 
 Scroller:
 
@@ -65,3 +67,6 @@ History Widget
 - Check the max ascent and descent rather than blindly trusting the
   font description since it's known to have incorrect values for some
   fonts.
+
+- It would be nice if messages in killed threads could be visually
+  identifiable as such (i.e. with strikethru).
