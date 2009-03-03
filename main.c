@@ -88,9 +88,6 @@ static struct option long_options[] =
     { "idle", required_argument, NULL, 'I' },
     { "user", required_argument, NULL, 'u' },
     { "domain" , required_argument, NULL, 'D' },
-#if defined(ENABLE_LISP_INTERPRETER)
-    { "config", required_argument, NULL, 'c' },
-#endif
     { "ticker-dir", required_argument, NULL, 'T' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
@@ -102,11 +99,7 @@ static struct option long_options[] =
 };
 #endif /* GETOPT_LONG */
 
-#if defined(ENABLE_LISP_INTERPRETER)
-#define OPTIONS "e:c:D:G:H:hI:K:k:S:T:u:U:v"
-#else
 #define OPTIONS "e:D:G:H:hI:K:k:S:T:u:U:v"
-#endif
 
 #if defined(HAVE_GETOPT_LONG)
 /* Print out usage message */
@@ -121,9 +114,6 @@ static void usage(int argc, char *argv[])
         "  -u user,        --user=user\n"
         "  -D domain,      --domain=domain\n"
         "  -T ticker-dir,  --ticker-dir=ticker-dir\n"
-#if defined(ENABLE_LISP_INTERPRETER)
-        "  -c config-file, --config=config-file\n"
-#endif
         "  -G groups-file, --groups=groups-file\n"
         "  -U usenet-file, --usenet=usenet-file\n"
         "  -K keys-file,   --keys=keys-file\n"
@@ -145,9 +135,6 @@ static void usage(int argc, char *argv[])
         "  -u user\n"
         "  -D domain\n"
         "  -T ticker-dir\n"
-#if defined(ENABLE_LISP_INTERPRETER)
-        "  -c config-file\n"
-#endif
         "  -G groups-file\n"
         "  -U usenet-file\n"
         "  -K keys-file\n"
