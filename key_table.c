@@ -204,45 +204,42 @@ key_entry_add_to_keys(
     /* If this is a private key then add the raw data */
     if (self -> is_private)
     {
-        if (! ELVIN_KEYS_ADD(
-                keys,
-                ELVIN_KEY_SCHEME_SHA1_DUAL,
-                is_for_notify ?
-                ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
-                ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-                self -> data, self -> data_length, NULL,
-                error))
+        if (! ELVIN_KEYS_ADD(keys,
+			     ELVIN_KEY_SCHEME_SHA1_DUAL,
+			     is_for_notify ?
+			     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+			     ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+			     self -> data, self -> data_length, NULL,
+			     error))
         {
-            fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
+            fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
+		    self -> name);
             abort();
         }
     }
 
     /* Add the hashed key data */
-    if (! ELVIN_KEYS_ADD(
-            keys,
-            ELVIN_KEY_SCHEME_SHA1_DUAL,
-            is_for_notify ?
-            ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
-            ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
-            self -> hash, self -> hash_length, NULL,
-            error))
+    if (! ELVIN_KEYS_ADD(keys, ELVIN_KEY_SCHEME_SHA1_DUAL,
+			 is_for_notify ?
+			 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
+			 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+			 self -> hash, self -> hash_length, NULL,
+			 error))
     {
         fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
         abort();
     }
 
     /* Add it as a producer key too */
-    if (! ELVIN_KEYS_ADD(
-            keys,
-            is_for_notify ?
-            ELVIN_KEY_SCHEME_SHA1_CONSUMER :
-            ELVIN_KEY_SCHEME_SHA1_PRODUCER,
-            is_for_notify ?
-            ELVIN_KEY_SHA1_CONSUMER_INDEX :
-            ELVIN_KEY_SHA1_PRODUCER_INDEX,
-            self -> hash, self -> hash_length, NULL,
-            error))
+    if (! ELVIN_KEYS_ADD(keys,
+			 is_for_notify ?
+			 ELVIN_KEY_SCHEME_SHA1_CONSUMER :
+			 ELVIN_KEY_SCHEME_SHA1_PRODUCER,
+			 is_for_notify ?
+			 ELVIN_KEY_SHA1_CONSUMER_INDEX :
+			 ELVIN_KEY_SHA1_PRODUCER_INDEX,
+			 self -> hash, self -> hash_length, NULL,
+			 error))
     {
         fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
         abort();
@@ -263,16 +260,16 @@ key_entry_promote(
         abort();
     }
 
-    if (! ELVIN_KEYS_ADD(
-            keys,
-            ELVIN_KEY_SCHEME_SHA1_DUAL,
-            is_for_notify ?
-            ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
-            ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-            self -> data, self -> data_length, NULL,
-            error))
+    if (! ELVIN_KEYS_ADD(keys,
+			 ELVIN_KEY_SCHEME_SHA1_DUAL,
+			 is_for_notify ?
+			 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+			 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+			 self -> data, self -> data_length, NULL,
+			 error))
     {
-        fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
+        fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
+		self -> name);
         abort();
     }
 }
@@ -307,7 +304,8 @@ key_table_t key_table_alloc()
     /* Initialize its contents */
     self -> entries_used = 0;
     self -> entries_size = TABLE_MIN_SIZE;
-    if ((self -> entries = calloc(self -> entries_size, sizeof(key_entry_t))) == NULL)
+    if ((self -> entries = calloc(self -> entries_size,
+				  sizeof(key_entry_t))) == NULL)
     {
         key_table_free(self);
         return NULL;
@@ -431,7 +429,8 @@ key_table_add(
     {
         key_entry_t *new_entries;
 
-        if ((new_entries = realloc(self -> entries, self -> entries_size * 2)) == NULL)
+        if ((new_entries = realloc(self -> entries,
+				   self -> entries_size * 2)) == NULL)
         {
             key_entry_free(entry);
             return -1;
@@ -495,7 +494,8 @@ entry_compare(const void *val1, const void *val2)
     /* Work out which value comes first */
     if (entry1 -> hash_length < entry2 -> hash_length)
     {
-        if ((result = memcmp(entry1 -> hash, entry2 -> hash, entry1 -> hash_length)) == 0)
+        if ((result = memcmp(entry1 -> hash, entry2 -> hash,
+			     entry1 -> hash_length)) == 0)
         {
             return -1;
         }
@@ -506,7 +506,8 @@ entry_compare(const void *val1, const void *val2)
     }
     else if (entry1 -> hash_length > entry2 -> hash_length)
     {
-        if ((result = memcmp(entry1 -> hash, entry2 -> hash, entry2 -> hash_length)) == 0)
+        if ((result = memcmp(entry1 -> hash, entry2 -> hash,
+			     entry2 -> hash_length)) == 0)
         {
             return 1;
         }
@@ -552,7 +553,8 @@ get_sorted_entries(
     for (i = 0; i < key_count; i++) {
         if ((entry = key_table_search(self, key_names[i])) == NULL) {
             if (do_warn) {
-                fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n", key_names[i]);
+                fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n",
+			key_names[i]);
             }
             entries[i] = NULL;
         } else {
@@ -586,7 +588,8 @@ get_sorted_entries(
             }
 
             /* Stomp out the duplicate */
-            memmove(entries + i, entries + i + 1, (key_count - i - 1) * sizeof(key_entry_t));
+            memmove(entries + i, entries + i + 1,
+		    (key_count - i - 1) * sizeof(key_entry_t));
             entries[key_count - 1] = NULL;
         } else {
             last = entries[i];
@@ -680,7 +683,7 @@ key_table_diff(
             {
                 DPRINTF((stdout, "demoting key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index] -> name,
-                         new_entries[new_index] -> name);)
+                         new_entries[new_index] -> name));
                 ensure_keys(&keys_to_remove);
                 key_entry_promote(old_entries[old_index],
                                   is_for_notify,
@@ -714,7 +717,8 @@ key_table_diff(
 
     while (new_index < new_count)
     {
-        DPRINTF((stdout, "adding key: \"%s\"\n", new_entries[new_index] -> name));
+        DPRINTF((stdout, "adding key: \"%s\"\n",
+		 new_entries[new_index] -> name));
         ensure_keys(&keys_to_add);
         key_entry_add_to_keys(
             new_entries[new_index++],

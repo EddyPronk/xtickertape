@@ -508,10 +508,9 @@ static int notify_cb(
     }
 
     /* Construct a message out of all of that */
-    if ((message = message_alloc(
-        NULL, newsgroups, name, subject, 60,
-        attachment, length,
-         NULL, NULL, NULL, NULL)) != NULL)
+    if ((message = message_alloc(NULL, newsgroups, name, subject, 60,
+                                 attachment, length,
+                                 NULL, NULL, NULL, NULL)) != NULL)
     {
         /* Deliver the message */
         (*self -> callback)(self -> rock, message, False);
@@ -543,142 +542,110 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     /* Get the string representation for the field */
     switch (expression -> field)
     {
+    case F_BODY:
         /* body -> BODY */
-        case F_BODY:
-        {
-            field_name = BODY;
-            break;
-        }
+        field_name = BODY;
+        break;
 
+    case F_FROM:
         /* from -> FROM_NAME */
-        case F_FROM:
-        {
-            field_name = FROM_NAME;
-            break;
-        }
+        field_name = FROM_NAME;
+        break;
 
+    case F_EMAIL:
         /* email -> FROM_EMAIL */
-        case F_EMAIL:
-        {
-            field_name = FROM_EMAIL;
-            break;
-        }
+        field_name = FROM_EMAIL;
+        break;
 
+    case F_SUBJECT:
         /* subject -> SUBJECT */
-        case F_SUBJECT:
-        {
-            field_name = SUBJECT;
-            break;
-        }
+        field_name = SUBJECT;
+        break;
 
+    case F_KEYWORDS:
         /* keywords -> KEYWORDS */
-        case F_KEYWORDS:
-        {
-            field_name = KEYWORDS;
-            break;
-        }
+        field_name = KEYWORDS;
+        break;
 
+    case F_XPOSTS:
         /* xposts -> CROSS_POSTS */
-        case F_XPOSTS:
-        {
-            field_name = XPOSTS;
-            break;
-        }
+        field_name = XPOSTS;
+        break;
 
+    default:
         /* Should never get here */
-        default:
-        {
-            fprintf(stderr, PACKAGE ": internal error\n");
-            return NULL;
-        }
+        fprintf(stderr, PACKAGE ": internal error\n");
+        return NULL;
     }
 
     /* Look up the string representation for the operator */
     switch (expression -> operator)
     {
+    case O_MATCHES:
         /* matches */
-        case O_MATCHES:
-        {
-            format = F_MATCHES;
-            format_length = sizeof(F_MATCHES);
-            break;
-        }
+        format = F_MATCHES;
+        format_length = sizeof(F_MATCHES);
+        break;
 
+    case O_NOT:
         /* not [matches] */
-        case O_NOT:
-        {
-            format = F_NOT_MATCHES;
-            format_length = sizeof(F_NOT_MATCHES);
-            break;
-        }
+        format = F_NOT_MATCHES;
+        format_length = sizeof(F_NOT_MATCHES);
+        break;
 
+    case O_EQ:
         /* = */
-        case O_EQ:
+        if (expression -> field == F_XPOSTS)
         {
-            if (expression -> field == F_XPOSTS)
-            {
-                format = F_EQ;
-                format_length = sizeof(F_EQ);
-                break;
-            }
-
-            format = F_STRING_EQ;
-            format_length = sizeof(F_STRING_EQ);
+            format = F_EQ;
+            format_length = sizeof(F_EQ);
             break;
         }
 
+        format = F_STRING_EQ;
+        format_length = sizeof(F_STRING_EQ);
+        break;
+
+    case O_NEQ:
         /* != */
-        case O_NEQ:
+        if (expression -> field == F_XPOSTS)
         {
-            if (expression -> field == F_XPOSTS)
-            {
-                format = F_NEQ;
-                format_length = sizeof(F_NEQ);
-                break;
-            }
-
-            format = F_STRING_NEQ;
-            format_length = sizeof(F_STRING_NEQ);
+            format = F_NEQ;
+            format_length = sizeof(F_NEQ);
             break;
         }
 
+        format = F_STRING_NEQ;
+        format_length = sizeof(F_STRING_NEQ);
+        break;
+
+    case O_LT:
         /* < */
-        case O_LT:
-        {
-            format = F_LT;
-            format_length = sizeof(F_LT);
-            break;
-        }
+        format = F_LT;
+        format_length = sizeof(F_LT);
+        break;
 
+    case O_GT:
         /* > */
-        case O_GT:
-        {
-            format = F_GT;
-            format_length = sizeof(F_GT);
-            break;
-        }
+        format = F_GT;
+        format_length = sizeof(F_GT);
+        break;
 
+    case O_LE:
         /* <= */
-        case O_LE:
-        {
-            format = F_LE;
-            format_length = sizeof(F_LE);
-            break;
-        }
+        format = F_LE;
+        format_length = sizeof(F_LE);
+        break;
 
+    case O_GE:
         /* >= */
-        case O_GE:
-        {
-            format = F_GE;
-            format_length = sizeof(F_GE);
-            break;
-        }
+        format = F_GE;
+        format_length = sizeof(F_GE);
+        break;
 
-        default:
-        {
-            fprintf(stderr, PACKAGE ": internal error\n");
-            return NULL;
-        }
+    default:
+        fprintf(stderr, PACKAGE ": internal error\n");
+        return NULL;
     }
 
     /* Allocate space for the result */
@@ -824,9 +791,9 @@ int usenet_sub_add(
 
         snprintf(self -> expression, self -> expression_size, ONE_SUB, entry_sub);
     }
-    /* Otherwise we need to extend the existing expression */
     else
     {
+        /* We need to extend the existing expression */
         size_t new_size;
         char *new_expression;
 
@@ -913,10 +880,10 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
     /* Disconnect from the old connection */
     if ((self -> handle != NULL) && (self -> subscription != NULL))
     {
-        if (elvin_async_delete_subscription(
-                self -> handle, self -> subscription,
-                unsubscribe_cb, self,
-                error) == 0)
+        if (elvin_async_delete_subscription(self -> handle,
+                                            self -> subscription,
+                                            unsubscribe_cb, self,
+                                            error) == 0)
         {
             fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
             exit(1);
@@ -930,11 +897,11 @@ void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_e
 
     if ((self -> handle != NULL) && (self -> expression != NULL))
     {
-        if (elvin_async_add_subscription(
-                self -> handle, self -> expression, NULL, 1,
-                notify_cb, self,
-                subscribe_cb, self,
-                error) == 0)
+        if (elvin_async_add_subscription(self -> handle,
+                                         self -> expression, NULL, 1,
+                                         notify_cb, self,
+                                         subscribe_cb, self,
+                                         error) == 0)
         {
             fprintf(stderr, "elvin_async_add_subscription(): failed\n");
             exit(1);

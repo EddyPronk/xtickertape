@@ -136,97 +136,85 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
     state = ST_START;
     for (in = attachment; in < end; in++)
     {
-	ch = *in;
+        ch = *in;
 
-	switch (state)
-	{
-	    case ST_START:
-	    {
-		if (ch == '\r')
-		{
-		    *out++ = '\n';
-		    state = ST_CR;
-		}
-		else if (ch == '\n')
-		{
-		    *out++ = ch;
-		    state = ST_CRLF;
-		}
-		else
-		{
-		    *out++ = ch;
-		}
+        switch (state)
+        {
+        case ST_START:
+            if (ch == '\r')
+            {
+                *out++ = '\n';
+                state = ST_CR;
+            }
+            else if (ch == '\n')
+            {
+                *out++ = ch;
+                state = ST_CRLF;
+            }
+            else
+            {
+                *out++ = ch;
+            }
 
-		break;
-	    }
+            break;
 
-	    case ST_CR:
-	    {
-		if (ch == '\r')
-		{
-		    *out++ = '\n';
-		    state = ST_BODY;
-		}
-		else if (ch == '\n')
-		{
-		    state = ST_CRLF;
-		}
-		else
-		{
-		    *out++ = ch;
-		    state = ST_START;
-		}
+        case ST_CR:
+            if (ch == '\r')
+            {
+                *out++ = '\n';
+                state = ST_BODY;
+            }
+            else if (ch == '\n')
+            {
+                state = ST_CRLF;
+            }
+            else
+            {
+                *out++ = ch;
+                state = ST_START;
+            }
 
-		break;
-	    }
+            break;
 
-	    case ST_CRLF:
-	    {
-		if (ch == '\r')
-		{
-		    *out++ = '\n';
-		    state = ST_CRLFCR;
-		}
-		else if (ch == '\n')
-		{
-		    *out++ = ch;
-		    state = ST_BODY;
-		}
-		else
-		{
-		    *out++ = ch;
-		    state = ST_START;
-		}
+        case ST_CRLF:
+            if (ch == '\r')
+            {
+                *out++ = '\n';
+                state = ST_CRLFCR;
+            }
+            else if (ch == '\n')
+            {
+                *out++ = ch;
+                state = ST_BODY;
+            }
+            else
+            {
+                *out++ = ch;
+                state = ST_START;
+            }
 
-		break;
-	    }
+            break;
 
-	    case ST_CRLFCR:
-	    {
-		if (ch == '\n')
-		{
-		    state = ST_BODY;
-		}
-		else
-		{
-		    *out++ = ch;
-		    state = ST_BODY;
-		}
+        case ST_CRLFCR:
+            if (ch == '\n')
+            {
+                state = ST_BODY;
+            }
+            else
+            {
+                *out++ = ch;
+                state = ST_BODY;
+            }
 
-		break;
-	    }
+            break;
 
-	    case ST_BODY:
-	    {
-		*out++ = ch;
-		break;
-	    }
+        case ST_BODY:
+            *out++ = ch;
+            break;
 
-	    default:
-	    {
-		abort();
-	    }
-	}
+        default:
+            abort();
+        }
     }
 
     *length_out = out - copy;
@@ -535,7 +523,8 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
                     end--;
                 }
 
-                /* Allocate space for a copy of the body and null-terminate it */
+                /* Allocate space for a copy of the body and
+                 * null-terminate it */
                 *body_out = (char *)malloc(end - point + 1);
                 memcpy(*body_out, point, end - point);
                 (*body_out)[end - point] = 0;

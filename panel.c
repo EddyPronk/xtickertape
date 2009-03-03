@@ -389,7 +389,8 @@ static void file_keys(Widget widget, control_panel_t self, XtPointer unused)
 }
 
 
-/* This gets called when the user selects the "exit" menu item from the file menu */
+/* This gets called when the user selects the "exit" menu item from
+ * the file menu */
 static void file_exit(Widget widget, control_panel_t self, XtPointer unused)
 {
     tickertape_quit(self -> tickertape);
@@ -405,23 +406,31 @@ static void create_file_menu(control_panel_t self, Widget parent)
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
 
     /* Create the `reload groups' menu item */
-    item = XtVaCreateManagedWidget("reloadGroups", xmPushButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_groups, (XtPointer)self);
+    item = XtVaCreateManagedWidget("reloadGroups", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback,
+                  (XtCallbackProc)file_groups, (XtPointer)self);
 
     /* Create the `reload usenet' menu item */
-    item = XtVaCreateManagedWidget("reloadUsenet", xmPushButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_usenet, (XtPointer)self);
+    item = XtVaCreateManagedWidget("reloadUsenet", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback,
+                  (XtCallbackProc)file_usenet, (XtPointer)self);
 
     /* Create the `reload keys' menu item */
-    item = XtVaCreateManagedWidget("reloadKeys", xmPushButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_keys, (XtPointer)self);
+    item = XtVaCreateManagedWidget("reloadKeys", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback,
+                  (XtCallbackProc)file_keys, (XtPointer)self);
 
     /* Create a separator */
     XtVaCreateManagedWidget("separator", xmSeparatorGadgetClass, menu, NULL);
 
     /* Create the "exit" menu item */
-    item = XtVaCreateManagedWidget("exit", xmPushButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)file_exit, (XtPointer)self);
+    item = XtVaCreateManagedWidget("exit", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback,
+                  (XtCallbackProc)file_exit, (XtPointer)self);
 
     /* Create the menu's cascade button */
     XtVaCreateManagedWidget(
@@ -467,25 +476,29 @@ static void create_options_menu(control_panel_t self, Widget parent)
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
 
     /* Create the `threaded' menu item */
-    item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback, options_threaded, (XtPointer)self);
+    item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNvalueChangedCallback,
+                  options_threaded, (XtPointer)self);
     self -> is_threaded = XmToggleButtonGetState(item);
 
     /* Create the `show time' menu item */
-    item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback, options_show_time, (XtPointer)self);
+    item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNvalueChangedCallback,
+                  options_show_time, (XtPointer)self);
     self -> show_timestamps = XmToggleButtonGetState(item);
 
     /* Create a `close policy' menu item */
-    item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback, options_close_policy, (XtPointer)self);
+    item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNvalueChangedCallback,
+                  options_close_policy, (XtPointer)self);
     self -> close_on_send = XmToggleButtonGetState(item);
 
     /* Create the menu's cascade button */
-    XtVaCreateManagedWidget(
-        "optionsMenu", xmCascadeButtonWidgetClass, parent,
-        XmNsubMenuId, menu,
-        NULL);
+    XtVaCreateManagedWidget("optionsMenu", xmCascadeButtonWidgetClass, parent,
+                            XmNsubMenuId, menu, NULL);
 }
 
 
@@ -504,11 +517,10 @@ static void configure_about_box(Widget shell, XtPointer rock, XConfigureEvent *e
         (XtEventHandler)configure_about_box, rock);
 
     /* Set the minimum width/height to be the current width/height */
-    XtVaSetValues(
-        shell,
-        XmNminWidth, event -> width,
-        XmNminHeight, event -> height,
-        NULL);
+    XtVaSetValues(shell,
+                  XmNminWidth, event -> width,
+                  XmNminHeight, event -> height,
+                  NULL);
 }
 
 /* Creates the `About Box' */
@@ -537,23 +549,21 @@ static Widget create_about_box(control_panel_t self, Widget parent)
         top, wm_delete_window,
         (XtCallbackProc)action_dismiss, (XtPointer)self);
 
-    /* Add an event handler so that we can set the minimum size to be the initial size */
-    XtAddEventHandler(
-        top, StructureNotifyMask, False, 
-        (XtEventHandler)configure_about_box, (XtPointer)NULL);
+    /* Add an event handler so that we can set the minimum size to be
+     * the initial size */
+    XtAddEventHandler(top, StructureNotifyMask, False,
+                      (XtEventHandler)configure_about_box, (XtPointer)NULL);
 
     /* Create a Form widget to manage the dialog box's children */
-    form = XtVaCreateWidget(
-        "aboutBoxForm", xmFormWidgetClass, top,
-        NULL);
+    form = XtVaCreateWidget("aboutBoxForm", xmFormWidgetClass, top,
+                            NULL);
 
     /* Create a Form widget to manage the Labels */
-    info_form = XtVaCreateWidget(
-        "infoForm", xmFormWidgetClass, form,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_FORM,
-        NULL);
+    info_form = XtVaCreateWidget("infoForm", xmFormWidgetClass, form,
+                                 XmNleftAttachment, XmATTACH_FORM,
+                                 XmNrightAttachment, XmATTACH_FORM,
+                                 XmNtopAttachment, XmATTACH_FORM,
+                                 NULL);
 
     /* Create the title label */
     string = XmStringCreateSimple(PACKAGE " " VERSION);
@@ -587,14 +597,13 @@ static Widget create_about_box(control_panel_t self, Widget parent)
     XtManageChild(info_form);
 
     /* Create a Form widget to manage the button */
-    button_form = XtVaCreateWidget(
-        "buttonForm", xmFormWidgetClass, form,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_WIDGET,
-        XmNbottomAttachment, XmATTACH_FORM,
-        XmNtopWidget, info_form,
-        NULL);
+    button_form = XtVaCreateWidget("buttonForm", xmFormWidgetClass, form,
+                                   XmNleftAttachment, XmATTACH_FORM,
+                                   XmNrightAttachment, XmATTACH_FORM,
+                                   XmNtopAttachment, XmATTACH_WIDGET,
+                                   XmNbottomAttachment, XmATTACH_FORM,
+                                   XmNtopWidget, info_form,
+                                   NULL);
 
     /* Create the dismiss button */
     button = XtVaCreateManagedWidget(
@@ -607,9 +616,8 @@ static Widget create_about_box(control_panel_t self, Widget parent)
         XmNleftPosition, 40,
         XmNrightPosition, 60,
         NULL);
-    XtAddCallback(
-        button, XmNactivateCallback,
-        (XtCallbackProc)action_dismiss, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback,
+                  (XtCallbackProc)action_dismiss, (XtPointer)self);
 
     XtManageChild(button_form);
 
@@ -641,8 +649,10 @@ static void create_help_menu(control_panel_t self, Widget parent)
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
 
     /* Create the "about" menu item */
-    item = XtVaCreateManagedWidget("about", xmPushButtonGadgetClass, menu, NULL);
-    XtAddCallback(item, XmNactivateCallback, (XtCallbackProc)help_about, (XtPointer)self);
+    item = XtVaCreateManagedWidget("about", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback,
+                  (XtCallbackProc)help_about, (XtPointer)self);
 
     /* Create the menu's cascade button */
     cascade = XtVaCreateManagedWidget(
@@ -717,9 +727,9 @@ static Widget create_timeout_menu(control_panel_t self, Widget parent)
     /* Fill in the recommended timeout values */
     for (i = 0; timeouts[i] != NULL; i++)
     {
-        self -> timeouts[i] = XtVaCreateManagedWidget(
-            timeouts[i], xmPushButtonWidgetClass, menu,
-            NULL);
+        self -> timeouts[i] = XtVaCreateManagedWidget(timeouts[i],
+                                                      xmPushButtonWidgetClass,
+                                                      menu, NULL);
     }
 
     /* Manage the option button and return it */
@@ -798,19 +808,16 @@ static void create_history_box(control_panel_t self, Widget parent)
     XtManageChild(scroll_window);
 
     /* Add a callback for selection changes */
-    XtAddCallback(
-        self -> history, XtNcallback,
-        history_selection_callback, (XtPointer)self);
+    XtAddCallback(self -> history, XtNcallback,
+                  history_selection_callback, (XtPointer)self);
 
     /* Add a callback for showing attachments */
-    XtAddCallback(
-        self -> history, XtNattachmentCallback,
-        history_attachment_callback, (XtPointer)self);
+    XtAddCallback(self -> history, XtNattachmentCallback,
+                  history_attachment_callback, (XtPointer)self);
 
     /* Add a callback for showing message attachments */
-    XtAddCallback(
-        self -> history, XtNmotionCallback,
-        history_motion_callback, (XtPointer)self);
+    XtAddCallback(self -> history, XtNmotionCallback,
+                  history_motion_callback, (XtPointer)self);
 }
 
 /* Constructs the status line */
@@ -820,13 +827,12 @@ static void create_status_line(control_panel_t self, Widget parent)
     Widget frame;
 
     /* Create a frame for the status line */
-    frame = XtVaCreateWidget(
-        "statusFrame", xmFrameWidgetClass, parent,
-        XmNshadowType, XmSHADOW_IN,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        NULL);
+    frame = XtVaCreateWidget("statusFrame", xmFrameWidgetClass, parent,
+                             XmNshadowType, XmSHADOW_IN,
+                             XmNleftAttachment, XmATTACH_FORM,
+                             XmNrightAttachment, XmATTACH_FORM,
+                             XmNbottomAttachment, XmATTACH_FORM,
+                             NULL);
 
     /* Create an empty string for the status line */
     string = XmStringCreateSimple(PACKAGE " version " VERSION);
@@ -849,12 +855,11 @@ static void create_top_box(control_panel_t self, Widget parent)
     TextWidgetRec rc;
 
     /* Create a layout manager for the User Label and TextField */
-    form = XtVaCreateWidget(
-        "userForm", xmFormWidgetClass, parent,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        NULL);
+    form = XtVaCreateWidget("userForm", xmFormWidgetClass, parent,
+                            XmNleftAttachment, XmATTACH_FORM,
+                            XmNtopAttachment, XmATTACH_FORM,
+                            XmNbottomAttachment, XmATTACH_FORM,
+                            NULL);
 
     /* The "User" label */
     label = XtVaCreateManagedWidget(
@@ -872,35 +877,33 @@ static void create_top_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Read the resources for the string's text widget */
-    XtGetApplicationResources(
-        self -> user, &rc,
-        resources, XtNumber(resources),
-        NULL, 0);
-    self -> user_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
+    XtGetApplicationResources(self -> user, &rc,
+                              resources, XtNumber(resources),
+                              NULL, 0);
+    self -> user_encoder = utf8_encoder_alloc(XtDisplay(parent),
+                                              rc.font_list, rc.code_set);
 
     /* Manage the form widget now that all of its children are created */
     XtManageChild(form);
 
     /* The "Timeout" label */
     self -> timeout = create_timeout_menu(self, parent);
-    XtVaSetValues(
-        self -> timeout,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        NULL);
+    XtVaSetValues(self -> timeout,
+                  XmNrightAttachment, XmATTACH_FORM,
+                  XmNtopAttachment, XmATTACH_FORM,
+                  XmNbottomAttachment, XmATTACH_FORM,
+                  NULL);
 
     /* The "Group" menu button */
     self -> group = create_group_menu(self, parent);
-    XtVaSetValues(
-        self -> group,
-        XmNleftAttachment, XmATTACH_WIDGET,
-        XmNrightAttachment, XmATTACH_WIDGET,
-        XmNtopAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        XmNleftWidget, form,
-        XmNrightWidget, self -> timeout,
-        NULL);
+    XtVaSetValues(self -> group,
+                  XmNleftAttachment, XmATTACH_WIDGET,
+                  XmNrightAttachment, XmATTACH_WIDGET,
+                  XmNtopAttachment, XmATTACH_FORM,
+                  XmNbottomAttachment, XmATTACH_FORM,
+                  XmNleftWidget, form,
+                  XmNrightWidget, self -> timeout,
+                  NULL);
 }
 
 /* Set the send button's sensitivity */
@@ -957,22 +960,20 @@ static void create_text_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Read the resources for the string's text widget */
-    XtGetApplicationResources(
-        self -> text, &rc,
-        resources, XtNumber(resources),
-        NULL, 0);
-    self -> text_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
+    XtGetApplicationResources(self -> text, &rc,
+                              resources, XtNumber(resources),
+                              NULL, 0);
+    self -> text_encoder = utf8_encoder_alloc(XtDisplay(parent),
+                                              rc.font_list, rc.code_set);
 
     /* Alert us when the message text changes */
-    XtAddCallback(
-        self -> text, XmNvalueChangedCallback,
-        text_changed, (XtPointer)self);
+    XtAddCallback(self -> text, XmNvalueChangedCallback,
+                  text_changed, (XtPointer)self);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
-    XtAddCallback(
-        self -> text, XmNactivateCallback,
-        (XtCallbackProc)action_return, (XtPointer)self);
+    XtAddCallback(self -> text, XmNactivateCallback,
+                  (XtCallbackProc)action_return, (XtPointer)self);
 }
 
 /* Constructs the Mime type menu */
@@ -1010,12 +1011,11 @@ static void create_mime_box(control_panel_t self, Widget parent)
     TextWidgetRec rc;
 
     self -> mime_type = create_mime_type_menu(self, parent);
-    XtVaSetValues(
-        self -> mime_type,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_FORM,
-        XmNbottomAttachment, XmATTACH_FORM,
-        NULL);
+    XtVaSetValues(self -> mime_type,
+                  XmNleftAttachment, XmATTACH_FORM,
+                  XmNtopAttachment, XmATTACH_FORM,
+                  XmNbottomAttachment, XmATTACH_FORM,
+                  NULL);
 
     self -> mime_args = XtVaCreateManagedWidget(
         "mime_args", xmTextFieldWidgetClass, parent,
@@ -1026,17 +1026,16 @@ static void create_mime_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Read the resources for the string's text widget */
-    XtGetApplicationResources(
-        self -> mime_args, &rc,
-        resources, XtNumber(resources),
-        NULL, 0);
-    self -> mime_encoder = utf8_encoder_alloc(XtDisplay(parent), rc.font_list, rc.code_set);
+    XtGetApplicationResources(self -> mime_args, &rc,
+                              resources, XtNumber(resources),
+                              NULL, 0);
+    self -> mime_encoder = utf8_encoder_alloc(XtDisplay(parent),
+                                              rc.font_list, rc.code_set);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
-    XtAddCallback(
-        self -> mime_args, XmNactivateCallback,
-        (XtCallbackProc)action_return, (XtPointer)self);
+    XtAddCallback(self -> mime_args, XmNactivateCallback,
+                  (XtCallbackProc)action_return, (XtPointer)self);
 }
 
 /* Creates the bottom box (where the buttons live) */
@@ -1056,9 +1055,8 @@ static void create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_send when it gets pressed */
-    XtAddCallback(
-        self -> send, XmNactivateCallback,
-        (XtCallbackProc)action_send, (XtPointer)self);
+    XtAddCallback(self -> send, XmNactivateCallback,
+                  (XtCallbackProc)action_send, (XtPointer)self);
 
     /* Create the "Clear" button */
     button = XtVaCreateManagedWidget(
@@ -1073,9 +1071,8 @@ static void create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_clear when it gets pressed */
-    XtAddCallback(
-        button, XmNactivateCallback,
-        (XtCallbackProc)action_clear, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback,
+                  (XtCallbackProc)action_clear, (XtPointer)self);
 
 
     /* Create the "Cancel" button */
@@ -1091,9 +1088,8 @@ static void create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_cancel when it gets pressed */
-    XtAddCallback(
-        button, XmNactivateCallback,
-        (XtCallbackProc)action_cancel, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback,
+                  (XtCallbackProc)action_cancel, (XtPointer)self);
 }
 
 /* Configures the control panel's minimum dimensions */
@@ -1114,17 +1110,15 @@ static void configure_control_panel(Widget top, XtPointer rock, XConfigureEvent 
         (XtEventHandler)configure_control_panel, rock);
 
     /* Figure out how tall the history list is */
-    XtVaGetValues(
-        self -> history_form,
-        XmNheight, &history_height,
-        NULL);
+    XtVaGetValues(self -> history_form,
+                  XmNheight, &history_height,
+                  NULL);
 
     /* Set the minimum width and height */
-    XtVaSetValues(
-        top,
-        XmNminWidth, event -> width,
-        XmNminHeight, event -> height - history_height,
-        NULL);
+    XtVaSetValues(top,
+                  XmNminWidth, event -> width,
+                  XmNminHeight, event -> height - history_height,
+                  NULL);
 }
 
 /* Constructs the entire control panel */
@@ -1148,18 +1142,19 @@ static void init_ui(control_panel_t self, Widget parent)
         NULL);
 
     /* Add a handler for the WM_DELETE_WINDOW protocol */
-    wm_delete_window = XmInternAtom(XtDisplay(self -> top), "WM_DELETE_WINDOW", False);
-    XmAddWMProtocolCallback(self -> top, wm_delete_window, (XtCallbackProc)action_cancel, (XtPointer)self);
+    wm_delete_window = XmInternAtom(XtDisplay(self -> top),
+                                    "WM_DELETE_WINDOW", False);
+    XmAddWMProtocolCallback(self -> top, wm_delete_window,
+                            (XtCallbackProc)action_cancel, (XtPointer)self);
 
     /* Register an event handler for the first structure event */
-    XtAddEventHandler(
-        self -> top, StructureNotifyMask, False,
-        (XtEventHandler)configure_control_panel, (XtPointer)self);
+    XtAddEventHandler(self -> top, StructureNotifyMask, False,
+                      (XtEventHandler)configure_control_panel,
+                      (XtPointer)self);
 
     /* Create a form widget to manage the dialog box's children */
-    form = XtVaCreateWidget(
-        "controlPanelForm", xmFormWidgetClass, self -> top,
-        NULL);
+    form = XtVaCreateWidget("controlPanelForm", xmFormWidgetClass, self -> top,
+                            NULL);
 
     /* Create a menubar for the receiver */
     menubar = XmVaCreateSimpleMenuBar(
@@ -1182,49 +1177,45 @@ static void init_ui(control_panel_t self, Widget parent)
     XtManageChild(menubar);
 
     /* Create the top box */
-    top_form = XtVaCreateWidget(
-        "topForm", xmFormWidgetClass, form,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_WIDGET,
-        XmNtopWidget, menubar,
-        NULL);
+    top_form = XtVaCreateWidget("topForm", xmFormWidgetClass, form,
+                                XmNleftAttachment, XmATTACH_FORM,
+                                XmNrightAttachment, XmATTACH_FORM,
+                                XmNtopAttachment, XmATTACH_WIDGET,
+                                XmNtopWidget, menubar,
+                                NULL);
 
     create_top_box(self, top_form);
     XtManageChild(top_form);
 
     /* Create the text box */
-    text_form = XtVaCreateWidget(
-        "textForm", xmFormWidgetClass, form,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_WIDGET,
-        XmNtopWidget, top_form,
-        NULL);
+    text_form = XtVaCreateWidget("textForm", xmFormWidgetClass, form,
+                                 XmNleftAttachment, XmATTACH_FORM,
+                                 XmNrightAttachment, XmATTACH_FORM,
+                                 XmNtopAttachment, XmATTACH_WIDGET,
+                                 XmNtopWidget, top_form,
+                                 NULL);
 
     create_text_box(self, text_form);
     XtManageChild(text_form);
 
     /* Create the mime box */
-    mime_form = XtVaCreateWidget(
-        "mimeForm", xmFormWidgetClass, form,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_WIDGET,
-        XmNtopWidget, text_form,
-        NULL);
+    mime_form = XtVaCreateWidget("mimeForm", xmFormWidgetClass, form,
+                                 XmNleftAttachment, XmATTACH_FORM,
+                                 XmNrightAttachment, XmATTACH_FORM,
+                                 XmNtopAttachment, XmATTACH_WIDGET,
+                                 XmNtopWidget, text_form,
+                                 NULL);
     create_mime_box(self, mime_form);
     XtManageChild(mime_form);
 
     /* Create the buttons across the bottom */
-    button_form = XtVaCreateWidget(
-        "buttonForm", xmFormWidgetClass, form,
-        XmNfractionBase, 3,
-        XmNleftAttachment, XmATTACH_FORM,
-        XmNrightAttachment, XmATTACH_FORM,
-        XmNtopAttachment, XmATTACH_WIDGET,
-        XmNtopWidget, mime_form,
-        NULL);
+    button_form = XtVaCreateWidget("buttonForm", xmFormWidgetClass, form,
+                                   XmNfractionBase, 3,
+                                   XmNleftAttachment, XmATTACH_FORM,
+                                   XmNrightAttachment, XmATTACH_FORM,
+                                   XmNtopAttachment, XmATTACH_WIDGET,
+                                   XmNtopWidget, mime_form,
+                                   NULL);
     create_bottom_box(self, button_form);
     XtManageChild(button_form);
 
@@ -1250,7 +1241,8 @@ static void init_ui(control_panel_t self, Widget parent)
     XtManageChild(form);
 
     /* Make sure that we can use Editres */
-    XtAddEventHandler(self -> top, (EventMask)0, True, _XEditResCheckMessages, NULL);
+    XtAddEventHandler(self -> top, (EventMask)0, True,
+                      _XEditResCheckMessages, NULL);
 }
 
 
@@ -1274,7 +1266,8 @@ static void set_group_selection(control_panel_t self, menu_item_tuple_t tuple)
     }
     else
     {
-        /* Tell Motif that the menu item was selected, which will call select_group for us */
+        /* Tell Motif that the menu item was selected, which will call
+         * select_group for us */
         XtCallActionProc(tuple -> widget, "ArmAndActivate", NULL, NULL, 0);
     }
 }
@@ -1349,10 +1342,9 @@ static void set_timeout(control_panel_t self, int value)
     {
         if (atoi(timeouts[i]) == value)
         {
-            XtCallActionProc(
-                self -> timeouts[i],
-                "ArmAndActivate", NULL,
-                NULL, 0);
+            XtCallActionProc(self -> timeouts[i],
+                             "ArmAndActivate", NULL,
+                             NULL, 0);
             return;
         } 
     }
@@ -1373,7 +1365,8 @@ static int get_timeout(control_panel_t self)
     char *timeout;
     int result;
 
-    XtVaGetValues(XmOptionButtonGadget(self -> timeout), XmNlabelString, &string, NULL);
+    XtVaGetValues(XmOptionButtonGadget(self -> timeout),
+                  XmNlabelString, &string, NULL);
     if (XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &timeout))
     {
         result = 60 * atoi(timeout);
@@ -1399,10 +1392,9 @@ static void set_mime_type(control_panel_t self, char *string)
     {
         if (strcmp(mime_types[i], string) == 0)
         {
-            XtCallActionProc(
-                self -> mime_types[i],
-                "ArmAndActivate", NULL,
-                NULL, 0);
+            XtCallActionProc(self -> mime_types[i],
+                             "ArmAndActivate", NULL,
+                             NULL, 0);
             return;
         }
     }
@@ -1423,7 +1415,8 @@ static char *get_mime_type(control_panel_t self)
     XmString string;
     char *mime_type;
 
-    XtVaGetValues(XmOptionButtonGadget(self -> mime_type), XmNlabelString, &string, NULL);
+    XtVaGetValues(XmOptionButtonGadget(self -> mime_type),
+                  XmNlabelString, &string, NULL);
     if (XmStringGetLtoR(string, XmFONTLIST_DEFAULT_TAG, &mime_type))
     {
         XmStringFree(string);
@@ -1552,24 +1545,25 @@ static message_t construct_message(control_panel_t self)
     if (mime_type != NULL && mime_args != NULL)
     {
         /* Measure how long the attachment will need to be */
-        length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) + strlen(mime_args);
+        length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) +
+            strlen(mime_args);
         if ((attachment = malloc(length + 1)) == NULL)
         {
             length = 0;
         }
         else
         {
-            snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+            snprintf(attachment, length + 1, ATTACHMENT_FMT,
+                     mime_type, mime_args);
         }
     }
 
     /* Construct a message */
-    message = message_alloc(
-        self -> selection -> tag,
-        self -> selection -> title, user, text, get_timeout(self),
-        attachment, length,
-        NULL, uuid,
-        self -> message_id, self -> thread_id);
+    message = message_alloc(self -> selection -> tag,
+                            self -> selection -> title, user, text,
+                            get_timeout(self), attachment, length,
+                            NULL, uuid, self -> message_id,
+                            self -> thread_id);
 
     /* Free the user */
     if (user != NULL)
@@ -1624,7 +1618,8 @@ static void deconstruct_message(control_panel_t self, message_t message)
     HistorySelectId(self -> history, message_get_reply_id(message));
 
     /* Set the group */
-    if ((tuple = get_tuple_from_tag(self, message_get_info(message))) != NULL)
+    if ((tuple = get_tuple_from_tag(self,
+                                    message_get_info(message))) != NULL)
     {
         set_group_selection(self, tuple);
     }
@@ -1756,9 +1751,8 @@ static void action_return(Widget textField, control_panel_t self, XmAnyCallbackS
     /* If the `Send' button is enabled then tickle it */
     if (XtIsSensitive(self -> send))
     {
-        XtCallActionProc(
-            self -> send, "ArmAndActivate", cbs -> event, 
-            NULL, 0);
+        XtCallActionProc(self -> send, "ArmAndActivate", cbs -> event, 
+                         NULL, 0);
     }
 }
 
@@ -1945,10 +1939,9 @@ void *control_panel_add_subscription(
     tuple -> callback = callback;
     tuple -> rock = rock;
     
-    /* Create a menu item for the subscription.
-     * Use the user data field to point to the tuple so that we can
-     * find our way back to the control panel when we want to order the 
-     * menu items */
+    /* Create a menu item for the subscription.  Use the user data
+     * field to point to the tuple so that we can find our way back to
+     * the control panel when we want to order the menu items */
     string = XmStringCreateSimple(title);
     tuple -> widget = XtVaCreateManagedWidget(
         title, xmPushButtonWidgetClass, self -> group_menu,
@@ -1958,9 +1951,8 @@ void *control_panel_add_subscription(
     XmStringFree(string);
 
     /* Add a callback to update the selection when the item is selected */
-    XtAddCallback(
-        tuple -> widget, XmNactivateCallback,
-        (XtCallbackProc)select_group, (XtPointer)tuple);
+    XtAddCallback(tuple -> widget, XmNactivateCallback,
+                  (XtCallbackProc)select_group, (XtPointer)tuple);
 
     /* If this is our first menu item, then select it by default */
     if (self -> selection == NULL)
@@ -1971,7 +1963,8 @@ void *control_panel_add_subscription(
     return tuple;
 }
 
-/* Removes a subscription from the receiver (tuple was returned by addSubscription) */
+/* Removes a subscription from the receiver (tuple was returned by
+ * addSubscription) */
 void control_panel_remove_subscription(control_panel_t self, void *info)
 {
     menu_item_tuple_t tuple = (menu_item_tuple_t)info;
@@ -1996,11 +1989,10 @@ void control_panel_remove_subscription(control_panel_t self, void *info)
     self -> group_count--;
 
     /* Update the indices of the other tuples */
-    XtVaGetValues(
-        self -> group_menu,
-        XmNnumChildren, &num_children,
-        XmNchildren, &children,
-        NULL);
+    XtVaGetValues(self -> group_menu,
+                  XmNnumChildren, &num_children,
+                  XmNchildren, &children,
+                  NULL);
 
     for (child = children; child < children + num_children; child++)
     {
@@ -2068,11 +2060,10 @@ void control_panel_set_index(control_panel_t self, void *info, int index)
     tuple -> widget = NULL;
 
     /* Update the indices of the other tuples */
-    XtVaGetValues(
-        self -> group_menu,
-        XmNnumChildren, &num_children,
-        XmNchildren, &children,
-        NULL);
+    XtVaGetValues(self -> group_menu,
+                  XmNnumChildren, &num_children,
+                  XmNchildren, &children,
+                  NULL);
 
     for (child = children; child < children + num_children; child++)
     {
@@ -2100,11 +2091,11 @@ void control_panel_set_index(control_panel_t self, void *info, int index)
     XmStringFree(string);
 
     /* Add a callback to update the selection when the item is specified */
-    XtAddCallback(
-        tuple -> widget, XmNactivateCallback,
-        (XtCallbackProc)select_group, (XtPointer)tuple);
+    XtAddCallback(tuple -> widget, XmNactivateCallback,
+                  (XtCallbackProc)select_group, (XtPointer)tuple);
 
-    /* If it was the selection, then make sure it is still selected in the menu */
+    /* If it was the selection, then make sure it is still selected in
+     * the menu */
     if (self -> selection == tuple)
     {
         set_group_selection(self, tuple);
@@ -2124,13 +2115,13 @@ void control_panel_retitle_subscription(control_panel_t self, void *info, char *
 
     /* Update the menu item's label */
     string = XmStringCreateSimple(title);
-    XtVaSetValues(
-        tuple -> widget,
-        XmNlabelString, string,
-        NULL);
+    XtVaSetValues(tuple -> widget,
+                  XmNlabelString, string,
+                  NULL);
     XmStringFree(string);
 
-    /* If this is the selected item, then update the MenuButton's label as well */
+    /* If this is the selected item, then update the MenuButton's
+     * label as well */
     if (self -> selection == tuple)
     {
         set_group_selection(self, tuple);
@@ -2151,11 +2142,10 @@ static menu_item_tuple_t get_tuple_from_tag(control_panel_t self, char *tag)
     }
 
     /* Get the list of children */
-    XtVaGetValues(
-        self -> group_menu,
-        XmNnumChildren, &num_children,
-        XmNchildren, &children,
-        NULL);
+    XtVaGetValues(self -> group_menu,
+                  XmNnumChildren, &num_children,
+                  XmNchildren, &children,
+                  NULL);
 
     /* Find the matching one */
     for (child = children; child < children + num_children; child++)
@@ -2197,7 +2187,8 @@ static void prepare_reply(control_panel_t self, message_t message)
     {
         char *id;
 
-        if ((tuple = get_tuple_from_tag(self, message_get_info(message))) != NULL)
+        if ((tuple = get_tuple_from_tag(self,
+                                        message_get_info(message))) != NULL)
         {
             self -> selection = tuple;
             set_group_selection(self, tuple);
@@ -2252,9 +2243,11 @@ void control_panel_history_prev(control_panel_t self)
     int new_point;
 
     /* See if there is a previous message to visit */
-    new_point = (self -> send_history_count + self -> send_history_point - 1) %
+    new_point = (self -> send_history_count +
+                 self -> send_history_point - 1) %
         self -> send_history_count;
-    if (new_point == self -> send_history_next || self -> send_history[new_point] == NULL)
+    if (new_point == self -> send_history_next ||
+        self -> send_history[new_point] == NULL)
     {
         return;
     }

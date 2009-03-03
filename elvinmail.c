@@ -27,7 +27,8 @@ static const char *progname;
 static void
 usage(void)
 {
-    fprintf(stderr, "usage: %s [OPTION]... [host [port]]\n"
+    fprintf(stderr,
+            "usage: %s [OPTION]... [host [port]]\n"
             "    -i file\tread the message from file rather than stdin\n"
             "    -f folder\tinclude the folder name in the notification\n"
             "    -g group\tpost message to a tickertape group too\n"

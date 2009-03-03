@@ -105,75 +105,65 @@ static int lex_domain_lit_esc(mbox_parser_t self, int ch);
 /* Awaiting the first character of a token*/
 static int lex_start(mbox_parser_t self, int ch)
 {
+    char *pointer;
+
     switch (ch)
     {
-        /* Watch for a quoted-string */
-        case '"':
+    case '"':
+        /* Quoted string */
+        self -> lexer_state = lex_string;
+        return 0;
+
+    case '(':
+        /* Comment.  If we don't already have a name then use the
+         * comment as the name */
+        if (*self -> name_pointer == '\0')
         {
-            self -> lexer_state = lex_string;
+            self -> lexer_state = lex_comment;
             return 0;
         }
 
-        /* Watch for a comment */
-        case '(':
-        {
-            /* If we don't already have a name then use the comment as the name */
-            if (*self -> name_pointer == '\0')
-            {
-                self -> lexer_state = lex_comment;
-                return 0;
-            }
+        /* Otherwise throw the comment away */
+        self -> lexer_state = lex_ignored_comment;
+        return 0;
 
-            /* Otherwise throw the comment away */
-            self -> lexer_state = lex_ignored_comment;
-            return 0;
+    case '[':
+        /* Domain-literal */
+        *(self -> email_pointer++) = ch;
+        self -> lexer_state = lex_domain_lit;
+        return 0;
+
+    case '<':
+        /* Start of a route-addr.  Don't allow multiple
+         * route-addrs */
+        if (self -> parser_state != PRE_ROUTE_ADDR)
+        {
+            return -1;
         }
 
-        /* Watch for a domain-literal */
-        case '[':
+        /* We're looking at a `name <address>' format mailbox */
+        *self -> email_pointer = '\0';
+
+        /* Exchange the email and name buffers */
+        pointer = self -> name;
+        self -> name = self -> email;
+        self -> email = pointer;
+        self -> email_pointer = self -> name_pointer;
+
+        self -> parser_state = ROUTE_ADDR;
+        return 0;
+
+    case '>':
+        /* End of a route-addr */
+        if (self -> parser_state != ROUTE_ADDR)
         {
-            *(self -> email_pointer++) = ch;
-            self -> lexer_state = lex_domain_lit;
-            return 0;
+            return -1;
         }
 
-        /* Watch for the start of a route-addr */
-        case '<':
-        {
-            char *pointer;
-
-            /* Don't allow multiple route-addrs */
-            if (self -> parser_state != PRE_ROUTE_ADDR)
-            {
-                return -1;
-            }
-
-            /* We're looking at a `name <address>' format mailbox */
-            *self -> email_pointer = '\0';
-
-            /* Exchange the email and name buffers */
-            pointer = self -> name;
-            self -> name = self -> email;
-            self -> email = pointer;
-            self -> email_pointer = self -> name_pointer;
-
-            self -> parser_state = ROUTE_ADDR;
-            return 0;
-        }
-
-        /* Watch for the end of a route-addr */
-        case '>':
-        {
-            if (self -> parser_state != ROUTE_ADDR)
-            {
-                return -1;
-            }
-
-            /* Null-terminate the email string */
-            *self -> email_pointer = '\0';
-            self -> parser_state = POST_ROUTE_ADDR;
-            return 0;
-        }
+        /* Null-terminate the email string */
+        *self -> email_pointer = '\0';
+        self -> parser_state = POST_ROUTE_ADDR;
+        return 0;
     }
 
     /* Compress whitespace */
@@ -191,81 +181,71 @@ static int lex_start(mbox_parser_t self, int ch)
 /* Skipping additional whitespace */
 static int lex_white(mbox_parser_t self, int ch)
 {
+    char *pointer;
+
     switch (ch)
     {
-        /* Watch for a quoted string */
-        case '"':
+    case '"':
+        /* Quoted string */
+        *(self -> email_pointer++) = ' ';
+        self -> lexer_state = lex_string;
+        return 0;
+
+    case '(':
+        /* Comment.  If we don't already have a name then use the
+         * comment */
+        if (*self -> name == '\0')
         {
-            *(self -> email_pointer++) = ' ';
-            self -> lexer_state = lex_string;
+            self -> lexer_state = lex_comment;
             return 0;
         }
 
-        /* Watch for a comment */
-        case '(':
-        {
-            /* If we don't already have a name then use the comment */
-            if (*self -> name == '\0')
-            {
-                self -> lexer_state = lex_comment;
-                return 0;
-            }
+        /* Otherwise throw the comment away */
+        self -> lexer_state = lex_ignored_comment;
+        return 0;
 
-            /* Otherwise throw the comment away */
-            self -> lexer_state = lex_ignored_comment;
-            return 0;
+    case '[':
+        /* Domain-literal */
+        *(self -> email_pointer++) = ' ';
+        *(self -> email_pointer++) = ch;
+        self -> lexer_state = lex_domain_lit;
+        return 0;
+
+    case '<':
+        /* Start of a route-addr.  Don't allow multiple
+         * route-addrs */
+        if (self -> parser_state != PRE_ROUTE_ADDR)
+        {
+            return -1;
         }
 
-        /* Watch for a domain-literal */
-        case '[':
+        /* We're looking a a `name <address>' format mailbox */
+        *self -> email_pointer = '\0';
+
+        /* Exchange the email and name buffers */
+        pointer = self -> name;
+        self -> name = self -> email;
+        self -> email = pointer;
+        self -> email_pointer = self -> name_pointer;
+
+        self -> lexer_state = lex_start;
+        self -> parser_state = ROUTE_ADDR;
+        return 0;
+
+    case '>':
+        /* End of a route-addr */
+        if (self -> parser_state != ROUTE_ADDR)
         {
-            *(self -> email_pointer++) = ' ';
-            *(self -> email_pointer++) = ch;
-            self -> lexer_state = lex_domain_lit;
-            return 0;
+            return -1;
         }
 
-        /* Watch for the start of a route-addr */
-        case '<':
-        {
-            char *pointer;
+        /* Null-terminate the email string */
+        *self -> email_pointer = '\0';
 
-            /* Don't allow multiple route-addrs */
-            if (self -> parser_state != PRE_ROUTE_ADDR)
-            {
-                return -1;
-            }
-
-            /* We're looking a a `name <address>' format mailbox */
-            *self -> email_pointer = '\0';
-
-            /* Exchange the email and name buffers */
-            pointer = self -> name;
-            self -> name = self -> email;
-            self -> email = pointer;
-            self -> email_pointer = self -> name_pointer;
-
-            self -> lexer_state = lex_start;
-            self -> parser_state = ROUTE_ADDR;
-            return 0;
-        }
-
-        /* Watch for the end of a route-addr */
-        case '>':
-        {
-            if (self -> parser_state != ROUTE_ADDR)
-            {
-                return -1;
-            }
-
-            /* Null-terminate the email string */
-            *self -> email_pointer = '\0';
-
-            /* No longer skipping whitespace... */
-            self -> lexer_state = lex_start;
-            self -> parser_state = POST_ROUTE_ADDR;
-            return 0;
-        }
+        /* No longer skipping whitespace... */
+        self -> lexer_state = lex_start;
+        self -> parser_state = POST_ROUTE_ADDR;
+        return 0;
     }
 
     /* Ignore additional whitespace */
@@ -286,26 +266,20 @@ static int lex_string(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
-        /* End of string? */
-        case '"':
-        {
-            self -> lexer_state = lex_start;
-            return 0;
-        }
+    case '"':
+        /* End of string */
+        self -> lexer_state = lex_start;
+        return 0;
 
-        /* Escape character? */
-        case '\\':
-        {
-            self -> lexer_state = lex_string_esc;
-            return 0;
-        }
+    case '\\':
+        /* Escape character */
+        self -> lexer_state = lex_string_esc;
+        return 0;
 
+    default:
         /* Let anything else through */
-        default:
-        {
-            *(self -> email_pointer++) = ch;
-            return 0;
-        }
+        *(self -> email_pointer++) = ch;
+        return 0;
     }
 }
 
@@ -323,33 +297,25 @@ static int lex_comment(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
-        /* End of comment? */
-        case ')':
-        {
-            *self -> name_pointer = '\0';
-            self -> lexer_state = lex_start;
-            return 0;
-        }
+    case ')':
+        /* End of comment */
+        *self -> name_pointer = '\0';
+        self -> lexer_state = lex_start;
+        return 0;
 
+    case '\\':
         /* Escape character */
-        case '\\':
-        {
-            self -> lexer_state = lex_comment_esc;
-            return 0;
-        }
+        self -> lexer_state = lex_comment_esc;
+        return 0;
 
-        /* Bogus comment character? */
-        case '(':
-        {
-            return -1;
-        }
+    case '(':
+        /* Bogus comment character */
+        return -1;
 
+    default:
         /* Anything else is part of the comment */
-        default:
-        {
-            *(self -> name_pointer++) = ch;
-            return 0;
-        }
+        *(self -> name_pointer++) = ch;
+        return 0;
     }
 }
 
@@ -366,31 +332,23 @@ static int lex_ignored_comment(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
-        /* end of comment? */
-        case ')':
-        {
-            self -> lexer_state = lex_start;
-            return 0;
-        }
+    case ')':
+        /* end of comment */
+        self -> lexer_state = lex_start;
+        return 0;
 
-        /* escape character? */
-        case '\\':
-        {
-            self -> lexer_state = lex_ignored_comment_esc;
-            return 0;
-        }
+    case '\\':
+        /* escape character */
+        self -> lexer_state = lex_ignored_comment_esc;
+        return 0;
 
-        /* bogus character? */
-        case '(':
-        {
-            return -1;
-        }
+    case '(':
+        /* bogus character */
+        return -1;
 
+    default:
         /* Anything else is part of the comment */
-        default:
-        {
-            return 0;
-        }
+        return 0;
     }
 }
 
@@ -406,34 +364,26 @@ static int lex_domain_lit(mbox_parser_t self, int ch)
 {
     switch (ch)
     {
-        /* End of domain literal? */
-        case ']':
-        {
-            *(self -> email_pointer++) = ch;
-            self -> lexer_state = lex_start;
-            return 0;
-        }
+    case ']':
+        /* End of domain literal */
+        *(self -> email_pointer++) = ch;
+        self -> lexer_state = lex_start;
+        return 0;
 
-        /* Escape character? */
-        case '\\':
-        {
-            *(self -> email_pointer++) = ch;
-            self -> lexer_state = lex_domain_lit_esc;
-            return 0;
-        }
+    case '\\':
+        /* Escape character */
+        *(self -> email_pointer++) = ch;
+        self -> lexer_state = lex_domain_lit_esc;
+        return 0;
 
-        /* Illegal character? */
-        case '[':
-        {
-            return -1;
-        }
+    case '[':
+        /* Illegal character */
+        return -1;
 
+    default:
         /* Anything else is permitted */
-        default:
-        {
-            *(self -> email_pointer++) = ch;
-            return 0;
-        }
+        *(self -> email_pointer++) = ch;
+        return 0;
     }
 }
 

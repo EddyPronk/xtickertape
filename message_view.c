@@ -169,14 +169,14 @@ static void paint_string(
         XChangeGC(display, gc, GCForeground, &values);
 
         /* Draw the string */
-        utf8_renderer_draw_string(display, drawable, gc, renderer, x, y, bbox, string);
+        utf8_renderer_draw_string(display, drawable, gc, renderer,
+                                  x, y, bbox, string);
 
         /* Draw the underline */
         if (has_underline)
         {
-            utf8_renderer_draw_underline(
-                renderer, display, drawable, gc,
-                x, y, bbox, sizes -> width);
+            utf8_renderer_draw_underline(renderer, display, drawable, gc,
+                                         x, y, bbox, sizes -> width);
         }
     }
 }
@@ -223,8 +223,7 @@ message_view_t message_view_alloc(
     }
 
     /* Convert that into a string */
-    snprintf(self -> timestamp, TIMESTAMP_SIZE,
-             TIMESTAMP_FORMAT,
+    snprintf(self -> timestamp, TIMESTAMP_SIZE, TIMESTAMP_FORMAT,
              ((timestamp -> tm_hour + 11) % 12) + 1,
              timestamp -> tm_min,
             timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
@@ -238,16 +237,16 @@ message_view_t message_view_alloc(
     self -> indent_width = sizes.width;
 
     /* Measure the message's strings */
-    utf8_renderer_measure_string(
-        renderer, self -> timestamp, &self -> timestamp_sizes);
-    utf8_renderer_measure_string(
-        renderer, message_get_group(message), &self -> group_sizes);
-    utf8_renderer_measure_string(
-        renderer, message_get_user(message), &self -> user_sizes);
-    utf8_renderer_measure_string(
-        renderer, message_get_string(message), &self -> message_sizes);
-    utf8_renderer_measure_string(
-        renderer, SEPARATOR, &self -> separator_sizes);
+    utf8_renderer_measure_string(renderer, self -> timestamp,
+                                 &self -> timestamp_sizes);
+    utf8_renderer_measure_string(renderer, message_get_group(message),
+                                 &self -> group_sizes);
+    utf8_renderer_measure_string(renderer, message_get_user(message),
+                                 &self -> user_sizes);
+    utf8_renderer_measure_string(renderer, message_get_string(message),
+                                 &self -> message_sizes);
+    utf8_renderer_measure_string(renderer, SEPARATOR,
+                                 &self -> separator_sizes);
     return self;
 }
 
@@ -381,7 +380,8 @@ void message_view_paint(
     /* And finally draw the underline */
     if (underline_height)
     {
-        XFillRectangle(display, drawable, gc, x, y + 2, px - x, underline_height);
+        XFillRectangle(display, drawable, gc, x, y + 2, px - x,
+                       underline_height);
     }
 #endif /* DEBUG_PER_CHAR */
 
@@ -392,11 +392,10 @@ void message_view_paint(
         x += self -> noon_width;
 
         /* Draw the timestamp right justified */
-        paint_string(
-            display, drawable, gc, timestamp_pixel,
-            x - self -> timestamp_sizes.width , y,
-            bbox, &self -> timestamp_sizes,
-            self -> renderer, self -> timestamp, False);
+        paint_string(display, drawable, gc, timestamp_pixel,
+                     x - self -> timestamp_sizes.width , y,
+                     bbox, &self -> timestamp_sizes,
+                     self -> renderer, self -> timestamp, False);
 
         /* Indent the next bit */
         x += self -> indent_width;
@@ -406,42 +405,37 @@ void message_view_paint(
     x += self -> indent * self -> indent_width;
 
     /* Paint the group string */
-    paint_string(
-        display, drawable, gc, group_pixel,
-        x, y, bbox, &self -> group_sizes,
-        self -> renderer, message_get_group(self -> message),
-        self -> has_underline);
+    paint_string(display, drawable, gc, group_pixel,
+                 x, y, bbox, &self -> group_sizes,
+                 self -> renderer, message_get_group(self -> message),
+                 self -> has_underline);
     x += self -> group_sizes.width;
 
     /* Paint the first separator */
-    paint_string(
-        display, drawable, gc, separator_pixel,
-        x, y, bbox, &self -> separator_sizes,
-        self -> renderer, SEPARATOR,
-        self -> has_underline);
+    paint_string(display, drawable, gc, separator_pixel,
+                 x, y, bbox, &self -> separator_sizes,
+                 self -> renderer, SEPARATOR,
+                 self -> has_underline);
     x += self -> separator_sizes.width;
 
     /* Paint the user string */
-    paint_string(
-        display, drawable, gc, user_pixel,
-        x, y, bbox, &self -> user_sizes,
-        self -> renderer, message_get_user(self -> message),
-        self -> has_underline);
+    paint_string(display, drawable, gc, user_pixel,
+                 x, y, bbox, &self -> user_sizes,
+                 self -> renderer, message_get_user(self -> message),
+                 self -> has_underline);
     x += self -> user_sizes.width;
 
     /* Paint the second separator */
-    paint_string(
-        display, drawable, gc, separator_pixel,
-        x, y, bbox, &self -> separator_sizes,
-        self -> renderer, SEPARATOR,
-        self -> has_underline);
+    paint_string(display, drawable, gc, separator_pixel,
+                 x, y, bbox, &self -> separator_sizes,
+                 self -> renderer, SEPARATOR,
+                 self -> has_underline);
     x += self -> separator_sizes.width;
 
     /* Paint the message string */
-    paint_string(
-        display, drawable, gc, message_pixel,
-        x, y, bbox, &self -> message_sizes,
-        self -> renderer, message_get_string(self -> message),
-        self -> has_underline);
+    paint_string(display, drawable, gc, message_pixel,
+                 x, y, bbox, &self -> message_sizes,
+                 self -> renderer, message_get_string(self -> message),
+                 self -> has_underline);
     x += self -> message_sizes.width;
 }

@@ -149,11 +149,10 @@ static int accept_subscription(groups_parser_t self)
     }
 
     /* Call it with the information */
-    result = self -> callback(
-        self -> rock, self -> name,
-        self -> in_menu, self -> has_nazi,
-        self -> min_time, self -> max_time,
-        self -> key_names, self -> key_count);
+    result = self -> callback(self -> rock, self -> name,
+                              self -> in_menu, self -> has_nazi,
+                              self -> min_time, self -> max_time,
+                              self -> key_names, self -> key_count);
 
     /* Clean up */
     for (i = 0; i < self -> key_count; i++)
@@ -175,7 +174,8 @@ static int accept_subscription(groups_parser_t self)
 /* Prints a consistent error message */
 static void parse_error(groups_parser_t self, char *message)
 {
-    fprintf(stderr, "%s: parse error line %d: %s\n", self -> tag, self -> line_num, message);
+    fprintf(stderr, "%s: parse error line %d: %s\n",
+            self -> tag, self -> line_num, message);
 }
 
 /* Adds a key to the current list */
@@ -534,7 +534,7 @@ static int lex_min_time(groups_parser_t self, int ch)
 static int lex_max_time(groups_parser_t self, int ch)
 {
     /* Watch for end of token */
-    if ((ch == EOF) || (ch == '\n'))
+    if (ch == EOF || ch == '\n')
     {
         /* Null-terminate the token */
         if (append_char(self, 0) < 0)
@@ -603,7 +603,7 @@ static int lex_max_time(groups_parser_t self, int ch)
 static int lex_bad_time(groups_parser_t self, int ch)
 {
     /* Watch for EOF, end of line or ':' as end of token */
-    if ((ch == EOF) || (ch == '\n') || (ch == ':'))
+    if (ch == EOF || ch == '\n' || ch == ':')
     {
         size_t length;
         char *buffer;
@@ -734,7 +734,7 @@ static int lex_keys(groups_parser_t self, int ch)
 static int lex_superfluous(groups_parser_t self, int ch)
 {
     /* Watch for EOF or linefeed */
-    if ((ch == EOF) || (ch == '\n'))
+    if (ch == EOF || ch == '\n')
     {
         size_t length;
         char *buffer;

@@ -554,7 +554,8 @@ static size_t utf8_renderer_iconv(
         }
 
         /* Try to convert the sequence */
-        if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
+        if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf,
+                       outbytesleft)) == (size_t)-1)
         {
             switch (errno)
             {
@@ -704,8 +705,7 @@ void utf8_renderer_measure_string(
     sizes -> width = width;
     sizes -> ascent = self -> font -> ascent;
     sizes -> descent = 
-        MAX(
-            self -> font -> descent,
+        MAX(self -> font -> descent,
             self -> underline_position + self -> underline_thickness);
 }
 
@@ -790,13 +790,15 @@ void utf8_renderer_draw_string(
                                 abort();
                             }
 
-                            XDrawString(display, drawable, gc, left, y, first, last - first);
+                            XDrawString(display, drawable, gc, left, y,
+                                        first, last - first);
                             return;
                         }
                     }
 
                     /* Still visible at the end of the buffer */
-                    XDrawString(display, drawable, gc, left, y, first, last - first);
+                    XDrawString(display, drawable, gc, left, y,
+                                first, last - first);
                     first = last;
                     left = right;
                 }
@@ -843,13 +845,15 @@ void utf8_renderer_draw_string(
                                 abort();
                             }
 
-                            XDrawString16(display, drawable, gc, left, y, first, last - first);
+                            XDrawString16(display, drawable, gc, left, y,
+                                          first, last - first);
                             return;
                         }
                     }
 
                     /* Still visible at the end of the buffer */
-                    XDrawString16(display, drawable, gc, left, y, first, last - first);
+                    XDrawString16(display, drawable, gc, left, y,
+                                  first, last - first);
                     first = last;
                     left = right;
                 }
@@ -869,12 +873,11 @@ void utf8_renderer_draw_underline(
     XRectangle *bbox,
     long width)
 {
-    XFillRectangle(
-        display, drawable, gc,
-        MAX(x, bbox -> x),
-        y + self -> underline_position,
-        MIN(x + width, (long)bbox -> x + (long)bbox -> width) - MAX(x, bbox -> x),
-        self -> underline_thickness);
+    XFillRectangle(display, drawable, gc,
+                   MAX(x, bbox -> x), y + self -> underline_position,
+                   MIN(x + width, (long)bbox -> x + (long)bbox -> width) -
+                   MAX(x, bbox -> x),
+                   self -> underline_thickness);
 }
 
 

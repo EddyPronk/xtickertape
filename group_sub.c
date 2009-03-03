@@ -169,7 +169,8 @@ struct group_sub
  */
 
 #if ! defined(ELVIN_VERSION_AT_LEAST)    
-/* Delivers a notification which matches the receiver's subscription expression */
+/* Delivers a notification which matches the receiver's subscription
+ * expression */
 static void notify_cb(
     elvin_handle_t handle,
     elvin_subscription_t subscription,
@@ -475,12 +476,9 @@ static void notify_cb(
     }
 
     /* Construct a message */
-    message = message_alloc(
-        self -> name,
-        self -> name, user, text, (unsigned long) timeout,
-        attachment, length,
-        tag, message_id, reply_id,
-        thread_id);
+    message = message_alloc(self -> name, self -> name, user, text,
+                            (unsigned long) timeout, attachment, length,
+                            tag, message_id, reply_id, thread_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> rock, message, self -> has_nazi);
@@ -494,7 +492,8 @@ static void notify_cb(
     }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-/* Delivers a notification which matches the receiver's subscription expression */
+/* Delivers a notification which matches the receiver's subscription
+ * expression */
 static int notify_cb(
     elvin_handle_t handle,
     elvin_subscription_t subscription,
@@ -611,7 +610,6 @@ static int notify_cb(
         switch (type)
         {
             case ELVIN_INT32:
-            {
                 if (version < 3001 && value.i <= 60)
                 {
                     timeout = value.i * 60;
@@ -622,10 +620,8 @@ static int notify_cb(
                 }
 
                 break;
-            }
 
             case ELVIN_INT64:
-            {
                 if (version < 3001 && value.h <= 60)
                 {
                     timeout = (int)value.h * 60;
@@ -636,10 +632,8 @@ static int notify_cb(
                 }
 
                 break;
-            }
 
             case ELVIN_REAL64:
-            {
                 if (version < 3001 && value.d <= 60)
                 {
                     timeout = (int)(0.5 + 60 * value.d);
@@ -650,10 +644,8 @@ static int notify_cb(
                 }
 
                 break;
-            }
 
             case ELVIN_STRING:
-            {
                 timeout = atoi(value.s);
                 if (version < 3001 && timeout < 60)
                 {
@@ -661,12 +653,9 @@ static int notify_cb(
                 }
 
                 break;
-            }
 
             default:
-            {
                 break;
-            }
         }
     }
 
@@ -684,7 +673,9 @@ static int notify_cb(
     }
 
     /* Get the `Attachment' field from the notification */
-    if (!elvin_notification_get(notification, F3_ATTACHMENT, &found, &type, &value, error))
+    if (!elvin_notification_get(notification, F3_ATTACHMENT,
+				&found, &type, &value,
+				error))
     {
         fprintf(stderr, "elvin_notification_get(): failed\n");
         elvin_error_fprintf(stderr, error);
@@ -707,11 +698,10 @@ static int notify_cb(
     else
     {
         /* Try the backward compatible `MIME-TYPE' field */
-        if (! elvin_notification_get_string(
-                notification,
-                F2_MIME_TYPE,
-                NULL, &mime_type,
-                error))
+        if (! elvin_notification_get_string(notification,
+                                            F2_MIME_TYPE,
+                                            NULL, &mime_type,
+                                            error))
         {
             fprintf(stderr, "elvin_notification_get_string(): failed");
             elvin_error_fprintf(stderr, error);
@@ -764,9 +754,9 @@ static int notify_cb(
                     memcpy(buffer + header_length, value.o.data, value.o.length);
                 }
             }
-            /* But not other kinds */
             else
             {
+                /* But not other kinds */
                 mime_args.data = NULL;
                 mime_args.length = 0;
             }
@@ -816,12 +806,9 @@ static int notify_cb(
     }
 
     /* Construct a message */
-    message = message_alloc(
-        self -> name,
-        self -> name, user, text, (unsigned long) timeout,
-        attachment, length,
-        tag, message_id,
-        reply_id, thread_id);
+    message = message_alloc(self -> name, self -> name, user, text,
+                            (unsigned long) timeout, attachment, length,
+                            tag, message_id, reply_id, thread_id);
 
     /* Deliver the message */
     (*self -> callback)(self -> rock, message, self -> has_nazi);
@@ -872,11 +859,8 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add the xtickertape version number */
-    if (elvin_notification_add_int32(
-            notification,
-            F3_VERSION,
-            3001,
-            self -> error) == 0)
+    if (elvin_notification_add_int32(notification, F3_VERSION, 3001,
+                                     self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_int32(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -884,11 +868,8 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add an xtickertape user agent tag */
-    if (elvin_notification_add_string(
-            notification,
-            F3_USER_AGENT,
-            PACKAGE "-" VERSION,
-            self -> error) == 0)
+    if (elvin_notification_add_string(notification, F3_USER_AGENT,
+                                      PACKAGE "-" VERSION, self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_string(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -897,16 +878,10 @@ static void send_message(group_sub_t self, message_t message)
 
     /* Add the `Group' field and the backward compatible `TICKERTAPE'
      * field */
-    if (elvin_notification_add_string(
-            notification,
-            F3_GROUP,
-            self -> name,
-            self -> error) == 0 ||
-        elvin_notification_add_string(
-            notification,
-            F2_TICKERTAPE,
-            self -> name,
-            self -> error) == 0)
+    if (elvin_notification_add_string(notification, F3_GROUP, self -> name,
+                                      self -> error) == 0 ||
+        elvin_notification_add_string(notification, F2_TICKERTAPE,
+                                      self -> name, self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_string(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -915,16 +890,12 @@ static void send_message(group_sub_t self, message_t message)
 
     /* Add the `From' field and the backward compatible `USER'
      * field */
-    if (elvin_notification_add_string(
-            notification,
-            F3_FROM,
-            message_get_user(message),
-            self -> error) == 0 ||
-        elvin_notification_add_string(
-            notification,
-            F2_USER,
-            message_get_user(message),
-            self -> error) == 0)
+    if (elvin_notification_add_string(notification, F3_FROM,
+                                      message_get_user(message),
+                                      self -> error) == 0 ||
+        elvin_notification_add_string(notification, F2_USER,
+                                      message_get_user(message),
+                                      self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_string(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -933,16 +904,12 @@ static void send_message(group_sub_t self, message_t message)
 
     /* Add the `Message' field and the backward compatible
      * `TICKERTEXT' field */
-    if (elvin_notification_add_string(
-            notification,
-            F3_MESSAGE,
-            message_get_string(message),
-            self -> error) == 0 ||
-        elvin_notification_add_string(
-            notification,
-            F2_TICKERTEXT,
-            message_get_string(message),
-            self -> error) == 0)
+    if (elvin_notification_add_string(notification, F3_MESSAGE,
+                                      message_get_string(message),
+                                      self -> error) == 0 ||
+        elvin_notification_add_string(notification, F2_TICKERTEXT,
+                                      message_get_string(message),
+                                      self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_string(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -951,16 +918,11 @@ static void send_message(group_sub_t self, message_t message)
 
     /* Add the `Timeout' field and the backward compatible `TIMEOUT'
      * field */
-    if (elvin_notification_add_int32(
-            notification,
-            F3_TIMEOUT,
-            timeout == 60 ? 61 : timeout,
-            self -> error) == 0 ||
-        elvin_notification_add_int32(
-            notification,
-            F2_TIMEOUT,
-            timeout / 60,
-            self -> error) == 0)
+    if (elvin_notification_add_int32(notification, F3_TIMEOUT,
+                                     timeout == 60 ? 61 : timeout,
+                                     self -> error) == 0 ||
+        elvin_notification_add_int32(notification, F2_TIMEOUT,
+                                     timeout / 60, self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_int32(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -970,12 +932,9 @@ static void send_message(group_sub_t self, message_t message)
     /* Add the attachment if one was provided */
     if (attachment != NULL)
     {
-        if (elvin_notification_add_opaque(
-                notification,
-                F3_ATTACHMENT,
-                attachment,
-                length,
-                self -> error) == 0)
+        if (elvin_notification_add_opaque(notification, F3_ATTACHMENT,
+                                          attachment, length,
+                                          self -> error) == 0)
         {
             fprintf(stderr, "elvin_notification_add_opaque(): failed\n");
             elvin_error_fprintf(stderr, self -> error);
@@ -985,11 +944,8 @@ static void send_message(group_sub_t self, message_t message)
 
     if (mime_args != NULL)
     {
-        if (elvin_notification_add_string(
-                notification,
-                F2_MIME_ARGS,
-                mime_args,
-                self -> error) == 0)
+        if (elvin_notification_add_string(notification, F2_MIME_ARGS,
+                                          mime_args, self -> error) == 0)
         {
             fprintf(stderr, "elvin_notification_add_string(): failed\n");
             elvin_error_fprintf(stderr, self -> error);
@@ -1001,11 +957,8 @@ static void send_message(group_sub_t self, message_t message)
 
     if (mime_type != NULL)
     {
-        if (elvin_notification_add_string(
-                notification,
-                F2_MIME_TYPE,
-                mime_type,
-                self -> error) == 0)
+        if (elvin_notification_add_string(notification, F2_MIME_TYPE,
+                                          mime_type, self -> error) == 0)
         {
             fprintf(stderr, "elvin_notification_add_string(): failed\n");
             elvin_error_fprintf(stderr, self -> error);
@@ -1016,11 +969,8 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Add the Message-ID field */
-    if (elvin_notification_add_string(
-        notification,
-        F3_MESSAGE_ID,
-        message_id,
-        self -> error) == 0)
+    if (elvin_notification_add_string(notification, F3_MESSAGE_ID, message_id,
+                                      self -> error) == 0)
     {
         fprintf(stderr, "elvin_notification_add_string(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -1031,11 +981,8 @@ static void send_message(group_sub_t self, message_t message)
     /* Add the In-Reply-To field if relevant */
     if (reply_id != NULL)
     {
-        if (elvin_notification_add_string(
-            notification,
-            F3_IN_REPLY_TO,
-            reply_id,
-            self -> error) == 0)
+        if (elvin_notification_add_string(notification, F3_IN_REPLY_TO,
+                                          reply_id, self -> error) == 0)
         {
             fprintf(stderr, "elvin_notification_add_string(): failed\n");
             elvin_error_fprintf(stderr, self -> error);
@@ -1046,11 +993,8 @@ static void send_message(group_sub_t self, message_t message)
     /* Add the Thread-Id field if relevant */
     if (thread_id != NULL)
     {
-        if (elvin_notification_add_string(
-                notification,
-                F3_THREAD_ID,
-                thread_id,
-                self -> error) == 0)
+        if (elvin_notification_add_string(notification, F3_THREAD_ID,
+                                          thread_id, self -> error) == 0)
         {
             fprintf(stderr, "elvin_notification_add_string(): failed\n");
             elvin_error_fprintf(stderr, self -> error);
@@ -1059,16 +1003,11 @@ static void send_message(group_sub_t self, message_t message)
     }
 
     /* Look up the keys to use */
-    key_table_diff(
-        NULL, NULL, 0,
-        self -> key_table, self -> key_names, self -> key_count,
-        1, &keys, NULL);
+    key_table_diff(NULL, NULL, 0, self -> key_table, self -> key_names,
+                   self -> key_count, 1, &keys, NULL);
 
-    if (!elvin_async_notify(
-            self -> handle,
-            notification,
-            (self -> key_count == 0), keys,
-            self -> error))
+    if (!elvin_async_notify(self -> handle, notification,
+                            self -> key_count == 0, keys, self -> error))
     {
         fprintf(stderr, "elvin_async_notify failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -1110,16 +1049,9 @@ static void group_sub_update_keys(
     self -> key_table = new_keys;
 
     /* Compute the required changes */
-    key_table_diff(
-        old_keys,
-        self -> key_names,
-        self -> key_count,
-        new_keys,
-        key_names,
-        key_count,
-        0,
-        keys_to_add_out,
-        keys_to_remove_out);
+    key_table_diff(old_keys, self -> key_names, self -> key_count, new_keys,
+                   key_names, key_count, 0, keys_to_add_out,
+                   keys_to_remove_out);
 
     /* Hang on to the old key names */
     old_names = self -> key_names;
@@ -1339,16 +1271,11 @@ void group_sub_update_from_sub(
         keys_to_remove != NULL)
     {
         /* Modify the subscription on the server */
-        if (! elvin_async_modify_subscription(
-                self -> handle,
-                self -> subscription,
-                expression,
-                keys_to_add,
-                keys_to_remove,
-                &accept_insecure,
-                NULL, NULL,
-                NULL, NULL,
-                NULL))
+        if (! elvin_async_modify_subscription(self -> handle,
+                                              self -> subscription, expression,
+                                              keys_to_add, keys_to_remove,
+                                              &accept_insecure,
+                                              NULL, NULL, NULL, NULL, NULL))
         {
             fprintf(stderr, "elvin_async_modify_subscription failed\n");
             abort();
@@ -1413,12 +1340,12 @@ void group_sub_set_connection(
 {
     elvin_keys_t keys;
 
-    if ((self -> handle != NULL) && (self -> subscription != NULL))
+    if (self -> handle != NULL && self -> subscription != NULL)
     {
-        if (elvin_async_delete_subscription(
-            self -> handle, self -> subscription,
-            unsubscribe_cb, self,
-            error) == 0)
+        if (elvin_async_delete_subscription(self -> handle,
+                                            self -> subscription,
+                                            unsubscribe_cb, self,
+                                            error) == 0)
         {
             fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
             exit(1);
@@ -1438,13 +1365,11 @@ void group_sub_set_connection(
             self -> key_table, self -> key_names, self -> key_count,
             0, &keys, NULL);
 
-        if (!elvin_async_add_subscription(
-                self -> handle,
-                self -> expression,
-                keys, (self -> key_count == 0),
-                notify_cb, self,
-                subscribe_cb, self,
-                error))
+        if (!elvin_async_add_subscription(self -> handle, self -> expression,
+                                          keys, (self -> key_count == 0),
+                                          notify_cb, self,
+                                          subscribe_cb, self,
+                                          error))
         {
             fprintf(stderr, "elvin_async_add_subscription() failed\n");
             elvin_error_fprintf(stderr, error);
@@ -1487,8 +1412,10 @@ void group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel
         if (self -> in_menu)
         {
             self -> control_panel_rock = control_panel_add_subscription(
-                control_panel, self -> name, self -> name,
-                (control_panel_callback_t)send_message, self);
+                control_panel, self -> name,
+                self -> name,
+                (control_panel_callback_t)send_message,
+                self);
         }
         else
         {
@@ -1511,14 +1438,16 @@ void group_sub_set_control_panel_index(
     }
     else
     {
-        /* If we were in the control panel's menu but aren't now, then remove us */
-        if ((self -> control_panel_rock != NULL) && (! self -> in_menu))
+        /* If we were in the control panel's menu but aren't now, then
+         * remove us */
+        if (self -> control_panel_rock != NULL && ! self -> in_menu)
         {
             control_panel_remove_subscription(self -> control_panel, self -> control_panel_rock);
             self -> control_panel_rock = NULL;
         }
 
-        /* If we weren't in the control panel's menu but are now, then add us */
+        /* If we weren't in the control panel's menu but are now, then
+         * add us */
         if ((self -> control_panel_rock == NULL) && (self -> in_menu))
         {
             self -> control_panel_rock = control_panel_add_subscription(
@@ -1531,10 +1460,9 @@ void group_sub_set_control_panel_index(
      * sure it's at the appropriate index */
     if (self -> control_panel_rock != NULL)
     {
-        control_panel_set_index(
-            self -> control_panel,
-            self -> control_panel_rock,
-            *index);
+        control_panel_set_index(self -> control_panel,
+                                self -> control_panel_rock,
+                                *index);
 
         (*index)++;
     }

@@ -156,7 +156,8 @@ static int lex_pattern_ws(usenet_parser_t self, int ch);
 /* Prints a consistent error message */
 static void parse_error(usenet_parser_t self, char *message)
 {
-    fprintf(stderr, "%s: parse error line %d: %s\n", self -> tag, self -> line_num, message);
+    fprintf(stderr, "%s: parse error line %d: %s\n",
+            self -> tag, self -> line_num, message);
 }
 
 /* This is called when a complete group entry has been read */
@@ -166,9 +167,9 @@ static int accept_group(usenet_parser_t self, int has_not, char *group)
     struct usenet_expr *pointer;
 
     /* Call the callback */
-    result = (self -> callback)(
-        self -> rock, has_not, group, self -> expressions,
-        self -> expr_pointer - self -> expressions);
+    result = (self -> callback)(self -> rock, has_not, group,
+                                self -> expressions,
+                                self -> expr_pointer - self -> expressions);
 
     /* Clean up */
     for (pointer = self -> expressions; pointer < self -> expr_pointer; pointer++)
@@ -247,71 +248,60 @@ static field_name_t translate_field(char *field)
 {
     switch (*field)
     {
+    case 'B':
+
         /* BODY */
-        case 'B':
+        if (strcmp(field, T_BODY) == 0)
         {
-            if (strcmp(field, T_BODY) == 0)
-            {
-                return F_BODY;
-            }
-
-            break;
+            return F_BODY;
         }
 
+        break;
+
+    case 'e':
         /* email */
-        case 'e':
+        if (strcmp(field, T_EMAIL) == 0)
         {
-            if (strcmp(field, T_EMAIL) == 0)
-            {
-                return F_EMAIL;
-            }
-
-            break;
+            return F_EMAIL;
         }
 
+        break;
+
+    case 'f':
         /* from */
-        case 'f':
+        if (strcmp(field, T_FROM) == 0)
         {
-            if (strcmp(field, T_FROM) == 0)
-            {
-                return F_FROM;
-            }
-
-            break;
+            return F_FROM;
         }
 
+        break;
+
+    case 'k':
         /* keywords */
-        case 'k':
+        if (strcmp(field, T_KEYWORDS) == 0)
         {
-            if (strcmp(field, T_KEYWORDS) == 0)
-            {
-                return F_KEYWORDS;
-            }
-
-            break;
+            return F_KEYWORDS;
         }
 
+        break;
+
+    case 's':
         /* subject */
-        case 's':
+        if (strcmp(field, T_SUBJECT) == 0)
         {
-            if (strcmp(field, T_SUBJECT) == 0)
-            {
-                return F_SUBJECT;
-            }
-
-            break;
+            return F_SUBJECT;
         }
 
+        break;
+
+    case 'x':
         /* x-posts */
-        case 'x':
+        if (strcmp(field, T_XPOSTS) == 0)
         {
-            if (strcmp(field, T_XPOSTS) == 0)
-            {
-                return F_XPOSTS;
-            }
-
-            break;
+            return F_XPOSTS;
         }
+
+        break;
     }
 
     /* Not a valid field name */
@@ -323,79 +313,67 @@ static op_name_t translate_op(char *operator)
 {
     switch (*operator)
     {
+    case '!':
         /* != */
-        case '!':
+        if (strcmp(operator, T_NEQ) == 0)
         {
-            if (strcmp(operator, T_NEQ) == 0)
-            {
-                return O_NEQ;
-            }
-
-            break;
+            return O_NEQ;
         }
 
+        break;
+
+    case '<':
         /* < or <= */
-        case '<':
+        if (strcmp(operator, T_LT) == 0)
         {
-            if (strcmp(operator, T_LT) == 0)
-            {
-                return O_LT;
-            }
-
-            if (strcmp(operator, T_LE) == 0)
-            {
-                return O_LE;
-            }
+            return O_LT;
         }
 
+        if (strcmp(operator, T_LE) == 0)
+        {
+            return O_LE;
+        }
+
+    case '=':
         /* = */
-        case '=':
+        if (strcmp(operator, T_EQ) == 0)
         {
-            if (strcmp(operator, T_EQ) == 0)
-            {
-                return O_EQ;
-            }
-
-            break;
+            return O_EQ;
         }
 
+        break;
+
+    case '>':
         /* > or >= */
-        case '>':
+        if (strcmp(operator, T_GT) == 0)
         {
-            if (strcmp(operator, T_GT) == 0)
-            {
-                return O_GT;
-            }
-
-            if (strcmp(operator, T_GE) == 0)
-            {
-                return O_GE;
-            }
-
-            break;
+            return O_GT;
         }
 
+        if (strcmp(operator, T_GE) == 0)
+        {
+            return O_GE;
+        }
+
+        break;
+
+    case 'm':
         /* matches */
-        case 'm':
+        if (strcmp(operator, T_MATCHES) == 0)
         {
-            if (strcmp(operator, T_MATCHES) == 0)
-            {
-                return O_MATCHES;
-            }
-
-            break;
+            return O_MATCHES;
         }
 
+        break;
+
+    case 'n':
         /* not */
-        case 'n':
+        if (strcmp(operator, T_NOT) == 0)
         {
-            if (strcmp(operator, T_NOT) == 0)
-            {
-                return O_NOT;
-            }
-
-            break;
+            return O_NOT;
         }
+
+        break;
     }
 
     /* Not a valid operator name */
@@ -490,7 +468,7 @@ static int lex_comment(usenet_parser_t self, int ch)
 static int lex_group(usenet_parser_t self, int ch)
 {
     /* Watch for EOF or newline */
-    if ((ch == EOF) || (ch == '\n'))
+    if (ch == EOF || ch == '\n')
     {
         /* Null-terminate the token */
         if (append_char(self, '\0') < 0)
@@ -564,7 +542,7 @@ static int lex_group_esc(usenet_parser_t self, int ch)
 static int lex_group_ws(usenet_parser_t self, int ch)
 {
     /* Watch for EOF or newline */
-    if ((ch == EOF) || (ch == '\n'))
+    if (ch == EOF || ch == '\n')
     {
         /* This is a nice, short group entry */
         if (accept_group(self, self -> has_not, self -> token) < 0)
@@ -741,7 +719,7 @@ static int lex_op_start(usenet_parser_t self, int ch)
 static int lex_op(usenet_parser_t self, int ch)
 {
     /* Watch for EOF or linefeed in the middle of the expression */
-    if ((ch == EOF) || (ch == '\n'))
+    if (ch == EOF || ch == '\n')
     {
         parse_error(self, "unexpected end of line");
         return -1;

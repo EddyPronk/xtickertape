@@ -376,11 +376,10 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
         snprintf(buffer, length, MAIL_SUB, self -> user);
 
         /* Subscribe to elvinmail notifications */
-        if (elvin_async_add_subscription(
-                self -> handle, buffer, NULL, 1,
-                notify_cb, self,
-                subscribe_cb, self,
-                error) == 0)
+        if (elvin_async_add_subscription(self -> handle, buffer, NULL, 1,
+					 notify_cb, self,
+					 subscribe_cb, self,
+					 error) == 0)
         {
             fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
             exit(1);

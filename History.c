@@ -576,14 +576,8 @@ static void node_populate(node_t self,
         /* Add the children first */
         if (self -> child)
         {
-            node_populate(
-                self -> child,
-                renderer,
-                array,
-                depth + 1,
-                index,
-                selection,
-                selection_index_out);
+            node_populate(self -> child, renderer, array, depth + 1,
+                          index, selection, selection_index_out);
         }
 
         /* Bail if the index goes negative */
@@ -600,8 +594,8 @@ static void node_populate(node_t self,
 
         /* Wrap the message in a message view */
         /* FIX THIS: use a real conversion descriptor */
-        array[(*index)--] =  message_view_alloc(
-            self -> message, depth, renderer);
+        array[(*index)--] =  message_view_alloc(self -> message, depth,
+                                                renderer);
 
         /* Move on to the next node */
         self = self -> sibling;
@@ -752,7 +746,8 @@ static void copy_area(
     self -> history.tqueue_end = item;
 
     /* Make the request */
-    XCopyArea(display, window, window, gc, src_x, src_y, width, height, dest_x, dest_y);
+    XCopyArea(display, window, window, gc, src_x, src_y, width, height,
+              dest_x, dest_y);
 }
 
 
@@ -912,19 +907,13 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
         /* Have we moved horizontally? */
         if (self -> history.x != x)
         {
-            XtVaSetValues(
-                self -> history.hscrollbar,
-                XmNvalue, (int)x,
-                NULL);
+            XtVaSetValues(self -> history.hscrollbar, XmNvalue, (int)x, NULL);
         }
 
         /* Have we moved vertically? */
         if (self -> history.y != y)
         {
-            XtVaSetValues(
-                self -> history.vscrollbar,
-                XmNvalue, (int)y,
-                NULL);
+            XtVaSetValues(self -> history.vscrollbar, XmNvalue, (int)y, NULL);
         }
     }
 
@@ -968,10 +957,9 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.gc = None;
 
     /* Allocate a conversion descriptor */
-    if ((self -> history.renderer = utf8_renderer_alloc(
-             XtDisplay(widget),
-             self -> history.font,
-             self -> history.code_set)) == NULL)
+    if ((self -> history.renderer = utf8_renderer_alloc(XtDisplay(widget),
+                                                        self -> history.font,
+                                                        self -> history.code_set)) == NULL)
     {
         perror("trouble");
         exit(1);
@@ -986,8 +974,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.height = (long)self -> history.margin_height * 2;
 
     /* Compute the line height */
-    self -> history.line_height =
-        (long)self -> history.font -> ascent +
+    self -> history.line_height = (long)self -> history.font -> ascent +
         (long)self -> history.font -> descent + 1;
 
     /* Initialize the x and y coordinates of the visible region */
@@ -1008,11 +995,12 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Allocate enough room for all of our message views */
     self -> history.message_capacity = MAX(self -> history.message_capacity, 1);
-    self -> history.messages = calloc(self -> history.message_capacity, sizeof(message_t));
+    self -> history.messages = calloc(self -> history.message_capacity,
+                                      sizeof(message_t));
     self -> history.message_count = 0;
     self -> history.message_index = 0;
-    self -> history.message_views =
-        calloc(self -> history.message_capacity, sizeof(message_view_t));
+    self -> history.message_views = calloc(self -> history.message_capacity,
+                                           sizeof(message_view_t));
 
     /* Nothing is selected yet */
     self -> history.selection = NULL;
@@ -1022,26 +1010,29 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.show_timestamps = False;
 
     /* Create the horizontal scrollbar */
-    scrollbar = XtVaCreateManagedWidget(
-        "HorizScrollBar", xmScrollBarWidgetClass,
-        XtParent(self),
-        XmNincrement, self -> history.line_height,
-        XmNmaximum, self -> history.width,
-        XmNminimum, 0,
-        XmNorientation, XmHORIZONTAL,
-        XmNpageIncrement, self -> core.width,
-        XmNsliderSize, self -> history.width,
-        NULL);
+    scrollbar = XtVaCreateManagedWidget("HorizScrollBar",
+                                        xmScrollBarWidgetClass, XtParent(self),
+                                        XmNincrement,
+                                        self -> history.line_height,
+                                        XmNmaximum, self -> history.width,
+                                        XmNminimum, 0,
+                                        XmNorientation, XmHORIZONTAL,
+                                        XmNpageIncrement, self -> core.width,
+                                        XmNsliderSize, self -> history.width,
+                                        NULL);
 
     /* Add a bunch of callbacks */
     XtAddCallback(scrollbar, XmNdragCallback, horiz_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNdecrementCallback, horiz_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNincrementCallback, horiz_scrollbar_cb, self);
-    XtAddCallback(scrollbar, XmNpageDecrementCallback, horiz_scrollbar_cb, self);
-    XtAddCallback(scrollbar, XmNpageIncrementCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageDecrementCallback,
+                  horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageIncrementCallback,
+                  horiz_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNtoTopCallback, horiz_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNtoBottomCallback, horiz_scrollbar_cb, self);
-    XtAddCallback(scrollbar, XmNvalueChangedCallback, horiz_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNvalueChangedCallback,
+                  horiz_scrollbar_cb, self);
     self -> history.hscrollbar = scrollbar;
     
     /* Create the vertical scrollbar */
@@ -1060,8 +1051,10 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     XtAddCallback(scrollbar, XmNdecrementCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNdragCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNincrementCallback, vert_scrollbar_cb, self);
-    XtAddCallback(scrollbar, XmNpageDecrementCallback, vert_scrollbar_cb, self);
-    XtAddCallback(scrollbar, XmNpageIncrementCallback, vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageDecrementCallback,
+                  vert_scrollbar_cb, self);
+    XtAddCallback(scrollbar, XmNpageIncrementCallback,
+                  vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNtoTopCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNtoBottomCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_scrollbar_cb, self);
@@ -1127,20 +1120,14 @@ static void update_scrollbars(Widget widget, long *x_out, long *y_out)
     }
 
     /* Update the horizontal scrollbar */
-    XtVaSetValues(
-        self -> history.hscrollbar,
-        XmNvalue, x,
-        XmNsliderSize, width,
-        XmNmaximum, self -> history.width,
-        NULL);
+    XtVaSetValues(self -> history.hscrollbar, XmNvalue, x,
+                  XmNsliderSize, width, XmNmaximum, self -> history.width,
+                  NULL);
 
     /* Update the vertical scrollbar */
-    XtVaSetValues(
-        self -> history.vscrollbar,
-        XmNvalue, y,
-        XmNsliderSize, height,
-        XmNmaximum, self -> history.height,
-        NULL);
+    XtVaSetValues(self -> history.vscrollbar, XmNvalue, y,
+                  XmNsliderSize, height, XmNmaximum, self -> history.height,
+                  NULL);
 
     /* Return the resulting x and y values */
     *x_out = x;
@@ -1160,12 +1147,14 @@ static void realize(
     dprintf(("History.realize()\n"));
 
     /* Create our window */
-    XtCreateWindow(widget, InputOutput, CopyFromParent, *value_mask, attributes);
+    XtCreateWindow(widget, InputOutput, CopyFromParent,
+                   *value_mask, attributes);
 
     /* Create a GC for our own nefarious purposes */
     values.background = self -> core.background_pixel;
     values.font = self -> history.font -> fid;
-    self -> history.gc = XCreateGC(display, XtWindow(widget), GCBackground | GCFont, &values);
+    self -> history.gc = XCreateGC(display, XtWindow(widget),
+                                   GCBackground | GCFont, &values);
 
     /* Register to receive GraphicsExpose events */
     XtAddEventHandler(widget, 0, True, gexpose, NULL);
@@ -1195,7 +1184,8 @@ static void paint_highlight(HistoryWidget self)
         self  -> history.y + self -> history.margin_height;
 
     /* Bail if it isn't visible */
-    if (y + self -> history.line_height < 0 && (long)self -> history.height <= y)
+    if (y + self -> history.line_height < 0 &&
+        (long)self -> history.height <= y)
     {
         return;
     }
@@ -1272,7 +1262,8 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     else
     {
         /* No.  Compute the first visible index */
-        index = (self -> history.y - self -> history.margin_height) / self -> history.line_height;
+        index = (self -> history.y - self -> history.margin_height) /
+            self -> history.line_height;
         y = (ymargin - self -> history.y) % self -> history.line_height;
     }
 
@@ -1293,10 +1284,8 @@ static void paint(HistoryWidget self, XRectangle *bbox)
             XChangeGC(display, gc, GCForeground, &values);
 
             /* FIX THIS: should we respect the margin? */
-            XFillRectangle(
-                display, window, gc,
-                0, y, self -> core.width,
-                self -> history.line_height);
+            XFillRectangle(display, window, gc, 0, y,
+                           self -> core.width, self -> history.line_height);
 
             /* Draw the highlight */
             paint_highlight(self);
@@ -1403,10 +1392,9 @@ static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ign
     }
 
     /* Call the callbacks */
-    XtCallCallbackList(
-        widget,
-        self -> history.motion_callbacks,
-        (XtPointer)(view ? message_view_get_message(view) : NULL));
+    XtCallCallbackList(widget, self -> history.motion_callbacks,
+                       (XtPointer)(view ? message_view_get_message(view) :
+                                   NULL));
 }
 
 /* Repaint the bits of the widget that didn't get copied */
@@ -1558,11 +1546,11 @@ static void insert_message(HistoryWidget self,
         /* Move stuff down to make room */
         if (gc != None)
         {
-            copy_area(
-                self, display, window, gc,
-                0, self -> history.margin_height - self -> history.y + y,
-                self -> core.width, height - y,
-                0, self -> history.margin_height - self -> history.y + y + self -> history.line_height);
+            copy_area(self, display, window, gc,
+                      0, self -> history.margin_height - self -> history.y + y,
+                      self -> core.width, height - y,
+                      0, self -> history.margin_height - 
+                      self -> history.y + y + self -> history.line_height);
         }
 
         /* We've got another node */
@@ -1613,19 +1601,17 @@ static void insert_message(HistoryWidget self,
         /* Move stuff up to make room */
         if (gc != None)
         {
-            copy_area(
-                self, display, window, gc,
-                0, self -> history.margin_height - self -> history.y + self -> history.line_height,
-                self -> core.width, y,
-                0, self -> history.margin_height - self -> history.y);
+            copy_area(self, display, window, gc,
+                      0, self -> history.margin_height -
+                      self -> history.y + self -> history.line_height,
+                      self -> core.width, y,
+                      0, self -> history.margin_height - self -> history.y);
         }
     }
 
     /* Create a new message view */
     /* FIX THIS: use a real conversion descriptor! */
-    view = message_view_alloc(
-        message, indent,
-        self -> history.renderer);
+    view = message_view_alloc(message, indent, self -> history.renderer);
     self -> history.message_views[index] = view;
 
     /* Measure it */
@@ -1637,10 +1623,10 @@ static void insert_message(HistoryWidget self,
     if (gc != None)
     {
         /* Remove any remains of the previous message */
-        XFillRectangle(
-            display, window, gc,
-            0, self -> history.margin_height - self -> history.y + y,
-            self -> core.width, self -> history.line_height);
+        XFillRectangle(display, window, gc,
+                       0, self -> history.margin_height -
+                       self -> history.y + y,
+                       self -> core.width, self -> history.line_height);
 
         /* Make a bounding box */
         bbox.x = 0;
@@ -1649,15 +1635,17 @@ static void insert_message(HistoryWidget self,
         bbox.height = self -> history.line_height;
 
         /* Use it to draw the new message */
-        message_view_paint(
-            view, display, window, gc,
-            self -> history.show_timestamps,
-            self -> history.timestamp_pixel,
-            self -> history.group_pixel, self -> history.user_pixel,
-            self -> history.string_pixel, self -> history.separator_pixel,
-            self -> history.margin_width - self -> history.x,
-            self -> history.margin_height - self -> history.y + y + self -> history.font -> ascent,
-            &bbox);
+        message_view_paint(view, display, window, gc,
+                           self -> history.show_timestamps,
+                           self -> history.timestamp_pixel,
+                           self -> history.group_pixel,
+                           self -> history.user_pixel,
+                           self -> history.string_pixel,
+                           self -> history.separator_pixel,
+                           self -> history.margin_width - self -> history.x,
+                           self -> history.margin_height - self -> history.y +
+                           y + self -> history.font -> ascent,
+                           &bbox);
     }
 
     /* Add the margins to our height and width */
@@ -1712,10 +1700,9 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
     if (self -> history.y + self -> core.height - self -> history.margin_height <
         y + self -> history.line_height)
     {
-        set_origin(
-            self, self -> history.x,
-            y + self -> history.line_height - self -> core.height +
-            self -> history.margin_height, 1);
+        set_origin(self, self -> history.x,
+                   y + self -> history.line_height - self -> core.height +
+                   self -> history.margin_height, 1);
         return;
     }
 }
@@ -1734,7 +1721,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     if (self -> history.selection == message)
     {
         /* Just make sure it's visible */
-        if (gc != None && self -> history.selection_index != (unsigned int)-1)
+        if (gc != None &&
+            self -> history.selection_index != (unsigned int)-1)
         {
             make_index_visible(self, index);
         }
@@ -1814,9 +1802,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
             XChangeGC(display, gc, GCClipMask | GCForeground, &values);
 
             /* Draw the selection rectangle */
-            XFillRectangle(
-                display, window, gc,
-                0, y, self -> core.width, self -> history.line_height);
+            XFillRectangle(display, window, gc, 0, y,
+                           self -> core.width, self -> history.line_height);
 
             /* Draw the highlight */
             paint_highlight(self);
@@ -1839,7 +1826,8 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     }
 
     /* Call the callback with our new selection */
-    XtCallCallbackList((Widget)self, self -> history.callbacks, (XtPointer)message);
+    XtCallCallbackList((Widget)self, self -> history.callbacks,
+                       (XtPointer)message);
 }
 
 /* Selects the message at the given index */
@@ -1880,17 +1868,15 @@ static void resize(Widget widget)
 
     /* Update the page increment of the horizontal scrollbar */
     page_inc = self -> core.height;
-    XtVaSetValues(
-        self -> history.hscrollbar,
-        XmNpageIncrement, self -> core.width,
-        NULL);
+    XtVaSetValues(self -> history.hscrollbar,
+                  XmNpageIncrement, self -> core.width,
+                  NULL);
 
     /* Update the page increment of the vertical scrollbar */
     page_inc = self -> core.height;
-    XtVaSetValues(
-        self -> history.vscrollbar,
-        XmNpageIncrement, page_inc,
-        NULL);
+    XtVaSetValues(self -> history.vscrollbar,
+                  XmNpageIncrement, page_inc,
+                  NULL);
 
     /* Update the scrollbar sizes */
     update_scrollbars(widget, &x, &y);
@@ -1997,7 +1983,8 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
         }
         else
         {
-            /* Otherwise select the item before the first completely visible one */
+            /* Otherwise select the item before the first completely
+             * visible one */
             index = index_of_y(self, -1);
             set_selection_index(self, index);
         }
@@ -2013,12 +2000,14 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
         {
             if (! (self -> history.height < self -> core.height))
             {
-                set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
+                set_origin(self, self -> history.x,
+                           self -> history.height - self -> core.height, 1);
             }
         }
         else
         {
-            /* Otherwise select the item below the last completely visible one */
+            /* Otherwise select the item below the last completely
+             * visible one */
             index = index_of_y(self, self -> core.height + 1);
             set_selection_index(self, index);
         }
@@ -2039,9 +2028,10 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     }
 
     /* Arrange to scroll again after a judicious pause */
-    self -> history.drag_timeout = XtAppAddTimeOut(
-        XtWidgetToApplicationContext((Widget)self), self -> history.drag_delay,
-        drag_timeout_cb, (XtPointer)self);
+    self -> history.drag_timeout =
+        XtAppAddTimeOut(XtWidgetToApplicationContext((Widget)self),
+                        self -> history.drag_delay,
+                        drag_timeout_cb, (XtPointer)self);
 }
 
 /* Dragging selects */
@@ -2110,7 +2100,8 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
         self -> history.drag_direction = DRAG_NONE;
     }
 
-    /* Call the drag timeout callback to update the selection and set a timeout */
+    /* Call the drag timeout callback to update the selection and set
+     * a timeout */
     drag_timeout_cb((XtPointer)self, &self -> history.drag_timeout);
 }
 
@@ -2161,8 +2152,8 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
     XmProcessTraversal(widget, XmTRAVERSE_CURRENT);
 
     /* Convert the y coordinate into an index */
-    index = (self -> history.y + button_event -> y - self -> history.margin_height) /
-        self -> history.line_height;
+    index = (self -> history.y + button_event -> y -
+             self -> history.margin_height) / self -> history.line_height;
 
     /* Are we selecting past the end of the list? */
     if (! (index < self -> history.message_count))
@@ -2265,11 +2256,8 @@ static void scroll_up(Widget widget, XEvent *event, String *params, Cardinal *np
     XtVaGetValues(self -> history.vscrollbar, XmNincrement, &increment, NULL);
 
     /* Move that far to the up */
-    set_origin(
-        self,
-        self -> history.x,
-        MAX(self -> history.y - increment, 0),
-        1);
+    set_origin(self, self -> history.x,
+               MAX(self -> history.y - increment, 0), 1);
 }
 
 /* Scroll the window down if we can */
@@ -2282,13 +2270,10 @@ static void scroll_down(Widget widget, XEvent *event, String *params, Cardinal *
     XtVaGetValues(self -> history.vscrollbar, XmNincrement, &increment, NULL);
 
     /* Move that far down */
-    set_origin(
-        self,
-        self -> history.x,
-        MIN(self -> history.y + increment,
-        self->history.height < self->core.height ?
-            0 : self->history.height - self->core.height),
-        1);
+    set_origin(self, self -> history.x,
+               MIN(self -> history.y + increment,
+                   self->history.height < self->core.height ? 0 :
+                   self->history.height - self->core.height), 1);
 }
 
 /* Scroll the window left if we can */
@@ -2301,11 +2286,8 @@ static void scroll_left(Widget widget, XEvent *event, String *params, Cardinal *
     XtVaGetValues(self -> history.hscrollbar, XmNincrement, &increment, NULL);
 
     /* Move that far to the left */
-    set_origin(
-        self,
-        MAX(self -> history.x - increment, 0),
-        self -> history.y,
-        1);
+    set_origin(self, MAX(self -> history.x - increment, 0),
+               self -> history.y, 1);
 }
 
 /* Scroll the window right if we can */
@@ -2318,11 +2300,9 @@ static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal 
     XtVaGetValues(self -> history.hscrollbar, XmNincrement, &increment, NULL);
 
     /* Move that far to the right */
-    set_origin(
-        self,
-        MIN(self -> history.x + increment, (self -> history.width - self -> core.width)),
-        self -> history.y,
-        1);
+    set_origin(self, MIN(self -> history.x + increment,
+                         (self -> history.width - self -> core.width)),
+               self -> history.y, 1);
 }
 
 
@@ -2348,12 +2328,11 @@ static void redraw_all(Widget widget)
     XChangeGC(display, gc, GCClipMask | GCForeground, &values);
 
     /* And erase the contents of the widget */
-    XFillRectangle(
-        display, window, gc,
-        0, 0,
-        self -> core.width, self -> core.height);
+    XFillRectangle(display, window, gc, 0, 0,
+                   self -> core.width, self -> core.height);
 
-    /* Get a bounding box that contains the entire visible portion of the widget */
+    /* Get a bounding box that contains the entire visible portion of
+     * the widget */
     bbox.x = 0;
     bbox.y = 0;
     bbox.width = self -> core.width;
@@ -2400,13 +2379,12 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
         self -> history.selection_index = (unsigned int)-1;
 
         /* Traverse the history tree */
-        node_populate(
-            self -> history.nodes,
-            self -> history.renderer,
-            self -> history.message_views,
-            0, &index,
-            self -> history.selection,
-            &self -> history.selection_index);
+        node_populate(self -> history.nodes,
+                      self -> history.renderer,
+                      self -> history.message_views,
+                      0, &index,
+                      self -> history.selection,
+                      &self -> history.selection_index);
     }
     else
     {
@@ -2418,9 +2396,8 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
             message = self -> history.messages[index];
 
             /* Wrap it in a message view */
-            self -> history.message_views[i] = message_view_alloc(
-                message, 0,
-                self -> history.renderer);
+            self -> history.message_views[i] =
+                message_view_alloc(message, 0, self -> history.renderer);
 
             /* Update the selection index */
             if (self -> history.selection == message)

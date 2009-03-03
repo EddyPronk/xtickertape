@@ -108,10 +108,12 @@ typedef struct
     /* The rightmost glyph holder */
     glyph_holder_t right_holder;
 
-    /* The number of pixels of the leftmost glyph beyond the left edge of the scroller */
+    /* The number of pixels of the leftmost glyph beyond the left edge
+     * of the scroller */
     int left_offset;
 
-    /* The number of pixels of the rightmost glyph beyond the edge of the scroller */
+    /* The number of pixels of the rightmost glyph beyond the edge of
+     * the scroller */
     int right_offset;
 
     /* The gap in the scroller's circular queue of glyphs */

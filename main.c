@@ -112,9 +112,8 @@ static struct option long_options[] =
 /* Print out usage message */
 static void usage(int argc, char *argv[])
 {
-    fprintf(
-        stderr,
-        "usage: %s [OPTION]...\n"
+    fprintf(stderr,
+            "usage: %s [OPTION]...\n"
         "  -e elvin-url,   --elvin=elvin-url\n"
         "  -S scope,       --scope=scope\n"
         "  -H http-proxy,  --proxy=http-proxy\n"
@@ -137,8 +136,7 @@ static void usage(int argc, char *argv[])
 /* Print out usage message */
 static void usage(int argc, char *argv[])
 {
-    fprintf(
-        stderr,
+    fprintf(stderr,
         "usage: %s [OPTION]...\n"
         "  -e elvin-url\n"
         "  -S scope\n"
@@ -364,9 +362,8 @@ static void parse_args(
         /* Which option was it then? */
         switch (choice)
         {
-            /* --elvin= or -e */
             case 'e':
-            {
+                /* --elvin= or -e */
                 if (elvin_handle_append_url(handle, optarg, error) == 0)
                 {
                     fprintf(stderr, PACKAGE ":bad URL: no doughnut \"%s\"\n", optarg);
@@ -375,11 +372,9 @@ static void parse_args(
                 }
 
                 break;
-            }
 
-            /* --scope= or -S */
             case 'S':
-            {
+                /* --scope= or -S */
                 if (! elvin_handle_set_discovery_scope(handle, optarg, error))
                 {
                     fprintf(stderr, PACKAGE ": unable to set scope to %s\n", optarg);
@@ -388,18 +383,14 @@ static void parse_args(
                 }
 
                 break;
-            }
 
-            /* --proxy= or -H */
             case 'H':
-            {
+                /* --proxy= or -H */
                 http_proxy = optarg;
                 break;
-            }
 
-            /* --idle= or -I */
             case 'I':
-            {
+                /* --idle= or -I */
                 if (! elvin_handle_set_idle_period(handle, atoi(optarg), error))
                 {
                     fprintf(stderr, PACKAGE ": unable to set idle period to %d\n", atoi(optarg));
@@ -408,85 +399,62 @@ static void parse_args(
                 }
 
                 break;
-            }
 
-            /* --user= or -u */
             case 'u':
-            {
+                /* --user= or -u */
                 *user_return = optarg;
                 break;
-            }
 
-            /* --domain= or -D */
             case 'D':
-            {
+                /* --domain= or -D */
                 *domain_return = strdup(optarg);
                 break;
-            }
 
 
-            /* --ticker-dir= or -T */
             case 'T':
-            {
+                /* --ticker-dir= or -T */
                 *ticker_dir_return = optarg;
                 break;
-            }
 
-            /* --config= or -c */
             case 'c':
-            {
+                /* --config= or -c */
                 *config_file_return = optarg;
                 break;
-            }
 
-            /* --groups= or -G */
             case 'G':
-            {
+                /* --groups= or -G */
                 *groups_file_return = optarg;
                 break;
-            }
 
-            /* --usenet= or -U */
             case 'U':
-            {
+                /* --usenet= or -U */
                 *usenet_file_return = optarg;
                 break;
-            }
 
-            /* --keys= or -K */
             case 'K':
-            {
+                /* --keys= or -K */
                 *keys_file_return = optarg;
                 break;
-            }
 
-            /* --keys-dir= or -k */
             case 'k':
-            {
+                /* --keys-dir= or -k */
                 *keys_dir_return = optarg;
                 break;
-            }
 
-            /* --version or -v */
             case 'v':
-            {
+                /* --version or -v */
                 printf(PACKAGE " version " VERSION "\n");
                 exit(0);
-            }
 
-            /* --help or -h */
             case 'h':
-            {
+                /* --help or -h */
                 usage(argc, argv);
                 exit(0);
-            }
 
-            /* Unknown option */
             default:
-            {
+                /* Unknown option */
                 usage(argc, argv);
                 exit(1);
-            }
         }
     }
 
@@ -548,13 +516,15 @@ static Window create_icon(Widget shell)
     mask = XCreatePixmapFromBitmapData(
         display, pixmap, (char *)white_bits, white_width, white_height,
         WhitePixelOfScreen(screen) ^ black, 0, depth);
-    XCopyArea(display, mask, pixmap, gc, 0, 0, white_width, white_height, 0, 0);
+    XCopyArea(display, mask, pixmap, gc, 0, 0,
+              white_width, white_height, 0, 0);
     XFreePixmap(display, mask);
     XFreeGC(display, gc);
 
 #ifdef HAVE_LIBXEXT
     /* Create a shape mask and apply it to the window */
-    mask = XCreateBitmapFromData(display, pixmap, (char *)mask_bits, mask_width, mask_height);
+    mask = XCreateBitmapFromData(display, pixmap, (char *)mask_bits,
+                                 mask_width, mask_height);
     XShapeCombineMask(display, window, ShapeBounding, 0, 0, mask, ShapeSet);
 #endif /* HAVE_LIBXEXT */
 
@@ -576,12 +546,17 @@ static RETSIGTYPE reload_subs(int signum)
 /* Print an error message indicating that the app-defaults file is bogus */
 static void app_defaults_version_error(char *message)
 {
-    fprintf(stderr, PACKAGE ": %s\n\n"
-            "This probably because the app-defaults file (XTickertape) is not installed in\n"
-            "the X11 directory tree.  This may be fixed either by moving the app-defaults\n"
-            "file to the correct location or by setting your XFILESEARCHPATH environment\n"
-            "variable to something like /usr/local/lib/X11/%%T/%%N:%%D.  See the man page for\n"
-            "XtResolvePathname for more information.\n", message);
+    fprintf(stderr,
+            "%s: %s\n\n"
+            "This probably because the app-defaults file (XTickertape) "
+            "is not installed in\n"
+            "the X11 directory tree.  This may be fixed either by "
+            "moving the app-defaults\n"
+            "file to the correct location or by setting your "
+            "XFILESEARCHPATH environment\n"
+            "variable to something like /usr/local/lib/X11/%%T/%%N:%%D.  "
+            "See the man page for\n"
+            "XtResolvePathname for more information.\n", PACKAGE, message);
 }
 
 
@@ -633,23 +608,27 @@ int main(int argc, char *argv[])
     }
 
     /* Create the toplevel widget */
-    top = XtAppCreateShell(NULL, "XTickertape", applicationShellWidgetClass, display, NULL, 0);
+    top = XtAppCreateShell(NULL, "XTickertape", applicationShellWidgetClass,
+                           display, NULL, 0);
 #endif
 
     /* Load the application shell resources */
-    XtGetApplicationResources(top, &rc, resources, XtNumber(resources), NULL, 0);
+    XtGetApplicationResources(top, &rc, resources, XtNumber(resources),
+                              NULL, 0);
 
     /* Make sure our app-defaults file has a version number */
     if (rc.version_tag == NULL)
     {
-        app_defaults_version_error("app-defaults file not found or or out of date");
+        app_defaults_version_error("app-defaults file not found or "
+                                   "out of date");
         exit(1);
     }
 
     /* Make sure that version number is the one we want */
     if (strcmp(rc.version_tag, PACKAGE "-" VERSION) != 0)
     {
-        app_defaults_version_error("app-defaults file has the wrong version number");
+        app_defaults_version_error("app-defaults file has the wrong "
+                                   "version number");
         exit(1);
     }
 
