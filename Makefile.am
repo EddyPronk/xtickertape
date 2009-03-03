@@ -38,7 +38,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # First work out the executables
-bin_PROGRAMS = xtickertape show-url
+bin_PROGRAMS = xtickertape show-url elvinmail
 
 # Don't forget to set up the packagers
 SUBDIRS = packages m4
@@ -68,6 +68,8 @@ xtickertape_SOURCES = \
 
 # show-url only has one
 show_url_SOURCES = show-url.c
+
+elvinmail_SOURCES = elvinmail.c parse_mail.h parse_mail.c
 
 # Indicate what the man pages are
 man_MANS = xtickertape.1 show-url.1 groups.5 keys.5 usenet.5
