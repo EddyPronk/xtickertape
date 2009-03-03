@@ -117,7 +117,8 @@ key_entry_alloc(
     key_entry_t self;
 
     /* Allocate memory for the key's context */
-    if ((self = malloc(sizeof(struct key_entry))) == NULL)
+    self = malloc(sizeof(struct key_entry));
+    if (self == NULL)
     {
         return self;
     }
@@ -126,7 +127,8 @@ key_entry_alloc(
     memset(self, 0, sizeof(struct key_entry));
 
     /* Take a copy of the name */
-    if ((self -> name = strdup(name)) == NULL)
+    self -> name = strdup(name);
+    if (self -> name == NULL)
     {
         key_entry_free(self);
         return NULL;
@@ -135,7 +137,8 @@ key_entry_alloc(
     if (is_private)
     {
         /* Take a copy of the data */
-        if ((self -> data = malloc(length)) == NULL)
+        self -> data = malloc(length);
+        if (self -> data == NULL)
         {
             key_entry_free(self);
             return NULL;
@@ -144,7 +147,8 @@ key_entry_alloc(
         self -> data_length = length;
 
         /* Compute the hash */
-        if ((self -> hash = malloc(ELVIN_SHA1_DIGESTLEN)) == NULL) {
+        self -> hash = malloc(ELVIN_SHA1_DIGESTLEN);
+        if (self -> hash == NULL) {
             key_entry_free(self);
             return NULL;
         }
@@ -154,7 +158,8 @@ key_entry_alloc(
     }
     else
     {
-        if ((self -> hash = malloc(length)) == NULL)
+        self -> hash = malloc(length);
+        if (self -> hash == NULL)
         {
             key_entry_free(self);
             return NULL;
@@ -293,7 +298,8 @@ key_table_t key_table_alloc()
     key_table_t self;
 
     /* Allocate memory for the new table's context */
-    if ((self = malloc(sizeof(struct key_table))) == NULL)
+    self = malloc(sizeof(struct key_table));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -304,8 +310,8 @@ key_table_t key_table_alloc()
     /* Initialize its contents */
     self -> entries_used = 0;
     self -> entries_size = TABLE_MIN_SIZE;
-    if ((self -> entries = calloc(self -> entries_size,
-				  sizeof(key_entry_t))) == NULL)
+    self -> entries = calloc(self -> entries_size, sizeof(key_entry_t));
+    if (self -> entries == NULL)
     {
         key_table_free(self);
         return NULL;
@@ -367,7 +373,8 @@ key_table_lookup(
     key_entry_t *entry;
 
     /* Find the position of the key entry. */
-    if ((entry = key_table_search(self, name)) == NULL)
+    entry = key_table_search(self, name);
+    if (entry == NULL)
     {
         return -1;
     }
@@ -419,7 +426,8 @@ key_table_add(
     key_entry_t entry;
 
     /* Allocate a new entry. */
-    if ((entry = key_entry_alloc(name, data, length, is_private)) == NULL)
+    entry = key_entry_alloc(name, data, length, is_private);
+    if (entry == NULL)
     {
         return -1;
     }
@@ -429,8 +437,8 @@ key_table_add(
     {
         key_entry_t *new_entries;
 
-        if ((new_entries = realloc(self -> entries,
-				   self -> entries_size * 2)) == NULL)
+        new_entries = realloc(self -> entries, self -> entries_size * 2);
+        if (new_entries == NULL)
         {
             key_entry_free(entry);
             return -1;
@@ -452,7 +460,8 @@ key_table_remove(key_table_t self, char *name)
     key_entry_t *position;
 
     /* Find the location of the key in the table. */
-    if ((position = key_table_search(self, name)) == NULL)
+    position = key_table_search(self, name);
+    if (position == NULL)
     {
         return -1;
     }
@@ -494,8 +503,8 @@ entry_compare(const void *val1, const void *val2)
     /* Work out which value comes first */
     if (entry1 -> hash_length < entry2 -> hash_length)
     {
-        if ((result = memcmp(entry1 -> hash, entry2 -> hash,
-			     entry1 -> hash_length)) == 0)
+        result = memcmp(entry1 -> hash, entry2 -> hash, entry1 -> hash_length);
+        if (result == 0)
         {
             return -1;
         }
@@ -506,8 +515,8 @@ entry_compare(const void *val1, const void *val2)
     }
     else if (entry1 -> hash_length > entry2 -> hash_length)
     {
-        if ((result = memcmp(entry1 -> hash, entry2 -> hash,
-			     entry2 -> hash_length)) == 0)
+        result = memcmp(entry1 -> hash, entry2 -> hash, entry2 -> hash_length);
+        if (result == 0)
         {
             return 1;
         }
@@ -544,14 +553,16 @@ get_sorted_entries(
     }
 
     /* Allocate memory for the entries */
-    if ((entries = malloc(key_count * sizeof(key_entry_t))) == NULL) {
+    entries = malloc(key_count * sizeof(key_entry_t));
+    if (entries == NULL) {
         fprintf(stderr, PACKAGE ": malloc failed: %s\n", strerror(errno));
         exit(1);
     }
 
     /* Populate it */
     for (i = 0; i < key_count; i++) {
-        if ((entry = key_table_search(self, key_names[i])) == NULL) {
+        entry = key_table_search(self, key_names[i]);
+        if (entry == NULL) {
             if (do_warn) {
                 fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n",
 			key_names[i]);

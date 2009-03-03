@@ -409,7 +409,8 @@ mbox_parser_t mbox_parser_alloc()
     mbox_parser_t self;
 
     /* Allocate memory for the new mbox_parser */
-    if ((self = malloc(sizeof(struct mbox_parser))) == NULL)
+    self = malloc(sizeof(struct mbox_parser));
+    if (self == NULL)
     {
         return NULL;
     }

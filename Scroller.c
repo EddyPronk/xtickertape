@@ -321,7 +321,8 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
     glyph_t self;
 
     /* Allocate memory for a new glyph */
-    if ((self = malloc(sizeof(struct glyph))) == NULL)
+    self = malloc(sizeof(struct glyph));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -340,8 +341,9 @@ static glyph_t glyph_alloc(ScrollerWidget widget, message_t message)
     }
 
     /* Allocate a message view for display */
-    if ((self -> message_view = message_view_alloc(
-             message, 0, widget -> scroller.renderer)) == NULL)
+    self -> message_view = message_view_alloc(message, 0,
+					      widget -> scroller.renderer);
+    if (self -> message_view == NULL)
     {
         glyph_free(self);
         return NULL;
@@ -463,7 +465,8 @@ static int glyph_is_killed(glyph_t self)
     message_t message;
 
     /* Get the glyph's message */
-    if ((message = glyph_get_message(self)) == NULL)
+    message = glyph_get_message(self);
+    if (message == NULL)
     {
         return False;
     }
@@ -588,9 +591,19 @@ static glyph_t queue_find(glyph_t head, char *tag)
         char *probe_tag;
 
         /* Check for a match */
-        if ((message = glyph_get_message(probe)) != NULL &&
-            (probe_tag = message_get_tag(message)) != NULL &&
-            strcmp(tag, probe_tag) == 0)
+        message = glyph_get_message(probe);
+	if (message == NULL)
+        {
+	    continue;
+	}
+
+	probe_tag = message_get_tag(message);
+	if (probe_tag == NULL)
+	{
+	    continue;
+	}
+
+	if (strcmp(tag, probe_tag) == 0)
         {
             return probe;
         }
@@ -671,7 +684,8 @@ static glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     glyph_holder_t self;
 
     /* Allocate memory for the receiver */
-    if ((self = malloc(sizeof(struct glyph_holder))) == NULL)
+    self = malloc(sizeof(struct glyph_holder));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -945,10 +959,10 @@ static void initialize(
     }
 
     /* Try to allocate a conversion descriptor */
-    if ((self -> scroller.renderer = utf8_renderer_alloc(
-             XtDisplay(widget),
-             self -> scroller.font,
-             self -> scroller.code_set)) == NULL)
+    self -> scroller.renderer = utf8_renderer_alloc(XtDisplay(widget),
+						    self -> scroller.font,
+						    self -> scroller.code_set);
+    if (self -> scroller.renderer == NULL)
     {
         /* FIX THIS: can we fail gracefully? */
         perror("trouble");
@@ -2124,7 +2138,8 @@ static void faster(Widget widget, XEvent *event, String *params, Cardinal *npara
     /* If there's an argument then try to convert it to a number */
     if (*nparams > 0)
     {
-        if ((value = atoi(params[0])) == 0)
+        value = atoi(params[0]);
+        if (value == 0)
         {
             fprintf(stderr, "Unable to convert argument %s to a number\n",
                     params[0]);
@@ -2158,7 +2173,8 @@ static void slower(Widget widget, XEvent *event, String *params, Cardinal *npara
     /* If there's an argument then try to convert it to a number */
     if (*nparams > 0)
     {
-        if ((value = atoi(params[0])) == 0)
+        value = atoi(params[0]);
+        if (value == 0)
         {
             fprintf(stderr, "Unable to convert argument %s to a number\n",
                     params[0]);
@@ -2195,7 +2211,8 @@ static void set_speed(Widget widget, XEvent *event, String *params, Cardinal *np
     DPRINTF((stderr, "set-speed()\n"));
 
     /* Set the speed.  Disable the clock for a speed of 0 */
-    if ((self -> scroller.step = atoi(params[0])) == 0)
+    self -> scroller.step = atoi(params[0]);
+    if (self -> scroller.step == 0)
     {
         disable_clock(self);
         return;
@@ -2299,13 +2316,15 @@ void ScAddMessage(Widget widget, message_t message)
     glyph_holder_t holder;
 
     /* Create a glyph for the message */
-    if ((glyph = glyph_alloc(self, message)) == NULL)
+    glyph = glyph_alloc(self, message);
+    if (glyph == NULL)
     {
         return;
     }
 
     /* Try replacing an existing queue element with the same tag as this one */
-    if ((probe = queue_find(self -> scroller.gap, message_get_tag(message))) != NULL)
+    probe = queue_find(self -> scroller.gap, message_get_tag(message));
+    if (probe != NULL)
     {
         queue_replace(probe, glyph);
     }

@@ -175,7 +175,8 @@ static void notify_cb(
 
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
-    if ((newsgroups = malloc(length)) == NULL)
+    newsgroups = malloc(length);
+    if (newsgroups == NULL)
     {
         return;
     }
@@ -259,7 +260,8 @@ static void notify_cb(
             }
 
             length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
-            if ((buffer = malloc(length)) == NULL)
+            buffer = malloc(length);
+            if (buffer == NULL)
             {
                 mime_type = NULL;
                 mime_args = NULL;
@@ -287,7 +289,8 @@ static void notify_cb(
     else
     {
         length = strlen(ATTACHMENT_FMT) + strlen(mime_type) + strlen(mime_args) - 4;
-        if ((attachment = malloc(length + 1)) == NULL)
+        attachment = malloc(length + 1);
+        if (attachment == NULL)
         {
             length = 0;
         }
@@ -298,10 +301,10 @@ static void notify_cb(
     }
 
     /* Construct a message out of all of that */
-    if ((message = message_alloc(
-        NULL, newsgroups, name, subject, 300,
-        attachment, length - 1,
-         NULL, NULL, NULL, NULL)) != NULL)
+    message = message_alloc(NULL, newsgroups, name, subject, 300,
+                            attachment, length - 1,
+                            NULL, NULL, NULL, NULL);
+    if (message != NULL)
     {
         /* Deliver the message */
         (*self -> callback)(self -> rock, message, False);
@@ -362,7 +365,8 @@ static int notify_cb(
 
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
-    if ((newsgroups = malloc(length)) == NULL)
+    newsgroups = malloc(length);
+    if (newsgroups == NULL)
     {
         return 0;
     }
@@ -469,7 +473,8 @@ static int notify_cb(
             news_host = found ? news_host : "news";
 
             length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
-            if ((buffer = malloc(length)) == NULL)
+            buffer = malloc(length);
+            if (buffer == NULL)
             {
                 mime_type = NULL;
                 mime_args = NULL;
@@ -508,9 +513,10 @@ static int notify_cb(
     }
 
     /* Construct a message out of all of that */
-    if ((message = message_alloc(NULL, newsgroups, name, subject, 60,
-                                 attachment, length,
-                                 NULL, NULL, NULL, NULL)) != NULL)
+    message = message_alloc(NULL, newsgroups, name, subject, 60,
+                            attachment, length,
+                            NULL, NULL, NULL, NULL);
+    if (message != NULL)
     {
         /* Deliver the message */
         (*self -> callback)(self -> rock, message, False);
@@ -650,7 +656,8 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     /* Allocate space for the result */
     length = format_length + strlen(field_name) + strlen(expression -> pattern) - 3;
-    if ((result = malloc(length)) == NULL)
+    result = malloc(length);
+    if (result == NULL)
     {
         return NULL;
     }
@@ -674,7 +681,8 @@ static char *alloc_sub(
     if (count == 0)
     {
         length = strlen(PATTERN_ONLY) + strlen(not_string) + strlen(pattern) - 3;
-        if ((result = malloc(length)) == NULL)
+        result = malloc(length);
+        if (result == NULL)
         {
             return NULL;
         }
@@ -686,7 +694,8 @@ static char *alloc_sub(
     /* Otherwise we have to do this the hard way.  Allocate space for
      * the initial pattern and then extend it for each of the expressions */
     length = strlen(PATTERN_PLUS) + strlen(not_string) + strlen(pattern) - 3;
-    if ((result = malloc(length)) == NULL)
+    result = malloc(length);
+    if (result == NULL)
     {
         return NULL;
     }
@@ -701,7 +710,8 @@ static char *alloc_sub(
         size_t new_length = length + strlen(expr) + 4;
 
         /* Expand the buffer */
-        if ((result = (char *)realloc(result, new_length)) == NULL)
+        result = realloc(result, new_length);
+        if (result == NULL)
         {
             free(expr);
             return NULL;
@@ -722,7 +732,8 @@ usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
     usenet_sub_t self;
 
     /* Allocate memory for the new subscription */
-    if ((self = malloc(sizeof(struct usenet_sub))) == NULL)
+    self = malloc(sizeof(struct usenet_sub));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -771,7 +782,8 @@ int usenet_sub_add(
     size_t entry_length;
 
     /* Figure out what the new entry is */
-    if ((entry_sub = alloc_sub(self, has_not, pattern, expressions, count)) == NULL)
+    entry_sub = alloc_sub(self, has_not, pattern, expressions, count);
+    if (entry_sub == NULL)
     {
         return -1;
     }
@@ -783,7 +795,8 @@ int usenet_sub_add(
     if (self -> expression == NULL)
     {
         self -> expression_size = strlen(ONE_SUB) + entry_length - 1;
-        if ((self -> expression = malloc(self -> expression_size)) == NULL)
+        self -> expression = malloc(self -> expression_size);
+        if (self -> expression == NULL)
         {
             free(entry_sub);
             return -1;
@@ -799,7 +812,8 @@ int usenet_sub_add(
 
         /* Expand the expression buffer */
         new_size = self -> expression_size + entry_length + 4;
-        if ((new_expression = (char *)realloc(self -> expression, new_size)) == NULL)
+        new_expression = realloc(self -> expression, new_size);
+        if (new_expression == NULL)
         {
             return -1;
         }

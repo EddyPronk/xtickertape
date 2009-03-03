@@ -167,7 +167,8 @@ static int accept_key(keys_parser_t self)
 
             /* Allocate memory for the absolute path */
             length = strlen(self -> keys_dir) + 1 + strlen(self -> key_data) + 1;
-            if ((string = malloc(length)) == NULL)
+            string = malloc(length);
+            if (string == NULL)
             {
                 return -1;
             }
@@ -181,14 +182,16 @@ static int accept_key(keys_parser_t self)
         }
 
         /* Open the key file. */
-        if ((fd = open(self -> key_data, O_RDONLY)) < 0)
+        fd = open(self -> key_data, O_RDONLY);
+        if (fd < 0)
         {
             char *error_string = strerror(errno);
             size_t length;
             char *buffer;
 
             length = strlen(FILE_ERROR_MSG) + strlen(self -> token) + strlen(error_string) - 1;
-            if ((buffer = malloc(length)) != NULL)
+            buffer = malloc(length);
+            if (buffer != NULL)
             {
                 snprintf(buffer, length, FILE_ERROR_MSG,
 			 self -> token, error_string);
@@ -207,14 +210,16 @@ static int accept_key(keys_parser_t self)
         }
 
         /* Allocate enough space to hold it. */
-        if ((self -> key_data = realloc(self -> key_data, file_stat.st_size)) == NULL)
+        self -> key_data = realloc(self -> key_data, file_stat.st_size);
+        if (self -> key_data == NULL)
         {
             close(fd);
             return -1;
         }
 
         /* Read it in. */
-        if ((self -> key_length = read(fd, self -> key_data, file_stat.st_size)) < 0)
+        self -> key_length = read(fd, self -> key_data, file_stat.st_size);
+        if (self -> key_length < 0)
         {
             close(fd);
             return -1;
@@ -234,7 +239,8 @@ static int accept_key(keys_parser_t self)
         hex = self -> key_data;
 
         /* Allocate some memory to store the key contents in. */
-        if ((self -> key_data = malloc(self -> key_length / 2)) == NULL)
+        self -> key_data = malloc(self -> key_length / 2);
+        if (self -> key_data == NULL)
         {
             free(hex);
             return -1;
@@ -323,7 +329,8 @@ static int append_char(keys_parser_t self, int ch)
         size_t length = (self -> token_end - self -> token) * 2;
 
         /* Try to allocate more memory */
-        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        new_token = realloc(self -> token, length);
+        if (new_token == NULL)
         {
             return -1;
         }
@@ -519,7 +526,8 @@ static int lex_type(keys_parser_t self, int ch)
             char *buffer;
 
             length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
-            if ((buffer = malloc(length)) != NULL)
+            buffer = malloc(length);
+            if (buffer != NULL)
             {
                 snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -587,7 +595,8 @@ static int lex_format(keys_parser_t self, int ch)
             char *buffer;
 
             length = strlen(FORMAT_ERROR_MSG) + strlen(self -> token) - 1;
-            if ((buffer = malloc(length)) != NULL)
+            buffer = malloc(length);
+            if (buffer != NULL)
             {
                 snprintf(buffer, length, FORMAT_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -677,28 +686,32 @@ keys_parser_t keys_parser_alloc(
     keys_parser_t self;
 
     /* Allocate memory for the new keys_parser */
-    if ((self = malloc(sizeof(struct keys_parser))) == NULL)
+    self = malloc(sizeof(struct keys_parser));
+    if (self == NULL)
     {
         return NULL;
     }
     memset(self, 0, sizeof(struct keys_parser));
 
     /* Copy the keys_dir string */
-    if ((self -> keys_dir = strdup(keys_dir)) == NULL)
+    self -> keys_dir = strdup(keys_dir);
+    if (self -> keys_dir == NULL)
     {
         keys_parser_free(self);
         return NULL;
     }
 
     /* Copy the tag string */
-    if ((self -> tag = strdup(tag)) == NULL)
+    self -> tag = strdup(tag);
+    if (self -> tag == NULL)
     {
         keys_parser_free(self);
         return NULL;
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    self -> token = malloc(INITIAL_TOKEN_SIZE);
+    if (self -> token == NULL)
     {
         free(self -> tag);
         free(self);

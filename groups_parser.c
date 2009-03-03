@@ -184,9 +184,9 @@ static int accept_key(groups_parser_t self, char *name)
     char **new_names;
 
     /* Make room in the list of keys */
-    if ((new_names = (char **)realloc(
-             self->key_names,
-             (self->key_count + 1) * sizeof(char *))) == NULL)
+    new_names = realloc(self->key_names,
+			(self->key_count + 1) * sizeof(char *));
+    if (new_names == NULL)
     {
         return -1;
     }
@@ -211,7 +211,8 @@ static int append_char(groups_parser_t self, int ch)
         size_t length = (self -> token_end - self -> token) * 2;
 
         /* Try to allocate more memory */
-        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        new_token = realloc(self -> token, length);
+        if (new_token == NULL)
         {
             return -1;
         }
@@ -406,7 +407,8 @@ static int lex_menu(groups_parser_t self, int ch)
             size_t length = strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1;
             char *buffer;
 
-            if ((buffer = malloc(length)) != NULL)
+            buffer = malloc(length);
+            if (buffer != NULL)
             {
                 snprintf(buffer, length, MENU_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -466,7 +468,8 @@ static int lex_nazi(groups_parser_t self, int ch)
             size_t length = strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1;
             char *buffer;
 
-            if ((buffer = malloc(length)) != NULL)
+            buffer = malloc(length);
+            if (buffer != NULL)
             {
                 snprintf(buffer, length, NAZI_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -616,7 +619,8 @@ static int lex_bad_time(groups_parser_t self, int ch)
 
         /* Generate an error message */
         length = strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1;
-        if ((buffer = malloc(length)) != NULL)
+        buffer = malloc(length);
+        if (buffer != NULL)
         {
             snprintf(buffer, length, TIMEOUT_ERROR_MSG, self -> token);
             parse_error(self, buffer);
@@ -747,7 +751,8 @@ static int lex_superfluous(groups_parser_t self, int ch)
 
         /* Generate an error message */
         length = strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1;
-        if ((buffer = malloc(length)) != NULL)
+        buffer = malloc(length);
+        if (buffer != NULL)
         {
             snprintf(buffer, length, EXTRA_ERROR_MSG, self -> token);
             parse_error(self, buffer);
@@ -795,21 +800,24 @@ groups_parser_t groups_parser_alloc(
     groups_parser_t self;
 
     /* Allocate memory for the new groups_parser */
-    if ((self = malloc(sizeof(struct groups_parser))) == NULL)
+    self = malloc(sizeof(struct groups_parser));
+    if (self == NULL)
     {
         return NULL;
     }
     memset(self, 0, sizeof(struct groups_parser));
 
     /* Copy the tag string */
-    if ((self -> tag = strdup(tag)) == NULL)
+    self -> tag = strdup(tag);
+    if (self -> tag == NULL)
     {
         groups_parser_free(self);
         return NULL;
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    self -> token = malloc(INITIAL_TOKEN_SIZE);
+    if (self -> token == NULL)
     {
         groups_parser_free(self);
         return NULL;

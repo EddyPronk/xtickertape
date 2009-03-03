@@ -253,7 +253,8 @@ static translation_queue_t translation_queue_alloc(
     translation_queue_t self;
 
     /* Allocate memory for the queue item */
-    if ((self = malloc(sizeof(struct translation_queue))) == NULL)
+    self = malloc(sizeof(struct translation_queue));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -291,7 +292,8 @@ static node_t node_alloc(message_t message)
     node_t self;
 
     /* Allocate memory for the node */
-    if ((self = malloc(sizeof(struct node))) == NULL)
+    self = malloc(sizeof(struct node));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -495,7 +497,8 @@ node_t node_find(node_t self, message_t message)
         /* Is it one of our children? */
         if (self -> child)
         {
-            if ((result = node_find(self -> child, message)) != NULL)
+            result = node_find(self -> child, message);
+            if (result != NULL)
             {
                 return result;
             }
@@ -724,7 +727,9 @@ static void copy_area(
     translation_queue_t item;
 
     /* Allocate a new translation queue item */
-    if ((item = translation_queue_alloc(NextRequest(display), src_x, src_y, width, height, dest_x, dest_y)) == NULL)
+    item = translation_queue_alloc(NextRequest(display), src_x, src_y,
+				   width, height, dest_x, dest_y);
+    if (item == NULL)
     {
         abort();
     }
@@ -957,9 +962,10 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.gc = None;
 
     /* Allocate a conversion descriptor */
-    if ((self -> history.renderer = utf8_renderer_alloc(XtDisplay(widget),
-                                                        self -> history.font,
-                                                        self -> history.code_set)) == NULL)
+    self -> history.renderer = utf8_renderer_alloc(XtDisplay(widget),
+						   self -> history.font,
+						   self -> history.code_set);
+    if (self -> history.renderer == NULL)
     {
         perror("trouble");
         exit(1);
@@ -2455,7 +2461,8 @@ void HistoryAddMessage(Widget widget, message_t message)
     int depth;
 
     /* Wrap the message in a node */
-    if ((node = node_alloc(message)) == NULL)
+    node = node_alloc(message);
+    if (node == NULL)
     {
         return;
     }
@@ -2517,7 +2524,8 @@ void HistoryKillThread(Widget widget, message_t message)
     }
 
     /* Look for the node which wraps the message */
-    if ((node = node_find(self -> history.nodes, message)) == NULL)
+    node = node_find(self -> history.nodes, message);
+    if (node == NULL)
     {
         /* The message is killed now */
         message_set_killed(message, True);
@@ -2567,10 +2575,18 @@ void HistorySelectId(Widget widget, char *message_id)
         /* Find the index of the message */
         for (i = self -> history.message_count; i > 0; --i)
         {
-            if ((message = message_view_get_message(
-                     self -> history.message_views[i - 1])) != NULL &&
-                (string = message_get_id(message)) != NULL &&
-                strcmp(string, message_id) == 0)
+            message =
+		message_view_get_message(self -> history.message_views[i - 1]);
+	    if (message == NULL) {
+		continue;
+	    }
+
+	    string = message_get_id(message);
+	    if (string == NULL) {
+		continue;
+	    }
+
+	    if (strcmp(string, message_id) == 0)
             {
                 set_selection(self, i - 1, message);
                 return;

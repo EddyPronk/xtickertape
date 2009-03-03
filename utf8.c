@@ -174,7 +174,8 @@ static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
         {
             /* Try this combination */
             fflush(stderr);
-            if ((cd = iconv_open(to_string, from_string)) != (iconv_t)-1)
+            cd = iconv_open(to_string, from_string);
+            if (cd != (iconv_t)-1)
             {
                 return cd;
             }
@@ -252,7 +253,8 @@ static char *alloc_font_code_set(Display *display, XFontStruct *font)
 
     /* Allocate some memory to hold the code set name */
     length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
-    if ((string = malloc(length)) == NULL)
+    string = malloc(length);
+    if (string == NULL)
     {
         XFree(names[0]);
         XFree(names[1]);
@@ -388,7 +390,8 @@ utf8_renderer_t utf8_renderer_alloc(
     unsigned long value;
 
     /* Allocate room for the new utf8_renderer */
-    if ((self = malloc(sizeof(struct utf8_renderer))) == NULL)
+    self = malloc(sizeof(struct utf8_renderer));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -428,13 +431,15 @@ utf8_renderer_t utf8_renderer_alloc(
     if (tocode != NULL)
     {
         /* Yes.  Use it to create a conversion descriptor */
-        if ((cd = do_iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
+        cd = do_iconv_open(tocode, UTF8_CODE);
+        if (cd == (iconv_t)-1)
         {
             return self;
         }
 
         /* Encode a single character to get the dimension */
-        if ((dimension = cd_dimension(cd)) < 0)
+        dimension = cd_dimension(cd);
+        if (dimension < 0)
         {
             iconv_close(cd);
             return self;
@@ -447,13 +452,15 @@ utf8_renderer_t utf8_renderer_alloc(
 
 
     /* Look up the font's code set */
-    if ((string = alloc_font_code_set(display, font)) == NULL)
+    string = alloc_font_code_set(display, font);
+    if (string == NULL)
     {
         return self;
     }
 
     /* Open a conversion descriptor */
-    if ((cd = do_iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
+    cd = do_iconv_open(string, UTF8_CODE);
+    if (cd == (iconv_t)-1)
     {
         self -> dimension = 1;
         free(string);
@@ -464,7 +471,8 @@ utf8_renderer_t utf8_renderer_alloc(
     free(string);
 
     /* Try to encode a single character */
-    if ((dimension = cd_dimension(cd)) == 0)
+    dimension = cd_dimension(cd);
+    if (dimension == 0)
     {
         iconv_close(cd);
         return self;
@@ -554,8 +562,8 @@ static size_t utf8_renderer_iconv(
         }
 
         /* Try to convert the sequence */
-        if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf,
-                       outbytesleft)) == (size_t)-1)
+        n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
+        if (n == (size_t)-1)
         {
             switch (errno)
             {
@@ -906,7 +914,8 @@ utf8_encoder_t utf8_encoder_alloc(
     char *string;
 
     /* Allocate memory for a utf8_encoder */
-    if ((self = malloc(sizeof(struct utf8_encoder))) == NULL)
+    self = malloc(sizeof(struct utf8_encoder));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -945,7 +954,8 @@ utf8_encoder_t utf8_encoder_alloc(
         XtFree(charset);
 
         /* Look up the font's code set */
-        if ((string = alloc_font_code_set(display, font)) == NULL)
+        string = alloc_font_code_set(display, font);
+        if (string == NULL)
         {
             continue;
         }
@@ -987,7 +997,8 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
         int i;
 
         /* The output will be the same size as the input */
-        if ((output = malloc(in_length)) == NULL)
+        output = malloc(in_length);
+        if (output == NULL)
         {
             perror("malloc() failed");
             return NULL;
@@ -1013,7 +1024,8 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Guess twice as much should suffice for the output */
     length = 2 * in_length;
-    if ((buffer = malloc(length)) == NULL)
+    buffer = malloc(length);
+    if (buffer == NULL)
     {
         perror("malloc() failed");
         return NULL;
@@ -1034,7 +1046,8 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
                 size_t new_length;
 
                 new_length = length * 2;
-                if ((new_buffer = realloc(buffer, new_length)) == NULL)
+                new_buffer = realloc(buffer, new_length);
+                if (new_buffer == NULL)
                 {
                     perror("realloc() failed");
                     free(output);
@@ -1084,7 +1097,8 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
         int i;
 
         /* The output will be no longer than the input */
-        if ((output = malloc(in_length)) == NULL)
+        output = malloc(in_length);
+        if (output == NULL)
         {
             perror("malloc() failed");
             return NULL;
@@ -1111,7 +1125,8 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Guess the length of the UTF-8 string */
     length = in_length;
-    if ((buffer = malloc(length)) == NULL)
+    buffer = malloc(length);
+    if (buffer == NULL)
     {
         perror("malloc() failed");
         return NULL;
@@ -1132,7 +1147,8 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
                 size_t new_length;
 
                 new_length = length * 2;
-                if ((new_buffer = realloc(buffer, new_length)) == NULL)
+                new_buffer = realloc(buffer, new_length);
+                if (new_buffer == NULL)
                 {
                     perror("realloc() failed");
                     free(output);

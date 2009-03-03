@@ -193,7 +193,8 @@ static void append_char(int ch)
 
         /* Double the buffer size */
         cmd_length *= 2;
-        if ((cmd_buffer = (char *)realloc(cmd_buffer, cmd_length)) == NULL)
+        cmd_buffer = realloc(cmd_buffer, cmd_length);
+        if (cmd_buffer == NULL)
         {
             perror("realloc() failed");
             exit(1);
@@ -306,7 +307,8 @@ char *invoke(char *browser, char *url)
             /* Invoke the command */
             dprintf(1, "exec: %s\n", cmd_buffer);
 
-            if ((status = system(cmd_buffer)) < 0)
+            status = system(cmd_buffer);
+            if (status < 0)
             {
                 perror("fork() failed");
                 exit(1);
@@ -400,7 +402,8 @@ int main(int argc, char *argv[])
     char *point;
 
     /* Extract the program name from argv[0] */
-    if ((progname = strrchr(argv[0], '/')) == NULL)
+    progname = strrchr(argv[0], '/');
+    if (progname == NULL)
     {
         progname = argv[0];
     }
@@ -410,7 +413,8 @@ int main(int argc, char *argv[])
     }
 
     /* Get the browser string from the environment */
-    if ((browser = getenv(ENV_BROWSER)) == NULL)
+    browser = getenv(ENV_BROWSER);
+    if (browser == NULL)
     {
         browser = DEF_BROWSER;
     }
@@ -476,7 +480,8 @@ int main(int argc, char *argv[])
                 if (optarg[0] == '/')
                 {
                     length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
-                    if ((url = malloc(length)) == NULL)
+                    url = malloc(length);
+                    if (url == NULL)
                     {
                         perror("malloc() failed");
                         exit(1);
@@ -494,7 +499,8 @@ int main(int argc, char *argv[])
                     }
 
                     length = sizeof(FILE_URL_PREFIX) + strlen(buffer) + 1 + strlen(optarg);
-                    if ((url = (char *)malloc(length)) == NULL)
+                    url = malloc(length);
+                    if (url == NULL)
                     {
                         perror("malloc() failed");
                         exit(1);
@@ -558,7 +564,8 @@ int main(int argc, char *argv[])
             dprintf(3, "%s: reading URL from %s\n", progname, filename);
             
             /* Read the URL from the file */
-            if ((file = fopen(filename, "r")) == NULL)
+            file = fopen(filename, "r");
+            if (file == NULL)
             {
                 perror("Unable to open URL file");
                 exit(1);
@@ -582,7 +589,8 @@ int main(int argc, char *argv[])
         fclose(file);
 
         /* Duplicate its contents */
-        if ((url = strdup(buffer)) == NULL)
+        url = strdup(buffer);
+        if (url == NULL)
         {
             perror("malloc() failed");
             exit(1);
@@ -593,7 +601,8 @@ int main(int argc, char *argv[])
 
     /* Initialize the command buffer */
     cmd_length = INIT_CMD_SIZE;
-    if ((cmd_buffer = malloc(cmd_length)) == NULL)
+    cmd_buffer = malloc(cmd_length);
+    if (cmd_buffer == NULL)
     {
         perror("malloc() failed");
         exit(1);

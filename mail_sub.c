@@ -139,7 +139,8 @@ static void notify_cb(
 
         /* Format the folder name to use as the group */
         length = strlen(FOLDER_FMT) + strlen(folder) - 1;
-        if ((buffer = malloc(length)) != NULL)
+        buffer = malloc(length);
+        if (buffer != NULL)
         {
             snprintf(buffer, length, FOLDER_FMT, folder);
             folder = buffer;
@@ -236,7 +237,8 @@ static int notify_cb(
     {
         /* Format the folder name to use as the group */
         length = strlen(FOLDER_FMT) + strlen(folder) - 1;
-        if ((buffer = malloc(length)) != NULL)
+        buffer = malloc(length);
+        if (buffer != NULL)
         {
             snprintf(buffer, length, FOLDER_FMT, folder);
             folder = buffer;
@@ -288,14 +290,16 @@ mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
     mail_sub_t self;
 
     /* Allocate memory for the receiver */
-    if ((self = malloc(sizeof(struct mail_sub))) == NULL)
+    self = malloc(sizeof(struct mail_sub));
+    if (self == NULL)
     {
         fprintf(stderr, PACKAGE ": out of memory\n");
         exit(1);
     }
 
     /* Allocate memory for the rfc822 mailbox parser */
-    if ((self -> parser = mbox_parser_alloc()) == NULL)
+    self -> parser = mbox_parser_alloc();
+    if (self -> parser == NULL)
     {
         free(self);
         return NULL;
@@ -368,7 +372,8 @@ void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error
         char *buffer;
 
         length = strlen(MAIL_SUB) + strlen(self -> user) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
         {
             return;
         }

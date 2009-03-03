@@ -246,13 +246,15 @@ static char *get_user()
     char *user;
 
     /* First try the `USER' environment variable */
-    if ((user = getenv("USER")) != NULL)
+    user = getenv("USER");
+    if (user != NULL)
     {
         return user;
     }
 
     /* If that isn't set try `LOGNAME' */
-    if ((user = getenv("LOGNAME")) != NULL)
+    user = getenv("LOGNAME");
+    if (user != NULL)
     {
         return user;
     }
@@ -275,7 +277,8 @@ static char *get_domain()
 #endif /* UNAME */
 
     /* If the `DOMAIN' environment variable is set then use it */
-    if ((domain = getenv("DOMAIN")) != NULL)
+    domain = getenv("DOMAIN");
+    if (domain != NULL)
     {
         return strdup(domain);
     }
@@ -289,7 +292,8 @@ static char *get_domain()
 
 #ifdef HAVE_GETHOSTBYNAME
     /* Use that to get the canonical name */
-    if ((host = gethostbyname(name.nodename)) == NULL)
+    host = gethostbyname(name.nodename);
+    if (host == NULL)
     {
         domain = strdup(name.nodename);
     }
@@ -597,12 +601,10 @@ int main(int argc, char *argv[])
     context = XtCreateApplicationContext();
 
     /* Open the display */
-    if ((display = XtOpenDisplay(
-             context, NULL, NULL, "XTickertape",
-             NULL, 0,
-             &argc, argv)) == NULL)
+    display = XtOpenDisplay(context, NULL, NULL, "XTickertape",
+			    NULL, 0, &argc, argv);
+    if (display == NULL)
     {
-
         fprintf(stderr, "Error: Can't open display\n");
         exit(1);
     }
@@ -637,7 +639,8 @@ int main(int argc, char *argv[])
 
 #if ! defined(ELVIN_VERSION_AT_LEAST)
     /* Initialize the elvin client library */
-    if ((error = elvin_xt_init(context)) == NULL)
+    error = elvin_xt_init(context);
+    if (error == NULL)
     {
         fprintf(stderr, "*** elvin_xt_init(): failed\n");
         exit(1);
@@ -652,7 +655,8 @@ int main(int argc, char *argv[])
     }
 
     /* Create a new elvin connection handle */
-    if ((handle = elvin_handle_alloc(error)) == NULL)
+    handle = elvin_handle_alloc(error);
+    if (handle == NULL)
     {
         fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
         elvin_error_fprintf(stderr, error);
@@ -661,13 +665,15 @@ int main(int argc, char *argv[])
 
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
     /* Allocate an error context */
-    if (! (error = elvin_error_alloc(NULL, NULL))) {
+    error = elvin_error_alloc(NULL, NULL);
+    if (error == NULL) {
         fprintf(stderr, PACKAGE ": elvin_error_alloc() failed\n");
         exit(1);
     }
 
     /* Initialize the elvin client library */
-    if ((client = elvin_xt_init_default(context, error)) == NULL)
+    client = elvin_xt_init_default(context, error);
+    if (client == NULL)
     {
         fprintf(stderr, PACKAGE ": elvin_xt_init() failed\n");
         elvin_error_fprintf(stderr, error);
@@ -675,7 +681,8 @@ int main(int argc, char *argv[])
     }
 
     /* Create a new elvin connection handle */
-    if ((handle = elvin_handle_alloc(client, error)) == NULL)
+    handle = elvin_handle_alloc(client, error);
+    if (handle == NULL)
     {
         fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
         elvin_error_fprintf(stderr, error);

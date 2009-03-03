@@ -238,7 +238,8 @@ message_t message_alloc(
     message_t self;
 
     /* Allocate some space for the message_t */
-    if ((self = malloc(sizeof(struct message))) == NULL)
+    self = malloc(sizeof(struct message));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -271,7 +272,8 @@ message_t message_alloc(
     else
     {
         /* Allocate some room for a copy of the mime args */
-        if ((self -> attachment = malloc(length)) == NULL)
+        self -> attachment = malloc(length);
+        if (self -> attachment == NULL)
         {
             self -> length = 0;
         }
@@ -494,7 +496,8 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
                 }
 
                 /* Look for a ';' in the content type */
-                if ((p = memchr(mark, ';', point - mark)) == NULL)
+                p = memchr(mark, ';', point - mark);
+                if (p == NULL)
                 {
                     p = point;
                 }
@@ -506,7 +509,8 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
                 }
 
                 /* Allocate a string to hold the content type */
-                if ((*type_out = malloc(p - mark + 1)) == NULL)
+                *type_out = malloc(p - mark + 1);
+                if (*type_out == NULL)
                 {
                     return -1;
                 }

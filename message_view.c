@@ -193,7 +193,8 @@ message_view_t message_view_alloc(
     struct string_sizes sizes;
 
     /* Allocate enough memory for the new message view */
-    if ((self = malloc(sizeof(struct message_view))) == NULL)
+    self = malloc(sizeof(struct message_view));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -202,7 +203,8 @@ message_view_t message_view_alloc(
     memset(self, 0, sizeof(struct message_view));
 
     /* Allocate a reference to the message */
-    if ((self -> message = message_alloc_reference(message)) == NULL)
+    self -> message = message_alloc_reference(message);
+    if (self -> message == NULL)
     {
         message_view_free(self);
         return NULL;
@@ -216,7 +218,8 @@ message_view_t message_view_alloc(
     self -> has_underline = message_has_attachment(message);
 
     /* Get the message's timestamp */
-    if ((timestamp = localtime(message_get_creation_time(message))) == NULL)
+    timestamp = localtime(message_get_creation_time(message));
+    if (timestamp == NULL)
     {
         perror("localtime(): failed");
         exit(1);

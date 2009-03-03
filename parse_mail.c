@@ -154,14 +154,16 @@ base64_decode(const char *string, char *buffer, size_t buflen)
             return -1;
         }
 
-        if ((val = base64value(ch)) < 0) {
+        val = base64value(ch);
+        if (val < 0) {
             return -1;
         } else {
             num = val << 18;
         }
 
         ch = *in++;
-        if ((val = base64value(ch)) < 0) {
+        val = base64value(ch);
+        if (val < 0) {
             return -1;
         } else {
             num |= val << 12;
@@ -236,14 +238,16 @@ qprint_decode(const char *string, char *buffer, size_t buflen)
                 break;
             }
         } else if (state == 1) {
-            if ((digit = nibblevalue(ch)) < 0) {
+            digit = nibblevalue(ch);
+            if (digit < 0) {
                 return -1;
             }
             num = digit;
             state++;
         } else {
             assert(state == 2);
-            if ((digit = nibblevalue(ch)) < 0) {
+            digit = nibblevalue(ch);
+            if (digit < 0) {
                 return -1;
             }
             ch = num << 4 | digit;
@@ -423,7 +427,8 @@ rfc1522_decode(const char *charset,
     } else {
 #if defined(HAVE_ICONV)
         cset = CSET_OTHER;
-        if ((cd = iconv_open("UTF-8", buf)) == (iconv_t)-1) {
+        cd = iconv_open("UTF-8", buf);
+        if (cd == (iconv_t)-1) {
             return -1;
         }
 #else /* !HAVE_ICONV */

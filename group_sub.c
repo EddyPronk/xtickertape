@@ -394,7 +394,8 @@ static void notify_cb(
         if (mime_type != NULL && found && type == ELVIN_STRING)
         {
             length = header_length + strlen(value.s);
-            if ((buffer = malloc(length + 1)) == NULL)
+            buffer = malloc(length + 1);
+            if (buffer == NULL)
             {
                 length = 0;
             }
@@ -408,7 +409,8 @@ static void notify_cb(
         else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
         {
             length = header_length + value.o.length;
-            if ((buffer = malloc(length + 1)) == NULL)
+            buffer = malloc(length + 1);
+            if (buffer == NULL)
             {
                 length = 0;
             }
@@ -728,7 +730,8 @@ static int notify_cb(
             if (mime_type != NULL && found && type == ELVIN_STRING)
             {
                 length = header_length + strlen(value.s);
-                if ((buffer = malloc(length + 1)) == NULL)
+                buffer = malloc(length + 1);
+                if (buffer == NULL)
                 {
                     length = 0;
                 }
@@ -743,7 +746,8 @@ static int notify_cb(
             else if (mime_type != NULL && found && type == ELVIN_OPAQUE)
             {
                 length = header_length + value.o.length;
-                if ((buffer = malloc(length + 1)) == NULL)
+                buffer = malloc(length + 1);
+                if (buffer == NULL)
                 {
                     length = 0;
                 }
@@ -851,7 +855,8 @@ static void send_message(group_sub_t self, message_t message)
     message_decode_attachment(message, &mime_type, &mime_args);
 
     /* Allocate a new notification */
-    if ((notification = ELVIN_NOTIFICATION_ALLOC(client, self -> error)) == NULL)
+    notification = ELVIN_NOTIFICATION_ALLOC(client, self -> error);
+    if (notification == NULL)
     {
         fprintf(stderr, PACKAGE ": elvin_notification_alloc(): failed\n");
         elvin_error_fprintf(stderr, self -> error);
@@ -1061,14 +1066,19 @@ static void group_sub_update_keys(
     {
         self -> key_names = NULL;
     }
-    else if ((self -> key_names = malloc(key_count * sizeof(char *))) == NULL) 
+    else
     {
-        abort();
+	self -> key_names = malloc(key_count * sizeof(char *));
+	if (self -> key_names == NULL)
+	{
+	    abort();
+	}
     }
 
     for (i = 0; i < key_count; i++)
     {
-        if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
+        self -> key_names[i] = strdup(key_names[i]);
+        if (self -> key_names[i] == NULL)
         {
             abort();
         }
@@ -1114,21 +1124,24 @@ group_sub_t group_sub_alloc(
     int i;
 
     /* Allocate memory for the new group_sub_t */
-    if ((self = malloc(sizeof(struct group_sub))) == NULL)
+    self = malloc(sizeof(struct group_sub));
+    if (self == NULL)
     {
         return NULL;
     }
     memset(self, 0, sizeof(struct group_sub));
 
     /* Copy the name string */
-    if ((self -> name = strdup(name)) == NULL)
+    self -> name = strdup(name);
+    if (self -> name == NULL)
     {
         group_sub_free(self);
         return NULL;
     }
 
     /* Copy the subscription expression */
-    if ((self -> expression = strdup(expression)) == NULL)
+    self -> expression = strdup(expression);
+    if (self -> expression == NULL)
     {
         group_sub_free(self);
         return NULL;
@@ -1137,7 +1150,8 @@ group_sub_t group_sub_alloc(
     /* Allocate room for a copy of the list of key names */
     if (key_count)
     {
-        if ((self -> key_names = malloc(key_count * sizeof(char *))) == NULL)
+        self -> key_names = malloc(key_count * sizeof(char *));
+        if (self -> key_names == NULL)
         {
             abort();
         }
@@ -1145,7 +1159,8 @@ group_sub_t group_sub_alloc(
         /* Copy each key name */
         for (i = 0; i < key_count; i++)
         {
-            if ((self -> key_names[i] = strdup(key_names[i])) == NULL)
+            self -> key_names[i] = strdup(key_names[i]);
+            if (self -> key_names[i] == NULL)
             {
                 abort();
             }
@@ -1227,7 +1242,8 @@ void group_sub_update_from_sub(
         if (strcmp(self -> name, subscription -> name) != 0)
         {
             free(self -> name);
-            if ((self -> name = strdup(subscription -> name)) == NULL)
+            self -> name = strdup(subscription -> name);
+            if (self -> name == NULL)
             {
                 /* FIX THIS: error reporting?! */
                 abort();
@@ -1238,7 +1254,8 @@ void group_sub_update_from_sub(
         if (strcmp(self -> expression, subscription -> expression) != 0)
         {
             free(self -> expression);
-            if ((self -> expression = strdup(subscription -> expression)) == NULL)
+            self -> expression = strdup(subscription -> expression);
+            if (self -> expression == NULL)
             {
                 /* FIX THIS: error reporting? */
                 abort();

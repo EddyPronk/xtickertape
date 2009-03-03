@@ -95,7 +95,8 @@ xwrite(int fd, const char *buffer, size_t len)
     point = buffer;
     end = point + len;
     while (point < end) {
-        if ((res = write(fd, point, end - point)) < 0) {
+        res = write(fd, point, end - point);
+        if (res < 0) {
             exit(1);
         }
 
@@ -156,7 +157,8 @@ int main(int argc, char *argv[])
             }
 
             path = optarg;
-            if ((fd = open(path, O_RDONLY)) < 0) {
+            fd = open(path, O_RDONLY);
+            if (fd < 0) {
                 fprintf(stderr, "%s: error: unable to open file %s: %s\n",
                         progname, path, strerror(errno));
                 exit(1);
@@ -235,7 +237,8 @@ int main(int argc, char *argv[])
         /* Look up the address */
         memset(&hints, 0, sizeof(hints));
         hints.ai_socktype = SOCK_DGRAM;
-        if ((err = getaddrinfo(host, serv, &hints, &addrinfo)) != 0) {
+        err = getaddrinfo(host, serv, &hints, &addrinfo);
+        if (err != 0) {
             fprintf(stderr, "%s: error: unable to resolve host %s:%s\n",
                     progname, host, serv);
             exit(1);
@@ -262,7 +265,8 @@ int main(int argc, char *argv[])
 
     /* Digest the message while copying it to stdout */
     do {
-        if ((len = read(fd, buffer, sizeof(buffer))) < 0) {
+        len = read(fd, buffer, sizeof(buffer));
+        if (len < 0) {
             fprintf(stderr, "%s: unable to read from file %s: %s\n",
                     progname, path, strerror(errno));
             exit(1);

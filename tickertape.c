@@ -254,7 +254,8 @@ static int mkdirhier(char *dirname)
     }
 
     /* Find the last '/' in the directory name */
-    if ((pointer = strrchr(dirname, '/')) != NULL)
+    pointer = strrchr(dirname, '/');
+    if (pointer != NULL)
     {
         int result;
 
@@ -416,7 +417,8 @@ static int open_config_file(
     FILE *out;
 
     /* Try to just open the file */
-    if (! ((fd = open(filename, O_RDONLY)) < 0))
+    fd = open(filename, O_RDONLY);
+    if (fd >= 0)
     {
         return fd;
     }
@@ -428,7 +430,8 @@ static int open_config_file(
     }
 
     /* Otherwise, try to create a default groups file */
-    if ((out = fopen(filename, "w")) == NULL)
+    out = fopen(filename, "w");
+    if (out == NULL)
     {
         return -1;
     }
@@ -443,7 +446,8 @@ static int open_config_file(
     fclose(out);
 
     /* Try to open the file again */
-    if ((fd = open(filename, O_RDONLY)) < 0)
+    fd = open(filename, O_RDONLY);
+    if (fd < 0)
     {
         perror("unable to read from groups file");
         return -1;
@@ -474,13 +478,15 @@ static int read_config_file(tickertape_t self, elvin_error_t error)
     int fd;
 
     /* Make sure we can read the config file */
-    if ((fd = open_config_file(self, filename, default_config_file)) < 0)
+    fd = open_config_file(self, filename, default_config_file);
+    if (fd < 0)
     {
         return 0;
     }
 
     /* Allocate a new config file parser */
-    if (! (parser = parser_alloc(parse_config_callback, self, error)))
+    parser = parser_alloc(parse_config_callback, self, error);
+    if (parser == NULL)
     {
         return 0;
     }
@@ -517,7 +523,8 @@ static int parse_groups_callback(
 
     /* Construct the subscription expression */
     length = strlen(GROUP_SUB) + 2 * strlen(name) - 3;
-    if ((expression = malloc(length)) == NULL)
+    expression = malloc(length);
+    if (expression == NULL)
     {
         return -1;
     }
@@ -525,11 +532,12 @@ static int parse_groups_callback(
     snprintf(expression, length, GROUP_SUB, name, name);
 
     /* Allocate us a subscription */
-    if ((subscription = group_sub_alloc(name, expression,
-                                        in_menu, has_nazi,
-                                        min_time * 60, max_time * 60,
-                                        self -> keys, key_names, key_count,
-                                        receive_callback, self)) == NULL)
+    subscription = group_sub_alloc(name, expression,
+				   in_menu, has_nazi,
+				   min_time * 60, max_time * 60,
+				   self -> keys, key_names, key_count,
+				   receive_callback, self);
+    if (subscription == NULL)
     {
         return -1;
     }
@@ -552,15 +560,15 @@ static int parse_groups_file(tickertape_t self)
     int fd;
 
     /* Allocate a new groups file parser */
-    if ((parser = groups_parser_alloc(parse_groups_callback,
-                                      self,
-                                      filename)) == NULL)
+    parser = groups_parser_alloc(parse_groups_callback, self, filename);
+    if (parser == NULL)
     {
         return -1;
     }
 
     /* Make sure we can read the groups file */
-    if ((fd = open_config_file(self, filename, default_groups_file)) < 0)
+    fd = open_config_file(self, filename, default_groups_file);
+    if (fd < 0)
     {
         groups_parser_free(parser);
         return -1;
@@ -573,7 +581,8 @@ static int parse_groups_file(tickertape_t self)
         ssize_t length;
 
         /* Read from the file */
-        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        length = read(fd, buffer, BUFFER_SIZE);
+        if (length < 0)
         {
             close(fd);
             groups_parser_free(parser);
@@ -617,22 +626,25 @@ static int parse_usenet_file(tickertape_t self)
     int fd;
 
     /* Allocate a new usenet file parser */
-    if ((parser = usenet_parser_alloc(
+    parser = usenet_parser_alloc(
         (usenet_parser_callback_t)parse_usenet_callback,
-        self, filename)) == NULL)
+        self, filename);
+    if (parser == NULL)
     {
         return -1;
     }
 
     /* Allocate a new usenet subscription */
-    if ((self -> usenet_sub = usenet_sub_alloc(receive_callback, self)) == NULL)
+    self -> usenet_sub = usenet_sub_alloc(receive_callback, self);
+    if (self -> usenet_sub == NULL)
     {
         usenet_parser_free(parser);
         return -1;
     }
 
     /* Make sure we can read the usenet file */
-    if ((fd = open_config_file(self, filename, defaultUsenetFile)) < 0)
+    fd = open_config_file(self, filename, defaultUsenetFile);
+    if (fd < 0)
     {
         usenet_parser_free(parser);
         return -1;
@@ -645,7 +657,8 @@ static int parse_usenet_file(tickertape_t self)
         ssize_t length;
 
         /* Read from the fiel */
-        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        length = read(fd, buffer, BUFFER_SIZE);
+        if (length < 0)
         {
             close(fd);
             usenet_parser_free(parser);
@@ -701,22 +714,25 @@ static int parse_keys_file(tickertape_t self)
     int fd;
 
     /* Allocate a new keys file parser */
-    if ((parser = keys_parser_alloc(tickertape_keys_directory(self),
-                                    parse_keys_callback, self,
-                                    filename)) == NULL)
+    parser = keys_parser_alloc(tickertape_keys_directory(self),
+			       parse_keys_callback, self,
+			       filename);
+    if (parser == NULL)
     {
         return -1;
     }
 
     /* Allocate a new key table */
-    if ((self -> keys = key_table_alloc()) == NULL)
+    self -> keys = key_table_alloc();
+    if (self -> keys == NULL)
     {
         keys_parser_free(parser);
         return -1;
     }
 
     /* Make sure we can read the keys file */
-    if ((fd = open_config_file(self, filename, default_keys_file)) < 0)
+    fd = open_config_file(self, filename, default_keys_file);
+    if (fd < 0)
     {
         keys_parser_free(parser);
         return -1;
@@ -729,7 +745,8 @@ static int parse_keys_file(tickertape_t self)
         ssize_t length;
 
         /* Read a chunk of the file */
-        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        length = read(fd, buffer, BUFFER_SIZE);
+        if (length < 0)
         {
             close(fd);
             keys_parser_free(parser);
@@ -806,9 +823,9 @@ static void reload_groups(
         int old_index;
 
         /* Look for a match */
-        if ((old_index = find_group(old_groups,
-                                    old_count,
-                                    group_sub_expression(group))) < 0)
+        old_index = find_group(old_groups, old_count,
+			       group_sub_expression(group));
+        if (old_index < 0)
         {
             /* None found.  Set the subscription's connection */
             group_sub_set_connection(group, self -> handle, self -> error);
@@ -949,9 +966,10 @@ static void init_ui(tickertape_t self)
     int index;
 
     /* Allocate the control panel */
-    if ((self -> control_panel = control_panel_alloc(
-             self, self -> top,
-             self -> resources -> send_history_count)) == NULL)
+    self -> control_panel =
+	control_panel_alloc(self, self -> top,
+			    self -> resources -> send_history_count);
+    if (self -> control_panel == NULL)
     {
         return;
     }
@@ -1053,7 +1071,8 @@ static void status_cb(
             
         /* Make room for a combined string and URL */
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1069,7 +1088,8 @@ static void status_cb(
 
         /* Make room for a combined string and URL */
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1085,7 +1105,8 @@ static void status_cb(
 
         /* Make room for a message string */
         length = strlen(CONN_CLOSED_MSG) + 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1105,7 +1126,8 @@ static void status_cb(
 
         /* Make room for a message string */
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1134,8 +1156,9 @@ static void status_cb(
     }
 
     /* Construct a message for the string and add it to the scroller */
-    if ((message = message_alloc(NULL, "internal", "tickertape", string, 30,
-                                 NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
+    message = message_alloc(NULL, "internal", "tickertape", string, 30,
+			    NULL, 0, NULL, NULL, NULL, NULL);
+    if (message != NULL)
     {
         receive_callback(self, message, False);
         message_free(message);
@@ -1176,7 +1199,8 @@ static int status_cb(
 
     case ELVIN_STATUS_CONNECTION_FOUND:
         /* Stringify the URL */
-        if ((url = elvin_url_get_canonical(event -> details.connection_found.url, error)) == NULL)
+        url = elvin_url_get_canonical(event -> details.connection_found.url, error);
+        if (url == NULL)
             {
                 fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
                 elvin_error_fprintf(stderr, error);
@@ -1188,7 +1212,8 @@ static int status_cb(
             
         /* Make room for a combined string and URL */
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1200,7 +1225,8 @@ static int status_cb(
 
     case ELVIN_STATUS_CONNECTION_LOST:
         /* Stringify the URL */
-        if ((url = elvin_url_get_canonical(event -> details.connection_lost.url, error)) == NULL)
+        url = elvin_url_get_canonical(event -> details.connection_lost.url, error);
+        if (url == NULL)
             {
                 fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
                 elvin_error_fprintf(stderr, error);
@@ -1212,7 +1238,8 @@ static int status_cb(
 
         /* Make room for a combined string and URL */
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1228,7 +1255,8 @@ static int status_cb(
 
         /* Make room for a message string */
         length = strlen(CONN_CLOSED_MSG) + 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1241,7 +1269,8 @@ static int status_cb(
     /* Connection warnings go to the status line */
     case ELVIN_STATUS_CONNECTION_WARN:
         /* Get a big buffer */
-        if ((buffer = malloc(BUFFER_SIZE)) == NULL)
+        buffer = malloc(BUFFER_SIZE);
+        if (buffer == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1268,7 +1297,8 @@ static int status_cb(
 
     case ELVIN_STATUS_PROTOCOL_ERROR:
         /* Stringify the URL */
-        if ((url = elvin_url_get_canonical(event -> details.protocol_error.url, error)) == NULL)
+        url = elvin_url_get_canonical(event -> details.protocol_error.url, error);
+        if (url == NULL)
             {
                 fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
                 elvin_error_fprintf(stderr, error);
@@ -1280,7 +1310,8 @@ static int status_cb(
 
         /* Make room for a message string */
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-        if ((buffer = malloc(length)) == NULL)
+        buffer = malloc(length);
+        if (buffer == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1313,8 +1344,9 @@ static int status_cb(
     }
 
     /* Construct a message for the string and add it to the scroller */
-    if ((message = message_alloc(NULL, "internal", "tickertape", string, 30,
-                                 NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
+    message = message_alloc(NULL, "internal", "tickertape", string, 30,
+			    NULL, 0, NULL, NULL, NULL, NULL);
+    if (message != NULL)
     {
         receive_callback(self, message, False);
         message_free(message);
@@ -1364,7 +1396,8 @@ static void interp_cb(XtPointer rock, int *source, XtInputId *id)
     ssize_t length;
 
     /* Read from stdin */
-    if ((length = read(*source, buffer, 4096)) < 0)
+    length = read(*source, buffer, 4096);
+    if (length < 0)
     {
         perror("read(): failed");
         exit(1);
@@ -1943,7 +1976,8 @@ tickertape_t tickertape_alloc(
     tickertape_t self;
 
     /* Allocate some space for the new tickertape */
-    if ((self = malloc(sizeof(struct tickertape))) == NULL)
+    self = malloc(sizeof(struct tickertape));
+    if (self == NULL)
     {
         return NULL;
     }
@@ -1994,7 +2028,8 @@ tickertape_t tickertape_alloc(
 
 #ifdef ENABLE_LISP_INTERPRETER
     /* Initialize the scheme virtual machine */
-    if ((self -> vm = vm_alloc(error)) == NULL)
+    self -> vm = vm_alloc(error);
+    if (self -> vm == NULL)
     {
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -2008,7 +2043,8 @@ tickertape_t tickertape_alloc(
     }
 
     /* Allocate a new parser */
-    if ((self -> parser = parser_alloc(self -> vm, parsed, self, error)) == NULL)
+    self -> parser = parser_alloc(self -> vm, parsed, self, error);
+    if (self -> parser == NULL)
     {
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -2206,7 +2242,8 @@ static char *tickertape_groups_filename(tickertape_t self)
         char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
 
-        if ((self -> groups_file = malloc(length)) == NULL)
+        self -> groups_file = malloc(length);
+        if (self -> groups_file == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2226,7 +2263,8 @@ static char *tickertape_usenet_filename(tickertape_t self)
         char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
 
-        if ((self -> usenet_file = malloc(length)) == NULL)
+        self -> usenet_file = malloc(length);
+        if (self -> usenet_file == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2247,7 +2285,8 @@ static char *tickertape_keys_filename(tickertape_t self)
         size_t length;
 
         length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
-        if ((self -> keys_file = malloc(length)) == NULL)
+        self -> keys_file = malloc(length);
+        if (self -> keys_file == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2269,14 +2308,16 @@ static char *tickertape_keys_directory(tickertape_t self)
         size_t length;
 
         /* Default to the directory name from the keys filename */
-        if ((point = strrchr(file, '/')) == NULL)
+        point = strrchr(file, '/');
+        if (point == NULL)
         {
             self -> keys_dir = strdup("");
         }
         else
         {
             length = point - file;
-            if ((self -> keys_dir = malloc(length + 1)) == NULL)
+            self -> keys_dir = malloc(length + 1);
+            if (self -> keys_dir == NULL)
             {
                 perror("Unable to allocate memory");
                 exit(1);
@@ -2314,7 +2355,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* If the message has no attachment then we're done */
-    if ((count = message_get_attachment(message, &attachment)) == 0)
+    count = message_get_attachment(message, &attachment);
+    if (count == 0)
     {
 #if defined(DEBUG)
         printf("no attachment\n");
@@ -2330,7 +2372,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     }
 
     /* Fork a child process to invoke metamail */
-    if ((pid = fork()) == (pid_t)-1)
+    pid = fork();
+    if (pid == (pid_t)-1)
     {
         perror("fork(): failed");
         close(fds_stdin[0]);
@@ -2375,7 +2418,8 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
         ssize_t length;
 
         /* Write as much as we can */
-        if ((length = write(fds_stdin[1], pointer, end - pointer)) < 0)
+        length = write(fds_stdin[1], pointer, end - pointer);
+        if (length < 0)
         {
             perror("unable to write to metamail pipe");
             return -1;

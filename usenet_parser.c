@@ -197,8 +197,9 @@ static int accept_expression(
         size_t length = (self -> expr_end - self -> expressions) * 2;
 
         /* Try to allocate more memory */
-        if ((new_array = (struct usenet_expr *)realloc(
-            self -> expressions, sizeof(struct usenet_expr) * length)) == NULL)
+        new_array = realloc(self -> expressions,
+                            sizeof(struct usenet_expr) * length);
+        if (new_array == NULL)
         {
             return -1;
         }
@@ -227,7 +228,8 @@ static int append_char(usenet_parser_t self, int ch)
         size_t length = (self -> token_end - self -> token) * 2;
 
         /* Try to allocate more memory */
-        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        new_token = realloc(self -> token, length);
+        if (new_token == NULL)
         {
             return -1;
         }
@@ -656,7 +658,8 @@ static int lex_field(usenet_parser_t self, int ch)
         }
 
         /* Look up the field */
-        if ((self -> field = translate_field(self -> token)) == F_NONE)
+        self -> field = translate_field(self -> token);
+        if (self -> field == F_NONE)
         {
             char *buffer = malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
 
@@ -749,7 +752,8 @@ static int lex_op(usenet_parser_t self, int ch)
         }
 
         /* Look up the operator */
-        if ((self -> operator = translate_op(self -> token)) == O_NONE)
+        self -> operator = translate_op(self -> token);
+        if (self -> operator == O_NONE)
         {
             char *buffer = malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
 
@@ -972,20 +976,23 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     usenet_parser_t self;
 
     /* Allocate memory for the new usenet_parser */
-    if ((self = malloc(sizeof(struct usenet_parser))) == NULL)
+    self = malloc(sizeof(struct usenet_parser));
+    if (self == NULL)
     {
         return NULL;
     }
 
     /* Copy the tag */
-    if ((self -> tag = strdup(tag)) == NULL)
+    self -> tag = strdup(tag);
+    if (self -> tag == NULL)
     {
         free(self);
         return NULL;
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    self -> token = malloc(INITIAL_TOKEN_SIZE);
+    if (self -> token == NULL)
     {
         free(self -> tag);
         free(self);
@@ -993,8 +1000,8 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     }
 
     /* Allocate room for the expression array */
-    if ((self -> expressions = (struct usenet_expr *)calloc(
-             INITIAL_EXPR_MAX, sizeof(struct usenet_expr))) == NULL)
+    self -> expressions = calloc(INITIAL_EXPR_MAX, sizeof(struct usenet_expr));
+    if (self -> expressions == NULL)
     {
         free(self -> token);
         free(self -> tag);

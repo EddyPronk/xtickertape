@@ -919,7 +919,8 @@ static void update_send_button_sensitive(control_panel_t self)
     }
 
     /* Is there any message text? */
-    if ((string = get_text(self)) == NULL) {
+    string = get_text(self);
+    if (string == NULL) {
         XtSetSensitive(self -> send, False);
         return;
     }
@@ -1547,7 +1548,8 @@ static message_t construct_message(control_panel_t self)
         /* Measure how long the attachment will need to be */
         length = sizeof(ATTACHMENT_FMT) - 5 + strlen(mime_type) +
             strlen(mime_args);
-        if ((attachment = malloc(length + 1)) == NULL)
+        attachment = malloc(length + 1);
+        if (attachment == NULL)
         {
             length = 0;
         }
@@ -1618,8 +1620,8 @@ static void deconstruct_message(control_panel_t self, message_t message)
     HistorySelectId(self -> history, message_get_reply_id(message));
 
     /* Set the group */
-    if ((tuple = get_tuple_from_tag(self,
-                                    message_get_info(message))) != NULL)
+    tuple = get_tuple_from_tag(self, message_get_info(message));
+    if (tuple != NULL)
     {
         set_group_selection(self, tuple);
     }
@@ -1670,7 +1672,8 @@ static void action_send(Widget button, control_panel_t self, XtPointer ignored)
         message_t message;
 
         /* Clear a spot in the message history */
-        if ((message = self -> send_history[self -> send_history_next]) != NULL)
+        message = self -> send_history[self -> send_history_next];
+        if (message != NULL)
         {
             message_free(message);
         }
@@ -1787,8 +1790,9 @@ control_panel_t control_panel_alloc(
 
     /* Allocate the send history buffer */
     self -> send_history_count = MAX(1, send_history_count + 1);
-    if ((self -> send_history = (message_t *)calloc(
-             self -> send_history_count, sizeof(message_t))) == NULL)
+    self -> send_history = calloc(self -> send_history_count,
+				  sizeof(message_t));
+    if (self -> send_history == NULL)
     {
         perror("calloc() failed");
         exit(1);
@@ -1925,7 +1929,8 @@ void *control_panel_add_subscription(
     menu_item_tuple_t tuple;
 
     /* Create a tuple to hold callback information */
-    if ((tuple = malloc(sizeof(struct menu_item_tuple))) == NULL)
+    tuple = malloc(sizeof(struct menu_item_tuple));
+    if (tuple == NULL)
     {
         fprintf(stderr, PACKAGE ": out of memory\n");
         exit(1);
@@ -2187,21 +2192,23 @@ static void prepare_reply(control_panel_t self, message_t message)
     {
         char *id;
 
-        if ((tuple = get_tuple_from_tag(self,
-                                        message_get_info(message))) != NULL)
+        tuple = get_tuple_from_tag(self, message_get_info(message));
+        if (tuple != NULL)
         {
             self -> selection = tuple;
             set_group_selection(self, tuple);
         }
 
         /* Copy the message id */
-        if ((id = message_get_id(message)) != NULL)
+        id = message_get_id(message);
+        if (id != NULL)
         {
             self -> message_id = strdup(id);
         }
 
         /* Copy the thread id */
-        if ((id = message_get_thread_id(message)) != NULL)
+        id = message_get_thread_id(message);
+        if (id != NULL)
         {
             self -> thread_id = strdup(id);
         }
@@ -2256,7 +2263,8 @@ void control_panel_history_prev(control_panel_t self)
     if (self -> send_history_point == self -> send_history_next)
     {
         /* Free the previous contents */
-        if ((message = self -> send_history[self -> send_history_next]) != NULL)
+        message = self -> send_history[self -> send_history_next];
+        if (message != NULL)
         {
             message_free(message);
         }
