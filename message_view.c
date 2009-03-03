@@ -126,13 +126,13 @@ static int rect_overlaps(XRectangle *rect, long left, long top, long right, long
     /* Check the vertical */
     if (bottom < rect -> y || rect -> y + (long)rect -> height <= top)
     {
-	return 0;
+        return 0;
     }
 
     /* Check the horizontal */
     if (right < rect -> x || rect -> x + (long)rect -> width <= left)
     {
-	return 0;
+        return 0;
     }
 
     return 1;
@@ -155,29 +155,29 @@ static void paint_string(
 
     /* Is the string visible? */
     if (rect_overlaps(
-	    bbox,
-	    x + sizes -> lbearing, y - sizes -> ascent,
-	    x + sizes -> rbearing, y + sizes -> descent) ||
-	(has_underline && rect_overlaps(
-	    bbox,
-	    x, y - sizes -> ascent,
-	    x + sizes -> width, y + sizes -> descent)))
+            bbox,
+            x + sizes -> lbearing, y - sizes -> ascent,
+            x + sizes -> rbearing, y + sizes -> descent) ||
+        (has_underline && rect_overlaps(
+            bbox,
+            x, y - sizes -> ascent,
+            x + sizes -> width, y + sizes -> descent)))
     {
-	/* Set the foreground color */
-	/* FIX THIS: do we just assume that the font is set? */
-	values.foreground = pixel;
-	XChangeGC(display, gc, GCForeground, &values);
+        /* Set the foreground color */
+        /* FIX THIS: do we just assume that the font is set? */
+        values.foreground = pixel;
+        XChangeGC(display, gc, GCForeground, &values);
 
-	/* Draw the string */
-	utf8_renderer_draw_string(display, drawable, gc, renderer, x, y, bbox, string);
+        /* Draw the string */
+        utf8_renderer_draw_string(display, drawable, gc, renderer, x, y, bbox, string);
 
-	/* Draw the underline */
-	if (has_underline)
-	{
-	    utf8_renderer_draw_underline(
-		renderer, display, drawable, gc,
-		x, y, bbox, sizes -> width);
-	}
+        /* Draw the underline */
+        if (has_underline)
+        {
+            utf8_renderer_draw_underline(
+                renderer, display, drawable, gc,
+                x, y, bbox, sizes -> width);
+        }
     }
 }
 
@@ -195,7 +195,7 @@ message_view_t message_view_alloc(
     /* Allocate enough memory for the new message view */
     if ((self = (message_view_t)malloc(sizeof(struct message_view))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Initialize its fields to sane values */
@@ -204,8 +204,8 @@ message_view_t message_view_alloc(
     /* Allocate a reference to the message */
     if ((self -> message = message_alloc_reference(message)) == NULL)
     {
-	message_view_free(self);
-	return NULL;
+        message_view_free(self);
+        return NULL;
     }
 
     /* Record the indentation and code set info */
@@ -218,16 +218,16 @@ message_view_t message_view_alloc(
     /* Get the message's timestamp */
     if ((timestamp = localtime(message_get_creation_time(message))) == NULL)
     {
-	perror("localtime(): failed");
-	exit(1);
+        perror("localtime(): failed");
+        exit(1);
     }
 
     /* Convert that into a string */
     snprintf(self -> timestamp, TIMESTAMP_SIZE,
-	     TIMESTAMP_FORMAT,
-	     ((timestamp -> tm_hour + 11) % 12) + 1,
-	     timestamp -> tm_min,
-	    timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
+             TIMESTAMP_FORMAT,
+             ((timestamp -> tm_hour + 11) % 12) + 1,
+             timestamp -> tm_min,
+            timestamp -> tm_hour / 12 != 1 ? "am" : "pm");
 
     /* Measure the width of the string to use for noon */
     utf8_renderer_measure_string(renderer, NOON_TIMESTAMP, &sizes);
@@ -239,15 +239,15 @@ message_view_t message_view_alloc(
 
     /* Measure the message's strings */
     utf8_renderer_measure_string(
-	renderer, self -> timestamp, &self -> timestamp_sizes);
+        renderer, self -> timestamp, &self -> timestamp_sizes);
     utf8_renderer_measure_string(
-	renderer, message_get_group(message), &self -> group_sizes);
+        renderer, message_get_group(message), &self -> group_sizes);
     utf8_renderer_measure_string(
-	renderer, message_get_user(message), &self -> user_sizes);
+        renderer, message_get_user(message), &self -> user_sizes);
     utf8_renderer_measure_string(
-	renderer, message_get_string(message), &self -> message_sizes);
+        renderer, message_get_string(message), &self -> message_sizes);
     utf8_renderer_measure_string(
-	renderer, SEPARATOR, &self -> separator_sizes);
+        renderer, SEPARATOR, &self -> separator_sizes);
     return self;
 }
 
@@ -280,13 +280,13 @@ void message_view_get_sizes(
     /* See if we're including the timestamp */
     if (show_timestamp)
     {
-	/* Skip to the end of the timestamp string */
-	width += self -> noon_width - self -> timestamp_sizes.width;
+        /* Skip to the end of the timestamp string */
+        width += self -> noon_width - self -> timestamp_sizes.width;
 
-	/* And right-justify the timestamp */
-	lbearing = MIN(lbearing, width + self -> timestamp_sizes.lbearing);
-	rbearing = MAX(rbearing, width + self -> timestamp_sizes.rbearing);
-	width += self -> timestamp_sizes.width + self -> indent_width;
+        /* And right-justify the timestamp */
+        lbearing = MIN(lbearing, width + self -> timestamp_sizes.lbearing);
+        rbearing = MAX(rbearing, width + self -> timestamp_sizes.rbearing);
+        width += self -> timestamp_sizes.width + self -> indent_width;
     }
 
     /* Include the width of the indent */
@@ -381,25 +381,25 @@ void message_view_paint(
     /* And finally draw the underline */
     if (underline_height)
     {
-	XFillRectangle(display, drawable, gc, x, y + 2, px - x, underline_height);
+        XFillRectangle(display, drawable, gc, x, y + 2, px - x, underline_height);
     }
 #endif /* DEBUG_PER_CHAR */
 
     /* Paint the timestamp */
     if (show_timestamp)
     {
-	/* Go to the end of the timestamp */
-	x += self -> noon_width;
+        /* Go to the end of the timestamp */
+        x += self -> noon_width;
 
-	/* Draw the timestamp right justified */
-	paint_string(
-	    display, drawable, gc, timestamp_pixel,
-	    x - self -> timestamp_sizes.width , y,
-	    bbox, &self -> timestamp_sizes,
-	    self -> renderer, self -> timestamp, False);
+        /* Draw the timestamp right justified */
+        paint_string(
+            display, drawable, gc, timestamp_pixel,
+            x - self -> timestamp_sizes.width , y,
+            bbox, &self -> timestamp_sizes,
+            self -> renderer, self -> timestamp, False);
 
-	/* Indent the next bit */
-	x += self -> indent_width;
+        /* Indent the next bit */
+        x += self -> indent_width;
     }
 
     /* Indent */
@@ -407,41 +407,41 @@ void message_view_paint(
 
     /* Paint the group string */
     paint_string(
-	display, drawable, gc, group_pixel,
-	x, y, bbox, &self -> group_sizes,
-	self -> renderer, message_get_group(self -> message),
-	self -> has_underline);
+        display, drawable, gc, group_pixel,
+        x, y, bbox, &self -> group_sizes,
+        self -> renderer, message_get_group(self -> message),
+        self -> has_underline);
     x += self -> group_sizes.width;
 
     /* Paint the first separator */
     paint_string(
-	display, drawable, gc, separator_pixel,
-	x, y, bbox, &self -> separator_sizes,
-	self -> renderer, SEPARATOR,
-	self -> has_underline);
+        display, drawable, gc, separator_pixel,
+        x, y, bbox, &self -> separator_sizes,
+        self -> renderer, SEPARATOR,
+        self -> has_underline);
     x += self -> separator_sizes.width;
 
     /* Paint the user string */
     paint_string(
-	display, drawable, gc, user_pixel,
-	x, y, bbox, &self -> user_sizes,
-	self -> renderer, message_get_user(self -> message),
-	self -> has_underline);
+        display, drawable, gc, user_pixel,
+        x, y, bbox, &self -> user_sizes,
+        self -> renderer, message_get_user(self -> message),
+        self -> has_underline);
     x += self -> user_sizes.width;
 
     /* Paint the second separator */
     paint_string(
-	display, drawable, gc, separator_pixel,
-	x, y, bbox, &self -> separator_sizes,
-	self -> renderer, SEPARATOR,
-	self -> has_underline);
+        display, drawable, gc, separator_pixel,
+        x, y, bbox, &self -> separator_sizes,
+        self -> renderer, SEPARATOR,
+        self -> has_underline);
     x += self -> separator_sizes.width;
 
     /* Paint the message string */
     paint_string(
-	display, drawable, gc, message_pixel,
-	x, y, bbox, &self -> message_sizes,
-	self -> renderer, message_get_string(self -> message),
-	self -> has_underline);
+        display, drawable, gc, message_pixel,
+        x, y, bbox, &self -> message_sizes,
+        self -> renderer, message_get_string(self -> message),
+        self -> has_underline);
     x += self -> message_sizes.width;
 }

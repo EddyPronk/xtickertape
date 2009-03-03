@@ -252,7 +252,7 @@ message_t message_alloc(
     /* Allocate some space for the message_t */
     if ((self = (message_t)malloc(sizeof(struct message))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Set its contents to sane values */
@@ -263,7 +263,7 @@ message_t message_alloc(
 
     if (info != NULL)
     {
-	self -> info = strdup(info);
+        self -> info = strdup(info);
     }
 
     assert(group != NULL);
@@ -277,20 +277,20 @@ message_t message_alloc(
 
     if (length == 0)
     {
-	self -> attachment = NULL;
-	self -> length = 0;
+        self -> attachment = NULL;
+        self -> length = 0;
     }
     else
     {
-	/* Allocate some room for a copy of the mime args */
-	if ((self -> attachment = malloc(length)) == NULL)
-	{
-	    self -> length = 0;
-	}
-	else
-	{
-	    cleanse_header(attachment, length, self->attachment, &self->length);
-	}
+        /* Allocate some room for a copy of the mime args */
+        if ((self -> attachment = malloc(length)) == NULL)
+        {
+            self -> length = 0;
+        }
+        else
+        {
+            cleanse_header(attachment, length, self->attachment, &self->length);
+        }
     }
 
     self -> timeout = timeout;
@@ -303,7 +303,7 @@ message_t message_alloc(
     /* Record the time of creation */
     if (time(&self -> creation_time) == (time_t)-1)
     {
-	perror("time(): failed");
+        perror("time(): failed");
     }
 
 #ifdef DEBUG
@@ -327,7 +327,7 @@ void message_free(message_t self)
     /* Decrement the reference count */
     if (--self -> ref_count > 0)
     {
-	return;
+        return;
     }
 
 #ifdef DEBUG
@@ -338,56 +338,56 @@ void message_free(message_t self)
     /* Out of references -- release the hounds! */
     if (self -> info != NULL)
     {
-	free(self -> info);
-	self -> info = NULL;
+        free(self -> info);
+        self -> info = NULL;
     }
 
     if (self -> group != NULL)
     {
-	free(self -> group);
-	self -> group = NULL;
+        free(self -> group);
+        self -> group = NULL;
     }
 
     if (self -> user != NULL)
     {
-	free(self -> user);
-	self -> user = NULL;
+        free(self -> user);
+        self -> user = NULL;
     }
 
     if (self -> string != NULL)
     {
-	free(self -> string);
-	self -> string = NULL;
+        free(self -> string);
+        self -> string = NULL;
     }
 
     if (self -> attachment != NULL)
     {
-	free(self -> attachment);
-	self -> attachment = NULL;
+        free(self -> attachment);
+        self -> attachment = NULL;
     }
 
     if (self -> tag != NULL)
     {
-	free(self -> tag);
-	self -> tag = NULL;
+        free(self -> tag);
+        self -> tag = NULL;
     }
 
     if (self -> id != NULL)
     {
-	free(self -> id);
-	self -> id = NULL;
+        free(self -> id);
+        self -> id = NULL;
     }
 
     if (self -> reply_id != NULL)
     {
-	free(self -> reply_id);
-	self -> reply_id = NULL;
+        free(self -> reply_id);
+        self -> reply_id = NULL;
     }
 
     if (self -> thread_id != NULL)
     {
-	free(self -> thread_id);
-	self -> thread_id = NULL;
+        free(self -> thread_id);
+        self -> thread_id = NULL;
     }
 
     free(self);
@@ -483,69 +483,69 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
     /* If no attachment then return lots of NULLs */
     if (self -> attachment == NULL)
     {
-	return 0;
+        return 0;
     }
 
     /* Look through the attachment's MIME header */
     while (point < end)
     {
-	/* End of line? */
-	if (*point == '\n')
-	{
-	    /* Is this the Content-Type line? */
-	    if (ct_length < point - mark &&
-		strncasecmp(mark, CONTENT_TYPE, ct_length) == 0)
-	    {
-		char *p;
+        /* End of line? */
+        if (*point == '\n')
+        {
+            /* Is this the Content-Type line? */
+            if (ct_length < point - mark &&
+                strncasecmp(mark, CONTENT_TYPE, ct_length) == 0)
+            {
+                char *p;
 
-		/* Skip to the beginning of the value */
-		mark += ct_length;
-		while (mark < point && isspace(*(unsigned char *)mark))
-		{
-		    mark++;
-		}
+                /* Skip to the beginning of the value */
+                mark += ct_length;
+                while (mark < point && isspace(*(unsigned char *)mark))
+                {
+                    mark++;
+                }
 
-		/* Look for a ';' in the content type */
-		if ((p = memchr(mark, ';', point - mark)) == NULL)
-		{
-		    p = point;
-		}
+                /* Look for a ';' in the content type */
+                if ((p = memchr(mark, ';', point - mark)) == NULL)
+                {
+                    p = point;
+                }
 
-		/* If multiple content-types are given then use the last */
-		if (*type_out != NULL)
-		{
-		    free(*type_out);
-		}
+                /* If multiple content-types are given then use the last */
+                if (*type_out != NULL)
+                {
+                    free(*type_out);
+                }
 
-		/* Allocate a string to hold the content type */
-		if ((*type_out = (char *)malloc(p - mark + 1)) == NULL)
-		{
-		    return -1;
-		}
-		memcpy(*type_out, mark, p - mark);
-		(*type_out)[p - mark] = 0;
-	    }
-	    else if (point - mark == 0)
-	    {
-		point++;
+                /* Allocate a string to hold the content type */
+                if ((*type_out = (char *)malloc(p - mark + 1)) == NULL)
+                {
+                    return -1;
+                }
+                memcpy(*type_out, mark, p - mark);
+                (*type_out)[p - mark] = 0;
+            }
+            else if (point - mark == 0)
+            {
+                point++;
 
-		/* Trim any CRs and LFs from the end of the body */
-		while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
-		{
-		    end--;
-		}
+                /* Trim any CRs and LFs from the end of the body */
+                while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
+                {
+                    end--;
+                }
 
-		/* Allocate space for a copy of the body and null-terminate it */
-		*body_out = (char *)malloc(end - point + 1);
-		memcpy(*body_out, point, end - point);
-		(*body_out)[end - point] = 0;
-		return 0;
-	    }
+                /* Allocate space for a copy of the body and null-terminate it */
+                *body_out = (char *)malloc(end - point + 1);
+                memcpy(*body_out, point, end - point);
+                (*body_out)[end - point] = 0;
+                return 0;
+            }
 
-	    mark = point + 1;
-	}
+            mark = point + 1;
+        }
 
-	point++;
+        point++;
     }
 
     /* No body found */

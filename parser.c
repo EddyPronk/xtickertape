@@ -56,53 +56,53 @@ static int translate_esc_code(int ch)
 {
     switch (ch)
     {
-	/* Alert */
-	case 'a':
-	{
-	    return '\a';
-	}
+        /* Alert */
+        case 'a':
+        {
+            return '\a';
+        }
 
-	/* Backspace */
-	case 'b':
-	{
-	    return '\b';
-	}
+        /* Backspace */
+        case 'b':
+        {
+            return '\b';
+        }
 
-	/* Form feed */
-	case 'f':
-	{
-	    return '\f';
-	}
+        /* Form feed */
+        case 'f':
+        {
+            return '\f';
+        }
 
-	/* Newline */
-	case 'n':
-	{
-	    return '\n';
-	}
+        /* Newline */
+        case 'n':
+        {
+            return '\n';
+        }
 
-	/* Carriage return */
-	case 'r':
-	{
-	    return '\r';
-	}
+        /* Carriage return */
+        case 'r':
+        {
+            return '\r';
+        }
 
-	/* Horizontal tab */
-	case 't':
-	{
-	    return '\t';
-	}
+        /* Horizontal tab */
+        case 't':
+        {
+            return '\t';
+        }
 
-	/* Vertical tab */
-	case 'v':
-	{
-	    return '\v';
-	}
+        /* Vertical tab */
+        case 'v':
+        {
+            return '\v';
+        }
 
-	/* Anything else is simply itself */
-	default:
-	{
-	    return ch;
-	}
+        /* Anything else is simply itself */
+        default:
+        {
+            return ch;
+        }
     }
 }
 
@@ -111,14 +111,14 @@ static int is_id_char(int ch)
 {
     static char table[] =
     {
-	0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, /* 0x00 */
-	0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, /* 0x10 */
-	0, 1, 0, 1,  1, 1, 1, 0,  0, 0, 1, 1,  0, 1, 1, 1, /* 0x20 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x30 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x40 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1, /* 0x50 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x60 */
-	1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 0  /* 0x70 */
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, /* 0x00 */
+        0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, /* 0x10 */
+        0, 1, 0, 1,  1, 1, 1, 0,  0, 0, 1, 1,  0, 1, 1, 1, /* 0x20 */
+        1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x30 */
+        1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x40 */
+        1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1, /* 0x50 */
+        1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, /* 0x60 */
+        1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 0  /* 0x70 */
     };
 
     /* Use a table for quick lookup of those tricky symbolic chars */
@@ -183,7 +183,7 @@ static char *terminal_string(terminal_t terminal)
 {
     static char *strings[] =
     {
-	"[eof]", "(", ")", ".", NULL
+        "[eof]", "(", ")", ".", NULL
     };
 
     return strings[terminal];
@@ -215,9 +215,9 @@ static int grow_stack(parser_t self, elvin_error_t error)
 
     /* Allocate memory for the new state stack */
     if ((state_stack = (int *)ELVIN_REALLOC(
-	self -> state_stack, length * sizeof(int), error)) == NULL)
+        self -> state_stack, length * sizeof(int), error)) == NULL)
     {
-	return 0;
+        return 0;
     }
 
     /* Update the state stack's pointers */
@@ -233,10 +233,10 @@ static int push(parser_t self, int state, elvin_error_t error)
     /* Grow the stack if necessary */
     if (! (self -> state_top < self -> state_end))
     {
-	if (grow_stack(self, error) == 0)
-	{
-	    return 0;
-	}
+        if (grow_stack(self, error) == 0)
+        {
+            return 0;
+        }
     }
 
     /* The state stack is pre-increment */
@@ -251,8 +251,8 @@ static void pop(parser_t self, int count, elvin_error_t error)
     /* Sanity check */
     if (self -> state_stack > self -> state_top - count)
     {
-	fprintf(stderr, "popped off the top of the stack\n");
-	abort();
+        fprintf(stderr, "popped off the top of the stack\n");
+        abort();
     }
 
     self -> state_top -= count;
@@ -291,57 +291,57 @@ static int shift_reduce(
     /* Watch for the mighty EOF */
     if ((terminal == TT_EOF) && (self -> state_stack == self -> state_top))
     {
-	return 1;
+        return 1;
     }
 
     /* Do the shift (we know that we can't do any interesting reductions... */
     if (IS_SHIFT(action))
     {
-	if (push(self, SHIFT_GOTO(action), error) == 0)
-	{
-	    return 0;
-	}
+        if (push(self, SHIFT_GOTO(action), error) == 0)
+        {
+            return 0;
+        }
     }
 
     /* Watch for errors */
     if (IS_ERROR(action))
     {
-	ELVIN_ERROR_INTERP_PARSE_ERROR(error, "");
-	return 0;
+        ELVIN_ERROR_INTERP_PARSE_ERROR(error, "");
+        return 0;
     }
 
     /* Reduce as many times as possible */
     while (IS_REDUCE(action = sr_table[top(self)][terminal]))
     {
-	struct production *production;
-	int reduction;
+        struct production *production;
+        int reduction;
 
-	/* Locate the production rule to use to do the reduction */
-	reduction = REDUCTION(action);
-	production = productions + reduction;
+        /* Locate the production rule to use to do the reduction */
+        reduction = REDUCTION(action);
+        production = productions + reduction;
 
-	/* Point the stack at the beginning of the components of the reduction */
-	pop(self, production -> count, error);
+        /* Point the stack at the beginning of the components of the reduction */
+        pop(self, production -> count, error);
 
-	/* Reduce by calling the production rule's function */
-	if (! production -> reduction(self, error))
-	{
-	    return 0;
-	}
+        /* Reduce by calling the production rule's function */
+        if (! production -> reduction(self, error))
+        {
+            return 0;
+        }
 
-	/* Push the result onto the stack */
-	if (push(self, REDUCE_GOTO(top(self), production), error) == 0)
-	{
-	    return 0;
-	}
+        /* Push the result onto the stack */
+        if (push(self, REDUCE_GOTO(top(self), production), error) == 0)
+        {
+            return 0;
+        }
     }
 
     /* Can we accept? */
     if (top(self) == 1)
     {
-	/* Set up the stack */
-	pop(self, 1, error);
-	return accept_input(self, error);
+        /* Set up the stack */
+        pop(self, 1, error);
+        return accept_input(self, error);
     }
 
     return 1;
@@ -378,7 +378,7 @@ static int accept_string(parser_t self, char *string, elvin_error_t error)
     /* Push a string onto the stack */
     if (! vm_push_string(self -> vm, string, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -391,7 +391,7 @@ static int accept_char(parser_t self, int ch, elvin_error_t error)
     /* Push a char onto the stack */
     if (! vm_push_char(self -> vm, ch, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -410,7 +410,7 @@ static int accept_int32(parser_t self, int32_t value, elvin_error_t error)
     /* Push the integer onto the stack */
     if (! vm_push_integer(self -> vm, value, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -424,7 +424,7 @@ static int accept_int32_string(parser_t self, char *string, elvin_error_t error)
 
     if (elvin_string_to_int32(string, &value, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     return accept_int32(self, value, error);
@@ -436,7 +436,7 @@ static int accept_int64(parser_t self, int64_t value, elvin_error_t error)
     /* Push a long integer onto the stack */
     if (! vm_push_long(self -> vm, value, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -450,7 +450,7 @@ static int accept_int64_string(parser_t self, char *string, elvin_error_t error)
 
     if (elvin_string_to_int64(string, &value, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     return accept_int64(self, value, error);
@@ -463,7 +463,7 @@ static int accept_real64(parser_t self, double value, elvin_error_t error)
     /* Push a float onto the stack */
     if (! vm_push_float(self -> vm, value, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -479,15 +479,15 @@ static int accept_real64_string(parser_t self, char *string, elvin_error_t error
     value = strtod(string, NULL);
     if (errno != 0)
     {
-	if (errno == ERANGE)
-	{
-	    ELVIN_ERROR_INTERP_OVERFLOW(error, string);
-	    return 0;
-	}
+        if (errno == ERANGE)
+        {
+            ELVIN_ERROR_INTERP_OVERFLOW(error, string);
+            return 0;
+        }
 
-	/* Otherwise bail out ungracefully */
-	perror("strtod(): failed");
-	abort();
+        /* Otherwise bail out ungracefully */
+        perror("strtod(): failed");
+        abort();
     }
 
     return accept_real64(self, value, error);
@@ -498,9 +498,9 @@ static int accept_symbol(parser_t self, char *string, elvin_error_t error)
 {
     /* Push a string onto the stack */
     if (! vm_push_string(self -> vm, string, error) ||
-	! vm_make_symbol(self -> vm, error))
+        ! vm_make_symbol(self -> vm, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Do the parser thing */
@@ -517,7 +517,7 @@ static int grow_buffer(parser_t self, elvin_error_t error)
     /* Allocate a bigger buffer */
     if ((token = (char *)ELVIN_REALLOC(self -> token, length, error)) == NULL)
     {
-	return 0;
+        return 0;
     }
 
     /* Update the pointers */
@@ -533,10 +533,10 @@ static int append_char(parser_t self, int ch, elvin_error_t error)
     /* Double the size of the buffer if it isn't big enough */
     if (! (self -> point < self -> token_end))
     {
-	if (grow_buffer(self, error) == 0)
-	{
-	    return 0;
-	}
+        if (grow_buffer(self, error) == 0)
+        {
+            return 0;
+        }
     }
 
     /* Append the character to the end of the buffer */
@@ -549,162 +549,162 @@ static int lex_start(parser_t self, int ch, elvin_error_t error)
 {
     switch (ch)
     {
-	/* Watch for a quoted string */
-	case '"':
-	{
-	    self -> state = lex_string;
-	    self -> point = self -> token;
-	    return 1;
-	}
+        /* Watch for a quoted string */
+        case '"':
+        {
+            self -> state = lex_string;
+            self -> point = self -> token;
+            return 1;
+        }
 
-	case '\'':
-	{
-	    /* Accept the QUOTE */
-	    if (accept_quote(self, error) == 0)
-	    {
-		return 0;
-	    }
+        case '\'':
+        {
+            /* Accept the QUOTE */
+            if (accept_quote(self, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_start;
-	    return 1;
-	}
+            self -> state = lex_start;
+            return 1;
+        }
 
-	/* Watch for a LPAREN token */
-	case '(':
-	{
-	    /* Accept the LPAREN */
-	    if (accept_lparen(self, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a LPAREN token */
+        case '(':
+        {
+            /* Accept the LPAREN */
+            if (accept_lparen(self, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_start;
-	    return 1;
-	}
+            self -> state = lex_start;
+            return 1;
+        }
 
-	/* Watch for a RPAREN token */
-	case ')':
-	{
-	    /* Accept the RPAREN */
-	    if (accept_rparen(self, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a RPAREN token */
+        case ')':
+        {
+            /* Accept the RPAREN */
+            if (accept_rparen(self, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_start;
-	    return 1;
-	}
+            self -> state = lex_start;
+            return 1;
+        }
 
-	/* Watch for a signed number */
-	case '+':
-	case '-':
-	{
-	    /* Record the sign */
-	    self -> point = self -> token;
-	    if (append_char(self, ch, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a signed number */
+        case '+':
+        case '-':
+        {
+            /* Record the sign */
+            self -> point = self -> token;
+            if (append_char(self, ch, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_signed;
-	    return 1;
-	}
+            self -> state = lex_signed;
+            return 1;
+        }
 
-	/* Watch for a semicolon */
-	case ';':
-	{
-	    /* Ignore comments */
-	    self -> state = lex_comment;
-	    return 1;
-	}
+        /* Watch for a semicolon */
+        case ';':
+        {
+            /* Ignore comments */
+            self -> state = lex_comment;
+            return 1;
+        }
 
-	/* Watch for a dot or decimal number */
-	case '.':
-	{
-	    /* Record the dot */
-	    self -> point = self -> token;
-	    if (append_char(self, ch, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a dot or decimal number */
+        case '.':
+        {
+            /* Record the dot */
+            self -> point = self -> token;
+            if (append_char(self, ch, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_dot;
-	    return 1;
-	}
+            self -> state = lex_dot;
+            return 1;
+        }
 
-	/* Watch for a character */
-	case '?':
-	{
-	    self -> state = lex_char;
-	    return 1;
-	}
+        /* Watch for a character */
+        case '?':
+        {
+            self -> state = lex_char;
+            return 1;
+        }
 
-	/* Watch for an escaped symbol */
-	case '\\':
-	{
-	    self -> point = self -> token;
-	    self -> state = lex_symbol_esc;
-	    return 1;
-	}
+        /* Watch for an escaped symbol */
+        case '\\':
+        {
+            self -> point = self -> token;
+            self -> state = lex_symbol_esc;
+            return 1;
+        }
 
-	/* Watch for EOF */
-	case EOF:
-	{
-	    /* Accept the EOF token */
-	    if (accept_eof(self, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for EOF */
+        case EOF:
+        {
+            /* Accept the EOF token */
+            if (accept_eof(self, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_start;
-	    return 1;
-	}
+            self -> state = lex_start;
+            return 1;
+        }
     }
 
     /* Watch for whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_start;
-	return 1;
+        self -> state = lex_start;
+        return 1;
     }
 
     /* Watch for a number */
     if (isdigit(ch))
     {
-	self -> point = self -> token;
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        self -> point = self -> token;
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_integer;
-	return 1;
+        self -> state = lex_integer;
+        return 1;
     }
 
     /* Watch for identifier characters */
     if (is_id_char(ch))
     {
-	self -> point = self -> token;
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        self -> point = self -> token;
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_symbol;
-	return 1;
+        self -> state = lex_symbol;
+        return 1;
     }
 
     /* Anything else is trouble */
     self -> point = self -> token;
     if (append_char(self, ch, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
@@ -717,14 +717,14 @@ static int lex_comment(parser_t self, int ch, elvin_error_t error)
     /* Watch for the end of input */
     if (ch == EOF)
     {
-	return lex_start(self, ch, error);
+        return lex_start(self, ch, error);
     }
 
     /* Watch for the end of the line */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	return 1;
+        self -> state = lex_start;
+        return 1;
     }
 
     return 1;
@@ -735,44 +735,44 @@ static int lex_string(parser_t self, int ch, elvin_error_t error)
 {
     switch (ch)
     {
-	/* Watch for the end of input */
-	case EOF:
-	{
-	    ELVIN_ERROR_INTERP_UNTERM_STRING(error);
-	    return 0;
-	}
+        /* Watch for the end of input */
+        case EOF:
+        {
+            ELVIN_ERROR_INTERP_UNTERM_STRING(error);
+            return 0;
+        }
 
-	/* Watch for the closing quote */
-	case '"':
-	{
-	    /* Null-terminate the token */
-	    if (append_char(self, 0, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for the closing quote */
+        case '"':
+        {
+            /* Null-terminate the token */
+            if (append_char(self, 0, error) == 0)
+            {
+                return 0;
+            }
 
-	    /* Accept it */
-	    if (accept_string(self, self -> token, error) == 0)
-	    {
-		return 0;
-	    }
-	    
-	    self -> state = lex_start;
-	    return 1;
-	}
+            /* Accept it */
+            if (accept_string(self, self -> token, error) == 0)
+            {
+                return 0;
+            }
+            
+            self -> state = lex_start;
+            return 1;
+        }
 
-	/* Watch for an escape character */
-	case '\\':
-	{
-	    self -> state = lex_string_esc;
-	    return 1;
-	}
+        /* Watch for an escape character */
+        case '\\':
+        {
+            self -> state = lex_string_esc;
+            return 1;
+        }
     }
 
     /* Anything else gets appended to the token */
     if (append_char(self, ch, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     self -> state = lex_string;
@@ -785,21 +785,21 @@ static int lex_string_esc(parser_t self, int ch, elvin_error_t error)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	ELVIN_ERROR_INTERP_UNTERM_STRING(error);
-	return 0;
+        ELVIN_ERROR_INTERP_UNTERM_STRING(error);
+        return 0;
     }
 
     /* Newlines are, oddly, a continuation and ignored */
     if (ch == '\n')
     {
-	self -> state = lex_string;
-	return 1;
+        self -> state = lex_string;
+        return 1;
     }
 
     /* Record the character */
     if (append_char(self, translate_esc_code(ch), error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     self -> state = lex_string;
@@ -812,13 +812,13 @@ static int lex_char(parser_t self, int ch, elvin_error_t error)
     /* Don't permit `?' at the end of the file */
     if (ch == EOF)
     {
-	ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
-	return 0;
+        ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
+        return 0;
     }
 
     if (accept_char(self, ch, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     self -> state = lex_start;
@@ -832,25 +832,25 @@ static int lex_signed(parser_t self, int ch, elvin_error_t error)
     /* Watch for a decimal point */
     if (ch == '.')
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_float_pre;
-	return 1;
+        self -> state = lex_float_pre;
+        return 1;
     }
 
     /* Watch for digits */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_integer;
-	return 1;
+        self -> state = lex_integer;
+        return 1;
     }
 
     /* Anything else is a symbol */
@@ -863,18 +863,18 @@ static int lex_float_pre(parser_t self, int ch, elvin_error_t error)
     /* Watch for a digit */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_float;
-	return 1;
+        self -> state = lex_float;
+        return 1;
     }
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
@@ -887,19 +887,19 @@ static int lex_dot(parser_t self, int ch, elvin_error_t error)
     /* Watch for a digit */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_float;
-	return 1;
+        self -> state = lex_float;
+        return 1;
     }
 
     /* Anything else is the start of a new token after a DOT */
     if (accept_dot(self, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -911,74 +911,74 @@ static int lex_integer(parser_t self, int ch, elvin_error_t error)
 {
     switch (ch)
     {
-	/* Watch for a decimal point */
-	case '.':
-	{
-	    if (append_char(self, ch, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a decimal point */
+        case '.':
+        {
+            if (append_char(self, ch, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_float;
-	    return 1;
-	}
+            self -> state = lex_float;
+            return 1;
+        }
 
-	/* Watch for a trailing 'L' */
-	case 'l':
-	case 'L':
-	{
-	    /* Null-terminate the number */
-	    if (append_char(self, 0, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for a trailing 'L' */
+        case 'l':
+        case 'L':
+        {
+            /* Null-terminate the number */
+            if (append_char(self, 0, error) == 0)
+            {
+                return 0;
+            }
 
-	    /* Accept the int64 token */
-	    if (accept_int64_string(self, self -> token, error) == 0)
-	    {
-		return 0;
-	    }
+            /* Accept the int64 token */
+            if (accept_int64_string(self, self -> token, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_start;
-	    return 1;
-	}
+            self -> state = lex_start;
+            return 1;
+        }
 
-	/* Watch for an exponent */
-	case 'e':
-	case 'E':
-	{
-	    if (append_char(self, ch, error) == 0)
-	    {
-		return 0;
-	    }
+        /* Watch for an exponent */
+        case 'e':
+        case 'E':
+        {
+            if (append_char(self, ch, error) == 0)
+            {
+                return 0;
+            }
 
-	    self -> state = lex_exp_pre;
-	    return 1;
-	}
+            self -> state = lex_exp_pre;
+            return 1;
+        }
     }
 
     /* Watch for additional digits */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_integer;
-	return 1;
+        self -> state = lex_integer;
+        return 1;
     }
 
     /* Null-terminate the token string */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Accept the integer token */
     if (accept_int32_string(self, self -> token, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -991,37 +991,37 @@ static int lex_float(parser_t self, int ch, elvin_error_t error)
     /* Watch for the beginning of the exponent */
     if (tolower(ch) == 'e')
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_exp_pre;
-	return 1;
+        self -> state = lex_exp_pre;
+        return 1;
     }
 
     /* Watch for additional digits */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_float;
-	return 1;
+        self -> state = lex_float;
+        return 1;
     }
 
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Accept the token */
     if (accept_real64_string(self, self -> token, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -1034,31 +1034,31 @@ static int lex_exp_pre(parser_t self, int ch, elvin_error_t error)
     /* Watch for a sign */
     if ((ch == '+') || (ch == '-'))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_exp_signed;
-	return 1;
+        self -> state = lex_exp_signed;
+        return 1;
     }
 
     /* Watch for a digit */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_exp;
-	return 1;
+        self -> state = lex_exp;
+        return 1;
     }
 
     /* Anything else is an error */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     ELVIN_ERROR_INTERP_INVALID_TOKEN(error, self -> token);
@@ -1071,25 +1071,25 @@ static int lex_exp_signed(parser_t self, int ch, elvin_error_t error)
     /* Watch a digit */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_exp;
-	return 1;
+        self -> state = lex_exp;
+        return 1;
     }
 
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Accept the token */
     if (accept_real64_string(self, self -> token, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -1102,25 +1102,25 @@ static int lex_exp(parser_t self, int ch, elvin_error_t error)
     /* Watch for additional digits */
     if (isdigit(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_exp;
-	return 1;
+        self -> state = lex_exp;
+        return 1;
     }
 
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Anything else is the start of the next token */
     if (accept_real64_string(self, self -> token, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -1133,32 +1133,32 @@ static int lex_symbol(parser_t self, int ch, elvin_error_t error)
     /* Watch for the symbol escape character */
     if (ch == '\\')
     {
-	self -> state = lex_symbol_esc;
-	return 1;
+        self -> state = lex_symbol_esc;
+        return 1;
     }
 
     /* Watch for more id characters */
     if (is_id_char(ch))
     {
-	if (append_char(self, ch, error) == 0)
-	{
-	    return 0;
-	}
+        if (append_char(self, ch, error) == 0)
+        {
+            return 0;
+        }
 
-	self -> state = lex_symbol;
-	return 1;
+        self -> state = lex_symbol;
+        return 1;
     }
 
     /* Null-terminate the token */
     if (append_char(self, 0, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Accept the symbol */
     if (accept_symbol(self, self -> token, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Send the character to the next token */
@@ -1171,14 +1171,14 @@ static int lex_symbol_esc(parser_t self, int ch, elvin_error_t error)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
-	return 0;
+        ELVIN_ERROR_INTERP_UNTERM_SYMBOL(error);
+        return 0;
     }
 
     /* Anything else is fair game */
     if (append_char(self, ch, error) == 0)
     {
-	return 0;
+        return 0;
     }
 
     self -> state = lex_symbol;
@@ -1210,12 +1210,12 @@ static int make_nil(parser_t self, elvin_error_t error)
 static int make_quote(parser_t self, elvin_error_t error)
 {
     return
-	vm_push_nil(self -> vm, error) &&
-	vm_make_cons(self -> vm, error) &&
-	vm_push_string(self -> vm, "quote", error) &&
-	vm_make_symbol(self -> vm, error) &&
-	vm_swap(self -> vm, error) &&
-	vm_make_cons(self -> vm, error);
+        vm_push_nil(self -> vm, error) &&
+        vm_make_cons(self -> vm, error) &&
+        vm_push_string(self -> vm, "quote", error) &&
+        vm_make_symbol(self -> vm, error) &&
+        vm_swap(self -> vm, error) &&
+        vm_make_cons(self -> vm, error);
 }
 
 /* No transformation required for this reduction */
@@ -1236,9 +1236,9 @@ static int extend_cons(parser_t self, elvin_error_t error)
 static int make_cons(parser_t self, elvin_error_t error)
 {
     return 
-	vm_push_nil(self -> vm, error) &&
-	vm_swap(self -> vm, error) &&
-	vm_make_cons(self -> vm, error);
+        vm_push_nil(self -> vm, error) &&
+        vm_swap(self -> vm, error) &&
+        vm_make_cons(self -> vm, error);
 }
 
 
@@ -1264,7 +1264,7 @@ parser_t parser_alloc(
     /* Allocate memory for the new parser_t */
     if ((self = (parser_t)ELVIN_MALLOC(sizeof(struct parser), error)) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Initialize sane state */
@@ -1283,16 +1283,16 @@ parser_t parser_alloc(
     /* Allocate memory for the token buffer */
     if ((self -> token = (char *)ELVIN_MALLOC(INITIAL_BUFFER_SIZE, error)) == NULL)
     {
-	parser_free(self, error);
-	return NULL;
+        parser_free(self, error);
+        return NULL;
     }
 
     /* Allocate memory for the state stack */
     if ((self -> state_stack = (int *)ELVIN_CALLOC(
-	INITIAL_STACK_SIZE, sizeof(int), error)) == NULL)
+        INITIAL_STACK_SIZE, sizeof(int), error)) == NULL)
     {
-	parser_free(self, error);
-	return NULL;
+        parser_free(self, error);
+        return NULL;
     }
 
     self -> token_end = self -> token + INITIAL_BUFFER_SIZE;
@@ -1311,12 +1311,12 @@ int parser_free(parser_t self, elvin_error_t error)
 
     if (self -> token != NULL)
     {
-	result = ELVIN_FREE(self -> token, result ? error : NULL) && result;
+        result = ELVIN_FREE(self -> token, result ? error : NULL) && result;
     }
 
     if (self -> state_stack != NULL)
     {
-	result = ELVIN_FREE(self -> state_stack, result ? error : NULL) && result;
+        result = ELVIN_FREE(self -> state_stack, result ? error : NULL) && result;
     }
 
     return ELVIN_FREE(self, result ? error : NULL) && result;
@@ -1349,21 +1349,21 @@ int parser_read_buffer(
     /* Watch for EOF */
     if (length == 0)
     {
-	return self -> state(self, EOF, error);
+        return self -> state(self, EOF, error);
     }
 
     /* Scan and parse them characters! */
     for (pointer = buffer; pointer < buffer + length; pointer++)
     {
-	/* Send the next character into the parser and watch for errors */
-	if (self -> state(self, *pointer, error) == 0)
-	{
-	    /* Error!  Clean up and reset the state */
-	    clean_stack(self, error);
-	    self -> state = lex_start;
-	    self -> point = NULL;
-	    return 0;
-	}
+        /* Send the next character into the parser and watch for errors */
+        if (self -> state(self, *pointer, error) == 0)
+        {
+            /* Error!  Clean up and reset the state */
+            clean_stack(self, error);
+            self -> state = lex_start;
+            self -> point = NULL;
+            return 0;
+        }
     }
 
     return 1;

@@ -159,47 +159,47 @@ static int accept_key(keys_parser_t self)
         int fd;
         struct stat file_stat;
 
-	/* If the path is relative then make it relative to the ticker_dir */
-	if (self -> key_data[0] != '/')
-	{
-	    size_t length;
-	    char *string;
+        /* If the path is relative then make it relative to the ticker_dir */
+        if (self -> key_data[0] != '/')
+        {
+            size_t length;
+            char *string;
 
-	    /* Allocate memory for the absolute path */
-	    length = strlen(self -> keys_dir) + 1 + strlen(self -> key_data) + 1;
-	    if ((string = (char *)malloc(length)) == NULL)
-	    {
-		return -1;
-	    }
+            /* Allocate memory for the absolute path */
+            length = strlen(self -> keys_dir) + 1 + strlen(self -> key_data) + 1;
+            if ((string = (char *)malloc(length)) == NULL)
+            {
+                return -1;
+            }
 
-	    /* Construct the absolute path */
-	    snprintf(string, length, "%s/%s", self -> keys_dir, self -> key_data);
+            /* Construct the absolute path */
+            snprintf(string, length, "%s/%s", self -> keys_dir, self -> key_data);
 
-	    /* Replace key_data with the absolute path */
-	    free(self -> key_data);
-	    self -> key_data = string;
-	}
+            /* Replace key_data with the absolute path */
+            free(self -> key_data);
+            self -> key_data = string;
+        }
 
         /* Open the key file. */
         if ((fd = open(self -> key_data, O_RDONLY)) < 0)
         {
             char *error_string = strerror(errno);
-	    size_t length;
-	    char *buffer;
+            size_t length;
+            char *buffer;
 
-	    length = strlen(FILE_ERROR_MSG) + strlen(self -> token) + strlen(error_string) - 1;
-	    if ((buffer = (char *)malloc(length)) != NULL)
-	    {
-		snprintf(buffer, length, FILE_ERROR_MSG, self -> token, error_string);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            length = strlen(FILE_ERROR_MSG) + strlen(self -> token) + strlen(error_string) - 1;
+            if ((buffer = (char *)malloc(length)) != NULL)
+            {
+                snprintf(buffer, length, FILE_ERROR_MSG, self -> token, error_string);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
             return -1;
         }
-	    
+            
         /* Find out how large the key is. */
-	if (fstat(fd, &file_stat) < 0)
+        if (fstat(fd, &file_stat) < 0)
         {
             close(fd);
             return -1;
@@ -227,7 +227,7 @@ static int accept_key(keys_parser_t self)
     {
         char *hex;
         int hex_index, binary_index, first_nibble;
-	int value = 0;
+        int value = 0;
 
         /* Move the hex data aside so we can store the real data. */
         hex = self -> key_data;
@@ -244,7 +244,7 @@ static int accept_key(keys_parser_t self)
         binary_index = 0;
         for (hex_index = 0; hex_index < self -> key_length; hex_index++)
         {
-	    int ch = hex[hex_index];
+            int ch = hex[hex_index];
 
             /* Skip white space. */
             if (isspace(ch))
@@ -297,7 +297,7 @@ static int accept_key(keys_parser_t self)
     if (self -> callback != NULL)
     {
         result = (self -> callback)(
-	    self -> rock, self -> name,
+            self -> rock, self -> name,
             self -> key_data, self -> key_length,
             self -> is_private);
     }
@@ -305,8 +305,8 @@ static int accept_key(keys_parser_t self)
     /* Clean up */
     if (self -> key_data != NULL)
     {
-	free(self -> key_data);
-	self -> key_data = NULL;
+        free(self -> key_data);
+        self -> key_data = NULL;
     }
 
     free(self -> name);
@@ -319,19 +319,19 @@ static int append_char(keys_parser_t self, int ch)
     /* Grow the token buffer if necessary */
     if (! (self -> token_pointer < self -> token_end))
     {
-	char *new_token;
-	size_t length = (self -> token_end - self -> token) * 2;
+        char *new_token;
+        size_t length = (self -> token_end - self -> token) * 2;
 
-	/* Try to allocate more memory */
-	if ((new_token = (char *)realloc(self -> token, length)) == NULL)
-	{
-	    return -1;
-	}
+        /* Try to allocate more memory */
+        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        {
+            return -1;
+        }
 
-	/* Update the other pointers */
-	self -> token_pointer = new_token + (self -> token_pointer - self -> token);
-	self -> token = new_token;
-	self -> token_end = self -> token + length;
+        /* Update the other pointers */
+        self -> token_pointer = new_token + (self -> token_pointer - self -> token);
+        self -> token = new_token;
+        self -> token_end = self -> token + length;
     }
 
     *(self -> token_pointer++) = ch;
@@ -344,46 +344,46 @@ static int lex_start(keys_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Watch for comments */
     if (ch == '#')
     {
-	self -> state = lex_comment;
-	return 0;
+        self -> state = lex_comment;
+        return 0;
     }
 
     /* Watch for blank lines */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> token_pointer = self -> token;
-	self -> state = lex_name_esc;
-	return 0;
+        self -> token_pointer = self -> token;
+        self -> state = lex_name_esc;
+        return 0;
     }
 
     /* Watch for a `:' (for an empty key name?) */
     if (ch == ':')
     {
-	self -> name = strdup("");
-	self -> token_pointer = self -> token;
-	self -> state = lex_type;
-	return 0;
+        self -> name = strdup("");
+        self -> token_pointer = self -> token;
+        self -> state = lex_type;
+        return 0;
     }
 
 
@@ -399,14 +399,14 @@ static int lex_comment(keys_parser_t self, int ch)
     /* Watch for end-of-file */
     if (ch == EOF)
     {
-	return lex_start(self, ch);
+        return lex_start(self, ch);
     }
 
     /* Watch for end-of-line */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Ignore everything else */
@@ -419,37 +419,37 @@ static int lex_name(keys_parser_t self, int ch)
     /* EOF is an error */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Linefeed is an error */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the magical escape character */
     if (ch == '\\')
     {
-	self -> state = lex_name_esc;
-	return 0;
+        self -> state = lex_name_esc;
+        return 0;
     }
 
     /* Watch for the end of the name */
     if (ch == ':')
     {
-	/* Null-terminate the name */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the name */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	self -> name = strdup(self -> token);
-	self -> token_pointer = self -> token;
-	self -> state = lex_type;
-	return 0;
+        self -> name = strdup(self -> token);
+        self -> token_pointer = self -> token;
+        self -> state = lex_type;
+        return 0;
     }
 
     /* Anything else is part of the group name */
@@ -462,15 +462,15 @@ static int lex_name_esc(keys_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Linefeeds are ignored */
     if (ch == '\n')
     {
-	self -> state = lex_name;
-	return 0;
+        self -> state = lex_name;
+        return 0;
     }
 
     /* Anything else is part of the name */
@@ -484,55 +484,55 @@ static int lex_type(keys_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the end of the type token */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Make sure the token is either "public" or "private" */
-	if (strcasecmp(self -> token, "public") == 0)
-	{
-	    self -> is_private = 0;
-	}
-	else if (strcasecmp(self -> token, "private") == 0)
-	{
-	    self -> is_private = 1;
-	}
-	else
-	{
-	    size_t length;
-	    char *buffer;
+        /* Make sure the token is either "public" or "private" */
+        if (strcasecmp(self -> token, "public") == 0)
+        {
+            self -> is_private = 0;
+        }
+        else if (strcasecmp(self -> token, "private") == 0)
+        {
+            self -> is_private = 1;
+        }
+        else
+        {
+            size_t length;
+            char *buffer;
 
-	    length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
-	    if ((buffer = (char *)malloc(length)) != NULL)
-	    {
-		snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
+            if ((buffer = (char *)malloc(length)) != NULL)
+            {
+                snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* Move along to the key format */
-	self -> token_pointer = self -> token;
-	self -> state = lex_format;
-	return 0;
+        /* Move along to the key format */
+        self -> token_pointer = self -> token;
+        self -> state = lex_format;
+        return 0;
     }
 
     /* Anything else is part of the token */
@@ -545,62 +545,62 @@ static int lex_format(keys_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the end of the token */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Make sure the token is "hex-inline", "hex-file" or "binary-file" */
-	if (strcasecmp(self -> token, "hex-inline") == 0)
-	{
-	    self -> is_inline = 1;
+        /* Make sure the token is "hex-inline", "hex-file" or "binary-file" */
+        if (strcasecmp(self -> token, "hex-inline") == 0)
+        {
+            self -> is_inline = 1;
             self -> is_hex = 1;
-	}
-	else if (strcasecmp(self -> token, "hex-file") == 0)
-	{
-	    self -> is_inline = 0;
+        }
+        else if (strcasecmp(self -> token, "hex-file") == 0)
+        {
+            self -> is_inline = 0;
             self -> is_hex = 1;
-	}
+        }
         else if (strcasecmp(self -> token, "binary-file") == 0)
         {
             self -> is_inline = 0;
             self -> is_hex = 0;
         }
-	else
-	{
-	    size_t length;
-	    char *buffer;
+        else
+        {
+            size_t length;
+            char *buffer;
 
-	    length = strlen(FORMAT_ERROR_MSG) + strlen(self -> token) - 1;
-	    if ((buffer = (char*)malloc(length)) != NULL)
-	    {
-		snprintf(buffer, length, FORMAT_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            length = strlen(FORMAT_ERROR_MSG) + strlen(self -> token) - 1;
+            if ((buffer = (char*)malloc(length)) != NULL)
+            {
+                snprintf(buffer, length, FORMAT_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* Move along to the key data */
-	self -> token_pointer = self -> token;
-	self -> state = lex_data;
-	return 0;
+        /* Move along to the key data */
+        self -> token_pointer = self -> token;
+        self -> state = lex_data;
+        return 0;
     }
 
     /* Anything else is part of the token */
@@ -613,30 +613,30 @@ static int lex_data(keys_parser_t self, int ch)
     /* Watch for EOF or linefeed */
     if (ch == EOF || ch == '\n')
     {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the key string */
+        if (append_char(self, 0) < 0)
+        {
+            return -1;
+        }
 
         self -> key_data = strdup(self -> token);
-	self -> key_length = self -> token_pointer - self -> token - 1;
+        self -> key_length = self -> token_pointer - self -> token - 1;
         self -> token_pointer = self -> token;
 
-	/* Accept the key */
-	if (accept_key(self) < 0)
-	{
-	    return -1;
-	}
+        /* Accept the key */
+        if (accept_key(self) < 0)
+        {
+            return -1;
+        }
 
-	/* Go on to the next key */
-	return lex_start(self, ch);
+        /* Go on to the next key */
+        return lex_start(self, ch);
     }
 
     /* Anything else is part of the key */
     if (append_char(self, ch) < 0)
     {
-	return -1;
+        return -1;
     }
 
     self -> state = lex_data;
@@ -649,19 +649,19 @@ static int parse_char(keys_parser_t self, int ch)
     /* Ignore CRs */
     if (ch == '\r')
     {
-	return 0;
+        return 0;
     }
 
     /* Parse the character */
     if (self -> state(self, ch) < 0)
     {
-	return -1;
+        return -1;
     }
 
     /* Count LFs */
     if (ch == '\n')
     {
-	self -> line_num++;
+        self -> line_num++;
     }
 
     return 0;
@@ -679,30 +679,30 @@ keys_parser_t keys_parser_alloc(
     /* Allocate memory for the new keys_parser */
     if ((self = (keys_parser_t)malloc(sizeof(struct keys_parser))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
     memset(self, 0, sizeof(struct keys_parser));
 
     /* Copy the keys_dir string */
     if ((self -> keys_dir = strdup(keys_dir)) == NULL)
     {
-	keys_parser_free(self);
-	return NULL;
+        keys_parser_free(self);
+        return NULL;
     }
 
     /* Copy the tag string */
     if ((self -> tag = strdup(tag)) == NULL)
     {
-	keys_parser_free(self);
-	return NULL;
+        keys_parser_free(self);
+        return NULL;
     }
 
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
-	free(self -> tag);
-	free(self);
-	return NULL;
+        free(self -> tag);
+        free(self);
+        return NULL;
     }
 
     /* Initialize everything else to sane values */
@@ -726,12 +726,12 @@ void keys_parser_free(keys_parser_t self)
 
     if (self -> tag != NULL)
     {
-	free(self -> tag);
+        free(self -> tag);
     }
 
     if (self -> token != NULL)
     {
-	free(self -> token);
+        free(self -> token);
     }
 
     free(self);
@@ -748,16 +748,16 @@ int keys_parser_parse(keys_parser_t self, char *buffer, size_t length)
     /* Length of 0 indicates EOF */
     if (length == 0)
     {
-	return parse_char(self, EOF);
+        return parse_char(self, EOF);
     }
 
     /* Parse the buffer */
     for (pointer = buffer; pointer < end; pointer++)
     {
-	if (parse_char(self, *(unsigned char *)pointer) < 0)
-	{
-	    return -1;
-	}
+        if (parse_char(self, *(unsigned char *)pointer) < 0)
+        {
+            return -1;
+        }
     }
 
     return 0;

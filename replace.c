@@ -63,7 +63,7 @@ void *memset(void *s, int c, size_t n)
 
     while (point < end)
     {
-	*(point++) = c;
+        *(point++) = c;
     }
 
     return s;
@@ -97,37 +97,37 @@ int strcasecmp(const char *s1, const char *s2)
 
     while (1)
     {
-	c1 = toupper(s1[i]);
-	c2 = toupper(s2[i]);
+        c1 = toupper(s1[i]);
+        c2 = toupper(s2[i]);
 
-	if (c1 == 0)
-	{
-	    if (c2 == 0)
-	    {
-		return 0;
-	    }
-	    else
-	    {
-		return -1;
-	    }
-	}
+        if (c1 == 0)
+        {
+            if (c2 == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return -1;
+            }
+        }
 
-	if (c2 == 0)
-	{
-	    return 1;
-	}
-	
-	if (c1 < c2)
-	{
-	    return -1;
-	}
+        if (c2 == 0)
+        {
+            return 1;
+        }
+        
+        if (c1 < c2)
+        {
+            return -1;
+        }
 
-	if (c1 > c2)
-	{
-	    return 1;
-	}
+        if (c1 > c2)
+        {
+            return 1;
+        }
 
-	i++;
+        i++;
     }
 }
 #endif
@@ -142,12 +142,12 @@ char *strchr(const char *s, int c)
 
     while ((ch = s[i]) != 0)
     {
-	if (ch == c)
-	{
-	    return s + i;
-	}
+        if (ch == c)
+        {
+            return s + i;
+        }
 
-	i++;
+        i++;
     }
 
     return NULL;
@@ -164,7 +164,7 @@ char *strdup(const char *s)
     length = strlen(s) + 1;
     if ((result = (char *)malloc(length)) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     memcpy(result, s, length);
@@ -181,12 +181,12 @@ char *strrchr(const char *s, int c)
 
     while ((ch = *s) != 0)
     {
-	if (ch == c)
-	{
-	    result = (char *)s;
-	}
+        if (ch == c)
+        {
+            result = (char *)s;
+        }
 
-	s++;
+        s++;
     }
 
     return result;

@@ -145,14 +145,14 @@ static int accept_subscription(groups_parser_t self)
     /* Make sure there is a callback */
     if (self -> callback == NULL)
     {
-	return 0;
+        return 0;
     }
 
     /* Call it with the information */
     result = self -> callback(
-	self -> rock, self -> name,
-	self -> in_menu, self -> has_nazi,
-	self -> min_time, self -> max_time,
+        self -> rock, self -> name,
+        self -> in_menu, self -> has_nazi,
+        self -> min_time, self -> max_time,
         self -> key_names, self -> key_count);
 
     /* Clean up */
@@ -207,19 +207,19 @@ static int append_char(groups_parser_t self, int ch)
     /* Grow the token buffer if necessary */
     if (! (self -> token_pointer < self -> token_end))
     {
-	char *new_token;
-	size_t length = (self -> token_end - self -> token) * 2;
+        char *new_token;
+        size_t length = (self -> token_end - self -> token) * 2;
 
-	/* Try to allocate more memory */
-	if ((new_token = (char *)realloc(self -> token, length)) == NULL)
-	{
-	    return -1;
-	}
+        /* Try to allocate more memory */
+        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        {
+            return -1;
+        }
 
-	/* Update the other pointers */
-	self -> token_pointer = new_token + (self -> token_pointer - self -> token);
-	self -> token = new_token;
-	self -> token_end = self -> token + length;
+        /* Update the other pointers */
+        self -> token_pointer = new_token + (self -> token_pointer - self -> token);
+        self -> token = new_token;
+        self -> token_end = self -> token + length;
     }
 
     *(self -> token_pointer++) = ch;
@@ -232,46 +232,46 @@ static int lex_start(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Watch for comments */
     if (ch == '#')
     {
-	self -> state = lex_comment;
-	return 0;
+        self -> state = lex_comment;
+        return 0;
     }
 
     /* Watch for blank lines */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> token_pointer = self -> token;
-	self -> state = lex_name_esc;
-	return 0;
+        self -> token_pointer = self -> token;
+        self -> state = lex_name_esc;
+        return 0;
     }
 
     /* Watch for a `:' (for the empty group?) */
     if (ch == ':')
     {
-	self -> name = strdup("");
-	self -> token_pointer = self -> token;
-	self -> state = lex_menu;
-	return 0;
+        self -> name = strdup("");
+        self -> token_pointer = self -> token;
+        self -> state = lex_menu;
+        return 0;
     }
 
 
@@ -287,14 +287,14 @@ static int lex_comment(groups_parser_t self, int ch)
     /* Watch for end-of-file */
     if (ch == EOF)
     {
-	return lex_start(self, ch);
+        return lex_start(self, ch);
     }
 
     /* Watch for end-of-line */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Ignore everything else */
@@ -307,37 +307,37 @@ static int lex_name(groups_parser_t self, int ch)
     /* EOF is an error */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Linefeed is an error */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the magical escape character */
     if (ch == '\\')
     {
-	self -> state = lex_name_esc;
-	return 0;
+        self -> state = lex_name_esc;
+        return 0;
     }
 
     /* Watch for the end of the name */
     if (ch == ':')
     {
-	/* Null-terminate the name */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the name */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	self -> name = strdup(self -> token);
-	self -> token_pointer = self -> token;
-	self -> state = lex_menu;
-	return 0;
+        self -> name = strdup(self -> token);
+        self -> token_pointer = self -> token;
+        self -> state = lex_menu;
+        return 0;
     }
 
     /* Anything else is part of the group name */
@@ -350,15 +350,15 @@ static int lex_name_esc(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Linefeeds are ignored */
     if (ch == '\n')
     {
-	self -> state = lex_name;
-	return 0;
+        self -> state = lex_name;
+        return 0;
     }
 
     /* Anything else is part of the name */
@@ -372,54 +372,54 @@ static int lex_menu(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the end of the menu token */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Make sure the token is either "menu" or "no menu" */
-	if (strcasecmp(self -> token, "menu") == 0)
-	{
-	    self -> in_menu = 1;
-	}
-	else if (strcasecmp(self -> token, "no menu") == 0)
-	{
-	    self -> in_menu = 0;
-	}
-	else
-	{
-	    size_t length = strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1;
-	    char *buffer;
+        /* Make sure the token is either "menu" or "no menu" */
+        if (strcasecmp(self -> token, "menu") == 0)
+        {
+            self -> in_menu = 1;
+        }
+        else if (strcasecmp(self -> token, "no menu") == 0)
+        {
+            self -> in_menu = 0;
+        }
+        else
+        {
+            size_t length = strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1;
+            char *buffer;
 
-	    if ((buffer = (char *)malloc(length)) != NULL)
-	    {
-		snprintf(buffer, length, MENU_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            if ((buffer = (char *)malloc(length)) != NULL)
+            {
+                snprintf(buffer, length, MENU_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* Move along to the mime nazi option */
-	self -> token_pointer = self -> token;
-	self -> state = lex_nazi;
-	return 0;
+        /* Move along to the mime nazi option */
+        self -> token_pointer = self -> token;
+        self -> state = lex_nazi;
+        return 0;
     }
 
     /* Anything else is part of the token */
@@ -432,54 +432,54 @@ static int lex_nazi(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the end of the token */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Make sure the token is either "auto" or "manual" */
-	if (strcasecmp(self -> token, "auto") == 0)
-	{
-	    self -> has_nazi = 1;
-	}
-	else if (strcasecmp(self -> token, "manual") == 0)
-	{
-	    self -> has_nazi = 0;
-	}
-	else
-	{
-	    size_t length = strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1;
-	    char *buffer;
+        /* Make sure the token is either "auto" or "manual" */
+        if (strcasecmp(self -> token, "auto") == 0)
+        {
+            self -> has_nazi = 1;
+        }
+        else if (strcasecmp(self -> token, "manual") == 0)
+        {
+            self -> has_nazi = 0;
+        }
+        else
+        {
+            size_t length = strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1;
+            char *buffer;
 
-	    if ((buffer = (char *)malloc(length)) != NULL)
-	    {
-		snprintf(buffer, length, NAZI_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            if ((buffer = (char *)malloc(length)) != NULL)
+            {
+                snprintf(buffer, length, NAZI_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* Move along to the minimum-time token */
-	self -> token_pointer = self -> token;
-	self -> state = lex_min_time;
-	return 0;
+        /* Move along to the minimum-time token */
+        self -> token_pointer = self -> token;
+        self -> state = lex_min_time;
+        return 0;
     }
 
     /* Anything else is part of the token */
@@ -492,37 +492,37 @@ static int lex_min_time(groups_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	parse_error(self, "unexpected end of file");
-	return -1;
+        parse_error(self, "unexpected end of file");
+        return -1;
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for the end of the token */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Read the min-time from the token */
-	self -> min_time = atoi(self -> token);
-	self -> token_pointer = self -> token;
-	self -> state = lex_max_time;
-	return 0;
+        /* Read the min-time from the token */
+        self -> min_time = atoi(self -> token);
+        self -> token_pointer = self -> token;
+        self -> state = lex_max_time;
+        return 0;
     }
 
     /* Make sure we keep getting digits */
     if (isdigit(ch))
     {
-	return append_char(self, ch);
+        return append_char(self, ch);
     }
 
     /* Otherwise we go to the error state for a bit */
@@ -536,61 +536,61 @@ static int lex_max_time(groups_parser_t self, int ch)
     /* Watch for end of token */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* Null-terminate the token */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, 0) < 0)
+        {
+            return -1;
+        }
 
-	/* Determine the max timeout */
-	if (*self -> token == '\0')
-	{
-	    self -> max_time = -1;
-	}
-	else
-	{
-	    self -> max_time = atoi(self -> token);
-	}
+        /* Determine the max timeout */
+        if (*self -> token == '\0')
+        {
+            self -> max_time = -1;
+        }
+        else
+        {
+            self -> max_time = atoi(self -> token);
+        }
 
-	/* Construct a subscription and carry on */
-	if (accept_subscription(self) < 0)
-	{
-	    return -1;
-	}
+        /* Construct a subscription and carry on */
+        if (accept_subscription(self) < 0)
+        {
+            return -1;
+        }
 
-	/* Go on to the next subscription */
-	return lex_start(self, ch);
+        /* Go on to the next subscription */
+        return lex_start(self, ch);
     }
 
     /* Everything else should be a digit */
     if (isdigit(ch))
     {
-	return append_char(self, ch);
+        return append_char(self, ch);
     }
 
     /* If we get a `:' then look for keys */
     if (ch == ':')
     {
-	/* Null-terminate the token */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, 0) < 0)
+        {
+            return -1;
+        }
 
-	/* Determine the max timeout */
-	if (*self -> token == '\0')
-	{
-	    self -> max_time = -1;
-	}
-	else
-	{
-	    self -> max_time = atoi(self -> token);
-	}
+        /* Determine the max timeout */
+        if (*self -> token == '\0')
+        {
+            self -> max_time = -1;
+        }
+        else
+        {
+            self -> max_time = atoi(self -> token);
+        }
 
-	/* Prepare to read a key */
-	self -> token_pointer = self -> token;
-	self -> state = lex_keys_ws;
-	return 0;
+        /* Prepare to read a key */
+        self -> token_pointer = self -> token;
+        self -> state = lex_keys_ws;
+        return 0;
     }
 
     /* Otherwise we go to the error state for a bit */
@@ -605,25 +605,25 @@ static int lex_bad_time(groups_parser_t self, int ch)
     /* Watch for EOF, end of line or ':' as end of token */
     if ((ch == EOF) || (ch == '\n') || (ch == ':'))
     {
-	size_t length;
-	char *buffer;
+        size_t length;
+        char *buffer;
 
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Generate an error message */
-	length = strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1;
-	if ((buffer = (char *)malloc(length)) != NULL)
-	{
-	    snprintf(buffer, length, TIMEOUT_ERROR_MSG, self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
-	}
+        /* Generate an error message */
+        length = strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1;
+        if ((buffer = (char *)malloc(length)) != NULL)
+        {
+            snprintf(buffer, length, TIMEOUT_ERROR_MSG, self -> token);
+            parse_error(self, buffer);
+            free(buffer);
+        }
 
-	return -1;
+        return -1;
     }
 
     /* Append additional characters to the token for context */
@@ -636,28 +636,28 @@ static int lex_keys_ws(groups_parser_t self, int ch)
     /* Watch for the end of the line */
     if (ch == EOF || ch == '\n')
     {
-	/* Accept the subscription */
-	if (accept_subscription(self) < 0)
-	{
-	    return -1;
-	}
+        /* Accept the subscription */
+        if (accept_subscription(self) < 0)
+        {
+            return -1;
+        }
 
-	/* Go on to the next subscription */
-	return lex_start(self, ch);
+        /* Go on to the next subscription */
+        return lex_start(self, ch);
     }
 
     /* Throw away whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_keys_ws;
-	return 0;
+        self -> state = lex_keys_ws;
+        return 0;
     }
 
     /* Watch for yet another `:' */
     if (ch == ':')
     {
-	self -> token_pointer = self -> token;
-	return lex_superfluous(self, ch);
+        self -> token_pointer = self -> token;
+        return lex_superfluous(self, ch);
     }
 
     /* Send anything else through the keys state */
@@ -670,60 +670,60 @@ static int lex_keys(groups_parser_t self, int ch)
     /* Watch for EOF or linefeed */
     if (ch == EOF || ch == '\n')
     {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the key string */
+        if (append_char(self, 0) < 0)
+        {
+            return -1;
+        }
 
-	/* Accept it */
-	if (accept_key(self, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* Accept it */
+        if (accept_key(self, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	/* Accept the subscription */
-	if (accept_subscription(self) < 0)
-	{
-	    return -1;
-	}
+        /* Accept the subscription */
+        if (accept_subscription(self) < 0)
+        {
+            return -1;
+        }
 
-	/* Go on to the next subscription */
-	return lex_start(self, ch);
+        /* Go on to the next subscription */
+        return lex_start(self, ch);
     }
 
     /* Watch for a bogus `:' */
     if (ch == ':')
     {
-	self -> token_pointer = self -> token;
-	return lex_superfluous(self, ch);
+        self -> token_pointer = self -> token;
+        return lex_superfluous(self, ch);
     }
 
     /* Watch for `,' */
     if (ch == ',')
     {
-	/* Null-terminate the key string */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the key string */
+        if (append_char(self, 0) < 0)
+        {
+            return -1;
+        }
 
-	/* Accept it */
-	if (accept_key(self, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* Accept it */
+        if (accept_key(self, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	/* Set up for the next key */
-	self -> token_pointer = self -> token;
-	self -> state = lex_keys_ws;
-	return 0;
+        /* Set up for the next key */
+        self -> token_pointer = self -> token;
+        self -> state = lex_keys_ws;
+        return 0;
     }
 
     /* Anything else is part of the key */
     if (append_char(self, ch) < 0)
     {
-	return -1;
+        return -1;
     }
 
     self -> state = lex_keys;
@@ -736,25 +736,25 @@ static int lex_superfluous(groups_parser_t self, int ch)
     /* Watch for EOF or linefeed */
     if ((ch == EOF) || (ch == '\n'))
     {
-	size_t length;
-	char *buffer;
+        size_t length;
+        char *buffer;
 
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Generate an error message */
-	length = strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1;
-	if ((buffer = (char *)malloc(length)) != NULL)
-	{
-	    snprintf(buffer, length, EXTRA_ERROR_MSG, self -> token);
-	    parse_error(self, buffer);
-	    free(buffer);
-	}
+        /* Generate an error message */
+        length = strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1;
+        if ((buffer = (char *)malloc(length)) != NULL)
+        {
+            snprintf(buffer, length, EXTRA_ERROR_MSG, self -> token);
+            parse_error(self, buffer);
+            free(buffer);
+        }
 
-	return -1;
+        return -1;
     }
 
     /* Append additional characters to the token for context */
@@ -768,19 +768,19 @@ static int parse_char(groups_parser_t self, int ch)
     /* Ignore CRs */
     if (ch == '\r')
     {
-	return 0;
+        return 0;
     }
 
     /* Parse the character */
     if (self -> state(self, ch) < 0)
     {
-	return -1;
+        return -1;
     }
 
     /* Count LFs */
     if (ch == '\n')
     {
-	self -> line_num++;
+        self -> line_num++;
     }
 
     return 0;
@@ -797,22 +797,22 @@ groups_parser_t groups_parser_alloc(
     /* Allocate memory for the new groups_parser */
     if ((self = (groups_parser_t)malloc(sizeof(struct groups_parser))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
     memset(self, 0, sizeof(struct groups_parser));
 
     /* Copy the tag string */
     if ((self -> tag = strdup(tag)) == NULL)
     {
-	groups_parser_free(self);
-	return NULL;
+        groups_parser_free(self);
+        return NULL;
     }
 
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
-	groups_parser_free(self);
-	return NULL;
+        groups_parser_free(self);
+        return NULL;
     }
 
     /* Initialize everything else to sane values */
@@ -844,16 +844,16 @@ int groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
     /* Length of 0 indicates EOF */
     if (length == 0)
     {
-	return parse_char(self, EOF);
+        return parse_char(self, EOF);
     }
 
     /* Parse the buffer */
     for (pointer = buffer; pointer < end; pointer++)
     {
-	if (parse_char(self, *(unsigned char *)pointer) < 0)
-	{
-	    return -1;
-	}
+        if (parse_char(self, *(unsigned char *)pointer) < 0)
+        {
+            return -1;
+        }
     }
 
     return 0;

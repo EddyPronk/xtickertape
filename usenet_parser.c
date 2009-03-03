@@ -167,13 +167,13 @@ static int accept_group(usenet_parser_t self, int has_not, char *group)
 
     /* Call the callback */
     result = (self -> callback)(
-	self -> rock, has_not, group, self -> expressions,
-	self -> expr_pointer - self -> expressions);
+        self -> rock, has_not, group, self -> expressions,
+        self -> expr_pointer - self -> expressions);
 
     /* Clean up */
     for (pointer = self -> expressions; pointer < self -> expr_pointer; pointer++)
     {
-	free(pointer -> pattern);
+        free(pointer -> pattern);
     }
 
     self -> expr_pointer = self -> expressions;
@@ -191,21 +191,21 @@ static int accept_expression(
     /* Make sure there's room in the expressions table */
     if (! (self -> expr_pointer < self -> expr_end))
     {
-	/* Grow the expressions array */
-	struct usenet_expr *new_array;
-	size_t length = (self -> expr_end - self -> expressions) * 2;
+        /* Grow the expressions array */
+        struct usenet_expr *new_array;
+        size_t length = (self -> expr_end - self -> expressions) * 2;
 
-	/* Try to allocate more memory */
-	if ((new_array = (struct usenet_expr *)realloc(
-	    self -> expressions, sizeof(struct usenet_expr) * length)) == NULL)
-	{
-	    return -1;
-	}
+        /* Try to allocate more memory */
+        if ((new_array = (struct usenet_expr *)realloc(
+            self -> expressions, sizeof(struct usenet_expr) * length)) == NULL)
+        {
+            return -1;
+        }
 
-	/* Update the other pointers */
-	self -> expr_pointer = new_array + (self -> expr_pointer - self -> expressions);
-	self -> expressions = new_array;
-	self -> expr_end = self -> expressions + length;
+        /* Update the other pointers */
+        self -> expr_pointer = new_array + (self -> expr_pointer - self -> expressions);
+        self -> expressions = new_array;
+        self -> expr_end = self -> expressions + length;
     }
 
     /* Plug in the values */
@@ -222,20 +222,20 @@ static int append_char(usenet_parser_t self, int ch)
     /* Grow the token buffer if necessary */
     if (! (self -> token_pointer < self -> token_end))
     {
-	char *new_token;
-	size_t length = (self -> token_end - self -> token) * 2;
+        char *new_token;
+        size_t length = (self -> token_end - self -> token) * 2;
 
-	/* Try to allocate more memory */
-	if ((new_token = (char *)realloc(self -> token, length)) == NULL)
-	{
-	    return -1;
-	}
+        /* Try to allocate more memory */
+        if ((new_token = (char *)realloc(self -> token, length)) == NULL)
+        {
+            return -1;
+        }
 
-	/* Update the other pointers */
-	self -> token_pointer = new_token + (self -> token_pointer - self -> token);
-	self -> token_mark = new_token + (self -> token_mark - self -> token);
-	self -> token = new_token;
-	self -> token_end = self -> token + length;
+        /* Update the other pointers */
+        self -> token_pointer = new_token + (self -> token_pointer - self -> token);
+        self -> token_mark = new_token + (self -> token_mark - self -> token);
+        self -> token = new_token;
+        self -> token_end = self -> token + length;
     }
 
     *(self -> token_pointer++) = ch;
@@ -247,71 +247,71 @@ static field_name_t translate_field(char *field)
 {
     switch (*field)
     {
-	/* BODY */
-	case 'B':
-	{
-	    if (strcmp(field, T_BODY) == 0)
-	    {
-		return F_BODY;
-	    }
+        /* BODY */
+        case 'B':
+        {
+            if (strcmp(field, T_BODY) == 0)
+            {
+                return F_BODY;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* email */
-	case 'e':
-	{
-	    if (strcmp(field, T_EMAIL) == 0)
-	    {
-		return F_EMAIL;
-	    }
+        /* email */
+        case 'e':
+        {
+            if (strcmp(field, T_EMAIL) == 0)
+            {
+                return F_EMAIL;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* from */
-	case 'f':
-	{
-	    if (strcmp(field, T_FROM) == 0)
-	    {
-		return F_FROM;
-	    }
+        /* from */
+        case 'f':
+        {
+            if (strcmp(field, T_FROM) == 0)
+            {
+                return F_FROM;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* keywords */
-	case 'k':
-	{
-	    if (strcmp(field, T_KEYWORDS) == 0)
-	    {
-		return F_KEYWORDS;
-	    }
+        /* keywords */
+        case 'k':
+        {
+            if (strcmp(field, T_KEYWORDS) == 0)
+            {
+                return F_KEYWORDS;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* subject */
-	case 's':
-	{
-	    if (strcmp(field, T_SUBJECT) == 0)
-	    {
-		return F_SUBJECT;
-	    }
+        /* subject */
+        case 's':
+        {
+            if (strcmp(field, T_SUBJECT) == 0)
+            {
+                return F_SUBJECT;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* x-posts */
-	case 'x':
-	{
-	    if (strcmp(field, T_XPOSTS) == 0)
-	    {
-		return F_XPOSTS;
-	    }
+        /* x-posts */
+        case 'x':
+        {
+            if (strcmp(field, T_XPOSTS) == 0)
+            {
+                return F_XPOSTS;
+            }
 
-	    break;
-	}
+            break;
+        }
     }
 
     /* Not a valid field name */
@@ -323,79 +323,79 @@ static op_name_t translate_op(char *operator)
 {
     switch (*operator)
     {
-	/* != */
-	case '!':
-	{
-	    if (strcmp(operator, T_NEQ) == 0)
-	    {
-		return O_NEQ;
-	    }
+        /* != */
+        case '!':
+        {
+            if (strcmp(operator, T_NEQ) == 0)
+            {
+                return O_NEQ;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* < or <= */
-	case '<':
-	{
-	    if (strcmp(operator, T_LT) == 0)
-	    {
-		return O_LT;
-	    }
+        /* < or <= */
+        case '<':
+        {
+            if (strcmp(operator, T_LT) == 0)
+            {
+                return O_LT;
+            }
 
-	    if (strcmp(operator, T_LE) == 0)
-	    {
-		return O_LE;
-	    }
-	}
+            if (strcmp(operator, T_LE) == 0)
+            {
+                return O_LE;
+            }
+        }
 
-	/* = */
-	case '=':
-	{
-	    if (strcmp(operator, T_EQ) == 0)
-	    {
-		return O_EQ;
-	    }
+        /* = */
+        case '=':
+        {
+            if (strcmp(operator, T_EQ) == 0)
+            {
+                return O_EQ;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* > or >= */
-	case '>':
-	{
-	    if (strcmp(operator, T_GT) == 0)
-	    {
-		return O_GT;
-	    }
+        /* > or >= */
+        case '>':
+        {
+            if (strcmp(operator, T_GT) == 0)
+            {
+                return O_GT;
+            }
 
-	    if (strcmp(operator, T_GE) == 0)
-	    {
-		return O_GE;
-	    }
+            if (strcmp(operator, T_GE) == 0)
+            {
+                return O_GE;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* matches */
-	case 'm':
-	{
-	    if (strcmp(operator, T_MATCHES) == 0)
-	    {
-		return O_MATCHES;
-	    }
+        /* matches */
+        case 'm':
+        {
+            if (strcmp(operator, T_MATCHES) == 0)
+            {
+                return O_MATCHES;
+            }
 
-	    break;
-	}
+            break;
+        }
 
-	/* not */
-	case 'n':
-	{
-	    if (strcmp(operator, T_NOT) == 0)
-	    {
-		return O_NOT;
-	    }
+        /* not */
+        case 'n':
+        {
+            if (strcmp(operator, T_NOT) == 0)
+            {
+                return O_NOT;
+            }
 
-	    break;
-	}
+            break;
+        }
     }
 
     /* Not a valid operator name */
@@ -408,37 +408,37 @@ static int lex_start(usenet_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF)
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Watch for comments */
     if (ch == '#')
     {
-	self -> state = lex_comment;
-	return 0;
+        self -> state = lex_comment;
+        return 0;
     }
 
     /* Backslashes escape stuff */
     if (ch == '\\')
     {
-	self -> state = lex_start_esc;
-	return 0;
+        self -> state = lex_start_esc;
+        return 0;
     }
 
     /* Watch for blank lines */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	self -> line_num++;
-	return 0;
+        self -> state = lex_start;
+        self -> line_num++;
+        return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_start;
-	return 0;
+        self -> state = lex_start;
+        return 0;
     }
 
     /* Anything else is part of the group pattern */
@@ -454,8 +454,8 @@ static int lex_start_esc(usenet_parser_t self, int ch)
     /* Watch for EOF */
     if (ch == EOF || ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Anything else is part of the group pattern */
@@ -471,15 +471,15 @@ static int lex_comment(usenet_parser_t self, int ch)
     /* Watch for end-of-file */
     if (ch == EOF)
     {
-	return lex_start(self, ch);
+        return lex_start(self, ch);
     }
 
     /* Watch for end of line */
     if (ch == '\n')
     {
-	self -> state = lex_start;
-	self -> line_num++;
-	return 0;
+        self -> state = lex_start;
+        self -> line_num++;
+        return 0;
     }
 
     /* Ignore everything else */
@@ -492,51 +492,51 @@ static int lex_group(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* This is a nice, short group entry */
-	if (accept_group(self, self -> has_not, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* This is a nice, short group entry */
+        if (accept_group(self, self -> has_not, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	return lex_start(self, ch);
+        return lex_start(self, ch);
     }
 
     /* Watch for other whitespace */
     if (isspace(ch))
     {
-	self -> state = lex_group_ws;
+        self -> state = lex_group_ws;
 
-	/* Null-terminate the token */
-	return append_char(self, '\0');
+        /* Null-terminate the token */
+        return append_char(self, '\0');
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_group_esc;
-	return 0;
+        self -> state = lex_group_esc;
+        return 0;
     }
 
     /* Watch for the separator character */
     if (ch == '/')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Record the group name for later use */
-	self -> group = strdup(self -> token);
-	self -> token_pointer = self -> token;
-	self -> state = lex_field_start;
-	return 0;
+        /* Record the group name for later use */
+        self -> group = strdup(self -> token);
+        self -> token_pointer = self -> token;
+        self -> state = lex_field_start;
+        return 0;
     }
 
     /* Anything else is part of the group pattern */
@@ -549,8 +549,8 @@ static int lex_group_esc(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if (ch == EOF || ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Anything else is part of the group pattern */
@@ -566,36 +566,36 @@ static int lex_group_ws(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* This is a nice, short group entry */
-	if (accept_group(self, self -> has_not, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* This is a nice, short group entry */
+        if (accept_group(self, self -> has_not, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	return lex_start(self, ch);
+        return lex_start(self, ch);
     }
 
     /* Skip additional whitespace */
     if (isspace(ch))
     {
-	return 0;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_group_esc;
-	return 0;
+        self -> state = lex_group_esc;
+        return 0;
     }
 
     /* Watch for the separator character */
     if (ch == '/')
     {
-	/* Record the group name for later */
-	self -> group = strdup(self -> token);
-	self -> token_pointer = self -> token;
-	self -> state = lex_field_start;
-	return 0;
+        /* Record the group name for later */
+        self -> group = strdup(self -> token);
+        self -> token_pointer = self -> token;
+        self -> state = lex_field_start;
+        return 0;
     }
 
     /* Anything else wants to be part of the pattern.  Make sure that
@@ -603,15 +603,15 @@ static int lex_group_ws(usenet_parser_t self, int ch)
      * the double-negative thing */
     if (strcmp(self -> token, T_NOT) != 0)
     {
-	parse_error(self, "expected '/' or newline");
-	return -1;
+        parse_error(self, "expected '/' or newline");
+        return -1;
     }
 
     /* Watch for double-negative */
     if (self -> has_not)
     {
-	parse_error(self, "double negative not permitted");
-	return -1;
+        parse_error(self, "double negative not permitted");
+        return -1;
     }
 
     /* This is a negated group pattern */
@@ -629,14 +629,14 @@ static int lex_field_start(usenet_parser_t self, int ch)
     /* Skip other whitespace */
     if (isspace(ch))
     {
-	return 0;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_field_esc;
-	return 0;
+        self -> state = lex_field_esc;
+        return 0;
     }
 
     /* Anything else is the start of the field name */
@@ -650,51 +650,51 @@ static int lex_field(usenet_parser_t self, int ch)
     /* Watch for EOF or LF in the middle of the field */
     if ((ch == EOF) || (ch == '\n'))
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_field_esc;
-	return 0;
+        self -> state = lex_field_esc;
+        return 0;
     }
 
     /* Watch for a stray separator */
     if (ch == '/')
     {
-	parse_error(self, "incomplete expression");
-	return -1;
+        parse_error(self, "incomplete expression");
+        return -1;
     }
 
     /* Watch for whitespace */
     if (isspace(ch))
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Look up the field */
-	if ((self -> field = translate_field(self -> token)) == F_NONE)
-	{
-	    char *buffer = (char *)malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
+        /* Look up the field */
+        if ((self -> field = translate_field(self -> token)) == F_NONE)
+        {
+            char *buffer = (char *)malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
 
-	    if (buffer != NULL)
-	    {
-		sprintf(buffer, FIELD_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            if (buffer != NULL)
+            {
+                sprintf(buffer, FIELD_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	self -> token_pointer = self -> token;
-	self -> state = lex_op_start;
-	return 0;
+        self -> token_pointer = self -> token;
+        self -> state = lex_op_start;
+        return 0;
     }
 
     /* Anything else is part of the field name */
@@ -707,8 +707,8 @@ static int lex_field_esc(usenet_parser_t self, int ch)
     /* Watch for EOF or newline in the middle of the field */
     if (ch == EOF || ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Anything else is part of the field name */
@@ -722,14 +722,14 @@ static int lex_op_start(usenet_parser_t self, int ch)
     /* Skip additional whitespace */
     if (isspace(ch))
     {
-	return 0;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_op_esc;
-	return 0;
+        self -> state = lex_op_esc;
+        return 0;
     }
 
     /* Anything else is part of the operator name */
@@ -743,71 +743,71 @@ static int lex_op(usenet_parser_t self, int ch)
     /* Watch for EOF or linefeed in the middle of the expression */
     if ((ch == EOF) || (ch == '\n'))
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_op_esc;
-	return 0;
+        self -> state = lex_op_esc;
+        return 0;
     }
 
     /* Watch for a stray separator */
     if (ch == '/')
     {
-	parse_error(self, "incomplete expression");
-	return -1;
+        parse_error(self, "incomplete expression");
+        return -1;
     }
 
     /* Watch for more whitespace */
     if (isspace(ch))
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Look up the operator */
-	if ((self -> operator = translate_op(self -> token)) == O_NONE)
-	{
-	    char *buffer = (char *)malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
+        /* Look up the operator */
+        if ((self -> operator = translate_op(self -> token)) == O_NONE)
+        {
+            char *buffer = (char *)malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
 
-	    if (buffer != NULL)
-	    {
-		sprintf(buffer, OP_ERROR_MSG, self -> token);
-		parse_error(self, buffer);
-		free(buffer);
-	    }
+            if (buffer != NULL)
+            {
+                sprintf(buffer, OP_ERROR_MSG, self -> token);
+                parse_error(self, buffer);
+                free(buffer);
+            }
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* Make sure there's agreement between the field and the operator */
-	if (self -> field == F_XPOSTS)
-	{
-	    if ((self -> operator == O_MATCHES) || (self -> operator == O_NOT))
-	    {
-		parse_error(self, "illegal field/operator combination");
-		return -1;
-	    }
-	}
-	else
-	{
-	    if ((self -> operator == O_LT) || (self -> operator == O_GT) ||
-		(self -> operator == O_LE) || (self -> operator == O_GE))
-	    {
-		parse_error(self, "illegal field/operator combination");
-		return -1;
-	    }
-	}
+        /* Make sure there's agreement between the field and the operator */
+        if (self -> field == F_XPOSTS)
+        {
+            if ((self -> operator == O_MATCHES) || (self -> operator == O_NOT))
+            {
+                parse_error(self, "illegal field/operator combination");
+                return -1;
+            }
+        }
+        else
+        {
+            if ((self -> operator == O_LT) || (self -> operator == O_GT) ||
+                (self -> operator == O_LE) || (self -> operator == O_GE))
+            {
+                parse_error(self, "illegal field/operator combination");
+                return -1;
+            }
+        }
 
-	/* Get ready to read the pattern */
-	self -> token_pointer = self -> token;
-	self -> state = lex_pattern_start;
-	return 0;
+        /* Get ready to read the pattern */
+        self -> token_pointer = self -> token;
+        self -> state = lex_pattern_start;
+        return 0;
     }
 
     /* Anything else is part of the operator */
@@ -820,8 +820,8 @@ static int lex_op_esc(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if (ch == EOF || ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Anything else is part of the operator name */
@@ -835,14 +835,14 @@ static int lex_pattern_start(usenet_parser_t self, int ch)
     /* Skip additional whitespace */
     if (isspace(ch))
     {
-	return 0;
+        return 0;
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_pattern_esc;
-	return 0;
+        self -> state = lex_pattern_esc;
+        return 0;
     }
 
     /* Anything else is part of the operator name */
@@ -856,59 +856,59 @@ static int lex_pattern(usenet_parser_t self, int ch)
     /* Watch for EOF or linefeed */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Do something interesting with the expression */
-	if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* Do something interesting with the expression */
+        if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	/* This is also the end of the group entry */
-	if (accept_group(self, self -> has_not, self -> group) < 0)
-	{
-	    return -1;
-	}
+        /* This is also the end of the group entry */
+        if (accept_group(self, self -> has_not, self -> group) < 0)
+        {
+            return -1;
+        }
 
-	free(self -> group);
+        free(self -> group);
 
-	/* Let the start state deal with the EOF or linefeed */
-	return lex_start(self, ch);
+        /* Let the start state deal with the EOF or linefeed */
+        return lex_start(self, ch);
     }
 
     /* Watch for the escape character */
     if (ch == '\\')
     {
-	self -> state = lex_pattern_esc;
-	return 0;
+        self -> state = lex_pattern_esc;
+        return 0;
     }
 
     /* Watch for other whitespace */
     if (isspace(ch))
     {
-	/* Record the position of the whitespace for later trimming */
-	self -> token_mark = self -> token_pointer;
-	self -> state = lex_pattern_ws;
-	return append_char(self, ch);
+        /* Record the position of the whitespace for later trimming */
+        self -> token_mark = self -> token_pointer;
+        self -> state = lex_pattern_ws;
+        return append_char(self, ch);
     }
 
     /* Watch for a separator */
     if (ch == '/')
     {
-	/* Null-terminate the token */
-	if (append_char(self, '\0') < 0)
-	{
-	    return -1;
-	}
+        /* Null-terminate the token */
+        if (append_char(self, '\0') < 0)
+        {
+            return -1;
+        }
 
-	/* Do something interesting with the expression */
-	self -> token_pointer = self -> token;
-	self -> state = lex_field_start;
-	return accept_expression(self, self -> field, self -> operator, self -> token);
+        /* Do something interesting with the expression */
+        self -> token_pointer = self -> token;
+        self -> state = lex_field_start;
+        return accept_expression(self, self -> field, self -> operator, self -> token);
     }
 
     /* Anything else is part of the pattern */
@@ -921,8 +921,8 @@ static int lex_pattern_esc(usenet_parser_t self, int ch)
     /* Watch for EOF or newline */
     if (ch == EOF || ch == '\n')
     {
-	parse_error(self, "unexpected end of line");
-	return -1;
+        parse_error(self, "unexpected end of line");
+        return -1;
     }
 
     /* Anything else is part of the pattern */
@@ -936,50 +936,50 @@ static int lex_pattern_ws(usenet_parser_t self, int ch)
     /* Watch for EOF and newline */
     if ((ch == EOF) || (ch == '\n'))
     {
-	/* Trim off the trailing whitespace */
-	*self -> token_mark = '\0';
+        /* Trim off the trailing whitespace */
+        *self -> token_mark = '\0';
 
-	/* Do something interesting with the expression */
-	if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
-	{
-	    return -1;
-	}
+        /* Do something interesting with the expression */
+        if (accept_expression(self, self -> field, self -> operator, self -> token) < 0)
+        {
+            return -1;
+        }
 
-	/* This is also the end of the group entry */
-	if (accept_group(self, self -> has_not, self -> group) < 0)
-	{
-	    return -1;
-	}
+        /* This is also the end of the group entry */
+        if (accept_group(self, self -> has_not, self -> group) < 0)
+        {
+            return -1;
+        }
 
-	free(self -> group);
+        free(self -> group);
 
-	/* Let the start state deal with the EOF or newline */
-	return lex_start(self, ch);
+        /* Let the start state deal with the EOF or newline */
+        return lex_start(self, ch);
     }
 
     /* Skip any other whitespace */
     if (isspace(ch))
     {
-	return append_char(self, ch);
+        return append_char(self, ch);
     }
 
     /* Watch for an escape character */
     if (ch == '\\')
     {
-	self -> state = lex_pattern_esc;
-	return 0;
+        self -> state = lex_pattern_esc;
+        return 0;
     }
 
     /* Watch for a separator */
     if (ch == '/')
     {
-	/* Trim off the trailing whitespace */
-	*self -> token_mark = '\0';
+        /* Trim off the trailing whitespace */
+        *self -> token_mark = '\0';
 
-	/* Do something interesting with the expression */
-	self -> token_pointer = self -> token;
-	self -> state = lex_field_start;
-	return accept_expression(self, self -> field, self -> operator, self -> token);
+        /* Do something interesting with the expression */
+        self -> token_pointer = self -> token;
+        self -> state = lex_field_start;
+        return accept_expression(self, self -> field, self -> operator, self -> token);
     }
 
     /* Anything else is more of the pattern */
@@ -996,32 +996,32 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     /* Allocate memory for the new usenet_parser */
     if ((self = (usenet_parser_t)malloc(sizeof(struct usenet_parser))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Copy the tag */
     if ((self -> tag = strdup(tag)) == NULL)
     {
-	free(self);
-	return NULL;
+        free(self);
+        return NULL;
     }
 
     /* Allocate room for the token buffer */
     if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
-	free(self -> tag);
-	free(self);
-	return NULL;
+        free(self -> tag);
+        free(self);
+        return NULL;
     }
 
     /* Allocate room for the expression array */
     if ((self -> expressions = (struct usenet_expr *)calloc(
-	     INITIAL_EXPR_MAX, sizeof(struct usenet_expr))) == NULL)
+             INITIAL_EXPR_MAX, sizeof(struct usenet_expr))) == NULL)
     {
-	free(self -> token);
-	free(self -> tag);
-	free(self);
-	return NULL;
+        free(self -> token);
+        free(self -> tag);
+        free(self);
+        return NULL;
     }
 
     /* Initialize everything else to a sane value */
@@ -1061,16 +1061,16 @@ int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length)
     /* Length of 0 indicates EOF */
     if (length == 0)
     {
-	return self -> state(self, EOF);
+        return self -> state(self, EOF);
     }
 
     /* Parse the buffer */
     for (pointer = buffer; pointer < end; pointer++)
     {
-	if (self -> state(self, *(unsigned char *)pointer) < 0)
-	{
-	    return -1;
-	}
+        if (self -> state(self, *(unsigned char *)pointer) < 0)
+        {
+            return -1;
+        }
     }
 
     return 0;

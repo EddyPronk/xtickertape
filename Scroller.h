@@ -40,42 +40,42 @@ static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.19 2009/03/09 05:26:26
 /*
  A tickertape Scroller widget
 
- Class:		scrollerWidgetClass
- Class Name:	Scroller
- Superclass:	Core
+ Class:                scrollerWidgetClass
+ Class Name:        Scroller
+ Superclass:        Core
 
  Resources added by the Scroller widget:
 
- Name		     Class		RepType		Default Value
- ----		     -----		-------		-----------
- font		     Font		XFontStruct *	XtDefaultFont
+ Name                     Class                RepType                Default Value
+ ----                     -----                -------                -----------
+ font                     Font                XFontStruct *        XtDefaultFont
  fontCodeSet         String             String          NULL
- groupPixel	     GroupPixel		Pixel		Blue
- userPixel	     UserPixel		Pixel		Green
- stringPixel	     StringPixel	Pixel		Red
- separatorPixel	     SeparatorPixel	Pixel		Black
- fadeLevels	     FadeLevels		Dimension	5
+ groupPixel             GroupPixel                Pixel                Blue
+ userPixel             UserPixel                Pixel                Green
+ stringPixel             StringPixel        Pixel                Red
+ separatorPixel             SeparatorPixel        Pixel                Black
+ fadeLevels             FadeLevels                Dimension        5
 
- usePixmap           UsePixmap		Boolean		False
- dragDelta	     DragDelta		Dimension	3
- frequency	     Frequency		Dimension	24
- stepSize	     StepSize		Position	1
+ usePixmap           UsePixmap                Boolean                False
+ dragDelta             DragDelta                Dimension        3
+ frequency             Frequency                Dimension        24
+ stepSize             StepSize                Position        1
 
- background	     Background		Pixel		XtDefaultBackground
- border		     BorderColor	Pixel		XtDefaultForeground
- borderWidth	     BorderWidth	Dimension	1
- cursor		     Cursor		Cursor		None
- cursorName	     Cursor		String		NULL
- destroyCallback     Callback		Pointer		NULL
- height		     Height		Dimension	0
- insensitiveBorder   Insensitive	Pixmap		Gray
- mappedWhenManaged   MappedWhenManaged	Boolean		True
+ background             Background                Pixel                XtDefaultBackground
+ border                     BorderColor        Pixel                XtDefaultForeground
+ borderWidth             BorderWidth        Dimension        1
+ cursor                     Cursor                Cursor                None
+ cursorName             Cursor                String                NULL
+ destroyCallback     Callback                Pointer                NULL
+ height                     Height                Dimension        0
+ insensitiveBorder   Insensitive        Pixmap                Gray
+ mappedWhenManaged   MappedWhenManaged        Boolean                True
  pointerColor        Foreground         Pixel           XtDefaultForeground
  pointerColorBackground Background      Pixel           XtDefaultBackground
- sensitive	     Sensitive		Boolean		True
- width		     Width		Dimension	0
- x		     Position		Position	0
- y		     Position		Position	0
+ sensitive             Sensitive                Boolean                True
+ width                     Width                Dimension        0
+ x                     Position                Position        0
+ y                     Position                Position        0
 
  */
 

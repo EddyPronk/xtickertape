@@ -27,7 +27,7 @@
 
    Description: 
              Transforms elvinmail notifications into tickertape
-	     messages suitable for scrolling
+             messages suitable for scrolling
 
 ****************************************************************/
 

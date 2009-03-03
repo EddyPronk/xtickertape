@@ -174,13 +174,13 @@ void dprintf(int level, const char *format, ...)
 static void usage()
 {
     fprintf(stderr,
-	    "usage: %s [OPTION]... filename\n"
-	    "usage: %s [OPTION]... -u URL\n"
-	    "  -b browser,     --browser=browser\n"
-	    "  -d,             --debug[=level]\n"
-	    "  -u,             --url=url\n"
-	    "  -v,             --version\n"
-	    "  -h,             --help\n", progname, progname);
+            "usage: %s [OPTION]... filename\n"
+            "usage: %s [OPTION]... -u URL\n"
+            "  -b browser,     --browser=browser\n"
+            "  -d,             --debug[=level]\n"
+            "  -u,             --url=url\n"
+            "  -v,             --version\n"
+            "  -h,             --help\n", progname, progname);
 }
 
 /* Appends a character to the command buffer */
@@ -189,15 +189,15 @@ static void append_char(int ch)
     /* Make sure there's enough room */
     if (! (cmd_index < cmd_length))
     {
-	dprintf(3, "growing buffer\n");
+        dprintf(3, "growing buffer\n");
 
-	/* Double the buffer size */
-	cmd_length *= 2;
-	if ((cmd_buffer = (char *)realloc(cmd_buffer, cmd_length)) == NULL)
-	{
-	    perror("realloc() failed");
-	    exit(1);
-	}
+        /* Double the buffer size */
+        cmd_length *= 2;
+        if ((cmd_buffer = (char *)realloc(cmd_buffer, cmd_length)) == NULL)
+        {
+            perror("realloc() failed");
+            exit(1);
+        }
     }
 
     cmd_buffer[cmd_index++] = ch;
@@ -212,79 +212,79 @@ static void append_url(char *url, int quote_count)
     /* Figure out which escape table to use */
     switch (quote_count)
     {
-	case 0:
-	{
-	    esc_table = no_esc;
-	    break;
-	}
+        case 0:
+        {
+            esc_table = no_esc;
+            break;
+        }
 
-	case 1:
-	{
-	    esc_table = sq_esc;
-	    break;
-	}
+        case 1:
+        {
+            esc_table = sq_esc;
+            break;
+        }
 
-	case 2:
-	{
-	    esc_table = dq_esc;
-	    break;
-	}
+        case 2:
+        {
+            esc_table = dq_esc;
+            break;
+        }
 
-	default:
-	{
-	    /* Funny kind of quoting */
-	    abort();
-	}
+        default:
+        {
+            /* Funny kind of quoting */
+            abort();
+        }
     }
 
     point = url;
     while (1)
     {
-	int ch = *point;
-	int esc_type;
+        int ch = *point;
+        int esc_type;
 
-	/* Watch for the end of line/input */
-	if (ch == '\0' || ch == '\n')
-	{
-	    return;
-	}
+        /* Watch for the end of line/input */
+        if (ch == '\0' || ch == '\n')
+        {
+            return;
+        }
 
-	/* Figure out how to escape this character */
-	esc_type = (ch < 32 || ch > 127) ? 2 : esc_table[ch - 32];
-	switch (esc_type)
-	{
-	    /* No escape required */
-	    case 0:
-	    {
-		append_char(ch);
-		break;
-	    }
+        /* Figure out how to escape this character */
+        esc_type = (ch < 32 || ch > 127) ? 2 : esc_table[ch - 32];
+        switch (esc_type)
+        {
+            /* No escape required */
+            case 0:
+            {
+                append_char(ch);
+                break;
+            }
 
-	    /* Escape with a backslash */
-	    case 1:
-	    {
-		append_char('\\');
-		append_char(ch);
-		break;
-	    }
+            /* Escape with a backslash */
+            case 1:
+            {
+                append_char('\\');
+                append_char(ch);
+                break;
+            }
 
-	    /* URL escape */
-	    case 2:
-	    {
-		append_char('%');
-		append_char(hex[(ch >> 4) & 0xf]);
-		append_char(hex[ch & 0xf]);
-		break;
-	    }
+            /* URL escape */
+            case 2:
+            {
+                append_char('%');
+                append_char(hex[(ch >> 4) & 0xf]);
+                append_char(hex[ch & 0xf]);
+                break;
+            }
 
-	    /* Trouble */
-	    default:
-	    {
-		abort();
-	    }
-	}
+            /* Trouble */
+            default:
+            {
+                abort();
+            }
+        }
 
-	point++;
+        point++;
     }
 }
 
@@ -301,117 +301,117 @@ char *invoke(char *browser, char *url)
     /* Copy from the browser string */
     while (1)
     {
-	int ch = *point;
+        int ch = *point;
 
-	switch (ch)
-	{
-	    /* Watch for the end of the browser string */
-	    case '\0':
-	    case ':':
-	    {
-		int status;
+        switch (ch)
+        {
+            /* Watch for the end of the browser string */
+            case '\0':
+            case ':':
+            {
+                int status;
 
-		/* Insert the URL if we haven't done so already */
-		if (! did_subst)
-		{
-		    append_char(' ');
-		    append_url(url, quote_count);
-		}
+                /* Insert the URL if we haven't done so already */
+                if (! did_subst)
+                {
+                    append_char(' ');
+                    append_url(url, quote_count);
+                }
 
-		/* Null-terminate the command */
-		append_char('\0');
+                /* Null-terminate the command */
+                append_char('\0');
 
-		/* Invoke the command */
-		dprintf(1, "exec: %s\n", cmd_buffer);
+                /* Invoke the command */
+                dprintf(1, "exec: %s\n", cmd_buffer);
 
-		if ((status = system(cmd_buffer)) < 0)
-		{
-		    perror("fork() failed");
-		    exit(1);
-		}
+                if ((status = system(cmd_buffer)) < 0)
+                {
+                    perror("fork() failed");
+                    exit(1);
+                }
 
-		/* If successful return NULL */
-		if (WEXITSTATUS(status) == 0)
-		{
-		    dprintf(2, "ok\n");
-		    return NULL;
-		}
+                /* If successful return NULL */
+                if (WEXITSTATUS(status) == 0)
+                {
+                    dprintf(2, "ok\n");
+                    return NULL;
+                }
 
-		dprintf(2, "failed: %d\n", WEXITSTATUS(status));
-		return ch == '\0' ? point : point + 1;
-	    }
+                dprintf(2, "failed: %d\n", WEXITSTATUS(status));
+                return ch == '\0' ? point : point + 1;
+            }
 
-	    /* Watch for double-quotes */
-	    case '"':
-	    {
-		/* Toggle double-quotes if appropriate */
-		if (quote_count == 2)
-		{
-		    quote_count = 0;
-		}
-		else if (quote_count == 0)
-		{
-		    quote_count = 2;
-		}
+            /* Watch for double-quotes */
+            case '"':
+            {
+                /* Toggle double-quotes if appropriate */
+                if (quote_count == 2)
+                {
+                    quote_count = 0;
+                }
+                else if (quote_count == 0)
+                {
+                    quote_count = 2;
+                }
 
-		append_char(ch);
-		break;
-	    }
+                append_char(ch);
+                break;
+            }
 
-	    /* Watch for single-quotes */
-	    case '\'':
-	    {
-		/* Toggle single-quotes if appropriate */
-		if (quote_count == 1)
-		{
-		    quote_count = 0;
-		}
-		else if (quote_count == 0)
-		{
-		    quote_count = 1;
-		}
+            /* Watch for single-quotes */
+            case '\'':
+            {
+                /* Toggle single-quotes if appropriate */
+                if (quote_count == 1)
+                {
+                    quote_count = 0;
+                }
+                else if (quote_count == 0)
+                {
+                    quote_count = 1;
+                }
 
-		append_char(ch);
-		break;
-	    }
+                append_char(ch);
+                break;
+            }
 
-	    /* Watch for %-escapes */
-	    case '%':
-	    {
-		ch = point[1];
+            /* Watch for %-escapes */
+            case '%':
+            {
+                ch = point[1];
 
-		/* Watch for the URL substitution */
-		if (ch == 's')
-		{
-		    append_url(url, quote_count);
+                /* Watch for the URL substitution */
+                if (ch == 's')
+                {
+                    append_url(url, quote_count);
 
-		    /* Skip ahead */
-		    did_subst = 1;
-		    point++;
-		    break;
-		}
+                    /* Skip ahead */
+                    did_subst = 1;
+                    point++;
+                    break;
+                }
 
-		/* Watch for odd EOF */
-		if (ch == '\0')
-		{
-		    append_char('%');
-		    break;
-		}
+                /* Watch for odd EOF */
+                if (ch == '\0')
+                {
+                    append_char('%');
+                    break;
+                }
 
-		/* Otherwise drop the initial % */
-		append_char(ch);
-		point++;
-		break;
-	    }
+                /* Otherwise drop the initial % */
+                append_char(ch);
+                point++;
+                break;
+            }
 
-	    default:
-	    {
-		append_char(ch);
-		break;
-	    }
-	}
+            default:
+            {
+                append_char(ch);
+                break;
+            }
+        }
 
-	point++;
+        point++;
     }
 }
 
@@ -431,145 +431,145 @@ int main(int argc, char *argv[])
     /* Extract the program name from argv[0] */
     if ((progname = strrchr(argv[0], '/')) == NULL)
     {
-	progname = argv[0];
+        progname = argv[0];
     }
     else
     {
-	progname++;
+        progname++;
     }
 
     /* Get the browser string from the environment */
     if ((browser = getenv(ENV_BROWSER)) == NULL)
     {
-	browser = DEF_BROWSER;
+        browser = DEF_BROWSER;
     }
 
     while (1)
     {
-	int choice;
+        int choice;
 
 #if defined(HAVE_GETOPT_LONG)
-	choice = getopt_long(argc, argv, OPTIONS, long_options, NULL);
+        choice = getopt_long(argc, argv, OPTIONS, long_options, NULL);
 #else
-	choice = getopt(argc, argv, OPTIONS);
+        choice = getopt(argc, argv, OPTIONS);
 #endif
 
-	/* End of options? */
-	if (choice < 0)
-	{
-	    break;
-	}
+        /* End of options? */
+        if (choice < 0)
+        {
+            break;
+        }
 
-	/* Which option is it? */
-	switch (choice)
-	{
-	    /* --browser= or -b */
-	    case 'b':
-	    {
-		browser = optarg;
-		break;
-	    }
+        /* Which option is it? */
+        switch (choice)
+        {
+            /* --browser= or -b */
+            case 'b':
+            {
+                browser = optarg;
+                break;
+            }
 
-	    /* --debug= or -d */
-	    case 'd':
-	    {
-		if (optarg == NULL)
-		{
-		    verbosity++;
-		}
-		else
-		{
-		    verbosity = atoi(optarg);
-		}
+            /* --debug= or -d */
+            case 'd':
+            {
+                if (optarg == NULL)
+                {
+                    verbosity++;
+                }
+                else
+                {
+                    verbosity = atoi(optarg);
+                }
 
-		break;
-	    }
+                break;
+            }
 
-	    /* --help or -h */
-	    case 'h':
-	    {
-		usage();
-		exit(0);
-	    }
+            /* --help or -h */
+            case 'h':
+            {
+                usage();
+                exit(0);
+            }
 
-	    /* --url= or -u */
-	    case 'u':
-	    {
-		/* Determine if we should view a local file or a remote one */
-		if (stat(optarg, &statbuf) < 0)
-		{
-		    dprintf(2, "%s: unable to stat file: %s\n", progname, optarg);
-		    url = strdup(optarg);
-		}
-		else if ((statbuf.st_mode & S_IRUSR) == 0)
-		{
-		    dprintf(2, "%s: unable to read file: %s\n", progname, optarg);
-		    url = strdup(optarg);
-		}
-		else
-		{
-		    dprintf(3, "%s: creating file URL: %s\n", progname, optarg);
-		    if (optarg[0] == '/')
-		    {
-			length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
-			if ((url = (char *)malloc(length)) == NULL)
-			{
-			    perror("malloc() failed");
-			    exit(1);
-			}
+            /* --url= or -u */
+            case 'u':
+            {
+                /* Determine if we should view a local file or a remote one */
+                if (stat(optarg, &statbuf) < 0)
+                {
+                    dprintf(2, "%s: unable to stat file: %s\n", progname, optarg);
+                    url = strdup(optarg);
+                }
+                else if ((statbuf.st_mode & S_IRUSR) == 0)
+                {
+                    dprintf(2, "%s: unable to read file: %s\n", progname, optarg);
+                    url = strdup(optarg);
+                }
+                else
+                {
+                    dprintf(3, "%s: creating file URL: %s\n", progname, optarg);
+                    if (optarg[0] == '/')
+                    {
+                        length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
+                        if ((url = (char *)malloc(length)) == NULL)
+                        {
+                            perror("malloc() failed");
+                            exit(1);
+                        }
 
-			snprintf(url, length, FILE_URL_PREFIX "%s", optarg);
-		    }
-		    else
-		    {
-			/* Construct an absolute path */
-			if (getcwd(buffer, MAX_URL_SIZE) == NULL)
-			{
-			    perror("Unable to determine current directory");
-			    exit(1);
-			}
+                        snprintf(url, length, FILE_URL_PREFIX "%s", optarg);
+                    }
+                    else
+                    {
+                        /* Construct an absolute path */
+                        if (getcwd(buffer, MAX_URL_SIZE) == NULL)
+                        {
+                            perror("Unable to determine current directory");
+                            exit(1);
+                        }
 
-			length = sizeof(FILE_URL_PREFIX) + strlen(buffer) + 1 + strlen(optarg);
-			if ((url = (char *)malloc(length)) == NULL)
-			{
-			    perror("malloc() failed");
-			    exit(1);
-			}
+                        length = sizeof(FILE_URL_PREFIX) + strlen(buffer) + 1 + strlen(optarg);
+                        if ((url = (char *)malloc(length)) == NULL)
+                        {
+                            perror("malloc() failed");
+                            exit(1);
+                        }
 
-			snprintf(url, length, FILE_URL_PREFIX "%s/%s", buffer, optarg);
-		    }
-		}
+                        snprintf(url, length, FILE_URL_PREFIX "%s/%s", buffer, optarg);
+                    }
+                }
 
-		dprintf(2, "%s: raw URL: %s\n", progname, url);
-		break;
-	    }
+                dprintf(2, "%s: raw URL: %s\n", progname, url);
+                break;
+            }
 
-	    /* --version or -v */
-	    case 'v':
-	    {
-		printf(PACKAGE " show-url version " VERSION "\n");
-		exit(0);
-	    }
+            /* --version or -v */
+            case 'v':
+            {
+                printf(PACKAGE " show-url version " VERSION "\n");
+                exit(0);
+            }
 
-	    /* Unsupported option */
-	    case '?':
-	    {
-		usage();
-		exit(1);
-	    }
+            /* Unsupported option */
+            case '?':
+            {
+                usage();
+                exit(1);
+            }
 
-	    /* Trouble */
-	    default:
-	    {
-		abort();
-	    }
-	}
+            /* Trouble */
+            default:
+            {
+                abort();
+            }
+        }
     }
 
     /* If no URL or filename provided then read from stdin */
     if (url == NULL)
     {
-	if (optind < argc)
+        if (optind < argc)
         {
             /* Get the filename */
             filename = argv[optind++];
@@ -584,8 +584,8 @@ int main(int argc, char *argv[])
     /* Make sure there are no more arguments */
     if (optind < argc)
     {
-	usage();
-	exit(1);
+        usage();
+        exit(1);
     }
 
     /* Extract the URL from the file */
@@ -638,19 +638,19 @@ int main(int argc, char *argv[])
     cmd_length = INIT_CMD_SIZE;
     if ((cmd_buffer = (char *)malloc(cmd_length)) == NULL)
     {
-	perror("malloc() failed");
-	exit(1);
+        perror("malloc() failed");
+        exit(1);
     }
 
     /* Attempt to open a browser */
     point = browser;
     while (*point != '\0')
     {
-	point = invoke(point, url);
-	if (point == NULL)
-	{
-	    exit(0);
-	}
+        point = invoke(point, url);
+        if (point == NULL)
+        {
+            exit(0);
+        }
     }
 
     /* Clean up */

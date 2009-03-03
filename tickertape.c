@@ -249,47 +249,47 @@ static int mkdirhier(char *dirname)
     /* End the recursion */
     if (*dirname == '\0')
     {
-	return 0;
+        return 0;
     }
 
     /* Find the last '/' in the directory name */
     if ((pointer = strrchr(dirname, '/')) != NULL)
     {
-	int result;
+        int result;
 
-	/* Call ourselves recursively to make sure the parent
-	 * directory exists */
-	*pointer = '\0';
-	result = mkdirhier(dirname);
-	*pointer = '/';
+        /* Call ourselves recursively to make sure the parent
+         * directory exists */
+        *pointer = '\0';
+        result = mkdirhier(dirname);
+        *pointer = '/';
 
-	/* If we couldn't create the parent directory, then fail */
-	if (result < 0)
-	{
-	    return result;
-	}
+        /* If we couldn't create the parent directory, then fail */
+        if (result < 0)
+        {
+            return result;
+        }
     }
 
     /* If a file named `dirname' exists then make sure it's a directory */
     if (stat(dirname, &statbuf) == 0)
     {
-	if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
-	{
-	    errno = EEXIST;
-	    return -1;
-	}
-	
-	return 0;
+        if ((statbuf.st_mode & S_IFMT) != S_IFDIR)
+        {
+            errno = EEXIST;
+            return -1;
+        }
+        
+        return 0;
     }
 
     /* If the directory doesn't exist then try to create it */
     if (errno == ENOENT)
     {
 #if defined(HAVE_MKDIR)
-	return mkdir(dirname, 0777);
+        return mkdir(dirname, 0777);
 #else
-	fprintf(stderr, "Please create the directory %s\n", dirname);
-	exit(1);
+        fprintf(stderr, "Please create the directory %s\n", dirname);
+        exit(1);
 #endif
     }
 
@@ -309,7 +309,7 @@ static void mime_callback(Widget widget, tickertape_t self, message_t message)
     /* Bail if no message provided */
     if (message == NULL)
     {
-	return;
+        return;
     }
 
     /* Show the message's MIME attachment */
@@ -321,7 +321,7 @@ static void kill_callback(Widget widget, tickertape_t self, message_t message)
 {
     if (message == NULL)
     {
-	return;
+        return;
     }
 
     /* Delegate to the control panel */
@@ -343,13 +343,13 @@ static void receive_callback(void *rock, message_t message, int show_attachment)
     /* Add the message to the scroller if it hasn't been killed */
     if (! message_is_killed(message))
     {
-	ScAddMessage(self -> scroller, message);
+        ScAddMessage(self -> scroller, message);
 
-	/* Show the attachment if requested */
-	if (show_attachment)
-	{
-	    tickertape_show_attachment(self, message);
-	}
+        /* Show the attachment if requested */
+        if (show_attachment)
+        {
+            tickertape_show_attachment(self, message);
+        }
     }
 }
 
@@ -361,51 +361,51 @@ static int write_default_file(tickertape_t self, FILE *out, char *template)
 
     for (pointer = template; *pointer != '\0'; pointer++)
     {
-	if (*pointer == '%')
-	{
-	    switch (*(++pointer))
-	    {
-		/* Don't freak out on a terminal `%' */
-		case '\0':
-		{
-		    fputc(*pointer, out);
-		    return 0;
-		}
+        if (*pointer == '%')
+        {
+            switch (*(++pointer))
+            {
+                /* Don't freak out on a terminal `%' */
+                case '\0':
+                {
+                    fputc(*pointer, out);
+                    return 0;
+                }
 
-		/* user name */
-		case 'u':
-		{
-		    fputs(self -> user, out);
-		    break;
-		}
+                /* user name */
+                case 'u':
+                {
+                    fputs(self -> user, out);
+                    break;
+                }
 
-		/* domain name */
-		case 'd':
-		{
-		    fputs(self -> domain, out);
-		    break;
-		}
+                /* domain name */
+                case 'd':
+                {
+                    fputs(self -> domain, out);
+                    break;
+                }
 
-		/* home directory */
-		case 'h':
-		{
-		    fputs(getenv("HOME"), out);
-		    break;
-		}
+                /* home directory */
+                case 'h':
+                {
+                    fputs(getenv("HOME"), out);
+                    break;
+                }
 
-		/* Anything else */
-		default:
-		{
-		    fputc('%', out);
-		    fputc(*pointer, out);
-		    break;
-		}
-	    }
-	}
-	else
-	{
-	    fputc(*pointer, out);
-	}
+                /* Anything else */
+                default:
+                {
+                    fputc('%', out);
+                    fputc(*pointer, out);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            fputc(*pointer, out);
+        }
     }
 
     return 0;
@@ -427,26 +427,26 @@ static int open_config_file(
     /* Try to just open the file */
     if (! ((fd = open(filename, O_RDONLY)) < 0))
     {
-	return fd;
+        return fd;
     }
 
     /* If the file exists, then bail now */
     if (errno != ENOENT)
     {
-	return -1;
+        return -1;
     }
 
     /* Otherwise, try to create a default groups file */
     if ((out = fopen(filename, "w")) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     /* Write the default config file */
     if (write_default_file(self, out, template) < 0)
     {
-	fclose(out);
-	return -1;
+        fclose(out);
+        return -1;
     }
 
     fclose(out);
@@ -454,8 +454,8 @@ static int open_config_file(
     /* Try to open the file again */
     if ((fd = open(filename, O_RDONLY)) < 0)
     {
-	perror("unable to read from groups file");
-	return -1;
+        perror("unable to read from groups file");
+        return -1;
     }
 
     /* Success */
@@ -485,26 +485,26 @@ static int read_config_file(tickertape_t self, elvin_error_t error)
     /* Make sure we can read the config file */
     if ((fd = open_config_file(self, filename, default_config_file)) < 0)
     {
-	return 0;
+        return 0;
     }
 
     /* Allocate a new config file parser */
     if (! (parser = parser_alloc(parse_config_callback, self, error)))
     {
-	return 0;
+        return 0;
     }
 
     /* Use it to read the config file */
     if (! parser_parse_file(parser, fd, filename, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Close the file */
     if (close(fd) < 0)
     {
-	perror("close(): failed");
-	exit(1);
+        perror("close(): failed");
+        exit(1);
     }
 
     /* Clean up */
@@ -528,25 +528,25 @@ static int parse_groups_callback(
     length = strlen(GROUP_SUB) + 2 * strlen(name) - 3;
     if ((expression = (char *)malloc(length)) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     snprintf(expression, length, GROUP_SUB, name, name);
 
     /* Allocate us a subscription */
     if ((subscription = group_sub_alloc(
-	    name, expression,
-	    in_menu, has_nazi,
-	    min_time * 60, max_time * 60,
+            name, expression,
+            in_menu, has_nazi,
+            min_time * 60, max_time * 60,
             self -> keys, key_names, key_count,
-	    receive_callback, self)) == NULL)
+            receive_callback, self)) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     /* Add it to the end of the array */
     self -> groups = (group_sub_t *)realloc(
-	self -> groups, sizeof(group_sub_t) * (self -> groups_count + 1));
+        self -> groups, sizeof(group_sub_t) * (self -> groups_count + 1));
     self -> groups[self -> groups_count++] = subscription;
 
     /* Clean up */
@@ -567,45 +567,45 @@ static int parse_groups_file(tickertape_t self)
              self,
              filename)) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     /* Make sure we can read the groups file */
     if ((fd = open_config_file(self, filename, default_groups_file)) < 0)
     {
-	groups_parser_free(parser);
-	return -1;
+        groups_parser_free(parser);
+        return -1;
     }
 
     /* Keep reading from the file until we've read it all or got an error */
     while (1)
     {
-	char buffer[BUFFER_SIZE];
-	ssize_t length;
+        char buffer[BUFFER_SIZE];
+        ssize_t length;
 
-	/* Read from the file */
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
-	{
-	    close(fd);
-	    groups_parser_free(parser);
-	    return -1;
-	}
+        /* Read from the file */
+        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        {
+            close(fd);
+            groups_parser_free(parser);
+            return -1;
+        }
 
-	/* Send it to the parser */
-	if (groups_parser_parse(parser, buffer, length) < 0)
-	{
-	    close(fd);
-	    groups_parser_free(parser);
-	    return -1;
-	}
+        /* Send it to the parser */
+        if (groups_parser_parse(parser, buffer, length) < 0)
+        {
+            close(fd);
+            groups_parser_free(parser);
+            return -1;
+        }
 
-	/* Watch for end-of-file */
-	if (length == 0)
-	{
-	    close(fd);
-	    groups_parser_free(parser);
-	    return 0;
-	}
+        /* Watch for end-of-file */
+        if (length == 0)
+        {
+            close(fd);
+            groups_parser_free(parser);
+            return 0;
+        }
     }
 }
 
@@ -617,11 +617,11 @@ static int parse_usenet_callback(
 {
     /* Forward the information to the usenet subscription */
     return usenet_sub_add(
-	self -> usenet_sub,
-	has_not,
-	pattern,
-	expressions,
-	count);
+        self -> usenet_sub,
+        has_not,
+        pattern,
+        expressions,
+        count);
 }
 
 /* Parse the usenet file and update the usenet subscription accordingly */
@@ -633,55 +633,55 @@ static int parse_usenet_file(tickertape_t self)
 
     /* Allocate a new usenet file parser */
     if ((parser = usenet_parser_alloc(
-	(usenet_parser_callback_t)parse_usenet_callback,
-	self, filename)) == NULL)
+        (usenet_parser_callback_t)parse_usenet_callback,
+        self, filename)) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     /* Allocate a new usenet subscription */
     if ((self -> usenet_sub = usenet_sub_alloc(receive_callback, self)) == NULL)
     {
-	usenet_parser_free(parser);
-	return -1;
+        usenet_parser_free(parser);
+        return -1;
     }
 
     /* Make sure we can read the usenet file */
     if ((fd = open_config_file(self, filename, defaultUsenetFile)) < 0)
     {
-	usenet_parser_free(parser);
-	return -1;
+        usenet_parser_free(parser);
+        return -1;
     }
 
     /* Keep reading from the file until we've read it all or got an error */
     while (1)
     {
-	char buffer[BUFFER_SIZE];
-	ssize_t length;
+        char buffer[BUFFER_SIZE];
+        ssize_t length;
 
-	/* Read from the fiel */
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
-	{
-	    close(fd);
-	    usenet_parser_free(parser);
-	    return -1;
-	}
+        /* Read from the fiel */
+        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        {
+            close(fd);
+            usenet_parser_free(parser);
+            return -1;
+        }
 
-	/* Send it to the parser */
-	if (usenet_parser_parse(parser, buffer, length) < 0)
-	{
-	    close(fd);
-	    usenet_parser_free(parser);
-	    return -1;
-	}
+        /* Send it to the parser */
+        if (usenet_parser_parse(parser, buffer, length) < 0)
+        {
+            close(fd);
+            usenet_parser_free(parser);
+            return -1;
+        }
 
-	/* Watch for end-of-file */
-	if (length == 0)
-	{
-	    close(fd);
-	    usenet_parser_free(parser);
-	    return 0;
-	}
+        /* Watch for end-of-file */
+        if (length == 0)
+        {
+            close(fd);
+            usenet_parser_free(parser);
+            return 0;
+        }
     }
 }
 
@@ -696,13 +696,13 @@ static int parse_keys_callback(
     /* Check whether a key with that name already exists */
     if (key_table_lookup(self -> keys, name, NULL, NULL, NULL) == 0)
     {
-	return -1;
+        return -1;
     }
 
     /* Add the key to the table */
     if (key_table_add(self -> keys, name, data, length, is_private) < 0)
     {
-	return -1;
+        return -1;
     }
 
     return 0;
@@ -717,56 +717,56 @@ static int parse_keys_file(tickertape_t self)
 
     /* Allocate a new keys file parser */
     if ((parser = keys_parser_alloc(
-	     tickertape_keys_directory(self),
-	     parse_keys_callback, self,
-	     filename)) == NULL)
+             tickertape_keys_directory(self),
+             parse_keys_callback, self,
+             filename)) == NULL)
     {
-	return -1;
+        return -1;
     }
 
     /* Allocate a new key table */
     if ((self -> keys = key_table_alloc()) == NULL)
     {
-	keys_parser_free(parser);
-	return -1;
+        keys_parser_free(parser);
+        return -1;
     }
 
     /* Make sure we can read the keys file */
     if ((fd = open_config_file(self, filename, default_keys_file)) < 0)
     {
-	keys_parser_free(parser);
-	return -1;
+        keys_parser_free(parser);
+        return -1;
     }
 
     /* Keep reading from the file until we've read it all or got an error */
     while (1)
     {
-	char buffer[BUFFER_SIZE];
-	ssize_t length;
+        char buffer[BUFFER_SIZE];
+        ssize_t length;
 
-	/* Read a chunk of the file */
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
-	{
-	    close(fd);
-	    keys_parser_free(parser);
-	    return -1;
-	}
+        /* Read a chunk of the file */
+        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
+        {
+            close(fd);
+            keys_parser_free(parser);
+            return -1;
+        }
 
-	/* Send it to the parser */
-	if (keys_parser_parse(parser, buffer, length) < 0)
-	{
-	    close(fd);
-	    keys_parser_free(parser);
-	    return -1;
-	}
+        /* Send it to the parser */
+        if (keys_parser_parse(parser, buffer, length) < 0)
+        {
+            close(fd);
+            keys_parser_free(parser);
+            return -1;
+        }
 
-	/* Watch for the end-of-file */
-	if (length == 0)
-	{
-	    close(fd);
-	    keys_parser_free(parser);
-	    return 0;
-	}
+        /* Watch for the end-of-file */
+        if (length == 0)
+        {
+            close(fd);
+            keys_parser_free(parser);
+            return 0;
+        }
     }
 }
 
@@ -777,10 +777,10 @@ static int find_group(group_sub_t *groups, int count, char *expression)
 
     for (pointer = groups; pointer < groups + count; pointer++)
     {
-	if (*pointer != NULL && strcmp(group_sub_expression(*pointer), expression) == 0)
-	{
-	    return pointer - groups;
-	}
+        if (*pointer != NULL && strcmp(group_sub_expression(*pointer), expression) == 0)
+        {
+            return pointer - groups;
+        }
     }
 
     return -1;
@@ -803,55 +803,55 @@ static void reload_groups(
     /* Read the new-and-improved groups file */
     if (parse_groups_file(self) < 0)
     {
-	/* Clean up the mess */
-	for (index = 0; index < self -> groups_count; index++)
-	{
-	    group_sub_free(self -> groups[index]);
-	}
+        /* Clean up the mess */
+        for (index = 0; index < self -> groups_count; index++)
+        {
+            group_sub_free(self -> groups[index]);
+        }
 
-	/* Put the old groups back into place */
-	self -> groups = old_groups;
-	self -> groups_count = old_count;
-	return;
+        /* Put the old groups back into place */
+        self -> groups = old_groups;
+        self -> groups_count = old_count;
+        return;
     }
 
     /* Reuse elvin subscriptions whenever possible */
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_t group = self -> groups[index];
-	int old_index;
+        group_sub_t group = self -> groups[index];
+        int old_index;
 
-	/* Look for a match */
-	if ((old_index = find_group(
-	    old_groups,
-	    old_count,
-	    group_sub_expression(group))) < 0)
-	{
-	    /* None found.  Set the subscription's connection */
-	    group_sub_set_connection(group, self -> handle, self -> error);
-	}
-	else
-	{
-	    group_sub_t old_group = old_groups[old_index];
+        /* Look for a match */
+        if ((old_index = find_group(
+            old_groups,
+            old_count,
+            group_sub_expression(group))) < 0)
+        {
+            /* None found.  Set the subscription's connection */
+            group_sub_set_connection(group, self -> handle, self -> error);
+        }
+        else
+        {
+            group_sub_t old_group = old_groups[old_index];
 
-	    group_sub_update_from_sub(old_group, group, old_keys, new_keys);
-	    group_sub_free(group);
-	    self -> groups[index] = old_group;
-	    old_groups[old_index] = NULL;
-	}
+            group_sub_update_from_sub(old_group, group, old_keys, new_keys);
+            group_sub_free(group);
+            self -> groups[index] = old_group;
+            old_groups[old_index] = NULL;
+        }
     }
 
     /* Free the remaining old subscriptions */
     for (index = 0; index < old_count; index++)
     {
-	group_sub_t old_group = old_groups[index];
+        group_sub_t old_group = old_groups[index];
 
-	if (old_group != NULL)
-	{
-	    group_sub_set_connection(old_group, NULL, self -> error);
-	    group_sub_set_control_panel(old_group, NULL);
-	    group_sub_free(old_group);
-	}
+        if (old_group != NULL)
+        {
+            group_sub_set_connection(old_group, NULL, self -> error);
+            group_sub_set_control_panel(old_group, NULL);
+            group_sub_free(old_group);
+        }
     }
 
     /* Release the old array */
@@ -861,10 +861,10 @@ static void reload_groups(
     count = 0;
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_control_panel_index(
-	    self -> groups[index],
-	    self -> control_panel,
-	    &count);
+        group_sub_set_control_panel_index(
+            self -> groups[index],
+            self -> control_panel,
+            &count);
     }
 }
 
@@ -885,14 +885,14 @@ void tickertape_reload_usenet(tickertape_t self)
     /* Try to read in the new one */
     if (parse_usenet_file(self) < 0)
     {
-	return;
+        return;
     }
 
     /* Set its connection */
     usenet_sub_set_connection(
-	self -> usenet_sub,
-	self -> handle,
-	self -> error);
+        self -> usenet_sub,
+        self -> handle,
+        self -> error);
 }
 
 /* Request from the control panel to reload the keys file */
@@ -925,7 +925,7 @@ void tickertape_reload_keys(tickertape_t self)
     /* Release the old keys table */
     if (old_keys != NULL)
     {
-	key_table_free(old_keys);
+        key_table_free(old_keys);
     }
 }
 
@@ -970,31 +970,31 @@ static void init_ui(tickertape_t self)
 
     /* Allocate the control panel */
     if ((self -> control_panel = control_panel_alloc(
-	     self, self -> top,
-	     self -> resources -> send_history_count)) == NULL)
+             self, self -> top,
+             self -> resources -> send_history_count)) == NULL)
     {
-	return;
+        return;
     }
 
     /* Tell our group subscriptions about the control panel */
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_control_panel(self -> groups[index], self -> control_panel);
+        group_sub_set_control_panel(self -> groups[index], self -> control_panel);
     }
 
     /* Create the scroller widget */
     self -> scroller = XtVaCreateManagedWidget(
-	"scroller", scrollerWidgetClass, self -> top,
-	NULL);
+        "scroller", scrollerWidgetClass, self -> top,
+        NULL);
     XtAddCallback(
-	self -> scroller, XtNcallback,
-	(XtCallbackProc)menu_callback, self);
+        self -> scroller, XtNcallback,
+        (XtCallbackProc)menu_callback, self);
     XtAddCallback(
-	self -> scroller, XtNattachmentCallback,
-	(XtCallbackProc)mime_callback, self);
+        self -> scroller, XtNattachmentCallback,
+        (XtCallbackProc)mime_callback, self);
     XtAddCallback(
-	self -> scroller, XtNkillCallback,
-	(XtCallbackProc)kill_callback, self);
+        self -> scroller, XtNkillCallback,
+        (XtCallbackProc)kill_callback, self);
     XtRealizeWidget(self -> top);
 }
 
@@ -1017,9 +1017,9 @@ connect_cb(elvin_handle_t handle, int result,
     /* Check for a failure to connect */
     if (result == 0)
     {
-	fprintf(stderr, "%s: unable to connect\n", PACKAGE);
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        fprintf(stderr, "%s: unable to connect\n", PACKAGE);
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
     /* Tell the control panel that we're connected */
@@ -1028,19 +1028,19 @@ connect_cb(elvin_handle_t handle, int result,
     /* Subscribe to the groups */
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_connection(self -> groups[index], handle, error);
+        group_sub_set_connection(self -> groups[index], handle, error);
     }
 
     /* Subscribe to usenet */
     if (self -> usenet_sub != NULL)
     {
-	usenet_sub_set_connection(self -> usenet_sub, handle, error);
+        usenet_sub_set_connection(self -> usenet_sub, handle, error);
     }
 
     /* Subscribe to the Mail subscription if we have one */
     if (self -> mail_sub != NULL)
     {
-	mail_sub_set_connection(self -> mail_sub, handle, error);
+        mail_sub_set_connection(self -> mail_sub, handle, error);
     }
 
     return ELVIN_RETURN_SUCCESS; 
@@ -1064,123 +1064,123 @@ static void status_cb(
     /* Construct an appropriate message string */
     switch (event)
     {
-	/* We were unable to (re)connect */
-	case ELVIN_STATUS_CONNECTION_FAILED:
-	{
-	    fprintf(stderr, PACKAGE ": unable to connect\n");
-	    elvin_error_fprintf(stderr, error);
-	    exit(1);
-	}
+        /* We were unable to (re)connect */
+        case ELVIN_STATUS_CONNECTION_FAILED:
+        {
+            fprintf(stderr, PACKAGE ": unable to connect\n");
+            elvin_error_fprintf(stderr, error);
+            exit(1);
+        }
 
-	case ELVIN_STATUS_CONNECTION_FOUND:
-	{
-	    /* Tell the control panel that we're connected */
-	    control_panel_set_connected(self -> control_panel, True);
-	    
-	    /* Make room for a combined string and URL */
-	    length = strlen(CONNECT_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+        case ELVIN_STATUS_CONNECTION_FOUND:
+        {
+            /* Tell the control panel that we're connected */
+            control_panel_set_connected(self -> control_panel, True);
+            
+            /* Make room for a combined string and URL */
+            length = strlen(CONNECT_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, CONNECT_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, CONNECT_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_CONNECTION_LOST:
-	{
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+        case ELVIN_STATUS_CONNECTION_LOST:
+        {
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a combined string and URL */
-	    length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a combined string and URL */
+            length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, LOST_CONNECT_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, LOST_CONNECT_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_CONNECTION_CLOSED:
-	{
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+        case ELVIN_STATUS_CONNECTION_CLOSED:
+        {
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a message string */
-	    length = strlen(CONN_CLOSED_MSG) + 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a message string */
+            length = strlen(CONN_CLOSED_MSG) + 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, CONN_CLOSED_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, CONN_CLOSED_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_DROP_WARN:
-	{
-	    string = DROP_WARN_MSG;
-	    break;
-	}
+        case ELVIN_STATUS_DROP_WARN:
+        {
+            string = DROP_WARN_MSG;
+            break;
+        }
 
-	case ELVIN_STATUS_PROTOCOL_ERROR:
-	{
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+        case ELVIN_STATUS_PROTOCOL_ERROR:
+        {
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a message string */
-	    length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a message string */
+            length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_IGNORED_ERROR:
-	{
-	    fprintf(stderr, "%s: status ignored\n", PACKAGE);
-	    elvin_error_fprintf(stderr, error);
-	    exit(1);
-	}
+        case ELVIN_STATUS_IGNORED_ERROR:
+        {
+            fprintf(stderr, "%s: status ignored\n", PACKAGE);
+            elvin_error_fprintf(stderr, error);
+            exit(1);
+        }
 
-	case ELVIN_STATUS_CLIENT_ERROR:
-	{
-	    fprintf(stderr, "%s: client error\n", PACKAGE);
-	    elvin_error_fprintf(stderr, error);
-	    exit(1);
-	}
+        case ELVIN_STATUS_CLIENT_ERROR:
+        {
+            fprintf(stderr, "%s: client error\n", PACKAGE);
+            elvin_error_fprintf(stderr, error);
+            exit(1);
+        }
 
-	default:
-	{
-	    length = sizeof(UNKNOWN_STATUS_MSG) + 16;
-	    buffer = (char *)malloc(length);
-	    snprintf(buffer, length, UNKNOWN_STATUS_MSG, event);
-	    string = buffer;
-	    break;
-	}
+        default:
+        {
+            length = sizeof(UNKNOWN_STATUS_MSG) + 16;
+            buffer = (char *)malloc(length);
+            snprintf(buffer, length, UNKNOWN_STATUS_MSG, event);
+            string = buffer;
+            break;
+        }
     }
 
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
-	NULL, "internal", "tickertape", string, 30,
-	NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
+        NULL, "internal", "tickertape", string, 30,
+        NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
     {
-	receive_callback(self, message, False);
-	message_free(message);
+        receive_callback(self, message, False);
+        message_free(message);
     }
 
     /* Also display the message on the status line */
@@ -1189,7 +1189,7 @@ static void status_cb(
     /* Clean up */
     if (buffer != NULL)
     {
-	free(buffer);
+        free(buffer);
     }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
@@ -1209,185 +1209,185 @@ static int status_cb(
     /* Construct an appropriate message string */
     switch (event -> type)
     {
-	/* We were unable to (re)connect */
-	case ELVIN_STATUS_CONNECTION_FAILED:
-	{
-	    fprintf(stderr, PACKAGE ": unable to connect\n");
-	    elvin_error_fprintf(stderr, event -> details.connection_failed.error);
-	    exit(1);
-	}
+        /* We were unable to (re)connect */
+        case ELVIN_STATUS_CONNECTION_FAILED:
+        {
+            fprintf(stderr, PACKAGE ": unable to connect\n");
+            elvin_error_fprintf(stderr, event -> details.connection_failed.error);
+            exit(1);
+        }
 
-	case ELVIN_STATUS_CONNECTION_FOUND:
-	{
-	    char *url;
+        case ELVIN_STATUS_CONNECTION_FOUND:
+        {
+            char *url;
 
-	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.connection_found.url, error)) == NULL)
-	    {
-		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-		elvin_error_fprintf(stderr, error);
-		exit(1);
-	    }
+            /* Stringify the URL */
+            if ((url = elvin_url_get_canonical(event -> details.connection_found.url, error)) == NULL)
+            {
+                fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
 
-	    /* Tell the control panel that we're connected */
-	    control_panel_set_connected(self -> control_panel, True);
-	    
-	    /* Make room for a combined string and URL */
-	    length = strlen(CONNECT_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Tell the control panel that we're connected */
+            control_panel_set_connected(self -> control_panel, True);
+            
+            /* Make room for a combined string and URL */
+            length = strlen(CONNECT_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, CONNECT_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, CONNECT_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_CONNECTION_LOST:
-	{
-	    char *url;
+        case ELVIN_STATUS_CONNECTION_LOST:
+        {
+            char *url;
 
-	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.connection_lost.url, error)) == NULL)
-	    {
-		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-		elvin_error_fprintf(stderr, error);
-		exit(1);
-	    }
+            /* Stringify the URL */
+            if ((url = elvin_url_get_canonical(event -> details.connection_lost.url, error)) == NULL)
+            {
+                fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
 
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a combined string and URL */
-	    length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a combined string and URL */
+            length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, LOST_CONNECT_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, LOST_CONNECT_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_CONNECTION_CLOSED:
-	{
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+        case ELVIN_STATUS_CONNECTION_CLOSED:
+        {
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a message string */
-	    length = strlen(CONN_CLOSED_MSG) + 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a message string */
+            length = strlen(CONN_CLOSED_MSG) + 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, CONN_CLOSED_MSG);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, CONN_CLOSED_MSG);
+            string = buffer;
+            break;
+        }
 
-	/* Connection warnings go to the status line */
-	case ELVIN_STATUS_CONNECTION_WARN:
-	{
-	    /* Get a big buffer */
-	    if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
-	    
-	    /* Print the error message into it */
+        /* Connection warnings go to the status line */
+        case ELVIN_STATUS_CONNECTION_WARN:
+        {
+            /* Get a big buffer */
+            if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
+            
+            /* Print the error message into it */
 #if !defined(ELVIN_VERSION_AT_LEAST)
-	    elvin_error_snprintf(buffer, BUFFER_SIZE, event -> details.connection_warn.error);
+            elvin_error_snprintf(buffer, BUFFER_SIZE, event -> details.connection_warn.error);
 #elif ELVIN_VERSION_AT_LEAST(4,1,-1)
-	    elvin_error_snprintf(buffer, BUFFER_SIZE, NULL, event -> details.connection_warn.error);
+            elvin_error_snprintf(buffer, BUFFER_SIZE, NULL, event -> details.connection_warn.error);
 #endif
-	    string = buffer;
+            string = buffer;
 
-	    /* Display it on the status line */
-	    control_panel_set_status(self -> control_panel, buffer);
+            /* Display it on the status line */
+            control_panel_set_status(self -> control_panel, buffer);
 
-	    /* Clean up */
-	    free(buffer);
-	    return 1;
-	}
+            /* Clean up */
+            free(buffer);
+            return 1;
+        }
 
-	case ELVIN_STATUS_DROP_WARN:
-	{
-	    string = DROP_WARN_MSG;
-	    break;
-	}
+        case ELVIN_STATUS_DROP_WARN:
+        {
+            string = DROP_WARN_MSG;
+            break;
+        }
 
-	case ELVIN_STATUS_PROTOCOL_ERROR:
-	{
-	    char *url;
+        case ELVIN_STATUS_PROTOCOL_ERROR:
+        {
+            char *url;
 
-	    /* Stringify the URL */
-	    if ((url = elvin_url_get_canonical(event -> details.protocol_error.url, error)) == NULL)
-	    {
-		fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-		elvin_error_fprintf(stderr, error);
-		exit(1);
-	    }
+            /* Stringify the URL */
+            if ((url = elvin_url_get_canonical(event -> details.protocol_error.url, error)) == NULL)
+            {
+                fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
 
-	    /* Tell the control panel that we're no longer connected */
-	    control_panel_set_connected(self -> control_panel, False);
+            /* Tell the control panel that we're no longer connected */
+            control_panel_set_connected(self -> control_panel, False);
 
-	    /* Make room for a message string */
-	    length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-	    if ((buffer = (char *)malloc(length)) == NULL)
-	    {
-		perror(PACKAGE ": malloc() failed");
-		exit(1);
-	    }
+            /* Make room for a message string */
+            length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
+            if ((buffer = (char *)malloc(length)) == NULL)
+            {
+                perror(PACKAGE ": malloc() failed");
+                exit(1);
+            }
 
-	    snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
-	    string = buffer;
-	    break;
-	}
+            snprintf(buffer, length, PROTOCOL_ERROR_MSG, url);
+            string = buffer;
+            break;
+        }
 
-	case ELVIN_STATUS_NO_DISCOVERY:
-	{
-	    string = NO_DISCOVERY_MSG;
-	    break;
-	}
+        case ELVIN_STATUS_NO_DISCOVERY:
+        {
+            string = NO_DISCOVERY_MSG;
+            break;
+        }
 
-	case ELVIN_STATUS_IGNORED_ERROR:
-	{
-	    fprintf(stderr, "%s: status ignored\n", PACKAGE);
-	    elvin_error_fprintf(stderr, event -> details.ignored_error.error);
-	    exit(1);
-	}
+        case ELVIN_STATUS_IGNORED_ERROR:
+        {
+            fprintf(stderr, "%s: status ignored\n", PACKAGE);
+            elvin_error_fprintf(stderr, event -> details.ignored_error.error);
+            exit(1);
+        }
 
-	case ELVIN_STATUS_CLIENT_ERROR:
-	{
-	    fprintf(stderr, "%s: client error\n", PACKAGE);
-	    elvin_error_fprintf(stderr, event -> details.client_error.error);
-	    exit(1);
-	}
+        case ELVIN_STATUS_CLIENT_ERROR:
+        {
+            fprintf(stderr, "%s: client error\n", PACKAGE);
+            elvin_error_fprintf(stderr, event -> details.client_error.error);
+            exit(1);
+        }
 
-	default:
-	{
-	    length = sizeof(UNKNOWN_STATUS_MSG) + 16;
-	    buffer = (char *)malloc(length);
-	    snprintf(buffer, length, UNKNOWN_STATUS_MSG, event -> type);
-	    string = buffer;
-	    break;
-	}
+        default:
+        {
+            length = sizeof(UNKNOWN_STATUS_MSG) + 16;
+            buffer = (char *)malloc(length);
+            snprintf(buffer, length, UNKNOWN_STATUS_MSG, event -> type);
+            string = buffer;
+            break;
+        }
     }
 
     /* Construct a message for the string and add it to the scroller */
     if ((message = message_alloc(
-	NULL, "internal", "tickertape", string, 30,
-	NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
+        NULL, "internal", "tickertape", string, 30,
+        NULL, 0, NULL, NULL, NULL, NULL)) != NULL)
     {
-	receive_callback(self, message, False);
-	message_free(message);
+        receive_callback(self, message, False);
+        message_free(message);
     }
 
     /* Also display the message on the status line */
@@ -1396,7 +1396,7 @@ static int status_cb(
     /* Clean up */
     if (buffer != NULL)
     {
-	free(buffer);
+        free(buffer);
     }
 
     return 1;
@@ -1412,14 +1412,14 @@ static int parsed(vm_t vm, parser_t parser, void *rock, elvin_error_t error)
     /* Try to evaluate what we've just parsed */
     if (! vm_eval(vm, error) || ! vm_print(vm, error))
     {
-	elvin_error_fprintf(stderr, error);
-	elvin_error_clear(error);
+        elvin_error_fprintf(stderr, error);
+        elvin_error_clear(error);
 
-	/* Clean up the vm */
-	if (! vm_gc(vm, error))
-	{
-	    return 0;
-	}
+        /* Clean up the vm */
+        if (! vm_gc(vm, error))
+        {
+            return 0;
+        }
     }
 
     return 1;
@@ -1436,23 +1436,23 @@ static void interp_cb(XtPointer rock, int *source, XtInputId *id)
     /* Read from stdin */
     if ((length = read(*source, buffer, 4096)) < 0)
     {
-	perror("read(): failed");
-	exit(1);
+        perror("read(): failed");
+        exit(1);
     }
 
     /* Send the info to the parser */
     if (! parser_read_buffer(self -> parser, buffer, length, self -> error))
     {
-	elvin_error_fprintf(stderr, self -> error);
+        elvin_error_fprintf(stderr, self -> error);
     }
 
     /* Watch for end of input */
     if (length == 0)
     {
-	XtRemoveInput(*id);
-	printf("[EOF]\n");
-	fclose(stdin);
-	return;
+        XtRemoveInput(*id);
+        printf("[EOF]\n");
+        fclose(stdin);
+        return;
     }
 
     printf("> "); fflush(stdout);
@@ -1465,35 +1465,35 @@ static int prim_and(vm_t vm, uint32_t argc, elvin_error_t error)
     /* No args evaluates to `t' */
     if (argc == 0)
     {
-	return vm_push_symbol(vm, "t", error);
+        return vm_push_symbol(vm, "t", error);
     }
 
     /* Look for any nil arguments */
     while (argc > 1)
     {
-	object_type_t type;
+        object_type_t type;
 
-	/* Unroll the next arg onto the top of the stack */
-	if (! vm_unroll(vm, argc - 1, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_type(vm, &type, error))
-	{
-	    return 0;
-	}
+        /* Unroll the next arg onto the top of the stack */
+        if (! vm_unroll(vm, argc - 1, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_type(vm, &type, error))
+        {
+            return 0;
+        }
 
-	/* If the arg evaluated to nil then return that */
-	if (type == SEXP_NIL)
-	{
-	    return 1;
-	}
+        /* If the arg evaluated to nil then return that */
+        if (type == SEXP_NIL)
+        {
+            return 1;
+        }
 
-	/* Otherwise pop it and go on to the next arg */
-	if (! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        /* Otherwise pop it and go on to the next arg */
+        if (! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	argc--;
+        argc--;
     }
 
     /* Return whatever the last arg evaluates to */
@@ -1505,8 +1505,8 @@ static int prim_car(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 1)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "car", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "car", argc);
+        return 0;
     }
 
     return vm_car(vm, error);
@@ -1517,8 +1517,8 @@ static int prim_cdr(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 1)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cdr", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cdr", argc);
+        return 0;
     }
 
     return vm_cdr(vm, error);
@@ -1530,38 +1530,38 @@ static int prim_cond(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Find a clause with a non-nil condition */
     while (argc > 0)
     {
-	object_type_t type;
+        object_type_t type;
 
-	/* Evaluate the condition of the next clause */
-	if (! vm_unroll(vm, argc - 1, error) ||
-	    ! vm_dup(vm, error) ||
-	    ! vm_car(vm, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_type(vm, &type, error) ||
-	    ! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        /* Evaluate the condition of the next clause */
+        if (! vm_unroll(vm, argc - 1, error) ||
+            ! vm_dup(vm, error) ||
+            ! vm_car(vm, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_type(vm, &type, error) ||
+            ! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	/* If it evaluates to non-nil then evaluate the clause as if it
-	 * were part of a progn statement */
-	if (type != SEXP_NIL)
-	{
-	    return
-		vm_cdr(vm, error) &&
-		vm_push_symbol(vm, "progn", error) &&
-		vm_swap(vm, error) &&
-		vm_make_cons(vm, error) &&
-		vm_eval(vm, error);
-	}
+        /* If it evaluates to non-nil then evaluate the clause as if it
+         * were part of a progn statement */
+        if (type != SEXP_NIL)
+        {
+            return
+                vm_cdr(vm, error) &&
+                vm_push_symbol(vm, "progn", error) &&
+                vm_swap(vm, error) &&
+                vm_make_cons(vm, error) &&
+                vm_eval(vm, error);
+        }
 
-	/* Dump this clause and move on to the next one */
-	if (! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        /* Dump this clause and move on to the next one */
+        if (! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	argc--;
+        argc--;
     }
 
     /* Nothing matched so we return nil */
@@ -1573,8 +1573,8 @@ static int prim_cons(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 2)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cons", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "cons", argc);
+        return 0;
     }
 
     return vm_make_cons(vm, error);
@@ -1587,68 +1587,68 @@ static int prim_define(vm_t vm, uint32_t argc, elvin_error_t error)
 
     if (argc < 2)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
+        return 0;
     }
 
     /* Get the first argument */
     if (! vm_unroll(vm, argc - 1, error) || ! vm_type(vm, &type, error))
     {
-	return 0;
+        return 0;
     }
 
     switch (type)
     {
-	/* A list indicates a function definition */
-	case SEXP_CONS:
-	{
-	    /* Grab the car of the list to use as the function name */
-	    if (! vm_dup(vm, error) ||
-		! vm_car(vm, error) ||
-		! vm_type(vm, &type, error))
-	    {
-		return 0;
-	    }
+        /* A list indicates a function definition */
+        case SEXP_CONS:
+        {
+            /* Grab the car of the list to use as the function name */
+            if (! vm_dup(vm, error) ||
+                ! vm_car(vm, error) ||
+                ! vm_type(vm, &type, error))
+            {
+                return 0;
+            }
 
-	    /* Make sure that we've got a symbol */
-	    if (type != SEXP_SYMBOL)
-	    {
-		ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
-		return 0;
-	    }
+            /* Make sure that we've got a symbol */
+            if (type != SEXP_SYMBOL)
+            {
+                ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
+                return 0;
+            }
 
-	    /* Roll it to the top of the stack, create a lambda and assign */
-	    return
-		vm_roll(vm, argc, error) &&
-		vm_cdr(vm, error) &&
-		vm_roll(vm, argc - 1, error) &&
-		vm_push_symbol(vm, "progn", error) &&
-		vm_roll(vm, argc - 1, error) &&
-		vm_make_list(vm, argc, error) &&
-		vm_make_lambda(vm, error) &&
-		vm_assign(vm, error);
-	}
+            /* Roll it to the top of the stack, create a lambda and assign */
+            return
+                vm_roll(vm, argc, error) &&
+                vm_cdr(vm, error) &&
+                vm_roll(vm, argc - 1, error) &&
+                vm_push_symbol(vm, "progn", error) &&
+                vm_roll(vm, argc - 1, error) &&
+                vm_make_list(vm, argc, error) &&
+                vm_make_lambda(vm, error) &&
+                vm_assign(vm, error);
+        }
 
-	/* A symbol is a simple assignment */
-	case SEXP_SYMBOL:
-	{
-	    /* Complain if there are too many args */
-	    if (argc > 2)
-	    {
-		ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
-		return 0;
-	    }
+        /* A symbol is a simple assignment */
+        case SEXP_SYMBOL:
+        {
+            /* Complain if there are too many args */
+            if (argc > 2)
+            {
+                ELVIN_ERROR_INTERP_WRONG_ARGC(error, "define", argc);
+                return 0;
+            }
 
-	    /* Evaluate the value and assign it */
-	    return vm_swap(vm, error) && vm_eval(vm, error) && vm_assign(vm, error);
-	}
+            /* Evaluate the value and assign it */
+            return vm_swap(vm, error) && vm_eval(vm, error) && vm_assign(vm, error);
+        }
 
-	/* Anything else is an error */
-	default:
-	{
-	    ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
-	    return 0;
-	}
+        /* Anything else is an error */
+        default:
+        {
+            ELVIN_ERROR_INTERP_TYPE_MISMATCH(error, "<value>", "symbol");
+            return 0;
+        }
     }
 }
 
@@ -1657,17 +1657,17 @@ static int prim_defun(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc < 2)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "defun", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "defun", argc);
+        return 0;
     }
 
     /* Turn the body forms into a progn */
     return
-	vm_push_symbol(vm, "progn", error) &&
-	vm_roll(vm, argc - 2, error) &&
-	vm_make_list(vm, argc - 1, error) &&
-	vm_make_lambda(vm, error) &&
-	vm_assign(vm, error);
+        vm_push_symbol(vm, "progn", error) &&
+        vm_roll(vm, argc - 2, error) &&
+        vm_make_list(vm, argc - 1, error) &&
+        vm_make_lambda(vm, error) &&
+        vm_assign(vm, error);
 }
 
 /* The `eq' subroutine */
@@ -1675,8 +1675,8 @@ static int prim_eq(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 2)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "eq", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "eq", argc);
+        return 0;
     }
 
     return vm_eq(vm, error);
@@ -1690,46 +1690,46 @@ static int prim_if(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Make sure we have a test and a true form */
     if (argc < 2)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "if", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "if", argc);
+        return 0;
     }
 
     /* Rotate the condition to the top of the stack and evaluate it */
     if (! vm_unroll(vm, argc - 1, error) || ! vm_eval(vm, error))
     {
-	return 0;
+        return 0;
     }
 
     /* Is it nil? */
     if (! vm_type(vm, &type, error))
     {
-	return 0;
+        return 0;
     }
 
     /* If the value is not nil then evaluate the true form */
     if (type != SEXP_NIL)
     {
-	return vm_unroll(vm, argc - 1, error) && vm_eval(vm, error);
+        return vm_unroll(vm, argc - 1, error) && vm_eval(vm, error);
     }
 
     /* If there is no false form then return nil */
     if (argc == 2)
     {
-	return vm_push_nil(vm, error);
+        return vm_push_nil(vm, error);
     }
 
     /* Evaluate all args before the last */
     while (argc > 3)
     {
-	/* Unroll the next arg onto the top of the stack */
-	if (! vm_unroll(vm, argc - 2, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        /* Unroll the next arg onto the top of the stack */
+        if (! vm_unroll(vm, argc - 2, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	argc--;
+        argc--;
     }
 
     /* Return whatever the last arg evaluates to */
@@ -1741,8 +1741,8 @@ static int prim_gc(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 0)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "gc", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "gc", argc);
+        return 0;
     }
 
     return vm_gc(vm, error);
@@ -1754,16 +1754,16 @@ static int prim_lambda(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Make sure we at least have an argument list */
     if (argc < 1)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "lambda", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "lambda", argc);
+        return 0;
     }
 
     /* Turn the body forms into a progn */
     return
-	vm_push_symbol(vm, "progn", error) &&
-	vm_roll(vm, argc - 1, error) &&
-	vm_make_list(vm, argc, error) &&
-	vm_make_lambda(vm, error);
+        vm_push_symbol(vm, "progn", error) &&
+        vm_roll(vm, argc - 1, error) &&
+        vm_make_list(vm, argc, error) &&
+        vm_make_lambda(vm, error);
 }
 
 /* The `let' special form */
@@ -1772,16 +1772,16 @@ static int prim_let(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Make sure we at least have the bindings */
     if (argc < 1)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "let", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "let", argc);
+        return 0;
     }
 
     /* Turn the body forms into a big progn */
     return
-	vm_push_symbol(vm, "progn", error) &&
-	vm_roll(vm, argc - 1, error) &&
-	vm_make_list(vm, argc, error) &&
-	vm_let(vm, error);
+        vm_push_symbol(vm, "progn", error) &&
+        vm_roll(vm, argc - 1, error) &&
+        vm_make_list(vm, argc, error) &&
+        vm_let(vm, error);
 }
 
 /* The `list' subroutine */
@@ -1796,35 +1796,35 @@ static int prim_or(vm_t vm, uint32_t argc, elvin_error_t error)
     /* No arguments evaluates to `nil' */
     if (argc == 0)
     {
-	return vm_push_nil(vm, error);
+        return vm_push_nil(vm, error);
     }
 
     /* Look for any true arguments */
     while (argc > 1)
     {
-	object_type_t type;
+        object_type_t type;
 
-	/* Unroll the next arg onto the top of the stack */
-	if (! vm_unroll(vm, argc - 1, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_type(vm, &type, error))
-	{
-	    return 0;
-	}
+        /* Unroll the next arg onto the top of the stack */
+        if (! vm_unroll(vm, argc - 1, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_type(vm, &type, error))
+        {
+            return 0;
+        }
 
-	/* If the argument evaluated to non-nil then return that */
-	if (type != SEXP_NIL)
-	{
-	    return 1;
-	}
+        /* If the argument evaluated to non-nil then return that */
+        if (type != SEXP_NIL)
+        {
+            return 1;
+        }
 
-	/* Otherwise pop it and go on to the next arg */
-	if (! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        /* Otherwise pop it and go on to the next arg */
+        if (! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	argc--;
+        argc--;
     }
 
     /* Return whatever the last argument evalutes to */
@@ -1839,16 +1839,16 @@ static int prim_plus(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Return 0 if there are no args */
     if (argc == 0)
     {
-	return vm_push_integer(vm, 0, error);
+        return vm_push_integer(vm, 0, error);
     }
 
     /* Add up all of the args */
     for (i = 1; i < argc; i++)
     {
-	if (! vm_add(vm, error))
-	{
-	    return 0;
-	}
+        if (! vm_add(vm, error))
+        {
+            return 0;
+        }
     }
 
     return 1;
@@ -1859,8 +1859,8 @@ static int prim_quote(vm_t vm, uint32_t argc, elvin_error_t error)
 {
     if (argc != 1)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "quote", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "quote", argc);
+        return 0;
     }
 
     /* Our result is what's already on the stack */
@@ -1873,20 +1873,20 @@ static int prim_progn(vm_t vm, uint32_t argc, elvin_error_t error)
     /* No args evaluates to nil */
     if (argc == 0)
     {
-	return vm_push_nil(vm, error);
+        return vm_push_nil(vm, error);
     }
 
     /* Evaluate all but the last argument */
     while (argc > 1)
     {
-	if (! vm_unroll(vm, argc - 1, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        if (! vm_unroll(vm, argc - 1, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
 
-	argc--;
+        argc--;
     }
 
     /* Evaluate the last argument and return its value */
@@ -1901,27 +1901,27 @@ static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
     /* Zero arguments evaluates to `nil' */
     if (argc == 0)
     {
-	return vm_push_nil(vm, error);
+        return vm_push_nil(vm, error);
     }
 
     /* FIX THIS: setq should allow any even number of args */
     if (argc % 2 != 0)
     {
-	ELVIN_ERROR_INTERP_WRONG_ARGC(error, "setq", argc);
-	return 0;
+        ELVIN_ERROR_INTERP_WRONG_ARGC(error, "setq", argc);
+        return 0;
     }
 
     /* Evaluate all args but the last two */
     for (i = argc - 1; i > 1; i -= 2)
     {
-	if (! vm_unroll(vm, i, error) ||
-	    ! vm_unroll(vm, i, error) ||
-	    ! vm_eval(vm, error) ||
-	    ! vm_assign(vm, error) ||
-	    ! vm_pop(vm, NULL, error))
-	{
-	    return 0;
-	}
+        if (! vm_unroll(vm, i, error) ||
+            ! vm_unroll(vm, i, error) ||
+            ! vm_eval(vm, error) ||
+            ! vm_assign(vm, error) ||
+            ! vm_pop(vm, NULL, error))
+        {
+            return 0;
+        }
     }
 
     /* Evaluate the last two arguments */
@@ -1933,20 +1933,20 @@ static int prim_setq(vm_t vm, uint32_t argc, elvin_error_t error)
 static int define_subr(vm_t vm, char *name, prim_t func, elvin_error_t error)
 {
     return
-	vm_push_symbol(vm, name, error) &&
-	vm_push_subr(vm, func, error) &&
-	vm_assign(vm, error) &&
-	vm_pop(vm, NULL, error);
+        vm_push_symbol(vm, name, error) &&
+        vm_push_subr(vm, func, error) &&
+        vm_assign(vm, error) &&
+        vm_pop(vm, NULL, error);
 }
 
 /* Defines a special form */
 static int define_special(vm_t vm, char *name, prim_t func, elvin_error_t error)
 {
     return
-	vm_push_symbol(vm, name, error) &&
-	vm_push_special_form(vm, func, error) &&
-	vm_assign(vm, error) &&
-	vm_pop(vm, NULL, error);
+        vm_push_symbol(vm, name, error) &&
+        vm_push_special_form(vm, func, error) &&
+        vm_assign(vm, error) &&
+        vm_pop(vm, NULL, error);
 }
 
 /* Populates the root environment */
@@ -1956,42 +1956,42 @@ static int populate_env(tickertape_t self, elvin_error_t error)
 
     /* Populate the root environment */
     return 
-	vm_push_string(vm, "nil", error) &&
-	vm_make_symbol(vm, error) &&
-	vm_push_nil(vm, error) &&
-	vm_assign(vm, error) &&
-	vm_pop(vm, NULL, error) &&
+        vm_push_string(vm, "nil", error) &&
+        vm_make_symbol(vm, error) &&
+        vm_push_nil(vm, error) &&
+        vm_assign(vm, error) &&
+        vm_pop(vm, NULL, error) &&
 
-	vm_push_string(vm, "t", error) &&
-	vm_make_symbol(vm, error) &&
-	vm_dup(vm, error) &&
-	vm_assign(vm, error) &&
-	vm_pop(vm, NULL, error) &&
+        vm_push_string(vm, "t", error) &&
+        vm_make_symbol(vm, error) &&
+        vm_dup(vm, error) &&
+        vm_assign(vm, error) &&
+        vm_pop(vm, NULL, error) &&
 
-	define_special(vm, "and", prim_and, error) &&
-	define_subr(vm, "car", prim_car, error) &&
+        define_special(vm, "and", prim_and, error) &&
+        define_subr(vm, "car", prim_car, error) &&
 #if 0
-	define_special(vm, "catch", prim_catch, error) &&
+        define_special(vm, "catch", prim_catch, error) &&
 #endif
-	define_subr(vm, "cdr", prim_cdr, error) &&
-	define_special(vm, "cond", prim_cond, error) &&
-	define_subr(vm, "cons", prim_cons, error) &&
-	define_special(vm, "define", prim_define, error) &&
-	define_special(vm, "defun", prim_defun, error) &&
-	define_subr(vm, "eq", prim_eq, error) &&
-	define_special(vm, "if", prim_if, error) &&
+        define_subr(vm, "cdr", prim_cdr, error) &&
+        define_special(vm, "cond", prim_cond, error) &&
+        define_subr(vm, "cons", prim_cons, error) &&
+        define_special(vm, "define", prim_define, error) &&
+        define_special(vm, "defun", prim_defun, error) &&
+        define_subr(vm, "eq", prim_eq, error) &&
+        define_special(vm, "if", prim_if, error) &&
 #if 0
-	define_subr(vm, "format", prim_format, error) &&
+        define_subr(vm, "format", prim_format, error) &&
 #endif
-	define_subr(vm, "gc", prim_gc, error) &&
-	define_special(vm, "lambda", prim_lambda, error) &&
-	define_special(vm, "let", prim_let, error) &&
-	define_subr(vm, "list", prim_list, error) &&
-	define_special(vm, "or", prim_or, error) &&
-	define_subr(vm, "+", prim_plus, error) &&
-	define_special(vm, "progn", prim_progn, error) &&
-	define_special(vm, "quote", prim_quote, error) &&
-	define_special(vm, "setq", prim_setq, error);
+        define_subr(vm, "gc", prim_gc, error) &&
+        define_special(vm, "lambda", prim_lambda, error) &&
+        define_special(vm, "let", prim_let, error) &&
+        define_subr(vm, "list", prim_list, error) &&
+        define_special(vm, "or", prim_or, error) &&
+        define_subr(vm, "+", prim_plus, error) &&
+        define_special(vm, "progn", prim_progn, error) &&
+        define_special(vm, "quote", prim_quote, error) &&
+        define_special(vm, "setq", prim_setq, error);
 }
 #endif /* ENABLE_LISP_INTERPRETER */
 
@@ -2021,7 +2021,7 @@ tickertape_t tickertape_alloc(
     /* Allocate some space for the new tickertape */
     if ((self = (tickertape_t)malloc(sizeof(struct tickertape))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Initialize its contents to sane values */
@@ -2047,19 +2047,19 @@ tickertape_t tickertape_alloc(
     /* Read the keys from the keys file */
     if (parse_keys_file(self) < 0)
     {
-	exit(1);
+        exit(1);
     }
 
     /* Read the subscriptions from the groups file */
     if (parse_groups_file(self) < 0)
     {
-	exit(1);
+        exit(1);
     }
 
     /* Read the subscriptions from the usenet file */
     if (parse_usenet_file(self) < 0)
     {
-	exit(1);
+        exit(1);
     }
 
     /* Initialize the e-mail subscription */
@@ -2072,30 +2072,30 @@ tickertape_t tickertape_alloc(
     /* Initialize the scheme virtual machine */
     if ((self -> vm = vm_alloc(error)) == NULL)
     {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
     /* Populate its root environment */
     if (populate_env(self, error) == 0)
     {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
     /* Allocate a new parser */
     if ((self -> parser = parser_alloc(self -> vm, parsed, self, error)) == NULL)
     {
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
     /* Add an I/O handler for stdin */
     XtAppAddInput(
-	XtWidgetToApplicationContext(self -> top),
-	STDIN_FILENO,
-	(XtPointer)XtInputReadMask,
-	interp_cb, self);
+        XtWidgetToApplicationContext(self -> top),
+        STDIN_FILENO,
+        (XtPointer)XtInputReadMask,
+        interp_cb, self);
     printf("> "); fflush(stdout);
 #endif /* ENABLE_LISP_INTERPRETER */
 
@@ -2110,9 +2110,9 @@ tickertape_t tickertape_alloc(
     /* Connect to the elvin server */
     if (elvin_async_connect(handle, connect_cb, self, self -> error) == 0)
     {
-	fprintf(stderr, PACKAGE ": elvin_async_connect(): failed\n");
-	elvin_error_fprintf(stderr, error);
-	exit(1);
+        fprintf(stderr, PACKAGE ": elvin_async_connect(): failed\n");
+        elvin_error_fprintf(stderr, error);
+        exit(1);
     }
 
     return self;
@@ -2127,59 +2127,59 @@ void tickertape_free(tickertape_t self)
 
     if (self -> user != NULL)
     {
-	free(self -> user);
+        free(self -> user);
     }
 
     if (self -> domain != NULL)
     {
-	free(self -> domain);
+        free(self -> domain);
     }
 
     if (self -> ticker_dir != NULL)
     {
-	free(self -> ticker_dir);
+        free(self -> ticker_dir);
     }
 
     if (self -> config_file != NULL)
     {
-	free(self -> config_file);
+        free(self -> config_file);
     }
 
     if (self -> groups_file != NULL)
     {
-	free(self -> groups_file);
+        free(self -> groups_file);
     }
 
     if (self -> keys_file != NULL)
     {
-	free(self -> keys_file);
+        free(self -> keys_file);
     }
 
     for (index = 0; index < self -> groups_count; index++)
     {
-	group_sub_set_connection(self -> groups[index], NULL, self -> error);
-	group_sub_free(self -> groups[index]);
+        group_sub_set_connection(self -> groups[index], NULL, self -> error);
+        group_sub_free(self -> groups[index]);
     }
 
     if (self -> groups != NULL)
     {
-	free(self -> groups);
+        free(self -> groups);
     }
 
     if (self -> usenet_sub != NULL)
     {
-	usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
-	usenet_sub_free(self -> usenet_sub);
+        usenet_sub_set_connection(self -> usenet_sub, NULL, self -> error);
+        usenet_sub_free(self -> usenet_sub);
     }
 
     if (self -> keys != NULL)
     {
-	key_table_free(self -> keys);
+        key_table_free(self -> keys);
     }
 
     if (self -> control_panel)
     {
-	control_panel_free(self -> control_panel);
+        control_panel_free(self -> control_panel);
     }
 
     free(self);
@@ -2225,26 +2225,26 @@ static char *tickertape_ticker_dir(tickertape_t self)
     /* See if we've already looked it up */
     if (self -> ticker_dir != NULL)
     {
-	return self -> ticker_dir;
+        return self -> ticker_dir;
     }
 
     /* Use the TICKERDIR environment variable if it is set */
     if ((dir = getenv("TICKERDIR")) != NULL)
     {
-	self -> ticker_dir = strdup(dir);
+        self -> ticker_dir = strdup(dir);
     }
     else
     {
-	/* Otherwise grab the user's home directory */
-	if ((dir = getenv("HOME")) == NULL)
-	{
-	    dir = "/";
-	}
+        /* Otherwise grab the user's home directory */
+        if ((dir = getenv("HOME")) == NULL)
+        {
+            dir = "/";
+        }
 
-	/* And append /.ticker to the end of it */
-	length = strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2;
-	self -> ticker_dir = (char *)malloc(length);
-	snprintf(self -> ticker_dir, length, "%s/%s", dir, DEFAULT_TICKERDIR);
+        /* And append /.ticker to the end of it */
+        length = strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2;
+        self -> ticker_dir = (char *)malloc(length);
+        snprintf(self -> ticker_dir, length, "%s/%s", dir, DEFAULT_TICKERDIR);
     }
 
     /* Make sure the TICKERDIR exists 
@@ -2253,7 +2253,7 @@ static char *tickertape_ticker_dir(tickertape_t self)
      * are set */
     if (mkdirhier(self -> ticker_dir) < 0)
     {
-	perror("unable to create tickertape directory");
+        perror("unable to create tickertape directory");
     }
 
     return self -> ticker_dir;
@@ -2265,10 +2265,10 @@ static char *tickertape_config_filename(tickertape_t self)
 {
     if (self -> config_file == NULL)
     {
-	char *dir = tickertape_ticker_dir(self);
+        char *dir = tickertape_ticker_dir(self);
 
-	self -> config_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
-	sprintf(self -> config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
+        self -> config_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
+        sprintf(self -> config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
     }
 
     return self -> config_file;
@@ -2280,16 +2280,16 @@ static char *tickertape_groups_filename(tickertape_t self)
 {
     if (self -> groups_file == NULL)
     {
-	char *dir = tickertape_ticker_dir(self);
-	size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
+        char *dir = tickertape_ticker_dir(self);
+        size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
 
-	if ((self -> groups_file = (char *)malloc(length)) == NULL)
-	{
-	    perror("unable to allocate memory");
-	    exit(1);
-	}
+        if ((self -> groups_file = (char *)malloc(length)) == NULL)
+        {
+            perror("unable to allocate memory");
+            exit(1);
+        }
 
-	snprintf(self -> groups_file, length, "%s/%s", dir, DEFAULT_GROUPS_FILE);
+        snprintf(self -> groups_file, length, "%s/%s", dir, DEFAULT_GROUPS_FILE);
     }
 
     return self -> groups_file;
@@ -2300,16 +2300,16 @@ static char *tickertape_usenet_filename(tickertape_t self)
 {
     if (self -> usenet_file == NULL)
     {
-	char *dir = tickertape_ticker_dir(self);
-	size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
+        char *dir = tickertape_ticker_dir(self);
+        size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
 
-	if ((self -> usenet_file = (char *)malloc(length)) == NULL)
-	{
-	    perror("unable to allocate memory");
-	    exit(1);
-	}
+        if ((self -> usenet_file = (char *)malloc(length)) == NULL)
+        {
+            perror("unable to allocate memory");
+            exit(1);
+        }
 
-	snprintf(self -> usenet_file, length, "%s/%s", dir, DEFAULT_USENET_FILE);
+        snprintf(self -> usenet_file, length, "%s/%s", dir, DEFAULT_USENET_FILE);
     }
 
     return self -> usenet_file;
@@ -2320,17 +2320,17 @@ static char *tickertape_keys_filename(tickertape_t self)
 {
     if (self -> keys_file == NULL)
     {
-	char *dir = tickertape_ticker_dir(self);
-	size_t length;
+        char *dir = tickertape_ticker_dir(self);
+        size_t length;
 
-	length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
-	if ((self -> keys_file = (char *)malloc(length)) == NULL)
-	{
-	    perror("unable to allocate memory");
-	    exit(1);
-	}
+        length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
+        if ((self -> keys_file = (char *)malloc(length)) == NULL)
+        {
+            perror("unable to allocate memory");
+            exit(1);
+        }
 
-	snprintf(self -> keys_file, length, "%s/%s", dir, DEFAULT_KEYS_FILE);
+        snprintf(self -> keys_file, length, "%s/%s", dir, DEFAULT_KEYS_FILE);
     }
 
     return self -> keys_file;
@@ -2341,27 +2341,27 @@ static char *tickertape_keys_directory(tickertape_t self)
 {
     if (self -> keys_dir == NULL)
     {
-	char *file = tickertape_keys_filename(self);
-	char *point;
-	size_t length;
+        char *file = tickertape_keys_filename(self);
+        char *point;
+        size_t length;
 
-	/* Default to the directory name from the keys filename */
-	if ((point = strrchr(file, '/')) == NULL)
-	{
-	    self -> keys_dir = strdup("");
-	}
-	else
-	{
-	    length = point - file;
-	    if ((self -> keys_dir = (char *)malloc(length + 1)) == NULL)
-	    {
-		perror("Unable to allocate memory");
-		exit(1);
-	    }
+        /* Default to the directory name from the keys filename */
+        if ((point = strrchr(file, '/')) == NULL)
+        {
+            self -> keys_dir = strdup("");
+        }
+        else
+        {
+            length = point - file;
+            if ((self -> keys_dir = (char *)malloc(length + 1)) == NULL)
+            {
+                perror("Unable to allocate memory");
+                exit(1);
+            }
 
-	    memcpy(self -> keys_dir, file, length);
-	    self -> keys_dir[length] = 0;
-	}
+            memcpy(self -> keys_dir, file, length);
+            self -> keys_dir[length] = 0;
+        }
     }
 
     return self -> keys_dir;
@@ -2382,66 +2382,66 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
 
     /* If metamail is not defined then we're done */
     if (self -> resources -> metamail == NULL ||
-	*self -> resources -> metamail == '\0')
+        *self -> resources -> metamail == '\0')
     {
 #if defined(DEBUG)
-	printf("metamail not defined\n");
+        printf("metamail not defined\n");
 #endif /* DEBUG */
-	return -1;
+        return -1;
     }
 
     /* If the message has no attachment then we're done */
     if ((count = message_get_attachment(message, &attachment)) == 0)
     {
 #if defined(DEBUG)
-	printf("no attachment\n");
+        printf("no attachment\n");
 #endif /* DEBUG */
-	return -1;
+        return -1;
     }
 
     /* Create a pipe to send the file to metamail */
     if (pipe(fds_stdin) < 0)
     {
-	perror("pipe(): failed");
-	return -1;
+        perror("pipe(): failed");
+        return -1;
     }
 
     /* Fork a child process to invoke metamail */
     if ((pid = fork()) == (pid_t)-1)
     {
-	perror("fork(): failed");
-	close(fds_stdin[0]);
-	close(fds_stdin[1]);
-	return -1;
+        perror("fork(): failed");
+        close(fds_stdin[0]);
+        close(fds_stdin[1]);
+        return -1;
     }
 
     /* See if we're the child process */
     if (pid == 0)
     {
-	/* Use the pipe as stdin */
-	dup2(fds_stdin[0], STDIN_FILENO);
+        /* Use the pipe as stdin */
+        dup2(fds_stdin[0], STDIN_FILENO);
 
         /* Close off the ends of the pipe */
         close(fds_stdin[0]);
-	close(fds_stdin[1]);
+        close(fds_stdin[1]);
 
-	/* Invoke metamail */
-	execlp(
-	    self -> resources -> metamail,
-	    self -> resources -> metamail,
-	    METAMAIL_OPTIONS,
-	    NULL);
+        /* Invoke metamail */
+        execlp(
+            self -> resources -> metamail,
+            self -> resources -> metamail,
+            METAMAIL_OPTIONS,
+            NULL);
 
-	/* We'll only get here if exec fails */
-	perror("execlp(): failed");
-	exit(1);
+        /* We'll only get here if exec fails */
+        perror("execlp(): failed");
+        exit(1);
     }
 
     /* We're the parent process. */
     if (close(fds_stdin[0]) < 0)
     {
-	perror("close(): failed");
-	return -1;
+        perror("close(): failed");
+        return -1;
     }
 
     /* Write the mime args into the pipe */
@@ -2449,45 +2449,45 @@ int tickertape_show_attachment(tickertape_t self, message_t message)
     pointer = attachment;
     while (pointer < end)
     {
-	ssize_t length;
+        ssize_t length;
 
-	/* Write as much as we can */
-	if ((length = write(fds_stdin[1], pointer, end - pointer)) < 0)
-	{
-	    perror("unable to write to metamail pipe");
-	    return -1;
-	}
+        /* Write as much as we can */
+        if ((length = write(fds_stdin[1], pointer, end - pointer)) < 0)
+        {
+            perror("unable to write to metamail pipe");
+            return -1;
+        }
 
-	pointer += length;
+        pointer += length;
     }
 
     /* Make sure it gets written */
     if (close(fds_stdin[1]) < 0)
     {
-	perror("close(): failed");
-	return -1;
+        perror("close(): failed");
+        return -1;
     }
 
     /* Wait for the child process to exit */
     if (waitpid(pid, &status, 0) == (pid_t)-1)
     {
-	perror("waitpid(): failed");
-	return -1;
+        perror("waitpid(): failed");
+        return -1;
     }
 
     /* Did the child process exit nicely? */
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
     {
-	return 0;
+        return 0;
     }
 #if defined(DEBUG)
     /* Did it exit badly? */
     if (WIFEXITED(status))
     {
-	fprintf(stderr, "%s exit status: %d\n",
-		self -> resources -> metamail,
-		WEXITSTATUS(status));
-	return -1;
+        fprintf(stderr, "%s exit status: %d\n",
+                self -> resources -> metamail,
+                WEXITSTATUS(status));
+        return -1;
     }
 
     fprintf(stderr, "%s died badly\n", self -> resources -> metamail);

@@ -47,42 +47,42 @@ static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.16 2009/03/09 05:26:26 p
 /*
   A threaded mesage History widget
 
- Class:		historyWidgetClass
- Class Name:	History
- Superclass:	Core
+ Class:                historyWidgetClass
+ Class Name:        History
+ Superclass:        Core
 
  Resources added by the History widget:
 
- Name		     Class		RepType		Default Value
- ----		     -----		-------		-------------
- font		     Font		XFontStruct *	XtDefaultFont
- fontCodeSet	     String		String		NULL
- timestampPixel	     TimestampPixel	Pixel		Black
- groupPixel	     GroupPixel		Pixel		Blue
- userPixel	     UserPixel		Pixel		Green
- stringPixel	     StringPixel	Pixel		Red
- separatorPixel	     SeparatorPixel	Pixel		Black
- marginWidth	     MarginWidth	Dimension	5
- marginHeight	     MarginHeight	Dimension	5
- messageCount	     MessageCount	Dimension	32
- selectionPixel	     SelectionPixel	Pixel		Gray
- dragDelay	     DragDelay		int		100
+ Name                     Class                RepType                Default Value
+ ----                     -----                -------                -------------
+ font                     Font                XFontStruct *        XtDefaultFont
+ fontCodeSet             String                String                NULL
+ timestampPixel             TimestampPixel        Pixel                Black
+ groupPixel             GroupPixel                Pixel                Blue
+ userPixel             UserPixel                Pixel                Green
+ stringPixel             StringPixel        Pixel                Red
+ separatorPixel             SeparatorPixel        Pixel                Black
+ marginWidth             MarginWidth        Dimension        5
+ marginHeight             MarginHeight        Dimension        5
+ messageCount             MessageCount        Dimension        32
+ selectionPixel             SelectionPixel        Pixel                Gray
+ dragDelay             DragDelay                int                100
 
- background	     Background		Pixel		XtDefaultBackground
- border		     BorderColor	Pixel		XtDefaultForeground
- borderWidth	     BorderWidth	Dimension	1
- cursor		     Cursor		Cursor		None
- cursorName	     Cursor		String		NULL
- destroyCallback     Callback		Pointer		NULL
- height		     Height		Dimension	0
- insensitiveBorder   Insensitive	Pixmap		Gray
- mappedWhenManaged   MappedWhenManaged	Boolean		True
+ background             Background                Pixel                XtDefaultBackground
+ border                     BorderColor        Pixel                XtDefaultForeground
+ borderWidth             BorderWidth        Dimension        1
+ cursor                     Cursor                Cursor                None
+ cursorName             Cursor                String                NULL
+ destroyCallback     Callback                Pointer                NULL
+ height                     Height                Dimension        0
+ insensitiveBorder   Insensitive        Pixmap                Gray
+ mappedWhenManaged   MappedWhenManaged        Boolean                True
  pointerColor        Foreground         Pixel           XtDefaultForeground
  pointerColorBackground Background      Pixel           XtDefaultBackground
- sensitive	     Sensitive		Boolean		True
- width		     Width		Dimension	0
- x		     Position		Position	0
- y		     Position		Position	0
+ sensitive             Sensitive                Boolean                True
+ width                     Width                Dimension        0
+ x                     Position                Position        0
+ y                     Position                Position        0
 
 */
 

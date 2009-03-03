@@ -43,7 +43,7 @@ static char *default_keys_file =
 "#\n"
 "# Each line has the following format:\n"
 "# \n"
-"#	<key name>:<key type>:<key format>:<key data>\n"
+"#        <key name>:<key type>:<key format>:<key data>\n"
 "#\n"
 "# key name    an arbitrary unique label for the key\n"
 "# key type\n"

@@ -88,92 +88,92 @@ static XtResource resources[] =
 {
     /* XtCallbackProc callback */
     {
-	XtNcallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
-	offset(history.callbacks), XtRPointer, (XtPointer)NULL
+        XtNcallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+        offset(history.callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XtCallbackList attachment_callbacks */
     {
-	XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
-	offset(history.attachment_callbacks), XtRPointer, (XtPointer)NULL
+        XtNattachmentCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+        offset(history.attachment_callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XtCallbackList motion_callbacks */
     {
-	XtNmotionCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
-	offset(history.motion_callbacks), XtRPointer, (XtPointer)NULL
+        XtNmotionCallback, XtCCallback, XtRCallback, sizeof(XtCallbackList),
+        offset(history.motion_callbacks), XtRPointer, (XtPointer)NULL
     },
 
     /* XFontStruct *font */
     {
-	XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
-	offset(history.font), XtRString, XtDefaultFont
+        XtNfont, XtCFont, XtRFontStruct, sizeof(XFontStruct *),
+        offset(history.font), XtRString, XtDefaultFont
     },
 
     /* The font's code set */
     {
-	XtNfontCodeSet, XtCString, XtRString, sizeof(char *),
-	offset(history.code_set), XtRString, (XtPointer)NULL
+        XtNfontCodeSet, XtCString, XtRString, sizeof(char *),
+        offset(history.code_set), XtRString, (XtPointer)NULL
     },
 
     /* Pixel timestamp_pixel */
     {
-	XtNtimestampPixel, XtCTimestampPixel, XtRPixel, sizeof(Pixel),
-	offset(history.timestamp_pixel), XtRString, "Black"
+        XtNtimestampPixel, XtCTimestampPixel, XtRPixel, sizeof(Pixel),
+        offset(history.timestamp_pixel), XtRString, "Black"
     },
 
     /* Pixel group_pixel */
     {
-	XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
-	offset(history.group_pixel), XtRString, "Blue"
+        XtNgroupPixel, XtCGroupPixel, XtRPixel, sizeof(Pixel),
+        offset(history.group_pixel), XtRString, "Blue"
     },
 
     /* Pixel user_pixel */
     {
-	XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
-	offset(history.user_pixel), XtRString, "Green"
+        XtNuserPixel, XtCUserPixel, XtRPixel, sizeof(Pixel),
+        offset(history.user_pixel), XtRString, "Green"
     },
 
     /* Pixel string_pixel */
     {
-	XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
-	offset(history.string_pixel), XtRString, "Red"
+        XtNstringPixel, XtCStringPixel, XtRPixel, sizeof(Pixel),
+        offset(history.string_pixel), XtRString, "Red"
     },
 
     /* Pixel separator_pixel */
     {
-	XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
-	offset(history.separator_pixel), XtRString, XtDefaultForeground
+        XtNseparatorPixel, XtCSeparatorPixel, XtRPixel, sizeof(Pixel),
+        offset(history.separator_pixel), XtRString, XtDefaultForeground
     },
 
     /* Dimension margin_width */
     {
-	XtNmarginWidth, XtCMarginWidth, XtRDimension, sizeof(Dimension),
-	offset(history.margin_width), XtRImmediate, (XtPointer)5
+        XtNmarginWidth, XtCMarginWidth, XtRDimension, sizeof(Dimension),
+        offset(history.margin_width), XtRImmediate, (XtPointer)5
     },
 
     /* Dimension margin_height */
     {
-	XtNmarginHeight, XtCMarginHeight, XtRDimension, sizeof(Dimension),
-	offset(history.margin_height), XtRImmediate, (XtPointer)5
+        XtNmarginHeight, XtCMarginHeight, XtRDimension, sizeof(Dimension),
+        offset(history.margin_height), XtRImmediate, (XtPointer)5
     },
 
     /* unsigned int message_capacity */
     {
-	XtNmessageCapacity, XtCMessageCapacity, XtRDimension, sizeof(unsigned int),
-	offset(history.message_capacity), XtRImmediate, (XtPointer)32
+        XtNmessageCapacity, XtCMessageCapacity, XtRDimension, sizeof(unsigned int),
+        offset(history.message_capacity), XtRImmediate, (XtPointer)32
     },
 
     /* Pixel selection_pixel */
     {
-	XtNselectionPixel, XtCSelectionPixel, XtRPixel, sizeof(Pixel),
-	offset(history.selection_pixel), XtRString, XtDefaultForeground
+        XtNselectionPixel, XtCSelectionPixel, XtRPixel, sizeof(Pixel),
+        offset(history.selection_pixel), XtRString, XtDefaultForeground
     },
 
     /* int drag_delay */
     {
-	XtNdragDelay, XtCDragDelay, XtRInt, sizeof(int),
-	offset(history.drag_delay), XtRImmediate, (XtPointer)100
+        XtNdragDelay, XtCDragDelay, XtRInt, sizeof(int),
+        offset(history.drag_delay), XtRImmediate, (XtPointer)100
     }
 };
 #undef offset
@@ -255,7 +255,7 @@ static translation_queue_t translation_queue_alloc(
     /* Allocate memory for the queue item */
     if ((self = (translation_queue_t)malloc(sizeof(struct translation_queue))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Record the information */
@@ -293,7 +293,7 @@ static node_t node_alloc(message_t message)
     /* Allocate memory for the node */
     if ((self = malloc(sizeof(struct node))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Initialize its fields to sane values */
@@ -310,8 +310,8 @@ static void node_free(node_t self)
     /* Make sure we decrement the message's reference count */
     if (self -> message != NULL)
     {
-	message_free(self -> message);
-	self -> message = NULL;
+        message_free(self -> message);
+        self -> message = NULL;
     }
 
     dprintf(("node_free(): %p\n", self));
@@ -356,75 +356,75 @@ static char *node_get_id(node_t self)
  *    Will be set to the depth of the newly added node.
  */
 static void node_add1(node_t *self,
-		      char *parent_id, node_t *child,
-		      int *index, int *index_out,
-		      int depth, int *depth_out)
+                      char *parent_id, node_t *child,
+                      int *index, int *index_out,
+                      int depth, int *depth_out)
 {
     /* Traverse all of our siblings */
     while (*self != NULL)
     {
-	char *id;
+        char *id;
 
-	/* If no match yet, then check for one here */
-	if (parent_id && *child != NULL &&
-	    (id = node_get_id(*self)) != NULL &&
-	    strcmp(id, parent_id) == 0)
-	{
-	    /* Match!  Add the child to this node */
-	    (*child) -> sibling = (*self) -> child;
-	    (*self) -> child = *child;
-	    *child = NULL;
+        /* If no match yet, then check for one here */
+        if (parent_id && *child != NULL &&
+            (id = node_get_id(*self)) != NULL &&
+            strcmp(id, parent_id) == 0)
+        {
+            /* Match!  Add the child to this node */
+            (*child) -> sibling = (*self) -> child;
+            (*self) -> child = *child;
+            *child = NULL;
 
-	    /* Kill the child node it its parent was killed */
-	    if (message_is_killed((*self) -> message))
-	    {
-		message_set_killed((*self) -> child -> message, True);
-	    }
+            /* Kill the child node it its parent was killed */
+            if (message_is_killed((*self) -> message))
+            {
+                message_set_killed((*self) -> child -> message, True);
+            }
 
-	    /* Record output information */
-	    *index_out = *index;
-	    *depth_out = depth + 1;
+            /* Record output information */
+            *index_out = *index;
+            *depth_out = depth + 1;
 
-	    /* The next node we visit will be the new child.  We don't
-	     * want it to update the index to be consistent with the
-	     * case where we can't find its parent, so we increment
-	     * the index here to compensate for it being decremented
-	     * when we traverse the children next. */
-	    (*index)++;
-	}
+            /* The next node we visit will be the new child.  We don't
+             * want it to update the index to be consistent with the
+             * case where we can't find its parent, so we increment
+             * the index here to compensate for it being decremented
+             * when we traverse the children next. */
+            (*index)++;
+        }
 
-	/* Check with the descendents */
-	if ((*self) -> child != NULL)
-	{
-	    node_add1(&(*self) -> child,
-		     parent_id, child,
-		     index, index_out,
-		     depth + 1, depth_out);
-	}
+        /* Check with the descendents */
+        if ((*self) -> child != NULL)
+        {
+            node_add1(&(*self) -> child,
+                     parent_id, child,
+                     index, index_out,
+                     depth + 1, depth_out);
+        }
 
-	/* We've traversed a node */
-	(*index)--;
+        /* We've traversed a node */
+        (*index)--;
 
-	/* If this node has scrolled off the top of the history and
-	 * has no children then we can safely remove it from the tree.
-	 * Note: this check is simplistic, but it will work since the
-	 * new node must always be added after any nodes that have
-	 * scrolled off the top. */
-	if (*index < 0 && (*self) -> child == NULL)
-	{
-	    /* If the above statement is true, then it follows that
-	     * the node may not have any elder siblings.  Hence this
-	     * is a good sanity check. */
-	    assert((*self) -> sibling == NULL);
+        /* If this node has scrolled off the top of the history and
+         * has no children then we can safely remove it from the tree.
+         * Note: this check is simplistic, but it will work since the
+         * new node must always be added after any nodes that have
+         * scrolled off the top. */
+        if (*index < 0 && (*self) -> child == NULL)
+        {
+            /* If the above statement is true, then it follows that
+             * the node may not have any elder siblings.  Hence this
+             * is a good sanity check. */
+            assert((*self) -> sibling == NULL);
 
-	    /* Free the node */
-	    node_free(*self);
-	    *self = NULL;
-	    return;
-	}
+            /* Free the node */
+            node_free(*self);
+            *self = NULL;
+            return;
+        }
 
-	/* The pointer we want to update if this node disappears */
-	self = &(*self) -> sibling;
+        /* The pointer we want to update if this node disappears */
+        self = &(*self) -> sibling;
     }
 }
 
@@ -452,11 +452,11 @@ static void node_add1(node_t *self,
  *    Will be set to the depth of the newly added node.
  */
 static void node_add(node_t *self,
-		     char *parent_id,
-		     node_t child,
-		     int count,
-		     int *index_out,
-		     int *depth_out)
+                     char *parent_id,
+                     node_t child,
+                     int count,
+                     int *index_out,
+                     int *depth_out)
 {
     int index;
 
@@ -470,11 +470,11 @@ static void node_add(node_t *self,
     /* Add the child now if it didn't get added already */
     if (child != NULL)
     {
-	/* Add the node to the tree */
-	child -> sibling = *self;
-	(*self) = child;
-	*index_out = count - 1;
-	*depth_out = 0;
+        /* Add the node to the tree */
+        child -> sibling = *self;
+        (*self) = child;
+        *index_out = count - 1;
+        *depth_out = 0;
     }
 }
 
@@ -486,23 +486,23 @@ node_t node_find(node_t self, message_t message)
     /* Traverse the siblings until an answer is found */
     while (self != NULL)
     {
-	/* Is it this node? */
-	if (self -> message == message)
-	{
-	    return self;
-	}
+        /* Is it this node? */
+        if (self -> message == message)
+        {
+            return self;
+        }
 
-	/* Is it one of our children? */
-	if (self -> child)
-	{
-	    if ((result = node_find(self -> child, message)) != NULL)
-	    {
-		return result;
-	    }
-	}
+        /* Is it one of our children? */
+        if (self -> child)
+        {
+            if ((result = node_find(self -> child, message)) != NULL)
+            {
+                return result;
+            }
+        }
 
-	/* Try the next sibling */
-	self = self -> sibling;
+        /* Try the next sibling */
+        self = self -> sibling;
     }
 
     /* Not here */
@@ -520,7 +520,7 @@ void node_kill(node_t self)
     /* If the node has already been killed then don't kill it again */
     if (message_is_killed(self -> message))
     {
-	return;
+        return;
     }
 
     /* Mark the node as killed */
@@ -529,7 +529,7 @@ void node_kill(node_t self)
     /* Kill its children */
     for (child = self -> child; child != NULL; child = child -> sibling)
     {
-	node_kill(child);
+        node_kill(child);
     }
 }
 
@@ -541,7 +541,7 @@ static void node_dump(node_t self, int depth)
     /* Nothing to print... */
     if (self == NULL)
     {
-	return;
+        return;
     }
 
     /* Print our siblings */
@@ -550,7 +550,7 @@ static void node_dump(node_t self, int depth)
     /* Indent */
     for (i = 0; i < depth; i++)
     {
-	printf("  ");
+        printf("  ");
     }
 
     /* Print this node's message */
@@ -564,47 +564,47 @@ static void node_dump(node_t self, int depth)
 
 /* Populate an array with message views */
 static void node_populate(node_t self,
-			  utf8_renderer_t renderer,
-			  message_view_t *array,
-			  int depth, int *index,
-			  message_t selection,
-			  unsigned int *selection_index_out)
+                          utf8_renderer_t renderer,
+                          message_view_t *array,
+                          int depth, int *index,
+                          message_t selection,
+                          unsigned int *selection_index_out)
 {
     /* Go through each of our siblings */
     while (self != NULL)
     {
-	/* Add the children first */
-	if (self -> child)
-	{
-	    node_populate(
-		self -> child,
-		renderer,
-		array,
-		depth + 1,
-		index,
-		selection,
-		selection_index_out);
-	}
+        /* Add the children first */
+        if (self -> child)
+        {
+            node_populate(
+                self -> child,
+                renderer,
+                array,
+                depth + 1,
+                index,
+                selection,
+                selection_index_out);
+        }
 
-	/* Bail if the index goes negative */
-	if (*index < 0)
-	{
-	    return;
-	}
+        /* Bail if the index goes negative */
+        if (*index < 0)
+        {
+            return;
+        }
 
-	/* Is this the selection? */
-	if (self -> message == selection)
-	{
-	    *selection_index_out = *index;
-	}
+        /* Is this the selection? */
+        if (self -> message == selection)
+        {
+            *selection_index_out = *index;
+        }
 
-	/* Wrap the message in a message view */
-	/* FIX THIS: use a real conversion descriptor */
-	array[(*index)--] =  message_view_alloc(
-	    self -> message, depth, renderer);
+        /* Wrap the message in a message view */
+        /* FIX THIS: use a real conversion descriptor */
+        array[(*index)--] =  message_view_alloc(
+            self -> message, depth, renderer);
 
-	/* Move on to the next node */
-	self = self -> sibling;
+        /* Move on to the next node */
+        self = self -> sibling;
     }
 }
 
@@ -648,54 +648,54 @@ HistoryClassRec historyClassRec =
 {
     /* core_class fields */
     {
-	(WidgetClass)&xmPrimitiveClassRec, /* superclass */
-	"History", /* class_name */
-	sizeof(HistoryRec), /* widget_size */
-	NULL, /* class_initialize */
-	NULL, /* class_part_initialize */
-	False, /* class_inited */
-	init, /* initialize */
-	NULL, /* initialize_hook */
-	realize, /* realize */
-	actions, /* actions */
-	XtNumber(actions), /* num_actions */
-	resources, /* resources */
-	XtNumber(resources), /* num_resources */
-	NULLQUARK, /* xrm_class */
-	True, /* compress_motion */
-	XtExposeCompressMaximal, /* compress_exposure */
-	True, /* compress_enterleave */
-	False, /* visible_interest */
-	destroy, /* destroy */
-	resize, /* resize */
-	redisplay, /* expose */
-	set_values, /* set_values */
-	NULL, /* set_values_hook */
-	XtInheritSetValuesAlmost, /* set_values_almost */
-	NULL, /* get_values_hook */
-	NULL, /* accept_focus */
-	XtVersion, /* version */
-	NULL, /* callback_private */
-	NULL, /* tm_table */
-	query_geometry, /* query_geometry */
-	XtInheritDisplayAccelerator, /* display_accelerator */
-	NULL /* extension */
+        (WidgetClass)&xmPrimitiveClassRec, /* superclass */
+        "History", /* class_name */
+        sizeof(HistoryRec), /* widget_size */
+        NULL, /* class_initialize */
+        NULL, /* class_part_initialize */
+        False, /* class_inited */
+        init, /* initialize */
+        NULL, /* initialize_hook */
+        realize, /* realize */
+        actions, /* actions */
+        XtNumber(actions), /* num_actions */
+        resources, /* resources */
+        XtNumber(resources), /* num_resources */
+        NULLQUARK, /* xrm_class */
+        True, /* compress_motion */
+        XtExposeCompressMaximal, /* compress_exposure */
+        True, /* compress_enterleave */
+        False, /* visible_interest */
+        destroy, /* destroy */
+        resize, /* resize */
+        redisplay, /* expose */
+        set_values, /* set_values */
+        NULL, /* set_values_hook */
+        XtInheritSetValuesAlmost, /* set_values_almost */
+        NULL, /* get_values_hook */
+        NULL, /* accept_focus */
+        XtVersion, /* version */
+        NULL, /* callback_private */
+        NULL, /* tm_table */
+        query_geometry, /* query_geometry */
+        XtInheritDisplayAccelerator, /* display_accelerator */
+        NULL /* extension */
     },
 
     /* Primitive class fields initialization */
     {
-	border_highlight, /* border_highlight */
-	border_unhighlight, /* border_unhighlight */
-	NULL, /* translations */
-	NULL, /* arm_and_activate_proc */
-	NULL, /* synthetic resources */
-	0, /* num syn res */
-	NULL, /* extension */
+        border_highlight, /* border_highlight */
+        border_unhighlight, /* border_unhighlight */
+        NULL, /* translations */
+        NULL, /* arm_and_activate_proc */
+        NULL, /* synthetic resources */
+        0, /* num syn res */
+        NULL, /* extension */
     },
 
     /* History class fields initialization */
     {
-	0 /* foo */
+        0 /* foo */
     }
 };
 
@@ -732,21 +732,21 @@ static void copy_area(
     /* Allocate a new translation queue item */
     if ((item = translation_queue_alloc(NextRequest(display), src_x, src_y, width, height, dest_x, dest_y)) == NULL)
     {
-	abort();
+        abort();
     }
 
     /* Append the item to the translation queue */
     if (self -> history.tqueue_end == NULL)
     {
-	assert(self -> history.tqueue == NULL);
-	self -> history.tqueue = item;
-	dprintf(("first: %lu\n", item -> request_id));
+        assert(self -> history.tqueue == NULL);
+        self -> history.tqueue = item;
+        dprintf(("first: %lu\n", item -> request_id));
     }
     else
     {
-	assert(self -> history.tqueue != NULL);
-	self -> history.tqueue_end -> next = item;
-	dprintf(("added: %lu\n", item -> request_id));
+        assert(self -> history.tqueue != NULL);
+        self -> history.tqueue_end -> next = item;
+        dprintf(("added: %lu\n", item -> request_id));
     }
 
     self -> history.tqueue_end = item;
@@ -775,101 +775,101 @@ static void compensate_bbox(
     item = self -> history.tqueue;
     while (item != NULL)
     {
-	/* Has the request been processed? */
-	if (item -> request_id <= request_id)
-	{
-	    dprintf(("removing item %lu\n", item -> request_id));
+        /* Has the request been processed? */
+        if (item -> request_id <= request_id)
+        {
+            dprintf(("removing item %lu\n", item -> request_id));
 
-	    /* Yes.  We no longer require it */
-	    assert(self -> history.tqueue == item);
-	    self -> history.tqueue = item -> next;
-	    free(item);
-	    item = self -> history.tqueue;
-	    continue;
-	}
+            /* Yes.  We no longer require it */
+            assert(self -> history.tqueue == item);
+            self -> history.tqueue = item -> next;
+            free(item);
+            item = self -> history.tqueue;
+            continue;
+        }
 
-	dprintf(("compensating for item %lu; %ux%u+%d+%d to %d,%d\n",
-		item -> request_id,
-		item -> right - item -> left, item -> bottom - item -> top,
-		item -> left, item -> top,
-		item -> left + item -> dx, item -> top + item -> dy));
+        dprintf(("compensating for item %lu; %ux%u+%d+%d to %d,%d\n",
+                item -> request_id,
+                item -> right - item -> left, item -> bottom - item -> top,
+                item -> left, item -> top,
+                item -> left + item -> dx, item -> top + item -> dy));
 
-	/* Adjust the x coordinate and width (there are 6 cases) */
-	if (item -> left < left)
-	{
-	    if (item -> right < left)
-	    {
-		/* nothing */
-	    }
-	    else if (item -> right < right)
-	    {
-		left += item -> dx;
-	    }
-	    else
-	    {
-		left += item -> dx;
-		right += item -> dx;
-	    }
-	}
-	else if (item -> left < right)
-	{
-	    if (item -> right < right)
-	    {
-		left = MIN(left, item -> left + item -> dx);
-		right = MAX(right, item -> right + item -> dx);
-	    }
-	    else
-	    {
-		right += item -> dx;
-	    }
-	}
-	else
-	{
-	    /* nothing */
-	}
+        /* Adjust the x coordinate and width (there are 6 cases) */
+        if (item -> left < left)
+        {
+            if (item -> right < left)
+            {
+                /* nothing */
+            }
+            else if (item -> right < right)
+            {
+                left += item -> dx;
+            }
+            else
+            {
+                left += item -> dx;
+                right += item -> dx;
+            }
+        }
+        else if (item -> left < right)
+        {
+            if (item -> right < right)
+            {
+                left = MIN(left, item -> left + item -> dx);
+                right = MAX(right, item -> right + item -> dx);
+            }
+            else
+            {
+                right += item -> dx;
+            }
+        }
+        else
+        {
+            /* nothing */
+        }
 
-	/* Adjust the y coordinate and height (same 6 cases) */
-	if (item -> top < top)
-	{
-	    if (item -> bottom < top)
-	    {
-		/* nothing */
-	    }
-	    else if (item -> bottom < bottom)
-	    {
-		top += item -> dy;
-	    }
-	    else
-	    {
-		top += item -> dy;
-		bottom += item -> dy;
-	    }
-	}
-	else if (item -> top < bottom)
-	{
-	    if (item -> bottom < bottom)
-	    {
-		top = MIN(top, item -> top + item -> dy);
-		bottom = MAX(bottom, item -> bottom + item -> dy);
-	    }
-	    else
-	    {
-		bottom += item -> dy;
-	    }
-	}
-	else
-	{
-	    /* nothing */
-	}
+        /* Adjust the y coordinate and height (same 6 cases) */
+        if (item -> top < top)
+        {
+            if (item -> bottom < top)
+            {
+                /* nothing */
+            }
+            else if (item -> bottom < bottom)
+            {
+                top += item -> dy;
+            }
+            else
+            {
+                top += item -> dy;
+                bottom += item -> dy;
+            }
+        }
+        else if (item -> top < bottom)
+        {
+            if (item -> bottom < bottom)
+            {
+                top = MIN(top, item -> top + item -> dy);
+                bottom = MAX(bottom, item -> bottom + item -> dy);
+            }
+            else
+            {
+                bottom += item -> dy;
+            }
+        }
+        else
+        {
+            /* nothing */
+        }
 
-	item = item -> next;
+        item = item -> next;
     }
 
     /* Tidy up if the queue is empty */
     if (self -> history.tqueue == NULL)
     {
-	dprintf(("empty!\n"));
-	self -> history.tqueue_end = NULL;
+        dprintf(("empty!\n"));
+        self -> history.tqueue_end = NULL;
     }
 
     /* Update the bbox */
@@ -894,38 +894,38 @@ static void set_origin(HistoryWidget self, long x, long y, int update_scrollbars
     /* Skip this part if we're not visible */
     if (gc != None)
     {
-	/* Remove our clip mask */
-	values.clip_mask = None;
-	XChangeGC(display, gc, GCClipMask, &values);
+        /* Remove our clip mask */
+        values.clip_mask = None;
+        XChangeGC(display, gc, GCClipMask, &values);
 
-	/* Copy the area to its new location */
-	copy_area(
-	    self, display, window, gc,
-	    x - self -> history.x, y - self -> history.y,
-	    self -> core.width, self -> core.height,
-	    0, 0);
+        /* Copy the area to its new location */
+        copy_area(
+            self, display, window, gc,
+            x - self -> history.x, y - self -> history.y,
+            self -> core.width, self -> core.height,
+            0, 0);
     }
 
     /* Update the scrollbars */
     if (update_scrollbars)
     {
-	/* Have we moved horizontally? */
-	if (self -> history.x != x)
-	{
-	    XtVaSetValues(
-		self -> history.hscrollbar,
-		XmNvalue, (int)x,
-		NULL);
-	}
+        /* Have we moved horizontally? */
+        if (self -> history.x != x)
+        {
+            XtVaSetValues(
+                self -> history.hscrollbar,
+                XmNvalue, (int)x,
+                NULL);
+        }
 
-	/* Have we moved vertically? */
-	if (self -> history.y != y)
-	{
-	    XtVaSetValues(
-		self -> history.vscrollbar,
-		XmNvalue, (int)y,
-		NULL);
-	}
+        /* Have we moved vertically? */
+        if (self -> history.y != y)
+        {
+            XtVaSetValues(
+                self -> history.vscrollbar,
+                XmNvalue, (int)y,
+                NULL);
+        }
     }
 
     /* Record our new location */
@@ -969,12 +969,12 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Allocate a conversion descriptor */
     if ((self -> history.renderer = utf8_renderer_alloc(
-	     XtDisplay(widget),
-	     self -> history.font,
-	     self -> history.code_set)) == NULL)
+             XtDisplay(widget),
+             self -> history.font,
+             self -> history.code_set)) == NULL)
     {
-	perror("trouble");
-	exit(1);
+        perror("trouble");
+        exit(1);
     }
 
     /* Set the initial width/height if none are supplied */
@@ -987,8 +987,8 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Compute the line height */
     self -> history.line_height =
-	(long)self -> history.font -> ascent +
-	(long)self -> history.font -> descent + 1;
+        (long)self -> history.font -> ascent +
+        (long)self -> history.font -> descent + 1;
 
     /* Initialize the x and y coordinates of the visible region */
     self -> history.x = 0;
@@ -1012,7 +1012,7 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     self -> history.message_count = 0;
     self -> history.message_index = 0;
     self -> history.message_views =
-	calloc(self -> history.message_capacity, sizeof(message_view_t));
+        calloc(self -> history.message_capacity, sizeof(message_view_t));
 
     /* Nothing is selected yet */
     self -> history.selection = NULL;
@@ -1023,15 +1023,15 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget(
-	"HorizScrollBar", xmScrollBarWidgetClass,
-	XtParent(self),
-	XmNincrement, self -> history.line_height,
-	XmNmaximum, self -> history.width,
-	XmNminimum, 0,
-	XmNorientation, XmHORIZONTAL,
-	XmNpageIncrement, self -> core.width,
-	XmNsliderSize, self -> history.width,
-	NULL);
+        "HorizScrollBar", xmScrollBarWidgetClass,
+        XtParent(self),
+        XmNincrement, self -> history.line_height,
+        XmNmaximum, self -> history.width,
+        XmNminimum, 0,
+        XmNorientation, XmHORIZONTAL,
+        XmNpageIncrement, self -> core.width,
+        XmNsliderSize, self -> history.width,
+        NULL);
 
     /* Add a bunch of callbacks */
     XtAddCallback(scrollbar, XmNdragCallback, horiz_scrollbar_cb, self);
@@ -1046,15 +1046,15 @@ static void init(Widget request, Widget widget, ArgList args, Cardinal *num_args
     
     /* Create the vertical scrollbar */
     scrollbar = XtVaCreateManagedWidget(
-	"VertScrollBar", xmScrollBarWidgetClass,
-	XtParent(self),
-	XmNincrement, self -> history.line_height,
-	XmNmaximum, self -> history.height,
-	XmNminimum, 0,
-	XmNorientation, XmVERTICAL,
-	XmNpageIncrement, self -> core.height,
-	XmNsliderSize, self -> history.height,
-	NULL);
+        "VertScrollBar", xmScrollBarWidgetClass,
+        XtParent(self),
+        XmNincrement, self -> history.line_height,
+        XmNmaximum, self -> history.height,
+        XmNminimum, 0,
+        XmNorientation, XmVERTICAL,
+        XmNpageIncrement, self -> core.height,
+        XmNsliderSize, self -> history.height,
+        NULL);
 
     /* Add a bunch of callbacks */
     XtAddCallback(scrollbar, XmNdecrementCallback, vert_scrollbar_cb, self);
@@ -1076,14 +1076,14 @@ static unsigned int index_of_y(HistoryWidget self, long y)
     /* Is y in the top margin? */
     if (self -> history.y + y < self -> history.margin_height)
     {
-	/* Pretend its in the first message */
-	index = 0;
+        /* Pretend its in the first message */
+        index = 0;
     }
     else
     {
-	/* Otherwise compute the position */
-	index = (self -> history.y + y - self -> history.margin_height) /
-	    self -> history.line_height;
+        /* Otherwise compute the position */
+        index = (self -> history.y + y - self -> history.margin_height) /
+            self -> history.line_height;
     }
 
     return index;
@@ -1103,44 +1103,44 @@ static void update_scrollbars(Widget widget, long *x_out, long *y_out)
     /* The slider can't be wider than the total */
     if (self -> history.width < width)
     {
-	width = self -> history.width;
+        width = self -> history.width;
     }
 
     /* Keep the right edge sane */
     x = self -> history.x;
     if (self -> history.width - width < x)
     {
-	x = self -> history.width - width;
+        x = self -> history.width - width;
     }
 
     /* The slider can't be taller than the total */
     if (self -> history.height < height)
     {
-	height = self -> history.height;
+        height = self -> history.height;
     }
 
     /* Keep the bottom edge sane */
     y = self -> history.y;
     if (self -> history.height - height < y)
     {
-	y = self -> history.height - height;
+        y = self -> history.height - height;
     }
 
     /* Update the horizontal scrollbar */
     XtVaSetValues(
-	self -> history.hscrollbar,
-	XmNvalue, x,
-	XmNsliderSize, width,
-	XmNmaximum, self -> history.width,
-	NULL);
+        self -> history.hscrollbar,
+        XmNvalue, x,
+        XmNsliderSize, width,
+        XmNmaximum, self -> history.width,
+        NULL);
 
     /* Update the vertical scrollbar */
     XtVaSetValues(
-	self -> history.vscrollbar,
-	XmNvalue, y,
-	XmNsliderSize, height,
-	XmNmaximum, self -> history.height,
-	NULL);
+        self -> history.vscrollbar,
+        XmNvalue, y,
+        XmNsliderSize, height,
+        XmNmaximum, self -> history.height,
+        NULL);
 
     /* Return the resulting x and y values */
     *x_out = x;
@@ -1187,17 +1187,17 @@ static void paint_highlight(HistoryWidget self)
     /* Bail out if we're not highlighted */
     if (! self -> primitive.highlighted)
     {
-	return;
+        return;
     }
 
     /* Determine the location of the selection */
     y = self -> history.selection_index * self -> history.line_height -
-	self  -> history.y + self -> history.margin_height;
+        self  -> history.y + self -> history.margin_height;
 
     /* Bail if it isn't visible */
     if (y + self -> history.line_height < 0 && (long)self -> history.height <= y)
     {
-	return;
+        return;
     }
 
     /* We'll always draw the top and bottom segments */
@@ -1217,21 +1217,21 @@ static void paint_highlight(HistoryWidget self)
     /* Draw the left edge iff the we're scrolled all the way to the left */
     if (self -> history.x == 0)
     {
-	segments[i].x1 = 0;
-	segments[i].y1 = y;
-	segments[i].x2 = 0;
-	segments[i].y2 = y + self -> history.line_height - 1;
-	i++;
+        segments[i].x1 = 0;
+        segments[i].y1 = y;
+        segments[i].x2 = 0;
+        segments[i].y2 = y + self -> history.line_height - 1;
+        i++;
     }
 
     /* Draw the right edge iff we're scrolled all the way to the right */
     if (self -> history.x + self -> core.width >= self -> history.width)
     {
-	segments[i].x1 = self -> core.width - 1;
-	segments[i].y1 = y;
-	segments[i].x2 = self -> core.width - 1;
-	segments[i].y2 = y + self -> history.line_height - 1;
-	i++;
+        segments[i].x1 = self -> core.width - 1;
+        segments[i].y1 = y;
+        segments[i].x2 = self -> core.width - 1;
+        segments[i].y2 = y + self -> history.line_height - 1;
+        i++;
     }
 
     /* Set up the graphics context */
@@ -1265,59 +1265,59 @@ static void paint(HistoryWidget self, XRectangle *bbox)
     /* Is the top margin visible? */
     if (self -> history.y < self -> history.margin_height)
     {
-	/* Yes.  Start drawing at index 0 */
-	index = 0;
-	y = ymargin - self -> history.y;
+        /* Yes.  Start drawing at index 0 */
+        index = 0;
+        y = ymargin - self -> history.y;
     }
     else
     {
-	/* No.  Compute the first visible index */
-	index = (self -> history.y - self -> history.margin_height) / self -> history.line_height;
-	y = (ymargin - self -> history.y) % self -> history.line_height;
+        /* No.  Compute the first visible index */
+        index = (self -> history.y - self -> history.margin_height) / self -> history.line_height;
+        y = (ymargin - self -> history.y) % self -> history.line_height;
     }
 
     /* Draw all visible message views */
     while (index < self -> history.message_count)
     {
-	/* Skip NULL message views */
-	if ((view = self -> history.message_views[index++]) == NULL)
-	{
-	    return;
-	}
+        /* Skip NULL message views */
+        if ((view = self -> history.message_views[index++]) == NULL)
+        {
+            return;
+        }
 
-	/* Is this the selected message? */
-	if (message_view_get_message(view) == self -> history.selection)
-	{
-	    /* Yes, draw a background for it */
-	    values.foreground = self -> history.selection_pixel;
-	    XChangeGC(display, gc, GCForeground, &values);
+        /* Is this the selected message? */
+        if (message_view_get_message(view) == self -> history.selection)
+        {
+            /* Yes, draw a background for it */
+            values.foreground = self -> history.selection_pixel;
+            XChangeGC(display, gc, GCForeground, &values);
 
-	    /* FIX THIS: should we respect the margin? */
-	    XFillRectangle(
-		display, window, gc,
-		0, y, self -> core.width,
-		self -> history.line_height);
+            /* FIX THIS: should we respect the margin? */
+            XFillRectangle(
+                display, window, gc,
+                0, y, self -> core.width,
+                self -> history.line_height);
 
-	    /* Draw the highlight */
-	    paint_highlight(self);
-	}
+            /* Draw the highlight */
+            paint_highlight(self);
+        }
 
-	/* Draw the view */
-	message_view_paint(
-	    view, display, window, gc,
-	    show_timestamps, self -> history.timestamp_pixel,
-	    self -> history.group_pixel, self -> history.user_pixel,
-	    self -> history.string_pixel, self -> history.separator_pixel,
-	    x, y + self -> history.font -> ascent, bbox);
+        /* Draw the view */
+        message_view_paint(
+            view, display, window, gc,
+            show_timestamps, self -> history.timestamp_pixel,
+            self -> history.group_pixel, self -> history.user_pixel,
+            self -> history.string_pixel, self -> history.separator_pixel,
+            x, y + self -> history.font -> ascent, bbox);
 
-	/* Get ready to draw the next one */
-	y += self -> history.line_height;
+        /* Get ready to draw the next one */
+        y += self -> history.line_height;
 
-	/* Bail out if the next line is past the end of the screen */
-	if (! (y < self -> core.height))
-	{
-	    return;
-	}
+        /* Bail out if the next line is past the end of the screen */
+        if (! (y < self -> core.height))
+        {
+            return;
+        }
     }
 }
 
@@ -1331,8 +1331,8 @@ static void redisplay(Widget widget, XEvent *event, Region region)
     /* Sanity check */
     if (! region)
     {
-	dprintf(("no region\n"));
-	return;
+        dprintf(("no region\n"));
+        return;
     }
 
     /* Find the smallest rectangle which contains the region */
@@ -1358,12 +1358,12 @@ static void redisplay_index(HistoryWidget self, unsigned int index)
     /* Bail if the index is out of range */
     if (! (index < self -> history.message_count))
     {
-	return;
+        return;
     }
 
     /* Figure out where the message is */
     y = index * self -> history.line_height -
-	self -> history.y + self -> history.margin_height;
+        self -> history.y + self -> history.margin_height;
 
     /* Create a bounding box for the message */
     bbox.x = 0;
@@ -1393,20 +1393,20 @@ static void motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ign
     /* Make sure the pointer is within the bounds of the widget */
     if (0 <= mevent -> y && mevent -> y < self -> core.height)
     {
-	index = index_of_y(self, mevent -> y);
+        index = index_of_y(self, mevent -> y);
 
-	/* Make sure it's over a message */
-	if (index < self -> history.message_count)
-	{
-	    view = self -> history.message_views[index];
-	}
+        /* Make sure it's over a message */
+        if (index < self -> history.message_count)
+        {
+            view = self -> history.message_views[index];
+        }
     }
 
     /* Call the callbacks */
     XtCallCallbackList(
-	widget,
-	self -> history.motion_callbacks,
-	(XtPointer)(view ? message_view_get_message(view) : NULL));
+        widget,
+        self -> history.motion_callbacks,
+        (XtPointer)(view ? message_view_get_message(view) : NULL));
 }
 
 /* Repaint the bits of the widget that didn't get copied */
@@ -1420,44 +1420,44 @@ static void gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignor
     /* Process all of the GraphicsExpose events in one hit */
     while (1)
     {
-	XGraphicsExposeEvent *g_event;
+        XGraphicsExposeEvent *g_event;
 
-	/* Sanity check */
-	assert(event -> type == GraphicsExpose || event -> type == NoExpose);
+        /* Sanity check */
+        assert(event -> type == GraphicsExpose || event -> type == NoExpose);
 
-	/* Coerce the event */
-	g_event = (XGraphicsExposeEvent *)event;
+        /* Coerce the event */
+        g_event = (XGraphicsExposeEvent *)event;
 
-	/* Get the bounding box of the event */
-	bbox.x = g_event -> x;
-	bbox.y = g_event -> y;
-	bbox.width = g_event -> width;
-	bbox.height = g_event -> height;
+        /* Get the bounding box of the event */
+        bbox.x = g_event -> x;
+        bbox.y = g_event -> y;
+        bbox.width = g_event -> width;
+        bbox.height = g_event -> height;
 
-	/* Compensate for unprocessed CopyArea requests */
-	dprintf(("gexpose() request_id=%lu\n", g_event -> serial));
-	dprintf(("before: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
-	compensate_bbox(self, g_event -> serial, &bbox);
-	dprintf(("after: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
+        /* Compensate for unprocessed CopyArea requests */
+        dprintf(("gexpose() request_id=%lu\n", g_event -> serial));
+        dprintf(("before: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
+        compensate_bbox(self, g_event -> serial, &bbox);
+        dprintf(("after: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
 
-	/* Stop drawing stuff if the widget is obscured */
-	if (event -> type == NoExpose)
-	{
-	    return;
-	}
+        /* Stop drawing stuff if the widget is obscured */
+        if (event -> type == NoExpose)
+        {
+            return;
+        }
 
-	/* Update this portion of the history */
-	paint(self,  &bbox);
+        /* Update this portion of the history */
+        paint(self,  &bbox);
 
-	/* Bail out if this is the last GraphicsExpose event */
-	if (g_event -> count < 1)
-	{
-	    return;
-	}
+        /* Bail out if this is the last GraphicsExpose event */
+        if (g_event -> count < 1)
+        {
+            return;
+        }
 
-	/* Otherwise grab the next one */
-	XNextEvent(display, &event_buffer);
-	event = &event_buffer;
+        /* Otherwise grab the next one */
+        XNextEvent(display, &event_buffer);
+        event = &event_buffer;
     }
 }
 
@@ -1473,11 +1473,11 @@ static void recompute_dimensions(HistoryWidget self)
     /* Measure each message */
     for (i = 0; i < self -> history.message_count; i++)
     {
-	struct string_sizes sizes;
+        struct string_sizes sizes;
 
-	message_view_get_sizes(self -> history.message_views[i], show_timestamps, &sizes);
-	width = MAX(width, sizes.width);
-	height += self -> history.line_height;
+        message_view_get_sizes(self -> history.message_views[i], show_timestamps, &sizes);
+        width = MAX(width, sizes.width);
+        height += self -> history.line_height;
     }
 
     /* Update our dimensions */
@@ -1491,9 +1491,9 @@ static void recompute_dimensions(HistoryWidget self)
 
 /* Insert a message before the given index */
 static void insert_message(HistoryWidget self,
-			   unsigned int index,
-			   unsigned int indent,
-			   message_t message)
+                           unsigned int index,
+                           unsigned int indent,
+                           message_t message)
 {
     Display *display = XtDisplay((Widget)self);
     Window window = XtWindow((Widget)self);
@@ -1516,116 +1516,116 @@ static void insert_message(HistoryWidget self,
     /* Cancel our clip mask */
     if (gc != None)
     {
-	values.clip_mask = None;
- 	values.foreground = self -> core.background_pixel;
-	XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+        values.clip_mask = None;
+         values.foreground = self -> core.background_pixel;
+        XChangeGC(display, gc, GCClipMask | GCForeground, &values);
     }
 
     /* If there's still room then we'll have to move stuff down */
     if (self -> history.message_count < self -> history.message_capacity)
     {
-	/* Measure the nodes before the index */
-	for (i = 0; i < index; i++)
-	{
-	    view = self -> history.message_views[i];
+        /* Measure the nodes before the index */
+        for (i = 0; i < index; i++)
+        {
+            view = self -> history.message_views[i];
 
-	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, &sizes);
-	    width = MAX(width, sizes.width);
-	    y += self -> history.line_height;
-	    height += self -> history.line_height;
-	}
+            /* Measure the view */
+            message_view_get_sizes(view, show_timestamps, &sizes);
+            width = MAX(width, sizes.width);
+            y += self -> history.line_height;
+            height += self -> history.line_height;
+        }
 
-	/* Measure the nodes after the index, moving them down to make
-	 * room for the new message. */
-	for (i = self -> history.message_count; i > index; i--)
-	{
-	    view = self -> history.message_views[i - 1];
+        /* Measure the nodes after the index, moving them down to make
+         * room for the new message. */
+        for (i = self -> history.message_count; i > index; i--)
+        {
+            view = self -> history.message_views[i - 1];
 
-	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, &sizes);
-	    width = MAX(width, sizes.width);
-	    height += self -> history.line_height;
+            /* Measure the view */
+            message_view_get_sizes(view, show_timestamps, &sizes);
+            width = MAX(width, sizes.width);
+            height += self -> history.line_height;
 
-	    /* Move it */
-	    self -> history.message_views[i] = view;
-	    if (self -> history.selection_index == i - 1)
-	    {
-		self -> history.selection_index = i;
-	    }
-	}
+            /* Move it */
+            self -> history.message_views[i] = view;
+            if (self -> history.selection_index == i - 1)
+            {
+                self -> history.selection_index = i;
+            }
+        }
 
-	/* Move stuff down to make room */
-	if (gc != None)
-	{
-	    copy_area(
-		self, display, window, gc,
-		0, self -> history.margin_height - self -> history.y + y,
-		self -> core.width, height - y,
-		0, self -> history.margin_height - self -> history.y + y + self -> history.line_height);
-	}
+        /* Move stuff down to make room */
+        if (gc != None)
+        {
+            copy_area(
+                self, display, window, gc,
+                0, self -> history.margin_height - self -> history.y + y,
+                self -> core.width, height - y,
+                0, self -> history.margin_height - self -> history.y + y + self -> history.line_height);
+        }
 
-	/* We've got another node */
-	self -> history.message_count++;
+        /* We've got another node */
+        self -> history.message_count++;
     }
     else
     {
-	/* Discard the first message view */
-	message_view_free(self -> history.message_views[0]);
-	if (self -> history.selection_index == 0)
-	{
-	    self -> history.selection_index = (unsigned int)-1;
-	}
+        /* Discard the first message view */
+        message_view_free(self -> history.message_views[0]);
+        if (self -> history.selection_index == 0)
+        {
+            self -> history.selection_index = (unsigned int)-1;
+        }
 
-	/* Measure the nodes before the index, moving them up to make
-	 * room for the new message. */
-	for (i = 0; i < index; i++)
-	{
-	    view = self -> history.message_views[i + 1];
+        /* Measure the nodes before the index, moving them up to make
+         * room for the new message. */
+        for (i = 0; i < index; i++)
+        {
+            view = self -> history.message_views[i + 1];
 
-	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, &sizes);
-	    width = MAX(width, sizes.width);
-	    y += self -> history.line_height;
-	    height += self -> history.line_height;
+            /* Measure the view */
+            message_view_get_sizes(view, show_timestamps, &sizes);
+            width = MAX(width, sizes.width);
+            y += self -> history.line_height;
+            height += self -> history.line_height;
 
-	    /* Move it up */
-	    self -> history.message_views[i] = view;
+            /* Move it up */
+            self -> history.message_views[i] = view;
 
-	    /* Update the selection index */
-	    if (self -> history.selection_index == i + 1)
-	    {
-		self -> history.selection_index = i;
-	    }
-	}
+            /* Update the selection index */
+            if (self -> history.selection_index == i + 1)
+            {
+                self -> history.selection_index = i;
+            }
+        }
 
-	/* Measure the nodes after the index */
-	for (i = index + 1; i < self -> history.message_count; i++)
-	{
-	    view = self -> history.message_views[i];
+        /* Measure the nodes after the index */
+        for (i = index + 1; i < self -> history.message_count; i++)
+        {
+            view = self -> history.message_views[i];
 
-	    /* Measure the view */
-	    message_view_get_sizes(view, show_timestamps, &sizes);
-	    width = MAX(width, sizes.width);
-	    height += self -> history.line_height;
-	}
+            /* Measure the view */
+            message_view_get_sizes(view, show_timestamps, &sizes);
+            width = MAX(width, sizes.width);
+            height += self -> history.line_height;
+        }
 
-	/* Move stuff up to make room */
-	if (gc != None)
-	{
-	    copy_area(
-		self, display, window, gc,
-		0, self -> history.margin_height - self -> history.y + self -> history.line_height,
-		self -> core.width, y,
-		0, self -> history.margin_height - self -> history.y);
-	}
+        /* Move stuff up to make room */
+        if (gc != None)
+        {
+            copy_area(
+                self, display, window, gc,
+                0, self -> history.margin_height - self -> history.y + self -> history.line_height,
+                self -> core.width, y,
+                0, self -> history.margin_height - self -> history.y);
+        }
     }
 
     /* Create a new message view */
     /* FIX THIS: use a real conversion descriptor! */
     view = message_view_alloc(
-	message, indent,
-	self -> history.renderer);
+        message, indent,
+        self -> history.renderer);
     self -> history.message_views[index] = view;
 
     /* Measure it */
@@ -1636,28 +1636,28 @@ static void insert_message(HistoryWidget self,
     /* Paint it */
     if (gc != None)
     {
-	/* Remove any remains of the previous message */
-	XFillRectangle(
-	    display, window, gc,
-	    0, self -> history.margin_height - self -> history.y + y,
-	    self -> core.width, self -> history.line_height);
+        /* Remove any remains of the previous message */
+        XFillRectangle(
+            display, window, gc,
+            0, self -> history.margin_height - self -> history.y + y,
+            self -> core.width, self -> history.line_height);
 
-	/* Make a bounding box */
-	bbox.x = 0;
-	bbox.y = self -> history.margin_height - self -> history.y + y;
-	bbox.width = self -> core.width;
-	bbox.height = self -> history.line_height;
+        /* Make a bounding box */
+        bbox.x = 0;
+        bbox.y = self -> history.margin_height - self -> history.y + y;
+        bbox.width = self -> core.width;
+        bbox.height = self -> history.line_height;
 
-	/* Use it to draw the new message */
-	message_view_paint(
-	    view, display, window, gc,
-	    self -> history.show_timestamps,
-	    self -> history.timestamp_pixel,
-	    self -> history.group_pixel, self -> history.user_pixel,
-	    self -> history.string_pixel, self -> history.separator_pixel,
-	    self -> history.margin_width - self -> history.x,
-	    self -> history.margin_height - self -> history.y + y + self -> history.font -> ascent,
-	    &bbox);
+        /* Use it to draw the new message */
+        message_view_paint(
+            view, display, window, gc,
+            self -> history.show_timestamps,
+            self -> history.timestamp_pixel,
+            self -> history.group_pixel, self -> history.user_pixel,
+            self -> history.string_pixel, self -> history.separator_pixel,
+            self -> history.margin_width - self -> history.x,
+            self -> history.margin_height - self -> history.y + y + self -> history.font -> ascent,
+            &bbox);
     }
 
     /* Add the margins to our height and width */
@@ -1667,20 +1667,20 @@ static void insert_message(HistoryWidget self,
     /* Has the width changed? */
     if (self -> history.width != width)
     {
-	self -> history.width = width;
+        self -> history.width = width;
 
-	/* Repaint the selection so that the right edge is drawn properly */
-	redisplay_index(self, self -> history.selection_index);
+        /* Repaint the selection so that the right edge is drawn properly */
+        redisplay_index(self, self -> history.selection_index);
     }
 
     /* Update our height */
     if (self -> core.height < height)
     {
-	delta_y = MAX(0, height - MAX((long)self -> history.height, (long)self -> core.height));
+        delta_y = MAX(0, height - MAX((long)self -> history.height, (long)self -> core.height));
     }
     else
     {
-	delta_y = 0;
+        delta_y = 0;
     }
 
     self -> history.height = height;
@@ -1704,19 +1704,19 @@ static void make_index_visible(HistoryWidget self, unsigned int index)
     /* If it's above then scroll up to it */
     if (y + self -> history.margin_height < self -> history.y)
     {
-	set_origin(self, self -> history.x, y + self -> history.margin_height, 1);
-	return;
+        set_origin(self, self -> history.x, y + self -> history.margin_height, 1);
+        return;
     }
 
     /* If it's below then scroll down to it */
     if (self -> history.y + self -> core.height - self -> history.margin_height <
-	y + self -> history.line_height)
+        y + self -> history.line_height)
     {
-	set_origin(
-	    self, self -> history.x,
-	    y + self -> history.line_height - self -> core.height +
-	    self -> history.margin_height, 1);
-	return;
+        set_origin(
+            self, self -> history.x,
+            y + self -> history.line_height - self -> core.height +
+            self -> history.margin_height, 1);
+        return;
     }
 }
 
@@ -1733,13 +1733,13 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     /* Is this the same selection as before? */
     if (self -> history.selection == message)
     {
-	/* Just make sure it's visible */
-	if (gc != None && self -> history.selection_index != (unsigned int)-1)
-	{
-	    make_index_visible(self, index);
-	}
+        /* Just make sure it's visible */
+        if (gc != None && self -> history.selection_index != (unsigned int)-1)
+        {
+            make_index_visible(self, index);
+        }
 
-	return;
+        return;
     }
 
     /* Set up a bounding box */
@@ -1751,48 +1751,48 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     /* Drop our extra reference to the old selection */
     if (self -> history.selection != NULL)
     {
-	message_free(self -> history.selection);
+        message_free(self -> history.selection);
     }
 
     /* Redraw the old selection if appropriate */
     if (gc != None && self -> history.selection_index != (unsigned int)-1)
     {
-	/* Determine the location of the old selection */
-	y = self -> history.selection_index * self -> history.line_height -
-	    self -> history.y + self -> history.margin_height;
+        /* Determine the location of the old selection */
+        y = self -> history.selection_index * self -> history.line_height -
+            self -> history.y + self -> history.margin_height;
 
-	/* Is it visible? */
-	if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
-	{
-	    /* Clear the clip mask */
-	    values.clip_mask = None;
-	    values.foreground = self -> core.background_pixel;
-	    XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+        /* Is it visible? */
+        if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
+        {
+            /* Clear the clip mask */
+            values.clip_mask = None;
+            values.foreground = self -> core.background_pixel;
+            XChangeGC(display, gc, GCClipMask | GCForeground, &values);
 
-	    /* Erase the rectangle previously occupied by the message */
-	    XFillRectangle(
-		display, window, gc,
-		0, y, self -> core.width, self -> history.line_height);
+            /* Erase the rectangle previously occupied by the message */
+            XFillRectangle(
+                display, window, gc,
+                0, y, self -> core.width, self -> history.line_height);
 
-	    /* And then draw it again */
-	    message_view_paint(
-		self -> history.message_views[self -> history.selection_index],
-		display, window, gc,
-		self -> history.show_timestamps,
-		self -> history.timestamp_pixel,
-		self -> history.group_pixel, self -> history.user_pixel,
-		self -> history.string_pixel, self -> history.separator_pixel,
-		self -> history.margin_width - self -> history.x,
-		y + self -> history.font -> ascent,
-		&bbox);
-	}
+            /* And then draw it again */
+            message_view_paint(
+                self -> history.message_views[self -> history.selection_index],
+                display, window, gc,
+                self -> history.show_timestamps,
+                self -> history.timestamp_pixel,
+                self -> history.group_pixel, self -> history.user_pixel,
+                self -> history.string_pixel, self -> history.separator_pixel,
+                self -> history.margin_width - self -> history.x,
+                y + self -> history.font -> ascent,
+                &bbox);
+        }
     }
 
     /* Record the new selection */
     if (message == NULL) {
-	self -> history.selection = NULL;
+        self -> history.selection = NULL;
     } else {
-	self -> history.selection = message_alloc_reference(message);
+        self -> history.selection = message_alloc_reference(message);
     }
 
     /* And record its index */
@@ -1801,41 +1801,41 @@ static void set_selection(HistoryWidget self, unsigned int index, message_t mess
     /* Draw the new selection if appropriate */
     if (gc != None && self -> history.selection_index != (unsigned int)-1)
     {
-	/* Determine its location */
-	y = self -> history.selection_index * self -> history.line_height -
-	    self -> history.y + self -> history.margin_height;
+        /* Determine its location */
+        y = self -> history.selection_index * self -> history.line_height -
+            self -> history.y + self -> history.margin_height;
 
-	/* Is it visible? */
-	if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
-	{
-	    /* Clear the clip mask */
-	    values.clip_mask = None;
-	    values.foreground = self -> history.selection_pixel;
-	    XChangeGC(display, gc, GCClipMask | GCForeground, &values);
+        /* Is it visible? */
+        if (0 <= y + self -> history.line_height && y < (long)self -> history.height)
+        {
+            /* Clear the clip mask */
+            values.clip_mask = None;
+            values.foreground = self -> history.selection_pixel;
+            XChangeGC(display, gc, GCClipMask | GCForeground, &values);
 
-	    /* Draw the selection rectangle */
-	    XFillRectangle(
-		display, window, gc,
-		0, y, self -> core.width, self -> history.line_height);
+            /* Draw the selection rectangle */
+            XFillRectangle(
+                display, window, gc,
+                0, y, self -> core.width, self -> history.line_height);
 
-	    /* Draw the highlight */
-	    paint_highlight(self);
+            /* Draw the highlight */
+            paint_highlight(self);
 
-	    /* And then draw the message view on top of it */
-	    message_view_paint(
-		self -> history.message_views[self -> history.selection_index],
-		display, window, gc,
-		self -> history.show_timestamps,
-		self -> history.timestamp_pixel,
-		self -> history.group_pixel, self -> history.user_pixel,
-		self -> history.string_pixel, self -> history.separator_pixel,
-		self -> history.margin_width - self -> history.x,
-		y + self -> history.font -> ascent,
-		&bbox);
-	}
+            /* And then draw the message view on top of it */
+            message_view_paint(
+                self -> history.message_views[self -> history.selection_index],
+                display, window, gc,
+                self -> history.show_timestamps,
+                self -> history.timestamp_pixel,
+                self -> history.group_pixel, self -> history.user_pixel,
+                self -> history.string_pixel, self -> history.separator_pixel,
+                self -> history.margin_width - self -> history.x,
+                y + self -> history.font -> ascent,
+                &bbox);
+        }
 
-	/* Try to make the entire selection is visible */
-	make_index_visible(self, index);
+        /* Try to make the entire selection is visible */
+        make_index_visible(self, index);
     }
 
     /* Call the callback with our new selection */
@@ -1850,12 +1850,12 @@ static void set_selection_index(HistoryWidget self, unsigned int index)
     /* Locate the message view at that index */
     if (index < self -> history.message_count)
     {
-	view = self -> history.message_views[index];
+        view = self -> history.message_views[index];
     }
     else
     {
-	index = (unsigned int)-1;
-	view = NULL;
+        index = (unsigned int)-1;
+        view = NULL;
     }
 
     /* Select it */
@@ -1881,16 +1881,16 @@ static void resize(Widget widget)
     /* Update the page increment of the horizontal scrollbar */
     page_inc = self -> core.height;
     XtVaSetValues(
-	self -> history.hscrollbar,
-	XmNpageIncrement, self -> core.width,
-	NULL);
+        self -> history.hscrollbar,
+        XmNpageIncrement, self -> core.width,
+        NULL);
 
     /* Update the page increment of the vertical scrollbar */
     page_inc = self -> core.height;
     XtVaSetValues(
-	self -> history.vscrollbar,
-	XmNpageIncrement, page_inc,
-	NULL);
+        self -> history.vscrollbar,
+        XmNpageIncrement, page_inc,
+        NULL);
 
     /* Update the scrollbar sizes */
     update_scrollbars(widget, &x, &y);
@@ -1935,7 +1935,7 @@ static void border_highlight(Widget widget)
     /* Skip out if we're already highlighted */
     if (self -> primitive.highlighted)
     {
-	return;
+        return;
     }
 
     /* We're now highlighted */
@@ -1986,62 +1986,62 @@ static void drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     /* Figure out what's happening */
     if (y < 0)
     {
-	/* We're being dragged up. */
-	self -> history.drag_direction = DRAG_UP;
+        /* We're being dragged up. */
+        self -> history.drag_direction = DRAG_UP;
 
-	/* If we've already selected at the first message then make
-	 * the top margin visible */
-	if (self -> history.selection_index == 0)
-	{
-	    set_origin(self, self -> history.x, 0, 1);
-	}
-	else
-	{
-	    /* Otherwise select the item before the first completely visible one */
-	    index = index_of_y(self, -1);
-	    set_selection_index(self, index);
-	}
+        /* If we've already selected at the first message then make
+         * the top margin visible */
+        if (self -> history.selection_index == 0)
+        {
+            set_origin(self, self -> history.x, 0, 1);
+        }
+        else
+        {
+            /* Otherwise select the item before the first completely visible one */
+            index = index_of_y(self, -1);
+            set_selection_index(self, index);
+        }
     }
     else if (self -> core.height < y)
     {
-	/* We're being dragged down */
-	self -> history.drag_direction = DRAG_DOWN;
+        /* We're being dragged down */
+        self -> history.drag_direction = DRAG_DOWN;
 
-	/* If we've already select the last message then make the
-	 * bottom margin visible */
-	if (self -> history.selection_index == self -> history.message_count - 1)
-	{
-	    if (! (self -> history.height < self -> core.height))
-	    {
-		set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
-	    }
-	}
-	else
-	{
-	    /* Otherwise select the item below the last completely visible one */
-	    index = index_of_y(self, self -> core.height + 1);
-	    set_selection_index(self, index);
-	}
+        /* If we've already select the last message then make the
+         * bottom margin visible */
+        if (self -> history.selection_index == self -> history.message_count - 1)
+        {
+            if (! (self -> history.height < self -> core.height))
+            {
+                set_origin(self, self -> history.x, self -> history.height - self -> core.height, 1);
+            }
+        }
+        else
+        {
+            /* Otherwise select the item below the last completely visible one */
+            index = index_of_y(self, self -> core.height + 1);
+            set_selection_index(self, index);
+        }
     }
     else
     {
-	/* We're within the widget's bounds */
-	index = index_of_y(self, y);
+        /* We're within the widget's bounds */
+        index = index_of_y(self, y);
 
-	/* Don't go past the last message */
-	if (! (index < self -> history.message_count))
-	{
-	    index = self -> history.message_count - 1;
-	}
+        /* Don't go past the last message */
+        if (! (index < self -> history.message_count))
+        {
+            index = self -> history.message_count - 1;
+        }
 
-	/* Select */
-	set_selection_index(self, index);
+        /* Select */
+        set_selection_index(self, index);
     }
 
     /* Arrange to scroll again after a judicious pause */
     self -> history.drag_timeout = XtAppAddTimeOut(
-	XtWidgetToApplicationContext((Widget)self), self -> history.drag_delay,
-	drag_timeout_cb, (XtPointer)self);
+        XtWidgetToApplicationContext((Widget)self), self -> history.drag_delay,
+        drag_timeout_cb, (XtPointer)self);
 }
 
 /* Dragging selects */
@@ -2060,54 +2060,54 @@ static void drag(Widget widget, XEvent *event, String *params, Cardinal *nparams
     /* FIgure out what's going on */
     if (button_event -> y < 0)
     {
-	/* We should be dragging up.  Is a timeout already registered? */
-	if (self -> history.drag_timeout != None)
-	{
-	    /* Bail if we're already scrolling up */
-	    if (self -> history.drag_direction == DRAG_UP)
-	    {
-		return;
-	    }
+        /* We should be dragging up.  Is a timeout already registered? */
+        if (self -> history.drag_timeout != None)
+        {
+            /* Bail if we're already scrolling up */
+            if (self -> history.drag_direction == DRAG_UP)
+            {
+                return;
+            }
 
-	    /* Otherwise we're scrolling the wrong way! */
-	    XtRemoveTimeOut(self -> history.drag_timeout);
-	    self -> history.drag_timeout = None;
-	}
+            /* Otherwise we're scrolling the wrong way! */
+            XtRemoveTimeOut(self -> history.drag_timeout);
+            self -> history.drag_timeout = None;
+        }
 
-	/* We're dragging up */
-	self -> history.drag_direction = DRAG_UP;
+        /* We're dragging up */
+        self -> history.drag_direction = DRAG_UP;
     }
     else if (self -> core.height < button_event -> y)
     {
-	/* We should be dragging down.  Is a timeout already registered? */
-	if (self -> history.drag_timeout != None)
-	{
-	    /* Bail if we're already scrolling down */
-	    if (self -> history.drag_direction == DRAG_DOWN)
-	    {
-		return;
-	    }
+        /* We should be dragging down.  Is a timeout already registered? */
+        if (self -> history.drag_timeout != None)
+        {
+            /* Bail if we're already scrolling down */
+            if (self -> history.drag_direction == DRAG_DOWN)
+            {
+                return;
+            }
 
-	    /* Otherwise we're scrolling the wrong way! */
-	    XtRemoveTimeOut(self -> history.drag_timeout);
-	    self -> history.drag_timeout = None;
-	}
+            /* Otherwise we're scrolling the wrong way! */
+            XtRemoveTimeOut(self -> history.drag_timeout);
+            self -> history.drag_timeout = None;
+        }
 
-	/* Call the timeout callback to scroll down and set a timeout */
-	self -> history.drag_direction = DRAG_DOWN;
+        /* Call the timeout callback to scroll down and set a timeout */
+        self -> history.drag_direction = DRAG_DOWN;
     }
     else
     {
-	/* We're within the bounds of the widget.  Is a timeout registered? */
-	if (self -> history.drag_timeout != None)
-	{
-	    /* Cancel the timeout */
-	    XtRemoveTimeOut(self -> history.drag_timeout);
-	    self -> history.drag_timeout = None;
-	}
+        /* We're within the bounds of the widget.  Is a timeout registered? */
+        if (self -> history.drag_timeout != None)
+        {
+            /* Cancel the timeout */
+            XtRemoveTimeOut(self -> history.drag_timeout);
+            self -> history.drag_timeout = None;
+        }
 
-	/* We're not dragging the window around */
-	self -> history.drag_direction = DRAG_NONE;
+        /* We're not dragging the window around */
+        self -> history.drag_direction = DRAG_NONE;
     }
 
     /* Call the drag timeout callback to update the selection and set a timeout */
@@ -2122,8 +2122,8 @@ static void drag_done(Widget widget, XEvent *event, String *params, Cardinal *np
     /* Cancel any pending timeout */
     if (self -> history.drag_timeout != None)
     {
-	XtRemoveTimeOut(self -> history.drag_timeout);
-	self -> history.drag_timeout = None;
+        XtRemoveTimeOut(self -> history.drag_timeout);
+        self -> history.drag_timeout = None;
     }
 }
 
@@ -2144,7 +2144,7 @@ static void do_select(Widget widget, XEvent *event, String *params, Cardinal *np
      * message for our purposes here */
     if (! (index < self -> history.message_count))
     {
-	index = self -> history.message_count - 1;
+        index = self -> history.message_count - 1;
     }
 
     set_selection_index(self, index);
@@ -2162,19 +2162,19 @@ static void toggle_selection(Widget widget, XEvent *event, String *params, Cardi
 
     /* Convert the y coordinate into an index */
     index = (self -> history.y + button_event -> y - self -> history.margin_height) /
-	self -> history.line_height;
+        self -> history.line_height;
 
     /* Are we selecting past the end of the list? */
     if (! (index < self -> history.message_count))
     {
-	index = self -> history.message_count - 1;
+        index = self -> history.message_count - 1;
     }
 
     /* Is this our current selection? */
     if (self -> history.selection_index == index)
     {
-	/* Yes.  Toggle the selection off */
-	index = (unsigned int)-1;
+        /* Yes.  Toggle the selection off */
+        index = (unsigned int)-1;
     }
 
     /* Set the selection */
@@ -2193,17 +2193,17 @@ static void show_attachment(Widget widget, XEvent *event, String *params, Cardin
     /* Finish the dragging */
     if (self -> history.drag_timeout != None)
     {
-	XtRemoveTimeOut(self -> history.drag_timeout);
-	self -> history.drag_timeout = None;
+        XtRemoveTimeOut(self -> history.drag_timeout);
+        self -> history.drag_timeout = None;
     }
 
     /* Call the attachment callbacks */
     if (self -> history.selection)
     {
-	XtCallCallbackList(
-	    widget,
-	    self -> history.attachment_callbacks,
-	    (XtPointer)self -> history.selection);
+        XtCallCallbackList(
+            widget,
+            self -> history.attachment_callbacks,
+            (XtPointer)self -> history.selection);
     }
 }
 
@@ -2217,19 +2217,19 @@ static void select_previous(Widget widget, XEvent *event, String *params, Cardin
     /* Is anything selected? */
     if (self -> history.selection_index == (unsigned int)-1)
     {
-	/* No.  Prepare to select the last item in the list */
-	index = self -> history.message_count;
+        /* No.  Prepare to select the last item in the list */
+        index = self -> history.message_count;
     }
     else
     {
-	/* Yes.  Prepare to select the one before it */
-	index = self -> history.selection_index;
+        /* Yes.  Prepare to select the one before it */
+        index = self -> history.selection_index;
     }
 
     /* Bail if there is no previous item */
     if (index == 0)
     {
-	return;
+        return;
     }
 
     /* Select the previous item */
@@ -2248,7 +2248,7 @@ static void select_next(Widget widget, XEvent *event, String *params, Cardinal *
     /* Bail if there is no next item */
     if (! (index < self -> history.message_count))
     {
-	return;
+        return;
     }
 
     /* Select the next item */
@@ -2266,10 +2266,10 @@ static void scroll_up(Widget widget, XEvent *event, String *params, Cardinal *np
 
     /* Move that far to the up */
     set_origin(
-	self,
-	self -> history.x,
-	MAX(self -> history.y - increment, 0),
-	1);
+        self,
+        self -> history.x,
+        MAX(self -> history.y - increment, 0),
+        1);
 }
 
 /* Scroll the window down if we can */
@@ -2283,12 +2283,12 @@ static void scroll_down(Widget widget, XEvent *event, String *params, Cardinal *
 
     /* Move that far down */
     set_origin(
-	self,
-	self -> history.x,
-	MIN(self -> history.y + increment,
-	self->history.height < self->core.height ?
-	    0 : self->history.height - self->core.height),
-	1);
+        self,
+        self -> history.x,
+        MIN(self -> history.y + increment,
+        self->history.height < self->core.height ?
+            0 : self->history.height - self->core.height),
+        1);
 }
 
 /* Scroll the window left if we can */
@@ -2302,10 +2302,10 @@ static void scroll_left(Widget widget, XEvent *event, String *params, Cardinal *
 
     /* Move that far to the left */
     set_origin(
-	self,
-	MAX(self -> history.x - increment, 0),
-	self -> history.y,
-	1);
+        self,
+        MAX(self -> history.x - increment, 0),
+        self -> history.y,
+        1);
 }
 
 /* Scroll the window right if we can */
@@ -2319,10 +2319,10 @@ static void scroll_right(Widget widget, XEvent *event, String *params, Cardinal 
 
     /* Move that far to the right */
     set_origin(
-	self,
-	MIN(self -> history.x + increment, (self -> history.width - self -> core.width)),
-	self -> history.y,
-	1);
+        self,
+        MIN(self -> history.x + increment, (self -> history.width - self -> core.width)),
+        self -> history.y,
+        1);
 }
 
 
@@ -2339,7 +2339,7 @@ static void redraw_all(Widget widget)
     /* Bail if we don't have a valid GC */
     if (gc == None)
     {
-	return;
+        return;
     }
 
     /* Set up the graphics context */
@@ -2349,9 +2349,9 @@ static void redraw_all(Widget widget)
 
     /* And erase the contents of the widget */
     XFillRectangle(
-	display, window, gc,
-	0, 0,
-	self -> core.width, self -> core.height);
+        display, window, gc,
+        0, 0,
+        self -> core.width, self -> core.height);
 
     /* Get a bounding box that contains the entire visible portion of the widget */
     bbox.x = 0;
@@ -2379,7 +2379,7 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
     /* Don't do anything if there's no change */
     if (self -> history.is_threaded == is_threaded)
     {
-	return;
+        return;
     }
 
     /* Change threaded status */
@@ -2388,48 +2388,48 @@ void HistorySetThreaded(Widget widget, Boolean is_threaded)
     /* Get rid of all of the old message views */
     for (i = 0; i < self -> history.message_count; i++)
     {
-	message_view_free(self -> history.message_views[i]);
+        message_view_free(self -> history.message_views[i]);
     }
 
     /* Create a bunch of new message views accordingly */
     if (is_threaded)
     {
-	index = self -> history.message_count - 1;
+        index = self -> history.message_count - 1;
 
-	/* Clear the selection in case it doesn't show up */
-	self -> history.selection_index = (unsigned int)-1;
+        /* Clear the selection in case it doesn't show up */
+        self -> history.selection_index = (unsigned int)-1;
 
-	/* Traverse the history tree */
-	node_populate(
-	    self -> history.nodes,
-	    self -> history.renderer,
-	    self -> history.message_views,
-	    0, &index,
-	    self -> history.selection,
-	    &self -> history.selection_index);
+        /* Traverse the history tree */
+        node_populate(
+            self -> history.nodes,
+            self -> history.renderer,
+            self -> history.message_views,
+            0, &index,
+            self -> history.selection,
+            &self -> history.selection_index);
     }
     else
     {
-	/* Create a bunch of new ones */
-	index = self -> history.message_index;
-	for (i = 0; i < self -> history.message_count; i++)
-	{
-	    /* Look up the message */
-	    message = self -> history.messages[index];
+        /* Create a bunch of new ones */
+        index = self -> history.message_index;
+        for (i = 0; i < self -> history.message_count; i++)
+        {
+            /* Look up the message */
+            message = self -> history.messages[index];
 
-	    /* Wrap it in a message view */
-	    self -> history.message_views[i] = message_view_alloc(
-		message, 0,
-		self -> history.renderer);
+            /* Wrap it in a message view */
+            self -> history.message_views[i] = message_view_alloc(
+                message, 0,
+                self -> history.renderer);
 
-	    /* Update the selection index */
-	    if (self -> history.selection == message)
-	    {
-		self -> history.selection_index = i;
-	    }
+            /* Update the selection index */
+            if (self -> history.selection == message)
+            {
+                self -> history.selection_index = i;
+            }
 
-	    index = (index + 1) % self -> history.message_count;
-	}
+            index = (index + 1) % self -> history.message_count;
+        }
     }
 
     /* Recompute the dimensions of the widget */
@@ -2480,50 +2480,50 @@ void HistoryAddMessage(Widget widget, message_t message)
     /* Wrap the message in a node */
     if ((node = node_alloc(message)) == NULL)
     {
-	return;
+        return;
     }
 
     /* Add the node to the threaded history tree */
     node_add(&self -> history.nodes,
-	     message_get_reply_id(message),
-	     node,
-	     MIN(self -> history.message_count + 1, self -> history.message_capacity),
-	     &index,
-	     &depth);
+             message_get_reply_id(message),
+             node,
+             MIN(self -> history.message_count + 1, self -> history.message_capacity),
+             &index,
+             &depth);
 
     /* If we're not at capacity then just add a reference to the end
      * of the array of messages */
     if (self -> history.message_count < self -> history.message_capacity)
     {
-	self -> history.messages[self -> history.message_count] =
-	    message_alloc_reference(message);
+        self -> history.messages[self -> history.message_count] =
+            message_alloc_reference(message);
     }
     else
     {
-	/* Free the old message */
-	message_free(self -> history.messages[self -> history.message_index]);
+        /* Free the old message */
+        message_free(self -> history.messages[self -> history.message_index]);
 
-	/* Replace it with this message */
-	self -> history.messages[self -> history.message_index] =
-	    message_alloc_reference(message);
+        /* Replace it with this message */
+        self -> history.messages[self -> history.message_index] =
+            message_alloc_reference(message);
 
-	self -> history.message_index = (self -> history.message_index + 1) %
-	    self -> history.message_capacity;
+        self -> history.message_index = (self -> history.message_index + 1) %
+            self -> history.message_capacity;
     }
 
     /* Add the node according to our threadedness */
     if (HistoryIsThreaded(widget))
     {
-	insert_message(self, index, depth, message);
+        insert_message(self, index, depth, message);
     }
     else
     {
-	insert_message(
-	    self,
-	    self -> history.message_count < self -> history.message_capacity ?
-	    self -> history.message_count : self -> history.message_capacity - 1,
-	    0,
-	    message);
+        insert_message(
+            self,
+            self -> history.message_count < self -> history.message_capacity ?
+            self -> history.message_count : self -> history.message_capacity - 1,
+            0,
+            message);
     }
 }
 
@@ -2536,19 +2536,19 @@ void HistoryKillThread(Widget widget, message_t message)
     /* Bail if the message has already been killed */
     if (message_is_killed(message))
     {
-	return;
+        return;
     }
 
     /* Look for the node which wraps the message */
     if ((node = node_find(self -> history.nodes, message)) == NULL)
     {
-	/* The message is killed now */
-	message_set_killed(message, True);
+        /* The message is killed now */
+        message_set_killed(message, True);
     }
     else
     {
-	/* Kill the node and its children */
-	node_kill(node);
+        /* Kill the node and its children */
+        node_kill(node);
     }
 }
 
@@ -2561,15 +2561,15 @@ void HistorySelect(Widget widget, message_t message)
     /* Save the effort if we're just cancelling a selection */
     if (message != NULL)
     {
-	/* Find the index of the message */
-	for (i = 0; i < self -> history.message_count; i++)
-	{
-	    if (message_view_get_message(self -> history.message_views[i]) == message)
-	    {
-		set_selection(self, i, message);
-		return;
-	    }
-	}
+        /* Find the index of the message */
+        for (i = 0; i < self -> history.message_count; i++)
+        {
+            if (message_view_get_message(self -> history.message_views[i]) == message)
+            {
+                set_selection(self, i, message);
+                return;
+            }
+        }
     }
 
     /* Not found -- select at -1 */
@@ -2587,18 +2587,18 @@ void HistorySelectId(Widget widget, char *message_id)
     /* Save the effort if there's no id */
     if (message_id != NULL)
     {
-	/* Find the index of the message */
-	for (i = self -> history.message_count; i > 0; --i)
-	{
-	    if ((message = message_view_get_message(
-		     self -> history.message_views[i - 1])) != NULL &&
-		(string = message_get_id(message)) != NULL &&
-		strcmp(string, message_id) == 0)
-	    {
-		set_selection(self, i - 1, message);
-		return;
-	    }
-	}
+        /* Find the index of the message */
+        for (i = self -> history.message_count; i > 0; --i)
+        {
+            if ((message = message_view_get_message(
+                     self -> history.message_views[i - 1])) != NULL &&
+                (string = message_get_id(message)) != NULL &&
+                strcmp(string, message_id) == 0)
+            {
+                set_selection(self, i - 1, message);
+                return;
+            }
+        }
     }
 
     /* Not found -- select at -1 */

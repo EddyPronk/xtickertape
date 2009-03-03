@@ -141,58 +141,58 @@ base64_decode(const char *string, char *buffer, size_t buflen)
     /* Walk the input string in four-byte strides */
     flag = 0;
     while (out < end) {
-	ch = *in++;
+        ch = *in++;
 
-	/* End of input? */
-	if (ch == 0) {
-	    *out = ch;
-	    return out - buffer;
-	}
+        /* End of input? */
+        if (ch == 0) {
+            *out = ch;
+            return out - buffer;
+        }
 
-	/* Watch for premature '=' */
-	if (flag) {
-	    return -1;
-	}
+        /* Watch for premature '=' */
+        if (flag) {
+            return -1;
+        }
 
-	if ((val = base64value(ch)) < 0) {
-	    return -1;
-	} else {
-	    num = val << 18;
-	}
+        if ((val = base64value(ch)) < 0) {
+            return -1;
+        } else {
+            num = val << 18;
+        }
 
-	ch = *in++;
-	if ((val = base64value(ch)) < 0) {
-	    return -1;
-	} else {
-	    num |= val << 12;
-	}
+        ch = *in++;
+        if ((val = base64value(ch)) < 0) {
+            return -1;
+        } else {
+            num |= val << 12;
+        }
 
-	ch = *in++;
-	if (ch == '=') {
-	    flag++;
-	} else if (flag || (val = base64value(ch)) < 0) {
-	    return -1;
-	} else {
-	    num |= val << 6;
-	}
+        ch = *in++;
+        if (ch == '=') {
+            flag++;
+        } else if (flag || (val = base64value(ch)) < 0) {
+            return -1;
+        } else {
+            num |= val << 6;
+        }
 
-	ch = *in++;
-	if (ch == '=') {
-	    flag++;
-	} else if (flag || (val = base64value(ch)) < 0) {
-	    return -1;
-	} else {
-	    num |= val;
-	}
+        ch = *in++;
+        if (ch == '=') {
+            flag++;
+        } else if (flag || (val = base64value(ch)) < 0) {
+            return -1;
+        } else {
+            num |= val;
+        }
 
-	/* Record the result */
-	*out++ = (num >> 16) & 0xff;
-	if (out < end && flag < 2) {
-	    *out++ = (num >> 8) & 0xff;
-	}
-	if (out < end && flag < 1) {
-	    *out++ = num & 0xff;
-	}
+        /* Record the result */
+        *out++ = (num >> 16) & 0xff;
+        if (out < end && flag < 2) {
+            *out++ = (num >> 8) & 0xff;
+        }
+        if (out < end && flag < 1) {
+            *out++ = num & 0xff;
+        }
     }
 
     /* Out of buffer */
@@ -211,45 +211,45 @@ qprint_decode(const char *string, char *buffer, size_t buflen)
 
     state = num = 0;
     while (out < end) {
-	ch = *in++;
+        ch = *in++;
 
-	if (state == 0) {
-	    switch (ch) {
-	    case '\0':
-		/* End of the string */
-		*out = ch;
-		return out - buffer;
+        if (state == 0) {
+            switch (ch) {
+            case '\0':
+                /* End of the string */
+                *out = ch;
+                return out - buffer;
 
-	    case '_':
-		/* Underscores become spaces */
-		*out++ = ' ';
-		break;
+            case '_':
+                /* Underscores become spaces */
+                *out++ = ' ';
+                break;
 
-	    case '=':
-		/* Hex-encoded character */
-		num = 0;
-		state++;
-		break;
+            case '=':
+                /* Hex-encoded character */
+                num = 0;
+                state++;
+                break;
 
-	    default:
-		*out++ = ch;
-		break;
-	    }
-	} else if (state == 1) {
-	    if ((digit = nibblevalue(ch)) < 0) {
-		return -1;
-	    }
-	    num = digit;
-	    state++;
-	} else {
-	    assert(state == 2);
-	    if ((digit = nibblevalue(ch)) < 0) {
-		return -1;
-	    }
-	    ch = num << 4 | digit;
-	    *out++ = ch;
-	    state = 0;
-	}
+            default:
+                *out++ = ch;
+                break;
+            }
+        } else if (state == 1) {
+            if ((digit = nibblevalue(ch)) < 0) {
+                return -1;
+            }
+            num = digit;
+            state++;
+        } else {
+            assert(state == 2);
+            if ((digit = nibblevalue(ch)) < 0) {
+                return -1;
+            }
+            ch = num << 4 | digit;
+            *out++ = ch;
+            state = 0;
+        }
     }
 
     /* Out of buffer space: fail */
@@ -266,16 +266,16 @@ ascii_to_utf8(const char *string, char *buffer, size_t buflen)
     int ch;
 
     while (out < end) {
-	/* Copy the character */
-	ch = *(unsigned char *)in++;
-	if (ch == 0) {
-	    *out = ch;
-	    return out - buffer;
-	} else if (ch & 0x80) {
-	    return -1;
-	} else {
-	    *out++ = ch;
-	}
+        /* Copy the character */
+        ch = *(unsigned char *)in++;
+        if (ch == 0) {
+            *out = ch;
+            return out - buffer;
+        } else if (ch & 0x80) {
+            return -1;
+        } else {
+            *out++ = ch;
+        }
     }
 
     /* Out of buffer */
@@ -292,19 +292,19 @@ iso88591_to_utf8(const char *string, char *buffer, size_t buflen)
     int ch;
 
     while (out < end) {
-	ch = *(const unsigned char *)in++;
+        ch = *(const unsigned char *)in++;
 
-	if (ch == 0) {
-	    *out = 0;
-	    return out - buffer;
-	} else if (ch < 0x80) {
-	    *out++ = ch;
-	} else {
-	    *out++ = 0xc0 | ((ch >> 6) & 0x1f);
-	    if (out < end) {
-		*out++ = 0x80 | (ch & 0x3f);
-	    }
-	}
+        if (ch == 0) {
+            *out = 0;
+            return out - buffer;
+        } else if (ch < 0x80) {
+            *out++ = ch;
+        } else {
+            *out++ = 0xc0 | ((ch >> 6) & 0x1f);
+            if (out < end) {
+                *out++ = 0x80 | (ch & 0x3f);
+            }
+        }
     }
 
     /* Buffer overflow */
@@ -324,36 +324,36 @@ utf8_to_utf8(const char *string, char *buffer, size_t buflen)
      * valid UTF-8 */
     state = 0;
     while (out < end) {
-	/* Copy a character */
-	ch = *(unsigned char *)in++;
-	*out++ = ch;
+        /* Copy a character */
+        ch = *(unsigned char *)in++;
+        *out++ = ch;
 
-	/* Make sure it's legal */
-	if (state == 0) {
-	    if (ch == 0) {
-		return out - buffer - 1;
-	    } else if (~ch & 0x80) {
-		state = 0;
-	    } else if (~ch & 0x40) {
-		return -1;
-	    } else if (~ch & 0x20) {
-		state = 1;
-	    } else if (~ch & 0x10) {
-		state = 2;
-	    } else if (~ch & 0x08) {
-		state = 3;
-	    } else if (~ch & 0x04) {
-		state = 4;
-	    } else if (~ch & 0x02) {
-		state = 5;
-	    } else {
-		return -1;
-	    }
-	} else if ((ch & 0xc0) != 0x80) {
-	    return -1;
-	} else {
-	    state--;
-	}
+        /* Make sure it's legal */
+        if (state == 0) {
+            if (ch == 0) {
+                return out - buffer - 1;
+            } else if (~ch & 0x80) {
+                state = 0;
+            } else if (~ch & 0x40) {
+                return -1;
+            } else if (~ch & 0x20) {
+                state = 1;
+            } else if (~ch & 0x10) {
+                state = 2;
+            } else if (~ch & 0x08) {
+                state = 3;
+            } else if (~ch & 0x04) {
+                state = 4;
+            } else if (~ch & 0x02) {
+                state = 5;
+            } else {
+                return -1;
+            }
+        } else if ((ch & 0xc0) != 0x80) {
+            return -1;
+        } else {
+            state--;
+        }
     }
 
     /* Out of buffer */
@@ -371,9 +371,9 @@ other_to_utf8(iconv_t cd, const char *string, size_t slen, char *buffer, size_t 
 
     len = iconv(cd, &in, &slen, &out, &buflen);
     if (len == (size_t)-1 || slen != 0) {
-	return -1;
+        return -1;
     } else {
-	return out - buffer;
+        return out - buffer;
     }
 }
 #endif /* HAVE_ICONV */
@@ -382,9 +382,9 @@ other_to_utf8(iconv_t cd, const char *string, size_t slen, char *buffer, size_t 
 /* Attempt to decode an RFC 1522 encoded token */
 static int
 rfc1522_decode(const char *charset,
-	       const char *encoding,
-	       const char *text,
-	       char *buffer, size_t buflen)
+               const char *encoding,
+               const char *text,
+               char *buffer, size_t buflen)
 {
     char buf[256];
     enc_t enc;
@@ -397,17 +397,17 @@ rfc1522_decode(const char *charset,
 
     /* Bail if we don't understand the encoding */
     if (strcasecmp(encoding, "B") == 0) {
-	enc = ENC_BASE64;
+        enc = ENC_BASE64;
     } else if (strcasecmp(encoding, "Q") == 0) {
-	enc = ENC_QPRINT;
+        enc = ENC_QPRINT;
     } else {
-	return -1;
+        return -1;
     }
 
     /* Convert the charset name to uppercase */
     for (i = 0; i + 1 < sizeof(buf) && charset[i]; i++) {
-	buf[i] = (0x61 <= charset[i] && charset[i] < 0x7b) ?
-	    charset[i] - 0x20 : charset[i];
+        buf[i] = (0x61 <= charset[i] && charset[i] < 0x7b) ?
+            charset[i] - 0x20 : charset[i];
     }
     buf[i] = 0;
 
@@ -415,19 +415,19 @@ rfc1522_decode(const char *charset,
      * ISO-8859-1 and US-ASCII ourselves since they're trivial
      * conversions. */
     if (strcmp(buf, "ISO-8859-1") == 0) {
-	cset = CSET_ISO_8859_1;
+        cset = CSET_ISO_8859_1;
     } else if (strcmp(buf, "UTF-8") == 0) {
-	cset = CSET_UTF_8;
+        cset = CSET_UTF_8;
     } else if (strcmp(buf, "US-ASCII") == 0) {
-	cset = CSET_US_ASCII;
+        cset = CSET_US_ASCII;
     } else {
 #if defined(HAVE_ICONV)
-	cset = CSET_OTHER;
-	if ((cd = iconv_open("UTF-8", buf)) == (iconv_t)-1) {
-	    return -1;
-	}
+        cset = CSET_OTHER;
+        if ((cd = iconv_open("UTF-8", buf)) == (iconv_t)-1) {
+            return -1;
+        }
 #else /* !HAVE_ICONV */
-	return -1;
+        return -1;
 #endif /* HAVE_ICONV */
     }
 
@@ -435,56 +435,56 @@ rfc1522_decode(const char *charset,
      * good to go.  Decode the string. */
     switch (enc) {
     case ENC_BASE64:
-	len = base64_decode(text, buf, sizeof(buf));
-	break;
+        len = base64_decode(text, buf, sizeof(buf));
+        break;
 
     case ENC_QPRINT:
-	len = qprint_decode(text, buf, sizeof(buf));
-	break;
+        len = qprint_decode(text, buf, sizeof(buf));
+        break;
 
     default:
-	abort();
+        abort();
     }
 
     /* Bail out if the decoding failed */
     if (len < 0) {
 #if defined(HAVE_ICONV)
-	if (cd != (iconv_t)-1) {
-	    iconv_close(cd);
-	}
+        if (cd != (iconv_t)-1) {
+            iconv_close(cd);
+        }
 #endif /* HAVE_ICONV */
-	return -1;
+        return -1;
     }
 
     /* Translate the decoded string to UTF-8 (or verify that it's
      * US-ASCII or UTF-8) */
     switch (cset) {
     case CSET_ISO_8859_1:
-	len = iso88591_to_utf8(buf, buffer, buflen);
-	break;
+        len = iso88591_to_utf8(buf, buffer, buflen);
+        break;
 
     case CSET_UTF_8:
-	len = utf8_to_utf8(buf, buffer, buflen);
-	break;
+        len = utf8_to_utf8(buf, buffer, buflen);
+        break;
 
     case CSET_US_ASCII:
-	len = ascii_to_utf8(buf, buffer, buflen);
-	break;
+        len = ascii_to_utf8(buf, buffer, buflen);
+        break;
 
     case CSET_OTHER:
 #if defined(HAVE_ICONV)
-	assert(cset == CSET_OTHER);
-	len = other_to_utf8(cd, buf, len, buffer, buflen);
-	break;
+        assert(cset == CSET_OTHER);
+        len = other_to_utf8(cd, buf, len, buffer, buflen);
+        break;
 #else /* !HAVE_ICONV */
-	abort();
+        abort();
 #endif /* HAVE_ICONV */
     }
 
 #if defined(HAVE_ICONV)
     /* Close the conversion descriptor */
     if (cd != (iconv_t)-1) {
-	(void)iconv_close(cd);
+        (void)iconv_close(cd);
     }
 #endif /* HAVE_ICONV */
 
@@ -529,9 +529,9 @@ static int append_int32(lexer_t self, int value)
 {
     /* Make sure there's room */
     if (self->point + 4 < self->end) {
-	write_int32(self->point, value);
-	self->point += 4;
-	return 0;
+        write_int32(self->point, value);
+        self->point += 4;
+        return 0;
     }
 
     return -1;
@@ -541,9 +541,9 @@ static int append_int32(lexer_t self, int value)
 static int begin_string(lexer_t self)
 {
     if (self->point + 4 < self->end) {
-	self->length_point = self->point;
-	self->point += 4;
-	return 0;
+        self->length_point = self->point;
+        self->point += 4;
+        return 0;
     }
 
     return -1;
@@ -559,7 +559,7 @@ static int end_string(lexer_t self)
 
     /* Pad the string out to a 4-byte boundary */
     while ((intptr_t)(self->point) & 3) {
-	*(self->point++) = '\0';
+        *(self->point++) = '\0';
     }
 
     return 0;
@@ -570,8 +570,8 @@ static int end_string(lexer_t self)
 static int append_char(lexer_t self, int ch)
 {
     if (self->point < self->end) {
-	*(self->point++) = ch;
-	return 0;
+        *(self->point++) = ch;
+        return 0;
     }
 
     return -1;
@@ -584,11 +584,11 @@ static int append_string(lexer_t self, const char *string)
 
     begin_string(self);
     for (point = string; *point != '\0'; point++) {
-	if (self->point >= self->end) {
-	    return -1;
-	}
+        if (self->point >= self->end) {
+            return -1;
+        }
 
-	*self->point++ = *point;
+        *self->point++ = *point;
     }
 
     end_string(self);
@@ -603,7 +603,7 @@ static int lstring_eq(const char *string1, const char *string2)
     /* First compare the lengths */
     len = read_int32(string1);
     if (read_int32(string2) != len) {
-	return 0;
+        return 0;
     }
 
     string1 += 4;
@@ -623,17 +623,17 @@ find_name(lexer_t self, const char *lstring)
     /* Look for the name. */
     name = self->first_name_point;
     while (name < self->length_point) {
-	/* Look for the match. */
-	if (lstring_eq(name, lstring)) {
-	    length = read_int32(name);
-	    return name + ALIGN_4(length) + 8;
-	}
+        /* Look for the match. */
+        if (lstring_eq(name, lstring)) {
+            length = read_int32(name);
+            return name + ALIGN_4(length) + 8;
+        }
 
-	/* Skip to the next name. */
-	length = read_int32(name);
-	length = ALIGN_4(length) + 8;
-	length += read_int32(name + length);
-	name += ALIGN_4(length) + 4;
+        /* Skip to the next name. */
+        length = read_int32(name);
+        length = ALIGN_4(length) + 8;
+        length += read_int32(name + length);
+        name += ALIGN_4(length) + 4;
     }
 
     return NULL;
@@ -644,17 +644,17 @@ static int append_int32_tuple(lexer_t self, char *name, int value)
 {
     /* Write the name */
     if (append_string(self, name) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the value's type */
     if (append_int32(self, INT32_TYPECODE) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the value */
     if (append_int32(self, value) < 0) {
-	return -1;
+        return -1;
     }
 
     self->count++;
@@ -666,17 +666,17 @@ static int append_string_tuple(lexer_t self, const char *name, const char *value
 {
     /* Write the name */
     if (append_string(self, name) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the value's type */
     if (append_int32(self, STRING_TYPECODE) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the value */
     if (append_string(self, value) < 0) {
-	return -1;
+        return -1;
     }
 
     self->count++;
@@ -687,21 +687,21 @@ static int append_string_tuple(lexer_t self, const char *name, const char *value
 
 /* Writes a UNotify packet header */
 int lexer_append_unotify_header(lexer_t self, const char *user,
-				const char *folder, const char *group)
+                                const char *folder, const char *group)
 {
     /* Write the packet type */
     if (append_int32(self, UNOTIFY_PACKET) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the protocol major version number */
     if (append_int32(self, PROTO_VERSION_MAJOR) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the protocol minor version number */
     if (append_int32(self, PROTO_VERSION_MINOR) < 0) {
-	return -1;
+        return -1;
     }
 
     /* The number of attributes will go here */
@@ -710,31 +710,31 @@ int lexer_append_unotify_header(lexer_t self, const char *user,
 
     /* Write the notification format version numbers */
     if (append_int32_tuple(self, N_VERSION_MAJOR, VERSION_MAJOR) < 0) {
-	return -1;
+        return -1;
     }
 
     if (append_int32_tuple(self, N_VERSION_MINOR, VERSION_MINOR) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the username */
     if (append_string_tuple(self, N_USER, user) < 0) {
-	return -1;
+        return -1;
     }
 
     /* Write the folder's name */
     if (folder) {
-	if (append_string_tuple(self, N_FOLDER, folder) < 0) {
-	    return -1;
-	}
+        if (append_string_tuple(self, N_FOLDER, folder) < 0) {
+            return -1;
+        }
     }
 
     /* Write the tickertape group name */
     if (group) {
-	if (append_string_tuple(self, N_GROUP, group) < 0) {
-	    return -1;
-	}
-	self->send_to_tickertape = 1;
+        if (append_string_tuple(self, N_GROUP, group) < 0) {
+            return -1;
+        }
+        self->send_to_tickertape = 1;
     }
 
     /* The first name will go next */
@@ -750,16 +750,16 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
     /* Look up the Subject field. */
     subject = find_name(self, "\0\0\0\7Subject");
     if (subject) {
-	if (append_string_tuple(self, N_MESSAGE, subject + 4) < 0) {
-	    return -1;
-	}
+        if (append_string_tuple(self, N_MESSAGE, subject + 4) < 0) {
+            return -1;
+        }
     }
 
     /* Append the message number (if provided) */
     if (! (msg_num < 0)) {
-	if (append_int32_tuple(self, N_INDEX, msg_num) < 0) {
-	    return -1;
-	}
+        if (append_int32_tuple(self, N_INDEX, msg_num) < 0) {
+            return -1;
+        }
     }
 
     /* Record the number of attributes */
@@ -767,7 +767,7 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
 
     /* We'll happily deliver_insecure */
     if (append_int32(self, 1) < 0) {
-	return -1;
+        return -1;
     }
 
     /* No keys */
@@ -778,10 +778,10 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
 static int begin_string_value(lexer_t self)
 {
     if (self->point + 4 < self->end) {
-	/* Write the string typecode */
-	append_int32(self, STRING_TYPECODE);
+        /* Write the string typecode */
+        append_int32(self, STRING_TYPECODE);
 
-	return begin_string(self);
+        return begin_string(self);
     }
 
     return -1;
@@ -806,26 +806,26 @@ static int lex_start(lexer_t self, int ch)
 {
     /* Bitch and moan if we start with a space or a colon */
     if (ch == ':' || isspace(ch)) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Start a name field */
     if (begin_string(self) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Anything else is part of the first field's name */
     if (append_char(self, toupper(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
+        self->state = lex_dash;
+        return 0;
     }
 
     self->state = lex_name;
@@ -841,68 +841,68 @@ static int lex_name(lexer_t self, int ch)
      * message and we don't want to choke on those, so we let that
      * specific field slide. */
     if (ch == ' ') {
-	/* Complete the name string */
-	if (end_string(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
+        /* Complete the name string */
+        if (end_string(self) < 0) {
+            self->state = lex_error;
+            return -1;
+        }
 
-	/* Is it a 'From' line? */
-	if (lstring_eq(self->length_point, from_string)) {
-	    /* Convert the first character to lowercase */
-	    self->length_point[4] = 'f';
+        /* Is it a 'From' line? */
+        if (lstring_eq(self->length_point, from_string)) {
+            /* Convert the first character to lowercase */
+            self->length_point[4] = 'f';
 
-	    /* Discard the field if we've seen it before */
-	    if (find_name(self, self->length_point)) {
-		self->point = self->length_point;
-		self->state = lex_skip_body;
-		return 0;
-	    }
+            /* Discard the field if we've seen it before */
+            if (find_name(self, self->length_point)) {
+                self->point = self->length_point;
+                self->state = lex_skip_body;
+                return 0;
+            }
 
-	    /* Otherwise read the field body */
-	    self->state = lex_ws;
-	    return 0;
-	}
+            /* Otherwise read the field body */
+            self->state = lex_ws;
+            return 0;
+        }
     }
 
     /* If we find whitespace in a header field name there's a good
      * chance that we're actualy in the message body, so just pretend
      * that we are. */
     if (isspace(ch)) {
-	self->point = self->length_point;
-	self->state = lex_end;
-	return 0;
+        self->point = self->length_point;
+        self->state = lex_end;
+        return 0;
     }
 
     /* A colon is the end of the field name */
     if (ch == ':') {
-	/* Finish the string */
-	if (end_string(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
+        /* Finish the string */
+        if (end_string(self) < 0) {
+            self->state = lex_error;
+            return -1;
+        }
 
-	/* Discard the field if we've seen it before */
-	if (find_name(self, self->length_point)) {
-	    self->point = self->length_point;
-	    self->state = lex_skip_body;
-	    return 0;
-	}
+        /* Discard the field if we've seen it before */
+        if (find_name(self, self->length_point)) {
+            self->point = self->length_point;
+            self->state = lex_skip_body;
+            return 0;
+        }
 
-	self->state = lex_ws;
-	return 0;
+        self->state = lex_ws;
+        return 0;
     }
 
     /* Anything else is part of the field name */
     if (append_char(self, tolower(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Watch for dashes */
     if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
+        self->state = lex_dash;
+        return 0;
     }
 
     self->state = lex_name;
@@ -916,40 +916,40 @@ static int lex_dash(lexer_t self, int ch)
      * chance that we're actualy in the message body, so just pretend
      * that we are. */
     if (isspace(ch)) {
-	self->point = self->length_point;
-	self->state = lex_end;
-	return 0;
+        self->point = self->length_point;
+        self->state = lex_end;
+        return 0;
     }
 
     /* A colon indicates the end of the field name */
     if (ch == ':') {
-	/* Finish the string */
-	if (end_string(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
+        /* Finish the string */
+        if (end_string(self) < 0) {
+            self->state = lex_error;
+            return -1;
+        }
 
-	/* Discard the field if we've seen it before */
-	if (find_name(self, self->length_point)) {
-	    self->point = self->length_point;
-	    self->state = lex_skip_body;
-	    return 0;
-	}
+        /* Discard the field if we've seen it before */
+        if (find_name(self, self->length_point)) {
+            self->point = self->length_point;
+            self->state = lex_skip_body;
+            return 0;
+        }
 
-	self->state = lex_ws;
-	return 0;
+        self->state = lex_ws;
+        return 0;
     }
 
     /* Anything else is part of the field name */
     if (append_char(self, toupper(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Watch for additional dashes */
     if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
+        self->state = lex_dash;
+        return 0;
     }
 
     self->state = lex_name;
@@ -961,25 +961,25 @@ static int lex_ws(lexer_t self, int ch)
 {
     /* Try to fold on a LF */
     if (ch == '\n') {
-	if (begin_string_value(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
+        if (begin_string_value(self) < 0) {
+            self->state = lex_error;
+            return -1;
+        }
 
-	self->state = lex_fold;
-	return 0;
+        self->state = lex_fold;
+        return 0;
     }
 
     /* Skip other whitespace */
     if (isspace(ch)) {
-	self->state = lex_ws;
-	return 0;
+        self->state = lex_ws;
+        return 0;
     }
 
     /* Anything else is part of the body */
     if (begin_string_value(self) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Reset the RFC 1522 word state */
@@ -997,119 +997,119 @@ static int lex_body(lexer_t self, int ch)
     switch (self->rfc1522_state) {
     case 0:
     case 10:
-	self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
-	self->enc_word_point = self->point;
-	break;
+        self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
+        self->enc_word_point = self->point;
+        break;
 
     case 1:
     case 11:
-	self->rfc1522_state = (ch == '?') ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
-	break;
+        self->rfc1522_state = (ch == '?') ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        break;
 
     case 2:
     case 12:
-	self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
-	break;
+        self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        break;
 
     case 3:
     case 13:
     case 5:
     case 15:
-	if (ch == '?') {
-	    self->rfc1522_state++;
-	} else if (!istoken(ch)) {
-	    self->rfc1522_state = 0;
-	}
-	break;
+        if (ch == '?') {
+            self->rfc1522_state++;
+        } else if (!istoken(ch)) {
+            self->rfc1522_state = 0;
+        }
+        break;
 
     case 4:
     case 14:
-	self->enc_enc_point = self->point;
-	self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
-	break;
+        self->enc_enc_point = self->point;
+        self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        break;
 
     case 6:
     case 16:
-	self->enc_text_point = self->point;
-	self->rfc1522_state = isenc(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
-	break;
+        self->enc_text_point = self->point;
+        self->rfc1522_state = isenc(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        break;
 
     case 7:
     case 17:
-	if (ch == '?') {
-	    self->rfc1522_state++;
-	} else if (!isenc(ch)) {
-	    self->point[0] = 0;
-	    self->rfc1522_state = (ch == '=') ? 1 : 0;
-	}
-	break;
+        if (ch == '?') {
+            self->rfc1522_state++;
+        } else if (!isenc(ch)) {
+            self->point[0] = 0;
+            self->rfc1522_state = (ch == '=') ? 1 : 0;
+        }
+        break;
 
     case 8:
     case 18:
-	self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
-	break;
+        self->rfc1522_state = (ch == '=') ? (self->rfc1522_state + 1) : 0;
+        break;
 
     case 9:
     case 19:
 #ifdef DEBUG
-	*self->point = 0;
-	printf("encoded word: \"%s\"\n", self->enc_word_point);
+        *self->point = 0;
+        printf("encoded word: \"%s\"\n", self->enc_word_point);
 #endif /* DEBUG */
 
-	/* Null-terminate the component strings */
-	assert(self->enc_text_point[-1] == '?');
-	self->enc_text_point[-1] = 0;
-	assert(self->enc_enc_point[-1] == '?');
-	self->enc_enc_point[-1] = 0;
-	assert(self->point[-2] == '?');
-	self->point[-2] = 0;
+        /* Null-terminate the component strings */
+        assert(self->enc_text_point[-1] == '?');
+        self->enc_text_point[-1] = 0;
+        assert(self->enc_enc_point[-1] == '?');
+        self->enc_enc_point[-1] = 0;
+        assert(self->point[-2] == '?');
+        self->point[-2] = 0;
 
-	/* Decode the string */
-	len = rfc1522_decode(self->enc_word_point + 2,
-			     self->enc_enc_point,
-			     self->enc_text_point,
-			     buffer, sizeof(buffer));
-	if (len < 0) {
-	    /* Unable to decode; revert the string and carry on */
+        /* Decode the string */
+        len = rfc1522_decode(self->enc_word_point + 2,
+                             self->enc_enc_point,
+                             self->enc_text_point,
+                             buffer, sizeof(buffer));
+        if (len < 0) {
+            /* Unable to decode; revert the string and carry on */
 #ifdef DEBUG
-	    printf("decoding failed\n");
+            printf("decoding failed\n");
 #endif /* DEBUG */
-	    self->enc_text_point[-1] = '?';
-	    self->enc_enc_point[-1] = '?';
-	    self->point[-2] = '?';
-	    self->rfc1522_state = 0;
-	} else {
-	    /* Decoded; copy it into place.  If we're in state 19 then
-	     * we need to overwrite the preceding space too. */
-	    if (self->rfc1522_state == 19) {
-		self->enc_word_point--;
-	    }
-	    memcpy(self->enc_word_point, buffer, len);
-	    self->point = self->enc_word_point + len;
+            self->enc_text_point[-1] = '?';
+            self->enc_enc_point[-1] = '?';
+            self->point[-2] = '?';
+            self->rfc1522_state = 0;
+        } else {
+            /* Decoded; copy it into place.  If we're in state 19 then
+             * we need to overwrite the preceding space too. */
+            if (self->rfc1522_state == 19) {
+                self->enc_word_point--;
+            }
+            memcpy(self->enc_word_point, buffer, len);
+            self->point = self->enc_word_point + len;
 #ifdef DEBUG
-	    *self->point = 0;
-	    printf("decoded w%crd: \"%s\"\n", 
-		   self->rfc1522_state == 19 ? '*' : 'o',
-		   self->enc_word_point);
+            *self->point = 0;
+            printf("decoded w%crd: \"%s\"\n", 
+                   self->rfc1522_state == 19 ? '*' : 'o',
+                   self->enc_word_point);
 #endif /* DEBUG */
-	    self->rfc1522_state = isspace(ch) ? 10 : 0;
-	}
-	break;
+            self->rfc1522_state = isspace(ch) ? 10 : 0;
+        }
+        break;
 
     default:
-	abort();
+        abort();
     }
 
     /* Try to fold on LF */
     if (isspace(ch)) {
-	self->state = (ch == '\n') ? lex_fold : lex_body_ws;
-	return 0;
+        self->state = (ch == '\n') ? lex_fold : lex_body_ws;
+        return 0;
     }
 
     /* Anything else is part of the body */
     if (append_char(self, ch) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     self->state = lex_body;
@@ -1121,19 +1121,19 @@ static int lex_body_ws(lexer_t self, int ch)
 {
     /* Watch for linefeeds */
     if (ch == '\n') {
-	self->state = lex_fold;
-	return 0;
+        self->state = lex_fold;
+        return 0;
     }
 
     /* Discard other whitespace */
     if (isspace(ch)) {
-	self->state = lex_body_ws;
-	return 0;
+        self->state = lex_body_ws;
+        return 0;
     }
 
     /* Insert an actual space first */
     if (append_char(self, ' ') < 0) {
-	return -1;
+        return -1;
     }
 
     /* Anything else is part of the body */
@@ -1145,50 +1145,50 @@ static int lex_fold(lexer_t self, int ch)
 {
     /* A linefeed means that we're out of headers */
     if (ch == '\n') {
-	if (end_string_value(self) < 0) {
-	    self->state = lex_error;
-	    return -1;
-	}
+        if (end_string_value(self) < 0) {
+            self->state = lex_error;
+            return -1;
+        }
 
-	self->state = lex_end;
-	return 0;
+        self->state = lex_end;
+        return 0;
     }
 
     /* Other whitespace means a folded body */
     if (isspace(ch)) {
-	self->state = lex_body_ws;
-	return 0;
+        self->state = lex_body_ws;
+        return 0;
     }
 
     if (end_string_value(self) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Colons aren't allowed here, so if we see one we're probably
      * just in the message body. */
     if (ch == ':') {
-	self->point = self->length_point;
-	self->state = lex_end;
-	return 0;
+        self->point = self->length_point;
+        self->state = lex_end;
+        return 0;
     }
 
     /* Anything else is the start of the next field */
     if (begin_string(self) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Make sure the first letter is always uppercase */
     if (append_char(self, toupper(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
+        self->state = lex_dash;
+        return 0;
     }
 
     self->state = lex_name;
@@ -1200,8 +1200,8 @@ static int lex_skip_body(lexer_t self, int ch)
 {
     /* Try to fold on LF */
     if (ch == '\n') {
-	self->state = lex_skip_fold;
-	return 0;
+        self->state = lex_skip_fold;
+        return 0;
     }
 
     /* Anything else is part of the body */
@@ -1214,32 +1214,32 @@ static int lex_skip_fold(lexer_t self, int ch)
 {
     /* A linefeed means the end of the headers */
     if (ch == '\n') {
-	self->state = lex_end;
-	return 0;
+        self->state = lex_end;
+        return 0;
     }
 
     /* Other whitespace means a folded body */
     if (isspace(ch)) {
-	self->state = lex_skip_body;
-	return 0;
+        self->state = lex_skip_body;
+        return 0;
     }
 
     /* Anything else is the beginning of the next name */
     if (begin_string(self) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Make sure the first letter is always uppercase */
     if (append_char(self, toupper(ch)) < 0) {
-	self->state = lex_error;
-	return -1;
+        self->state = lex_error;
+        return -1;
     }
 
     /* Watch for an initial dash */
     if (ch == '-') {
-	self->state = lex_dash;
-	return 0;
+        self->state = lex_dash;
+        return 0;
     }
 
     self->state = lex_name;
@@ -1266,13 +1266,13 @@ int lex(lexer_t self, char *buffer, ssize_t length)
 
     /* Watch for the end-of-input marker */
     if (length == 0) {
-	return self->state(self, EOF);
+        return self->state(self, EOF);
     }
 
     for (point = buffer; point < buffer + length && self->state != lex_end; point++) {
-	if (self->state(self, *point) < 0) {
-	    return -1;
-	}
+        if (self->state(self, *point) < 0) {
+            return -1;
+        }
     }
 
     return 0;

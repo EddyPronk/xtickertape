@@ -79,7 +79,7 @@ uchar *alloc_default_expression(char *name, elvin_error_t error)
     /* FIX THIS: we need to escape single quotes and backslashes */
     if (! (buffer = (uchar *)ELVIN_MALLOC(sizeof(DEFAULT_EXP) + strlen(name), error)))
     {
-	return NULL;
+        return NULL;
     }
 
     sprintf((char *)buffer, DEFAULT_EXP, name);
@@ -91,34 +91,34 @@ static int eval_bool(value_t *value, elvin_error_t error)
 {
     switch (value -> type)
     {
-	/* Nil is equivalent to false */
-	case VALUE_NONE:
-	{
-	    return 0;
-	}
+        /* Nil is equivalent to false */
+        case VALUE_NONE:
+        {
+            return 0;
+        }
 
-	/* Zero is false, anything else is true */
-	case VALUE_INT32:
-	{
-	    return value -> value.int32 != 0;
-	}
+        /* Zero is false, anything else is true */
+        case VALUE_INT32:
+        {
+            return value -> value.int32 != 0;
+        }
 
-	/* Ditto */
-	case VALUE_INT64:
-	{
-	    return value -> value.int64 != 0;
-	}
+        /* Ditto */
+        case VALUE_INT64:
+        {
+            return value -> value.int64 != 0;
+        }
 
-	case VALUE_FLOAT:
-	{
-	    return value -> value.real64 != 0.0;
-	}
+        case VALUE_FLOAT:
+        {
+            return value -> value.real64 != 0.0;
+        }
 
-	/* Anything else is simply true */
-	default:
-	{
-	    return 1;
-	}
+        /* Anything else is simply true */
+        default:
+        {
+            return 1;
+        }
     }
 }
 
@@ -136,75 +136,75 @@ static int extract_string(
     /* If the value isn't present then return NULL */
     if (! (value = env_get(self -> env, name, error)))
     {
-	*string_out = NULL;
-	return 1;
+        *string_out = NULL;
+        return 1;
     }
 
     /* Evaluate it differently depending on its type */
     switch (value -> type)
     {
-	case VALUE_NONE:
-	case VALUE_OPAQUE:
-	{
-	    *string_out = NULL;
-	    return 1;
-	}
+        case VALUE_NONE:
+        case VALUE_OPAQUE:
+        {
+            *string_out = NULL;
+            return 1;
+        }
 
-	/* Just convert the value into a string */
-	case VALUE_INT32:
-	case VALUE_INT64:
-	case VALUE_FLOAT:
-	case VALUE_STRING:
-	case VALUE_LIST:
-	{
-	    if (! (*string_out = value_to_string(value, error)))
-	    {
-		return 0;
-	    }
+        /* Just convert the value into a string */
+        case VALUE_INT32:
+        case VALUE_INT64:
+        case VALUE_FLOAT:
+        case VALUE_STRING:
+        case VALUE_LIST:
+        {
+            if (! (*string_out = value_to_string(value, error)))
+            {
+                return 0;
+            }
 
-	    return 1;
-	}
+            return 1;
+        }
 
-	/* Evaluate the block within the context of the environment */
-	case VALUE_BLOCK:
-	{
-	    if (! ast_eval(value -> value.block, env, &result, error))
-	    {
-		return 0;
-	    }
+        /* Evaluate the block within the context of the environment */
+        case VALUE_BLOCK:
+        {
+            if (! ast_eval(value -> value.block, env, &result, error))
+            {
+                return 0;
+            }
 
-	    /* Convert the resulting value into a string */
-	    switch (result.type)
-	    {
-		case VALUE_NONE:
-		case VALUE_OPAQUE:
-		{
-		    *string_out = NULL;
-		    return value_free(&result, error);
-		}
+            /* Convert the resulting value into a string */
+            switch (result.type)
+            {
+                case VALUE_NONE:
+                case VALUE_OPAQUE:
+                {
+                    *string_out = NULL;
+                    return value_free(&result, error);
+                }
 
-		case VALUE_INT32:
-		case VALUE_INT64:
-		case VALUE_FLOAT:
-		case VALUE_STRING:
-		case VALUE_LIST:
-		case VALUE_BLOCK:
-		{
-		    if (! (*string_out = value_to_string(&result, error)))
-		    {
-			return 0;
-		    }
+                case VALUE_INT32:
+                case VALUE_INT64:
+                case VALUE_FLOAT:
+                case VALUE_STRING:
+                case VALUE_LIST:
+                case VALUE_BLOCK:
+                {
+                    if (! (*string_out = value_to_string(&result, error)))
+                    {
+                        return 0;
+                    }
 
-		    return value_free(&result, error);
-		}
-	    }
-	}
+                    return value_free(&result, error);
+                }
+            }
+        }
 
-	default:
-	{
-	    fprintf(stderr, "extract_string(): invalid value type: %d\n", value -> type);
-	    abort();
-	}
+        default:
+        {
+            fprintf(stderr, "extract_string(): invalid value type: %d\n", value -> type);
+            abort();
+        }
     }
 }
 
@@ -223,93 +223,93 @@ static int extract_int32(
     /* If the value isn't present then return NULL */
     if (! (value = env_get(self -> env, name, error)))
     {
-	*value_out = 0;
-	return 1;
+        *value_out = 0;
+        return 1;
     }
 
     /* Evaluate it differently depending on its type */
     switch (value -> type)
     {
-	case VALUE_NONE:
-	case VALUE_OPAQUE:
-	case VALUE_STRING:
-	case VALUE_LIST:
-	{
-	    *value_out = 0;
-	    return 1;
-	}
+        case VALUE_NONE:
+        case VALUE_OPAQUE:
+        case VALUE_STRING:
+        case VALUE_LIST:
+        {
+            *value_out = 0;
+            return 1;
+        }
 
-	case VALUE_INT32:
-	{
-	    *value_out = value -> value.int32;
-	    return 1;
-	}
+        case VALUE_INT32:
+        {
+            *value_out = value -> value.int32;
+            return 1;
+        }
 
-	case VALUE_INT64:
-	{
-	    *value_out = (int32_t)value -> value.int64;
-	    return 1;
-	}
+        case VALUE_INT64:
+        {
+            *value_out = (int32_t)value -> value.int64;
+            return 1;
+        }
 
-	case VALUE_FLOAT:
-	{
-	    *value_out = (int32_t)value -> value.real64;
-	    return 1;
-	}
+        case VALUE_FLOAT:
+        {
+            *value_out = (int32_t)value -> value.real64;
+            return 1;
+        }
 
-	/* Evaluate the block within the context of the environment */
-	case VALUE_BLOCK:
-	{
-	    if (! ast_eval(value -> value.block, env, &result, error))
-	    {
-		return 0;
-	    }
+        /* Evaluate the block within the context of the environment */
+        case VALUE_BLOCK:
+        {
+            if (! ast_eval(value -> value.block, env, &result, error))
+            {
+                return 0;
+            }
 
-	    /* Convert the resulting value into a string */
-	    switch (result.type)
-	    {
-		case VALUE_NONE:
-		case VALUE_STRING:
-		case VALUE_OPAQUE:
-		case VALUE_LIST:
-		case VALUE_BLOCK:
-		{
-		    *value_out = 0;
-		    return 1;
-		}
+            /* Convert the resulting value into a string */
+            switch (result.type)
+            {
+                case VALUE_NONE:
+                case VALUE_STRING:
+                case VALUE_OPAQUE:
+                case VALUE_LIST:
+                case VALUE_BLOCK:
+                {
+                    *value_out = 0;
+                    return 1;
+                }
 
-		case VALUE_INT32:
-		{
-		    *value_out = result.value.int32;
-		    return 1;
-		}
+                case VALUE_INT32:
+                {
+                    *value_out = result.value.int32;
+                    return 1;
+                }
 
-		case VALUE_INT64:
-		{
-		    *value_out = (int32_t)result.value.int64;
-		    return 1;
-		}
+                case VALUE_INT64:
+                {
+                    *value_out = (int32_t)result.value.int64;
+                    return 1;
+                }
 
-		case VALUE_FLOAT:
-		{
-		    *value_out = (int32_t)result.value.real64;
-		    return 1;
-		}
+                case VALUE_FLOAT:
+                {
+                    *value_out = (int32_t)result.value.real64;
+                    return 1;
+                }
 
-		default:
-		{
-		    fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
-		}
-	    }
+                default:
+                {
+                    fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
+                }
+            }
 
-	    return 1;
-	}
+            return 1;
+        }
 
-	default:
-	{
-	    fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
-	    abort();
-	}
+        default:
+        {
+            fprintf(stderr, "extract_int32(): invalid type: %d\n", value -> type);
+            abort();
+        }
     }
 }
 
@@ -330,58 +330,58 @@ static int eval_producer_keys(
     /* Make sure we were given a list */
     if (value -> type != VALUE_LIST)
     {
-	fprintf(stderr, "type mismatch: keys must be lists\n");
-	return 0;
+        fprintf(stderr, "type mismatch: keys must be lists\n");
+        return 0;
     }
 
     /* If the list is empty then don't bother creating a key set */
     if (value -> value.list.count == 0)
     {
-	return 1;
+        return 1;
     }
 
     /* Allocate some room for the key set */
     count = value -> value.list.count;
     if (! (keys = elvin_keys_alloc(count, error)))
     {
-	return 0;
+        return 0;
     }
 
     /* Go through the list and add keys */
     for (i = 0; i < count; i++)
     {
-	value_t *item = &value -> value.list.items[i];
+        value_t *item = &value -> value.list.items[i];
 
-	/* Make sure the key is a string */
-	if (item -> type != VALUE_STRING)
-	{
-	    fprintf(stderr, "bad producer key type: %d\n", value -> type);
-	    return 0;
-	}
+        /* Make sure the key is a string */
+        if (item -> type != VALUE_STRING)
+        {
+            fprintf(stderr, "bad producer key type: %d\n", value -> type);
+            return 0;
+        }
 
-	/* Convert it to a producer key */
-	if (! (key = elvin_keyraw_alloc(
-	    item -> value.string,
-	    strlen(item -> value.string),
-	    error)))
-	{
-	    elvin_keys_free(keys, NULL);
-	    return 0;
-	}
+        /* Convert it to a producer key */
+        if (! (key = elvin_keyraw_alloc(
+            item -> value.string,
+            strlen(item -> value.string),
+            error)))
+        {
+            elvin_keys_free(keys, NULL);
+            return 0;
+        }
 
-	/* Add it to the key set */
-	if (! elvin_keys_add(keys, key, error))
-	{
-	    elvin_key_free(key, NULL);
-	    elvin_keys_free(keys, NULL);
-	    return 0;
-	}
+        /* Add it to the key set */
+        if (! elvin_keys_add(keys, key, error))
+        {
+            elvin_key_free(key, NULL);
+            elvin_keys_free(keys, NULL);
+            return 0;
+        }
 
-	/* Release our reference to the key */
-	if (! elvin_key_free(key, error))
-	{
-	    return 0;
-	}
+        /* Release our reference to the key */
+        if (! elvin_key_free(key, error))
+        {
+            return 0;
+        }
     }
 
     /* Success! */
@@ -407,46 +407,46 @@ static int eval_consumer_keys(
     /* If the list is empty then don't bother creating a key set */
     if (value -> value.list.count == 0)
     {
-	return 1;
+        return 1;
     }
 
     /* Allocate some room for the key set */
     if (! (keys = elvin_keys_alloc(value -> value.list.count, error)))
     {
-	return 0;
+        return 0;
     }
 
     /* Go through the list and add keys */
     for (i = 0; i < value -> value.list.count; i++)
     {
-	value_t *item = &value -> value.list.items[i];
+        value_t *item = &value -> value.list.items[i];
 
-	if (item -> type != VALUE_STRING)
-	{
-	    fprintf(stderr, "bad consumer key type: %d\n", item -> type);
-	    return 0;
-	}
+        if (item -> type != VALUE_STRING)
+        {
+            fprintf(stderr, "bad consumer key type: %d\n", item -> type);
+            return 0;
+        }
 
-	/* Convert it into a consumer key */
-	if (! (key = elvin_keyprime_from_hexstring(item -> value.string, error)))
-	{
-	    elvin_keys_free(keys, NULL);
-	    return 0;
-	}
+        /* Convert it into a consumer key */
+        if (! (key = elvin_keyprime_from_hexstring(item -> value.string, error)))
+        {
+            elvin_keys_free(keys, NULL);
+            return 0;
+        }
 
-	/* Add it to the key set */
-	if (! elvin_keys_add(keys, key, error))
-	{
-	    elvin_key_free(key, NULL);
-	    elvin_keys_free(keys, NULL);
-	    return 0;
-	}
+        /* Add it to the key set */
+        if (! elvin_keys_add(keys, key, error))
+        {
+            elvin_key_free(key, NULL);
+            elvin_keys_free(keys, NULL);
+            return 0;
+        }
 
-	/* Release our reference to the key */
-	if (! elvin_key_free(key, error))
-	{
-	    return 0;
-	}
+        /* Release our reference to the key */
+        if (! elvin_key_free(key, error))
+        {
+            return 0;
+        }
     }
 
     /* Success! */
@@ -466,7 +466,7 @@ subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error)
     /* Allocate some memory for the new subscription */
     if (! (self = (subscription_t)ELVIN_MALLOC(sizeof(struct subscription), error)))
     {
-	return NULL;
+        return NULL;
     }
 
     /* Set all of the values to sane things */
@@ -478,8 +478,8 @@ subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error)
     /* Copy the tag string */
     if (! (self -> tag = ELVIN_STRDUP(tag, error)))
     {
-	subscription_free(self, NULL);
-	return NULL;
+        subscription_free(self, NULL);
+        return NULL;
     }
 
     printf("tag=`%s'\n", tag);
@@ -487,86 +487,86 @@ subscription_t subscription_alloc(char *tag, env_t env, elvin_error_t error)
     /* Get the name out of the environment */
     if (! (value = env_get(env, "name", error)))
     {
-	if (! (self -> name = ELVIN_STRDUP(self -> tag, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (self -> name = ELVIN_STRDUP(self -> tag, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
     else
     {
-	if (! (self -> name = value_to_string(value, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (self -> name = value_to_string(value, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
 
     /* Get the subscription expression */
     if (! (value = env_get(env, "subscription", error)))
     {
-	if (! (self -> expression = alloc_default_expression(self -> name, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (self -> expression = alloc_default_expression(self -> name, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
     else
     {
-	if (! (self -> expression = value_to_string(value, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (self -> expression = value_to_string(value, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
 
     /* Get the producer keys */
     if (! (value = env_get(env, "producer-keys", error)))
     {
-	self -> producer_keys = NULL;
+        self -> producer_keys = NULL;
     }
     else
     {
-	if (! (eval_producer_keys(value, &self -> producer_keys, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (eval_producer_keys(value, &self -> producer_keys, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
 
     /* Get the consumer keys */
     if (! (value = env_get(env, "consumer-keys", error)))
     {
-	self -> consumer_keys = NULL;
+        self -> consumer_keys = NULL;
     }
     else
     {
-	if (! (eval_consumer_keys(value, &self -> consumer_keys, error)))
-	{
-	    subscription_free(self, NULL);
-	    return NULL;
-	}
+        if (! (eval_consumer_keys(value, &self -> consumer_keys, error)))
+        {
+            subscription_free(self, NULL);
+            return NULL;
+        }
     }
 
 
     /* Should this subscription be in the menu? */
     if (! (value = env_get(env, "in-menu", error)))
     {
-	self -> in_menu = 1;
+        self -> in_menu = 1;
     }
     else
     {
-	self -> in_menu = eval_bool(value, error);
+        self -> in_menu = eval_bool(value, error);
     }
 
     /* Is the mime nazi enabled? */
     if (! (value = env_get(env, "auto-mime", error)))
     {
-	self -> auto_mime = 0;
+        self -> auto_mime = 0;
     }
     else
     {
-	self -> auto_mime = eval_bool(value, error);
+        self -> auto_mime = eval_bool(value, error);
     }
 
     return self;
@@ -578,55 +578,55 @@ int subscription_free(subscription_t self, elvin_error_t error)
     /* Free the evaluation environment */
     if (self -> env != NULL)
     {
-	if (! elvin_hash_free(self -> env, error))
-	{
-	    return 0;
-	}
+        if (! elvin_hash_free(self -> env, error))
+        {
+            return 0;
+        }
     }
 
     /* Free the tag */
     if (self -> tag != NULL)
     {
-	if (! ELVIN_FREE(self -> tag, error))
-	{
-	    return 0;
-	}
+        if (! ELVIN_FREE(self -> tag, error))
+        {
+            return 0;
+        }
     }
 
     /* Free the name */
     if (self -> name != NULL)
     {
-	if (! ELVIN_FREE(self -> name, error))
-	{
-	    return 0;
-	}
+        if (! ELVIN_FREE(self -> name, error))
+        {
+            return 0;
+        }
     }
 
     /* Free the subscription expression */
     if (self -> expression != NULL)
     {
-	if (! ELVIN_FREE(self -> expression, error))
-	{
-	    return 0;
-	}
+        if (! ELVIN_FREE(self -> expression, error))
+        {
+            return 0;
+        }
     }
 
     /* Free the notification keys */
     if (self -> producer_keys != NULL)
     {
-	if (! elvin_keys_free(self -> producer_keys, error))
-	{
-	    return 0;
-	}
+        if (! elvin_keys_free(self -> producer_keys, error))
+        {
+            return 0;
+        }
     }
 
     /* Free the subscription keys */
     if (self -> consumer_keys != NULL)
     {
-	if (! elvin_keys_free(self -> consumer_keys, error))
-	{
-	    return 0;
-	}
+        if (! elvin_keys_free(self -> consumer_keys, error))
+        {
+            return 0;
+        }
     }
 
     return ELVIN_FREE(self, error);
@@ -648,53 +648,53 @@ static int update_env(
     /* Copy the value into the result */
     switch (type)
     {
-	case ELVIN_INT32:
-	{
-	    result.type = VALUE_INT32;
-	    result.value.int32 = value.i;
-	    break;
-	}
+        case ELVIN_INT32:
+        {
+            result.type = VALUE_INT32;
+            result.value.int32 = value.i;
+            break;
+        }
 
-	case ELVIN_INT64:
-	{
-	    result.type = VALUE_INT64;
-	    result.value.int64 = value.h;
-	    break;
-	}
+        case ELVIN_INT64:
+        {
+            result.type = VALUE_INT64;
+            result.value.int64 = value.h;
+            break;
+        }
 
-	case ELVIN_REAL64:
-	{
-	    result.type = VALUE_FLOAT;
-	    result.value.real64 = value.d;
-	    break;
-	}
+        case ELVIN_REAL64:
+        {
+            result.type = VALUE_FLOAT;
+            result.value.real64 = value.d;
+            break;
+        }
 
-	case ELVIN_STRING:
-	{
-	    result.type = VALUE_STRING;
-	    result.value.string = value.s;
-	    break;
-	}
+        case ELVIN_STRING:
+        {
+            result.type = VALUE_STRING;
+            result.value.string = value.s;
+            break;
+        }
 
-	case ELVIN_OPAQUE:
-	{
-	    result.type = VALUE_OPAQUE;
-	    result.value.opaque.length = value.o.length;
-	    result.value.opaque.data = value.o.data;
-	    break;
-	}
+        case ELVIN_OPAQUE:
+        {
+            result.type = VALUE_OPAQUE;
+            result.value.opaque.length = value.o.length;
+            result.value.opaque.data = value.o.data;
+            break;
+        }
 
-	default:
-	{
-	    fprintf(stderr, "invalid type in notification: %d\n", type);
-	    abort();
-	}
+        default:
+        {
+            fprintf(stderr, "invalid type in notification: %d\n", type);
+            abort();
+        }
     }
 
     /* Add the value to the environment */
     if (! env_put(env, name, &result, error))
     {
-	return 0;
+        return 0;
     }
 
     return 1;
@@ -709,15 +709,15 @@ static env_t notification_to_env(elvin_notification_t notification, elvin_error_
     /* Allocate a new environment */
     if (! (env = env_alloc(error)))
     {
-	return NULL;
+        return NULL;
     }
 
     /* Traverse the notification and copy fields */
     continue_traversal = 1;
     if (! elvin_notification_traverse(notification, update_env, &continue_traversal, env, error))
     {
-	env_free(env, NULL);
-	return NULL;
+        env_free(env, NULL);
+        return NULL;
     }
 
     return env;
@@ -751,116 +751,116 @@ message_t subscription_transmute(
     /* Transform the notification into an environment */
     if (! (env = notification_to_env(notification, error)))
     {
-	return NULL;
+        return NULL;
     }
 
     /* FIX THIS: Evaluate the subscription fields */
     /* FIX THIS: an environment is not the same as a notification! */
     if (! extract_string(self, env, "group", &group, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "user", &user, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "message", &string, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_int32(self, env, "timeout", &timeout, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "mime-type", &mime_type, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "mime-args", &mime_args, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "replace-id", &replace_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "message-id", &message_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (! extract_string(self, env, "reply-id", &reply_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     /* create a message */
     if (! (message = message_alloc(
-	self -> tag,
-	group ? group : self -> tag,
-	user ? user : "anonymous",
-	string ? string : "no message",
-	timeout ? timeout : 10,
-	mime_type, mime_args,
-	replace_id, message_id, reply_id)))
+        self -> tag,
+        group ? group : self -> tag,
+        user ? user : "anonymous",
+        string ? string : "no message",
+        timeout ? timeout : 10,
+        mime_type, mime_args,
+        replace_id, message_id, reply_id)))
     {
-	fprintf(stderr, "message_alloc(): failed\n");
-	abort();
+        fprintf(stderr, "message_alloc(): failed\n");
+        abort();
     }
 
     /* Clean up */
 #if 0
     if (! env_free(env, error))
     {
-	return NULL;
+        return NULL;
     }
 #endif
 
     if (group && ! ELVIN_FREE(group, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (user && ! ELVIN_FREE(user, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (string && ! ELVIN_FREE(string, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (mime_type && ! ELVIN_FREE(mime_type, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (mime_args && ! ELVIN_FREE(mime_args, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (replace_id && ! ELVIN_FREE(replace_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (message_id && ! ELVIN_FREE(message_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     if (reply_id && ! ELVIN_FREE(reply_id, error))
     {
-	return NULL;
+        return NULL;
     }
 
     return message;

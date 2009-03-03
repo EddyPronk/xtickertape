@@ -138,10 +138,10 @@ static struct guess *find_guess(const char *code)
     /* Go through the guesses */
     for (guess = guesses; guess -> code != NULL; guess++)
     {
-	if (strcmp(guess -> code, code) == 0)
-	{
-	    return guess;
-	}
+        if (strcmp(guess -> code, code) == 0)
+        {
+            return guess;
+        }
     }
 
     return NULL;
@@ -168,23 +168,23 @@ static iconv_t do_iconv_open(const char *tocode, const char *fromcode)
     to_string = tocode;
     while (to_string != NULL)
     {
-	j = 0;
-	from_string = fromcode;
-	while (from_string != NULL)
-	{
-	    /* Try this combination */
-	    fflush(stderr);
-	    if ((cd = iconv_open(to_string, from_string)) != (iconv_t)-1)
-	    {
-		return cd;
-	    }
+        j = 0;
+        from_string = fromcode;
+        while (from_string != NULL)
+        {
+            /* Try this combination */
+            fflush(stderr);
+            if ((cd = iconv_open(to_string, from_string)) != (iconv_t)-1)
+            {
+                return cd;
+            }
 
-	    /* Get the next fromstring */
-	    from_string = from_guess ? from_guess -> guesses[j++] : NULL;
-	}
+            /* Get the next fromstring */
+            from_string = from_guess ? from_guess -> guesses[j++] : NULL;
+        }
 
-	/* Get the next tostring */
-	to_string = to_guess ? to_guess -> guesses[i++] : NULL;
+        /* Get the next tostring */
+        to_string = to_guess ? to_guess -> guesses[i++] : NULL;
     }
 
     /* Give up */
@@ -223,40 +223,40 @@ static char *alloc_font_code_set(Display *display, XFontStruct *font)
     /* Look up the CHARSET_REGISTRY atom */
     if (registry == None)
     {
-	registry = XInternAtom(display, CHARSET_REGISTRY, False);
+        registry = XInternAtom(display, CHARSET_REGISTRY, False);
     }
 
     /* Look up the font's CHARSET_REGISTRY property */
     if (! XGetFontProperty(font, registry, &atoms[0]))
     {
-	return NULL;
+        return NULL;
     }
 
     /* Look up the CHARSET_ENCODING atom */
     if (encoding == None)
     {
-	encoding = XInternAtom(display, CHARSET_ENCODING, False);
+        encoding = XInternAtom(display, CHARSET_ENCODING, False);
     }
 
     /* Look up the font's CHARSET_ENCODING property */
     if (! XGetFontProperty(font, encoding, &atoms[1]))
     {
-	return NULL;
+        return NULL;
     }
 
     /* Stringify the names */
     if (! XGetAtomNames(display, atoms, 2, names))
     {
-	return NULL;
+        return NULL;
     }
 
     /* Allocate some memory to hold the code set name */
     length = strlen(names[0]) + 1 + strlen(names[1]) + 1;
     if ((string = malloc(length)) == NULL)
     {
-	XFree(names[0]);
-	XFree(names[1]);
-	return NULL;
+        XFree(names[0]);
+        XFree(names[1]);
+        return NULL;
     }
 
     /* Construct the code set name */
@@ -304,41 +304,41 @@ static XCharStruct *per_char(
     /* Fixed-width font? */
     if (font -> per_char == NULL)
     {
-	return &font -> max_bounds;
+        return &font -> max_bounds;
     }
 
     /* Is the character present? */
     if (font -> min_byte1 <= byte1 && byte1 <= font -> max_byte1 &&
-	font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
+        font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
     {
-	/* Look up the character info */
-	info = font -> per_char +
-	    (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
-	    byte2 - font -> min_char_or_byte2;
+        /* Look up the character info */
+        info = font -> per_char +
+            (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
+            byte2 - font -> min_char_or_byte2;
 
-	/* If the bounding box is non-zero then use it */
-	if (info -> width != 0)
-	{
-	    return info;
-	}
+        /* If the bounding box is non-zero then use it */
+        if (info -> width != 0)
+        {
+            return info;
+        }
     }
 
     /* Is the default charater present? */
     byte1 = font -> default_char >> 8;
     byte2 = font -> default_char & 0xFF;
     if (font -> min_byte1 <= byte1 && byte1 <= font -> max_byte1 &&
-	font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
+        font -> min_char_or_byte2 <= byte2 && byte2 <= font -> max_char_or_byte2)
     {
-	/* Look up the character info */
-	info = font -> per_char +
-	    (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
-	    byte2 - font -> min_char_or_byte2;
+        /* Look up the character info */
+        info = font -> per_char +
+            (byte1 - font -> min_byte1) * (font -> max_char_or_byte2 - font -> min_char_or_byte2 + 1) +
+            byte2 - font -> min_char_or_byte2;
 
-	/* If the bounding box is non-zero then use it */
-	if (info -> width != 0)
-	{
-	    return info;
-	}
+        /* If the bounding box is non-zero then use it */
+        if (info -> width != 0)
+        {
+            return info;
+        }
     }
 
     /* If all else fails then use an empty character */
@@ -359,13 +359,13 @@ static int cd_dimension(iconv_t cd)
     /* Try to encode one character */
     if (iconv(cd, &string, &in_length, &point, &out_length) == (size_t)-1)
     {
-	return -1;
+        return -1;
     }
 
     /* Fail if the encoding was not complete */
     if (in_length != 0)
     {
-	return -1;
+        return -1;
     }
 
     /* Otherwise return the number of characters required */
@@ -390,7 +390,7 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Allocate room for the new utf8_renderer */
     if ((self = (utf8_renderer_t)malloc(sizeof(struct utf8_renderer))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Set its fields to sane values */
@@ -402,62 +402,62 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Is there a font property for underline thickness? */
     if (! XGetFontProperty(font, XA_UNDERLINE_THICKNESS, &value))
     {
-	/* Make something up */
-	self -> underline_thickness = MAX((font -> ascent + font -> descent + 10L) / 20, 1);
+        /* Make something up */
+        self -> underline_thickness = MAX((font -> ascent + font -> descent + 10L) / 20, 1);
     }
     else
     {
-	/* Yes: use it */
-	self -> underline_thickness = MAX(value, 1);
+        /* Yes: use it */
+        self -> underline_thickness = MAX(value, 1);
     }
 
     /* Is there a font property for the underline position? */
     if (! XGetFontProperty(font, XA_UNDERLINE_POSITION, &value))
     {
-	/* Make up something plausible */
-	self -> underline_position = MAX((font -> descent + 4L) / 8 , 1);
+        /* Make up something plausible */
+        self -> underline_position = MAX((font -> descent + 4L) / 8 , 1);
     }
     else
     {
-	/* Yes!  Use it. */
-	self -> underline_position = MAX(value, 2);
+        /* Yes!  Use it. */
+        self -> underline_position = MAX(value, 2);
     }
 
 #ifdef HAVE_ICONV
     /* Was an encoding provided? */
     if (tocode != NULL)
     {
-	/* Yes.  Use it to create a conversion descriptor */
-	if ((cd = do_iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
-	{
-	    return self;
-	}
+        /* Yes.  Use it to create a conversion descriptor */
+        if ((cd = do_iconv_open(tocode, UTF8_CODE)) == (iconv_t)-1)
+        {
+            return self;
+        }
 
-	/* Encode a single character to get the dimension */
-	if ((dimension = cd_dimension(cd)) < 0)
-	{
-	    iconv_close(cd);
-	    return self;
-	}
+        /* Encode a single character to get the dimension */
+        if ((dimension = cd_dimension(cd)) < 0)
+        {
+            iconv_close(cd);
+            return self;
+        }
 
-	self -> cd = cd;
-	self -> dimension = dimension;
-	return self;
+        self -> cd = cd;
+        self -> dimension = dimension;
+        return self;
     }
 
 
     /* Look up the font's code set */
     if ((string = alloc_font_code_set(display, font)) == NULL)
     {
-	return self;
+        return self;
     }
 
     /* Open a conversion descriptor */
     if ((cd = do_iconv_open(string, UTF8_CODE)) == (iconv_t)-1)
     {
-	self -> dimension = 1;
-	free(string);
-	return self;
+        self -> dimension = 1;
+        free(string);
+        return self;
     }
 
     /* Clean up some more */
@@ -466,8 +466,8 @@ utf8_renderer_t utf8_renderer_alloc(
     /* Try to encode a single character */
     if ((dimension = cd_dimension(cd)) == 0)
     {
-	iconv_close(cd);
-	return self;
+        iconv_close(cd);
+        return self;
     }
 
     /* Successful guess! */
@@ -489,43 +489,43 @@ static size_t utf8_renderer_iconv(
     /* An unsupported conversion becomse UTF-8 to ASCII */
     if (self -> cd == (iconv_t)-1)
     {
-	/* This is a stateless translation */
-	if (inbytesleft == NULL || outbytesleft == NULL)
-	{
-	    return 0;
-	}
+        /* This is a stateless translation */
+        if (inbytesleft == NULL || outbytesleft == NULL)
+        {
+            return 0;
+        }
 
-	/* Keep going until we're out of room */
-	while (*inbytesleft && *outbytesleft)
-	{
-	    int ch;
+        /* Keep going until we're out of room */
+        while (*inbytesleft && *outbytesleft)
+        {
+            int ch;
 
-	    /* Get the next character */
-	    ch = *(*inbuf)++;
-	    (*inbytesleft)--;
+            /* Get the next character */
+            ch = *(*inbuf)++;
+            (*inbytesleft)--;
 
-	    /* If it's the beginning of a multibyte character then
-	     * replace it with the default char */
-	    if ((ch & 0xc0) == 0xc0)
-	    {
-		*(*outbuf)++ = self -> font -> default_char;
-		(*outbytesleft)--;
-	    }
-	    else if ((ch & 0xc0) != 0x80)
-	    {
-		*(*outbuf)++ = ch;
-		(*outbytesleft)--;
-	    }
-	}
-	
-	return 0;
+            /* If it's the beginning of a multibyte character then
+             * replace it with the default char */
+            if ((ch & 0xc0) == 0xc0)
+            {
+                *(*outbuf)++ = self -> font -> default_char;
+                (*outbytesleft)--;
+            }
+            else if ((ch & 0xc0) != 0x80)
+            {
+                *(*outbuf)++ = ch;
+                (*outbytesleft)--;
+            }
+        }
+        
+        return 0;
     }
 
     /* Watch for a NULL transformation */
     if (inbytesleft == NULL || outbytesleft == NULL)
     {
-	self -> is_skipping = 0;
-	return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
+        self -> is_skipping = 0;
+        return iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft);
     }
 
     /* Keep going even when we encounter invalid or unrepresentable
@@ -533,77 +533,77 @@ static size_t utf8_renderer_iconv(
     count = 0;
     while (*inbytesleft && *outbytesleft)
     {
-	size_t n;
+        size_t n;
 
-	/* Skip the rest of an untranslatable character */
-	if (self -> is_skipping)
-	{
-	    while (*inbytesleft > 0 && (*(*inbuf) & 0xc0) == 0x80)
-	    {
-		(*inbuf)++;
-		(*inbytesleft)--;
-	    }
+        /* Skip the rest of an untranslatable character */
+        if (self -> is_skipping)
+        {
+            while (*inbytesleft > 0 && (*(*inbuf) & 0xc0) == 0x80)
+            {
+                (*inbuf)++;
+                (*inbytesleft)--;
+            }
 
-	    /* Bail if we're out of input */
-	    if (*inbytesleft == 0)
-	    {
-		break;
-	    }
+            /* Bail if we're out of input */
+            if (*inbytesleft == 0)
+            {
+                break;
+            }
 
-	    self -> is_skipping = 0;
-	}
+            self -> is_skipping = 0;
+        }
 
-	/* Try to convert the sequence */
-	if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
-	{
-	    switch (errno)
-	    {
-		case E2BIG:
-		{
-		    return count;
-		}
+        /* Try to convert the sequence */
+        if ((n = iconv(self -> cd, inbuf, inbytesleft, outbuf, outbytesleft)) == (size_t)-1)
+        {
+            switch (errno)
+            {
+                case E2BIG:
+                {
+                    return count;
+                }
 
-		case EILSEQ:
-		{
-		    errno = 0;
+                case EILSEQ:
+                {
+                    errno = 0;
 
-		    /* Skip the first byte of the untranslatable character */
-		    (*inbuf)++;
-		    (*inbytesleft)--;
+                    /* Skip the first byte of the untranslatable character */
+                    (*inbuf)++;
+                    (*inbytesleft)--;
 
-		    /* Insert the default character */
-		    if (self -> dimension == 1)
-		    {
-			*(*outbuf)++ = self -> font -> default_char;
-			(*outbytesleft)--;
-		    }
-		    else
-		    {
-			*(*outbuf)++ = self -> font -> default_char >> 8;
-			*(*outbuf)++ = self -> font -> default_char & 0xFF;
-			(*outbytesleft) += 2;
-		    }
+                    /* Insert the default character */
+                    if (self -> dimension == 1)
+                    {
+                        *(*outbuf)++ = self -> font -> default_char;
+                        (*outbytesleft)--;
+                    }
+                    else
+                    {
+                        *(*outbuf)++ = self -> font -> default_char >> 8;
+                        *(*outbuf)++ = self -> font -> default_char & 0xFF;
+                        (*outbytesleft) += 2;
+                    }
 
-		    count++;
+                    count++;
 
-		    /* Reset the conversion descriptor */
-		    iconv(self -> cd, NULL, NULL, NULL, NULL);
+                    /* Reset the conversion descriptor */
+                    iconv(self -> cd, NULL, NULL, NULL, NULL);
 
-		    /* Arrange to skip the rest of the character */
-		    self -> is_skipping = 1;
-		    break;
-		}
+                    /* Arrange to skip the rest of the character */
+                    self -> is_skipping = 1;
+                    break;
+                }
 
-		default:
-		{			    
-		    return (size_t)-1;
-		}
-	    }
-	}
-	else
-	{
-	    count += n;
-	}
+                default:
+                {                            
+                    return (size_t)-1;
+                }
+            }
+        }
+        else
+        {
+            count += n;
+        }
     }
 
     return count;
@@ -632,70 +632,70 @@ void utf8_renderer_measure_string(
     is_first = True;
     while (in_length != 0)
     {
-	/* Convert the string into the display code set */
-	out_length = BUFFER_SIZE;
-	out_point = buffer;
-	if (utf8_renderer_iconv(
-		self,
-		&string, &in_length,
-		&out_point, &out_length) == (size_t)-1 &&
-	    errno != E2BIG)
-	{
-	    /* This shouldn't fail */
-	    abort();
-	}
+        /* Convert the string into the display code set */
+        out_length = BUFFER_SIZE;
+        out_point = buffer;
+        if (utf8_renderer_iconv(
+                self,
+                &string, &in_length,
+                &out_point, &out_length) == (size_t)-1 &&
+            errno != E2BIG)
+        {
+            /* This shouldn't fail */
+            abort();
+        }
 
-	/* Measure the characters */
-	if (self -> dimension == 1)
-	{
-	    char *point = buffer;
+        /* Measure the characters */
+        if (self -> dimension == 1)
+        {
+            char *point = buffer;
 
-	    /* Set the initial measurements */
-	    if (is_first)
-	    {
-		is_first = False;
-		info = per_char(self -> font, 0, *(unsigned char *)point);
-		lbearing = info -> lbearing;
-		rbearing = info -> rbearing;
-		width = info -> width;
-		point++;
-	    }
+            /* Set the initial measurements */
+            if (is_first)
+            {
+                is_first = False;
+                info = per_char(self -> font, 0, *(unsigned char *)point);
+                lbearing = info -> lbearing;
+                rbearing = info -> rbearing;
+                width = info -> width;
+                point++;
+            }
 
-	    /* Adjust for the rest of the string */
-	    while (point < out_point)
-	    {
-		info = per_char(self -> font, 0, *(unsigned char *)point);
-		lbearing = MIN(lbearing, width + (long)info -> lbearing);
-		rbearing = MAX(rbearing, width + (long)info -> rbearing);
-		width += (long)info -> width;
-		point++;
-	    }
-	}
-	else
-	{
-	    XChar2b *point = (XChar2b *)buffer;
+            /* Adjust for the rest of the string */
+            while (point < out_point)
+            {
+                info = per_char(self -> font, 0, *(unsigned char *)point);
+                lbearing = MIN(lbearing, width + (long)info -> lbearing);
+                rbearing = MAX(rbearing, width + (long)info -> rbearing);
+                width += (long)info -> width;
+                point++;
+            }
+        }
+        else
+        {
+            XChar2b *point = (XChar2b *)buffer;
 
-	    /* Set the initial measurements */
-	    if (is_first)
-	    {
-		is_first = False;
-		info = per_char(self -> font, point -> byte1, point -> byte2);
-		lbearing = info -> lbearing;
-		rbearing = info -> rbearing;
-		width = info -> width;
-		point++;
-	    }
+            /* Set the initial measurements */
+            if (is_first)
+            {
+                is_first = False;
+                info = per_char(self -> font, point -> byte1, point -> byte2);
+                lbearing = info -> lbearing;
+                rbearing = info -> rbearing;
+                width = info -> width;
+                point++;
+            }
 
-	    /* Adjust for the rest of the string */
-	    while (point < (XChar2b *)out_point)
-	    {
-		info = per_char(self -> font, point -> byte1, point -> byte2);
-		lbearing = MIN(lbearing, width + (long)info -> lbearing);
-		rbearing = MAX(rbearing, width + (long)info -> rbearing);
-		width += (long)info -> width;
-		point++;
-	    }
-	}
+            /* Adjust for the rest of the string */
+            while (point < (XChar2b *)out_point)
+            {
+                info = per_char(self -> font, point -> byte1, point -> byte2);
+                lbearing = MIN(lbearing, width + (long)info -> lbearing);
+                rbearing = MAX(rbearing, width + (long)info -> rbearing);
+                width += (long)info -> width;
+                point++;
+            }
+        }
     }
 
     /* Record our findings */
@@ -704,9 +704,9 @@ void utf8_renderer_measure_string(
     sizes -> width = width;
     sizes -> ascent = self -> font -> ascent;
     sizes -> descent = 
-	MAX(
-	    self -> font -> descent,
-	    self -> underline_position + self -> underline_thickness);
+        MAX(
+            self -> font -> descent,
+            self -> underline_position + self -> underline_thickness);
 }
 
 /* Draw a string within the bounding box, measuring the characters so
@@ -734,127 +734,127 @@ void utf8_renderer_draw_string(
     left = x;
     while (in_length != 0)
     {
-	/* Convert the string into the font's code set */
-	out_length = BUFFER_SIZE;
-	out_point = buffer;
-	if (utf8_renderer_iconv(
-		renderer,
-		&string, &in_length,
-		&out_point, &out_length) == (size_t)-1 &&
-	    errno != E2BIG)
-	{
-	    /* This shouldn't fail */
-	    abort();
-	}
+        /* Convert the string into the font's code set */
+        out_length = BUFFER_SIZE;
+        out_point = buffer;
+        if (utf8_renderer_iconv(
+                renderer,
+                &string, &in_length,
+                &out_point, &out_length) == (size_t)-1 &&
+            errno != E2BIG)
+        {
+            /* This shouldn't fail */
+            abort();
+        }
 
-	/* Are characters in this code set one byte wide? */
-	if (renderer -> dimension == 1)
-	{
-	    char *first;
-	    char *last;
+        /* Are characters in this code set one byte wide? */
+        if (renderer -> dimension == 1)
+        {
+            char *first;
+            char *last;
 
-	    /* Look for visible characters in the buffer */
-	    first = buffer;
-	    while (first < out_point)
-	    {
-		info = per_char(renderer -> font, 0, *(unsigned char *)first);
+            /* Look for visible characters in the buffer */
+            first = buffer;
+            while (first < out_point)
+            {
+                info = per_char(renderer -> font, 0, *(unsigned char *)first);
 
-		/* Skip anything to the left of the bounding box */
-		if (left + info -> rbearing < bbox -> x)
-		{
-		    left = left + (long)info -> width;
-		    first++;
-		}
-		else
-		{
-		    /* Look for the last visible character */
-		    last = first;
-		    right = left;
-		    while (last < out_point)
-		    {
-			info = per_char(renderer -> font, 0, *(unsigned char*)last);
+                /* Skip anything to the left of the bounding box */
+                if (left + info -> rbearing < bbox -> x)
+                {
+                    left = left + (long)info -> width;
+                    first++;
+                }
+                else
+                {
+                    /* Look for the last visible character */
+                    last = first;
+                    right = left;
+                    while (last < out_point)
+                    {
+                        info = per_char(renderer -> font, 0, *(unsigned char*)last);
 
-			if (right + info -> lbearing < bbox -> x + bbox -> width)
-			{
-			    right = right + (long)info -> width;
-			    last++;
-			}
-			else
-			{
-			    /* Reset the conversion descriptor */
-			    if (utf8_renderer_iconv(
-				    renderer,
-				    NULL, NULL,
-				    NULL, NULL) == (size_t)-1)
-			    {
-				abort();
-			    }
+                        if (right + info -> lbearing < bbox -> x + bbox -> width)
+                        {
+                            right = right + (long)info -> width;
+                            last++;
+                        }
+                        else
+                        {
+                            /* Reset the conversion descriptor */
+                            if (utf8_renderer_iconv(
+                                    renderer,
+                                    NULL, NULL,
+                                    NULL, NULL) == (size_t)-1)
+                            {
+                                abort();
+                            }
 
-			    XDrawString(display, drawable, gc, left, y, first, last - first);
-			    return;
-			}
-		    }
+                            XDrawString(display, drawable, gc, left, y, first, last - first);
+                            return;
+                        }
+                    }
 
-		    /* Still visible at the end of the buffer */
-		    XDrawString(display, drawable, gc, left, y, first, last - first);
-		    first = last;
-		    left = right;
-		}
-	    }
-	}
-	else
-	{
-	    XChar2b *first;
-	    XChar2b *last;
+                    /* Still visible at the end of the buffer */
+                    XDrawString(display, drawable, gc, left, y, first, last - first);
+                    first = last;
+                    left = right;
+                }
+            }
+        }
+        else
+        {
+            XChar2b *first;
+            XChar2b *last;
 
-	    /* Look for visible characters in the buffer */
-	    first = (XChar2b *)buffer;
-	    while (first < (XChar2b *)out_point)
-	    {
-		info = per_char(renderer -> font, first -> byte1, first -> byte2);
+            /* Look for visible characters in the buffer */
+            first = (XChar2b *)buffer;
+            while (first < (XChar2b *)out_point)
+            {
+                info = per_char(renderer -> font, first -> byte1, first -> byte2);
 
-		if (left + info -> rbearing < bbox -> x)
-		{
-		    left = left + (long)info -> width;
-		    first++;
-		}
-		else
-		{
-		    /* Look for the last visible character */
-		    last = first;
-		    right = left;
-		    while (last < (XChar2b *)out_point)
-		    {
-			info = per_char(renderer -> font, last -> byte1, last -> byte2);
+                if (left + info -> rbearing < bbox -> x)
+                {
+                    left = left + (long)info -> width;
+                    first++;
+                }
+                else
+                {
+                    /* Look for the last visible character */
+                    last = first;
+                    right = left;
+                    while (last < (XChar2b *)out_point)
+                    {
+                        info = per_char(renderer -> font, last -> byte1, last -> byte2);
 
-			if (right + info -> lbearing < bbox -> x + bbox -> width)
-			{
-			    right = right + (long)info -> width;
-			    last++;
-			}
-			else
-			{
-			    /* Reset the conversion descriptor */
-			    if (utf8_renderer_iconv(
-				    renderer,
-				    NULL, NULL,
-				    NULL, NULL) == (size_t)-1)
-			    {
-				abort();
-			    }
+                        if (right + info -> lbearing < bbox -> x + bbox -> width)
+                        {
+                            right = right + (long)info -> width;
+                            last++;
+                        }
+                        else
+                        {
+                            /* Reset the conversion descriptor */
+                            if (utf8_renderer_iconv(
+                                    renderer,
+                                    NULL, NULL,
+                                    NULL, NULL) == (size_t)-1)
+                            {
+                                abort();
+                            }
 
-			    XDrawString16(display, drawable, gc, left, y, first, last - first);
-			    return;
-			}
-		    }
+                            XDrawString16(display, drawable, gc, left, y, first, last - first);
+                            return;
+                        }
+                    }
 
-		    /* Still visible at the end of the buffer */
-		    XDrawString16(display, drawable, gc, left, y, first, last - first);
-		    first = last;
-		    left = right;
-		}
-	    }
-	}
+                    /* Still visible at the end of the buffer */
+                    XDrawString16(display, drawable, gc, left, y, first, last - first);
+                    first = last;
+                    left = right;
+                }
+            }
+        }
     }
 }
 
@@ -870,11 +870,11 @@ void utf8_renderer_draw_underline(
     long width)
 {
     XFillRectangle(
-	display, drawable, gc,
-	MAX(x, bbox -> x),
-	y + self -> underline_position,
-	MIN(x + width, (long)bbox -> x + (long)bbox -> width) - MAX(x, bbox -> x),
-	self -> underline_thickness);
+        display, drawable, gc,
+        MAX(x, bbox -> x),
+        y + self -> underline_position,
+        MIN(x + width, (long)bbox -> x + (long)bbox -> width) - MAX(x, bbox -> x),
+        self -> underline_thickness);
 }
 
 
@@ -905,7 +905,7 @@ utf8_encoder_t utf8_encoder_alloc(
     /* Allocate memory for a utf8_encoder */
     if ((self = (utf8_encoder_t)malloc(sizeof(struct utf8_encoder))) == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     /* Initialize with a sane value */
@@ -915,47 +915,47 @@ utf8_encoder_t utf8_encoder_alloc(
     /* If a code set was provided then use it */
     if (code_set != NULL)
     {
-	self -> encoder_cd = do_iconv_open(UTF8_CODE, code_set);
-	self -> decoder_cd = do_iconv_open(code_set, UTF8_CODE);
-	return self;
+        self -> encoder_cd = do_iconv_open(UTF8_CODE, code_set);
+        self -> decoder_cd = do_iconv_open(code_set, UTF8_CODE);
+        return self;
     }
 
     /* Go through the font list looking for a font */
     if (! XmFontListInitFontContext(&context, font_list))
     {
-	perror("XmFontListInitFontContext() failed");
-	return self;
+        perror("XmFontListInitFontContext() failed");
+        return self;
     }
 
     /* Look for a font */
     while (1)
     {
-	/* Get the next font from the font list */
-	if (! XmFontListGetNextFont(context, &charset, &font))
-	{
-	    perror("XmFontListGetNextFont() failed");
-	    XmFontListFreeFontContext(context);
-	    return self;
-	}
+        /* Get the next font from the font list */
+        if (! XmFontListGetNextFont(context, &charset, &font))
+        {
+            perror("XmFontListGetNextFont() failed");
+            XmFontListFreeFontContext(context);
+            return self;
+        }
 
         /* We don't use the charset, so free it now */
         XtFree(charset);
 
-	/* Look up the font's code set */
-	if ((string = alloc_font_code_set(display, font)) == NULL)
-	{
-	    continue;
-	}
+        /* Look up the font's code set */
+        if ((string = alloc_font_code_set(display, font)) == NULL)
+        {
+            continue;
+        }
 
-	/* Open a conversion descriptor */
-	self -> encoder_cd = do_iconv_open(UTF8_CODE, string);
+        /* Open a conversion descriptor */
+        self -> encoder_cd = do_iconv_open(UTF8_CODE, string);
 
-	/* Open the reverse conversion descriptor */
-	self -> decoder_cd = do_iconv_open(string, UTF8_CODE);
-	free(string);
+        /* Open the reverse conversion descriptor */
+        self -> decoder_cd = do_iconv_open(string, UTF8_CODE);
+        free(string);
 
-	XmFontListFreeFontContext(context);
-	return self;
+        XmFontListFreeFontContext(context);
+        return self;
     }
 }
 
@@ -974,46 +974,46 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
     /* Special case for empty strings */
     if (in_length == 1)
     {
-	return strdup("");
+        return strdup("");
     }
 
     /* If we have no encoder then do a manual ASCII to UTF-8 and
      * replace any characters with the high bit set with a `?' */
     if (self -> encoder_cd == (iconv_t)-1)
     {
-	int i;
+        int i;
 
-	/* The output will be the same size as the input */
-	if ((output = (char *)malloc(in_length)) == NULL)
-	{
-	    perror("malloc() failed");
-	    return NULL;
-	}
+        /* The output will be the same size as the input */
+        if ((output = (char *)malloc(in_length)) == NULL)
+        {
+            perror("malloc() failed");
+            return NULL;
+        }
 
-	/* Copy, replacing any UTF-8 unfriendly characters */
-	for (i = 0; i < in_length; i++)
-	{
-	    int ch = input[i];
+        /* Copy, replacing any UTF-8 unfriendly characters */
+        for (i = 0; i < in_length; i++)
+        {
+            int ch = input[i];
 
-	    if (ch & 0x80)
-	    {
-		output[i] = '?';
-	    }
-	    else
-	    {
-		output[i] = ch;
-	    }
-	}
+            if (ch & 0x80)
+            {
+                output[i] = '?';
+            }
+            else
+            {
+                output[i] = ch;
+            }
+        }
 
-	return output;
+        return output;
     }
 
     /* Guess twice as much should suffice for the output */
     length = 2 * in_length;
     if ((buffer = (char *)malloc(length)) == NULL)
     {
-	perror("malloc() failed");
-	return NULL;
+        perror("malloc() failed");
+        return NULL;
     }
 
     output = buffer;
@@ -1022,34 +1022,34 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
     /* Otherwise encode away! */
     while (in_length != 0)
     {
-	if (iconv(self -> encoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
-	{
-	    /* If we're out of space then allocate some more */
-	    if (errno == E2BIG)
-	    {
-		char *new_buffer;
-		size_t new_length;
+        if (iconv(self -> encoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
+        {
+            /* If we're out of space then allocate some more */
+            if (errno == E2BIG)
+            {
+                char *new_buffer;
+                size_t new_length;
 
-		new_length = length * 2;
-		if ((new_buffer = realloc(buffer, new_length)) == NULL)
-		{
-		    perror("realloc() failed");
-		    free(output);
-		    return NULL;
-		}
+                new_length = length * 2;
+                if ((new_buffer = realloc(buffer, new_length)) == NULL)
+                {
+                    perror("realloc() failed");
+                    free(output);
+                    return NULL;
+                }
 
-		out_length += new_length - length;
-		output = new_buffer + (output - buffer);
+                out_length += new_length - length;
+                output = new_buffer + (output - buffer);
 
-		buffer = new_buffer;
-		length = new_length;
-	    }
-	    else
-	    {
-		perror("iconv() failed");
-		return NULL;
-	    }
-	}
+                buffer = new_buffer;
+                length = new_length;
+            }
+            else
+            {
+                perror("iconv() failed");
+                return NULL;
+            }
+        }
     }
 
     return buffer;
@@ -1070,48 +1070,48 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
     /* Special case for empty strings */
     if (in_length == 1)
     {
-	return strdup("");
+        return strdup("");
     }
 
     /* If we have no decoder then do a manual UTF-8 to ASCII and
      * replace any characters with the high bit set with `?' */
     if (self -> decoder_cd == (iconv_t)-1)
     {
-	int ch;
-	int i;
+        int ch;
+        int i;
 
-	/* The output will be no longer than the input */
-	if ((output = (char *)malloc(in_length)) == NULL)
-	{
-	    perror("malloc() failed");
-	    return NULL;
-	}
+        /* The output will be no longer than the input */
+        if ((output = (char *)malloc(in_length)) == NULL)
+        {
+            perror("malloc() failed");
+            return NULL;
+        }
 
-	/* Copy, replacing any non-ASCII characters */
-	i = 0;
-	while ((ch = *input++) != 0)
-	{
-	    if ((ch & 0xc0) == 0xc0)
-	    {
-		output[i++] = '?';
-	    }
-	    else if ((ch & 0xc0) != 0x80)
-	    {
-		output[i++] = ch;
-	    }
-	}
+        /* Copy, replacing any non-ASCII characters */
+        i = 0;
+        while ((ch = *input++) != 0)
+        {
+            if ((ch & 0xc0) == 0xc0)
+            {
+                output[i++] = '?';
+            }
+            else if ((ch & 0xc0) != 0x80)
+            {
+                output[i++] = ch;
+            }
+        }
 
-	/* Null-terminate the output string */
-	output[i] = 0;
-	return output;
+        /* Null-terminate the output string */
+        output[i] = 0;
+        return output;
     }
 
     /* Guess the length of the UTF-8 string */
     length = in_length;
     if ((buffer = (char *)malloc(length)) == NULL)
     {
-	perror("malloc() failed");
-	return NULL;
+        perror("malloc() failed");
+        return NULL;
     }
 
     output = buffer;
@@ -1120,34 +1120,34 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
     /* Encode away */
     while (in_length != 0)
     {
-	if (iconv(self -> decoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
-	{
-	    /* If we're out of space then allocate some more */
-	    if (errno == E2BIG)
-	    {
-		char *new_buffer;
-		size_t new_length;
+        if (iconv(self -> decoder_cd, &input, &in_length, &output, &out_length) == (size_t)-1)
+        {
+            /* If we're out of space then allocate some more */
+            if (errno == E2BIG)
+            {
+                char *new_buffer;
+                size_t new_length;
 
-		new_length = length * 2;
-		if ((new_buffer = realloc(buffer, new_length)) == NULL)
-		{
-		    perror("realloc() failed");
-		    free(output);
-		    return NULL;
-		}
+                new_length = length * 2;
+                if ((new_buffer = realloc(buffer, new_length)) == NULL)
+                {
+                    perror("realloc() failed");
+                    free(output);
+                    return NULL;
+                }
 
-		out_length += new_length - length;
-		output = new_buffer + (output - buffer);
+                out_length += new_length - length;
+                output = new_buffer + (output - buffer);
 
-		buffer = new_buffer;
-		length = new_length;
-	    }
-	    else
-	    {
-		perror("iconv() failed");
-		return NULL;
-	    }
-	}
+                buffer = new_buffer;
+                length = new_length;
+            }
+            else
+            {
+                perror("iconv() failed");
+                return NULL;
+            }
+        }
     }
 
     return buffer;
