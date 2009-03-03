@@ -388,7 +388,7 @@ utf8_renderer_t utf8_renderer_alloc(
     unsigned long value;
 
     /* Allocate room for the new utf8_renderer */
-    if ((self = (utf8_renderer_t)malloc(sizeof(struct utf8_renderer))) == NULL)
+    if ((self = malloc(sizeof(struct utf8_renderer))) == NULL)
     {
         return NULL;
     }
@@ -906,7 +906,7 @@ utf8_encoder_t utf8_encoder_alloc(
     char *string;
 
     /* Allocate memory for a utf8_encoder */
-    if ((self = (utf8_encoder_t)malloc(sizeof(struct utf8_encoder))) == NULL)
+    if ((self = malloc(sizeof(struct utf8_encoder))) == NULL)
     {
         return NULL;
     }
@@ -987,7 +987,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
         int i;
 
         /* The output will be the same size as the input */
-        if ((output = (char *)malloc(in_length)) == NULL)
+        if ((output = malloc(in_length)) == NULL)
         {
             perror("malloc() failed");
             return NULL;
@@ -1013,7 +1013,7 @@ char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Guess twice as much should suffice for the output */
     length = 2 * in_length;
-    if ((buffer = (char *)malloc(length)) == NULL)
+    if ((buffer = malloc(length)) == NULL)
     {
         perror("malloc() failed");
         return NULL;
@@ -1084,7 +1084,7 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
         int i;
 
         /* The output will be no longer than the input */
-        if ((output = (char *)malloc(in_length)) == NULL)
+        if ((output = malloc(in_length)) == NULL)
         {
             perror("malloc() failed");
             return NULL;
@@ -1111,7 +1111,7 @@ char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Guess the length of the UTF-8 string */
     length = in_length;
-    if ((buffer = (char *)malloc(length)) == NULL)
+    if ((buffer = malloc(length)) == NULL)
     {
         perror("malloc() failed");
         return NULL;

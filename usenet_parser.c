@@ -658,7 +658,7 @@ static int lex_field(usenet_parser_t self, int ch)
         /* Look up the field */
         if ((self -> field = translate_field(self -> token)) == F_NONE)
         {
-            char *buffer = (char *)malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
+            char *buffer = malloc(strlen(FIELD_ERROR_MSG) + strlen(self -> token) - 1);
 
             if (buffer != NULL)
             {
@@ -751,7 +751,7 @@ static int lex_op(usenet_parser_t self, int ch)
         /* Look up the operator */
         if ((self -> operator = translate_op(self -> token)) == O_NONE)
         {
-            char *buffer = (char *)malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
+            char *buffer = malloc(strlen(OP_ERROR_MSG) + strlen(self -> token) - 1);
 
             if (buffer != NULL)
             {
@@ -972,7 +972,7 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     usenet_parser_t self;
 
     /* Allocate memory for the new usenet_parser */
-    if ((self = (usenet_parser_t)malloc(sizeof(struct usenet_parser))) == NULL)
+    if ((self = malloc(sizeof(struct usenet_parser))) == NULL)
     {
         return NULL;
     }
@@ -985,7 +985,7 @@ usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *roc
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
         free(self -> tag);
         free(self);

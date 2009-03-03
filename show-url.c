@@ -476,7 +476,7 @@ int main(int argc, char *argv[])
                 if (optarg[0] == '/')
                 {
                     length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
-                    if ((url = (char *)malloc(length)) == NULL)
+                    if ((url = malloc(length)) == NULL)
                     {
                         perror("malloc() failed");
                         exit(1);
@@ -593,7 +593,7 @@ int main(int argc, char *argv[])
 
     /* Initialize the command buffer */
     cmd_length = INIT_CMD_SIZE;
-    if ((cmd_buffer = (char *)malloc(cmd_length)) == NULL)
+    if ((cmd_buffer = malloc(cmd_length)) == NULL)
     {
         perror("malloc() failed");
         exit(1);

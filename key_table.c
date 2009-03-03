@@ -293,7 +293,7 @@ key_table_t key_table_alloc()
     key_table_t self;
 
     /* Allocate memory for the new table's context */
-    if ((self = (key_table_t)malloc(sizeof(struct key_table))) == NULL)
+    if ((self = malloc(sizeof(struct key_table))) == NULL)
     {
         return NULL;
     }

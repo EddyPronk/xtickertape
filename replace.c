@@ -162,7 +162,7 @@ char *strdup(const char *s)
     char *result;
 
     length = strlen(s) + 1;
-    if ((result = (char *)malloc(length)) == NULL)
+    if ((result = malloc(length)) == NULL)
     {
         return NULL;
     }

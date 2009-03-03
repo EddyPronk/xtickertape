@@ -1061,7 +1061,7 @@ static void group_sub_update_keys(
     {
         self -> key_names = NULL;
     }
-    else if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL) 
+    else if ((self -> key_names = malloc(key_count * sizeof(char *))) == NULL) 
     {
         abort();
     }
@@ -1114,7 +1114,7 @@ group_sub_t group_sub_alloc(
     int i;
 
     /* Allocate memory for the new group_sub_t */
-    if ((self = (group_sub_t)malloc(sizeof(struct group_sub))) == NULL)
+    if ((self = malloc(sizeof(struct group_sub))) == NULL)
     {
         return NULL;
     }
@@ -1137,7 +1137,7 @@ group_sub_t group_sub_alloc(
     /* Allocate room for a copy of the list of key names */
     if (key_count)
     {
-        if ((self -> key_names = (char **)malloc(key_count * sizeof(char *))) == NULL)
+        if ((self -> key_names = malloc(key_count * sizeof(char *))) == NULL)
         {
             abort();
         }

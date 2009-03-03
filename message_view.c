@@ -193,7 +193,7 @@ message_view_t message_view_alloc(
     struct string_sizes sizes;
 
     /* Allocate enough memory for the new message view */
-    if ((self = (message_view_t)malloc(sizeof(struct message_view))) == NULL)
+    if ((self = malloc(sizeof(struct message_view))) == NULL)
     {
         return NULL;
     }

@@ -167,7 +167,7 @@ static int accept_key(keys_parser_t self)
 
             /* Allocate memory for the absolute path */
             length = strlen(self -> keys_dir) + 1 + strlen(self -> key_data) + 1;
-            if ((string = (char *)malloc(length)) == NULL)
+            if ((string = malloc(length)) == NULL)
             {
                 return -1;
             }
@@ -188,7 +188,7 @@ static int accept_key(keys_parser_t self)
             char *buffer;
 
             length = strlen(FILE_ERROR_MSG) + strlen(self -> token) + strlen(error_string) - 1;
-            if ((buffer = (char *)malloc(length)) != NULL)
+            if ((buffer = malloc(length)) != NULL)
             {
                 snprintf(buffer, length, FILE_ERROR_MSG,
 			 self -> token, error_string);
@@ -519,7 +519,7 @@ static int lex_type(keys_parser_t self, int ch)
             char *buffer;
 
             length = strlen(TYPE_ERROR_MSG) + strlen(self -> token) - 1;
-            if ((buffer = (char *)malloc(length)) != NULL)
+            if ((buffer = malloc(length)) != NULL)
             {
                 snprintf(buffer, length, TYPE_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -587,7 +587,7 @@ static int lex_format(keys_parser_t self, int ch)
             char *buffer;
 
             length = strlen(FORMAT_ERROR_MSG) + strlen(self -> token) - 1;
-            if ((buffer = (char*)malloc(length)) != NULL)
+            if ((buffer = malloc(length)) != NULL)
             {
                 snprintf(buffer, length, FORMAT_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -677,7 +677,7 @@ keys_parser_t keys_parser_alloc(
     keys_parser_t self;
 
     /* Allocate memory for the new keys_parser */
-    if ((self = (keys_parser_t)malloc(sizeof(struct keys_parser))) == NULL)
+    if ((self = malloc(sizeof(struct keys_parser))) == NULL)
     {
         return NULL;
     }
@@ -698,7 +698,7 @@ keys_parser_t keys_parser_alloc(
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
         free(self -> tag);
         free(self);

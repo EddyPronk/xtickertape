@@ -517,7 +517,7 @@ static int parse_groups_callback(
 
     /* Construct the subscription expression */
     length = strlen(GROUP_SUB) + 2 * strlen(name) - 3;
-    if ((expression = (char *)malloc(length)) == NULL)
+    if ((expression = malloc(length)) == NULL)
     {
         return -1;
     }
@@ -1053,7 +1053,7 @@ static void status_cb(
             
         /* Make room for a combined string and URL */
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1069,7 +1069,7 @@ static void status_cb(
 
         /* Make room for a combined string and URL */
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1085,7 +1085,7 @@ static void status_cb(
 
         /* Make room for a message string */
         length = strlen(CONN_CLOSED_MSG) + 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1105,7 +1105,7 @@ static void status_cb(
 
         /* Make room for a message string */
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
         {
             perror(PACKAGE ": malloc() failed");
             exit(1);
@@ -1127,7 +1127,7 @@ static void status_cb(
 
     default:
         length = sizeof(UNKNOWN_STATUS_MSG) + 16;
-        buffer = (char *)malloc(length);
+        buffer = malloc(length);
         snprintf(buffer, length, UNKNOWN_STATUS_MSG, event);
         string = buffer;
         break;
@@ -1188,7 +1188,7 @@ static int status_cb(
             
         /* Make room for a combined string and URL */
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1212,7 +1212,7 @@ static int status_cb(
 
         /* Make room for a combined string and URL */
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1228,7 +1228,7 @@ static int status_cb(
 
         /* Make room for a message string */
         length = strlen(CONN_CLOSED_MSG) + 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1241,7 +1241,7 @@ static int status_cb(
     /* Connection warnings go to the status line */
     case ELVIN_STATUS_CONNECTION_WARN:
         /* Get a big buffer */
-        if ((buffer = (char *)malloc(BUFFER_SIZE)) == NULL)
+        if ((buffer = malloc(BUFFER_SIZE)) == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1280,7 +1280,7 @@ static int status_cb(
 
         /* Make room for a message string */
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
-        if ((buffer = (char *)malloc(length)) == NULL)
+        if ((buffer = malloc(length)) == NULL)
             {
                 perror(PACKAGE ": malloc() failed");
                 exit(1);
@@ -1306,7 +1306,7 @@ static int status_cb(
 
     default:
         length = sizeof(UNKNOWN_STATUS_MSG) + 16;
-        buffer = (char *)malloc(length);
+        buffer = malloc(length);
         snprintf(buffer, length, UNKNOWN_STATUS_MSG, event -> type);
         string = buffer;
         break;
@@ -1943,7 +1943,7 @@ tickertape_t tickertape_alloc(
     tickertape_t self;
 
     /* Allocate some space for the new tickertape */
-    if ((self = (tickertape_t)malloc(sizeof(struct tickertape))) == NULL)
+    if ((self = malloc(sizeof(struct tickertape))) == NULL)
     {
         return NULL;
     }
@@ -2166,7 +2166,7 @@ static char *tickertape_ticker_dir(tickertape_t self)
 
         /* And append /.ticker to the end of it */
         length = strlen(dir) + strlen(DEFAULT_TICKERDIR) + 2;
-        self -> ticker_dir = (char *)malloc(length);
+        self -> ticker_dir = malloc(length);
         snprintf(self -> ticker_dir, length, "%s/%s", dir, DEFAULT_TICKERDIR);
     }
 
@@ -2190,7 +2190,7 @@ static char *tickertape_config_filename(tickertape_t self)
     {
         char *dir = tickertape_ticker_dir(self);
 
-        self -> config_file = (char *)malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
+        self -> config_file = malloc(strlen(dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
         sprintf(self -> config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
     }
 
@@ -2206,7 +2206,7 @@ static char *tickertape_groups_filename(tickertape_t self)
         char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
 
-        if ((self -> groups_file = (char *)malloc(length)) == NULL)
+        if ((self -> groups_file = malloc(length)) == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2226,7 +2226,7 @@ static char *tickertape_usenet_filename(tickertape_t self)
         char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
 
-        if ((self -> usenet_file = (char *)malloc(length)) == NULL)
+        if ((self -> usenet_file = malloc(length)) == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2247,7 +2247,7 @@ static char *tickertape_keys_filename(tickertape_t self)
         size_t length;
 
         length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
-        if ((self -> keys_file = (char *)malloc(length)) == NULL)
+        if ((self -> keys_file = malloc(length)) == NULL)
         {
             perror("unable to allocate memory");
             exit(1);
@@ -2276,7 +2276,7 @@ static char *tickertape_keys_directory(tickertape_t self)
         else
         {
             length = point - file;
-            if ((self -> keys_dir = (char *)malloc(length + 1)) == NULL)
+            if ((self -> keys_dir = malloc(length + 1)) == NULL)
             {
                 perror("Unable to allocate memory");
                 exit(1);

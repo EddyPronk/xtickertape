@@ -253,7 +253,7 @@ static translation_queue_t translation_queue_alloc(
     translation_queue_t self;
 
     /* Allocate memory for the queue item */
-    if ((self = (translation_queue_t)malloc(sizeof(struct translation_queue))) == NULL)
+    if ((self = malloc(sizeof(struct translation_queue))) == NULL)
     {
         return NULL;
     }

@@ -238,7 +238,7 @@ message_t message_alloc(
     message_t self;
 
     /* Allocate some space for the message_t */
-    if ((self = (message_t)malloc(sizeof(struct message))) == NULL)
+    if ((self = malloc(sizeof(struct message))) == NULL)
     {
         return NULL;
     }
@@ -506,7 +506,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
                 }
 
                 /* Allocate a string to hold the content type */
-                if ((*type_out = (char *)malloc(p - mark + 1)) == NULL)
+                if ((*type_out = malloc(p - mark + 1)) == NULL)
                 {
                     return -1;
                 }
@@ -525,7 +525,7 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 
                 /* Allocate space for a copy of the body and
                  * null-terminate it */
-                *body_out = (char *)malloc(end - point + 1);
+                *body_out = malloc(end - point + 1);
                 memcpy(*body_out, point, end - point);
                 (*body_out)[end - point] = 0;
                 return 0;

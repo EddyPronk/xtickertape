@@ -175,7 +175,7 @@ static void notify_cb(
 
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
-    if ((newsgroups = (char *)malloc(length)) == NULL)
+    if ((newsgroups = malloc(length)) == NULL)
     {
         return;
     }
@@ -259,7 +259,7 @@ static void notify_cb(
             }
 
             length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
-            if ((buffer = (char *)malloc(length)) == NULL)
+            if ((buffer = malloc(length)) == NULL)
             {
                 mime_type = NULL;
                 mime_args = NULL;
@@ -362,7 +362,7 @@ static int notify_cb(
 
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
-    if ((newsgroups = (char *)malloc(length)) == NULL)
+    if ((newsgroups = malloc(length)) == NULL)
     {
         return 0;
     }
@@ -469,7 +469,7 @@ static int notify_cb(
             news_host = found ? news_host : "news";
 
             length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
-            if ((buffer = (char *)malloc(length)) == NULL)
+            if ((buffer = malloc(length)) == NULL)
             {
                 mime_type = NULL;
                 mime_args = NULL;
@@ -650,7 +650,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     /* Allocate space for the result */
     length = format_length + strlen(field_name) + strlen(expression -> pattern) - 3;
-    if ((result = (char *)malloc(length)) == NULL)
+    if ((result = malloc(length)) == NULL)
     {
         return NULL;
     }
@@ -674,7 +674,7 @@ static char *alloc_sub(
     if (count == 0)
     {
         length = strlen(PATTERN_ONLY) + strlen(not_string) + strlen(pattern) - 3;
-        if ((result = (char *)malloc(length)) == NULL)
+        if ((result = malloc(length)) == NULL)
         {
             return NULL;
         }
@@ -686,7 +686,7 @@ static char *alloc_sub(
     /* Otherwise we have to do this the hard way.  Allocate space for
      * the initial pattern and then extend it for each of the expressions */
     length = strlen(PATTERN_PLUS) + strlen(not_string) + strlen(pattern) - 3;
-    if ((result = (char *)malloc(length)) == NULL)
+    if ((result = malloc(length)) == NULL)
     {
         return NULL;
     }
@@ -722,7 +722,7 @@ usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
     usenet_sub_t self;
 
     /* Allocate memory for the new subscription */
-    if ((self = (usenet_sub_t)malloc(sizeof(struct usenet_sub))) == NULL)
+    if ((self = malloc(sizeof(struct usenet_sub))) == NULL)
     {
         return NULL;
     }
@@ -783,7 +783,7 @@ int usenet_sub_add(
     if (self -> expression == NULL)
     {
         self -> expression_size = strlen(ONE_SUB) + entry_length - 1;
-        if ((self -> expression = (char *)malloc(self -> expression_size)) == NULL)
+        if ((self -> expression = malloc(self -> expression_size)) == NULL)
         {
             free(entry_sub);
             return -1;

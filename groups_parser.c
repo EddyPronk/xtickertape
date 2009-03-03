@@ -406,7 +406,7 @@ static int lex_menu(groups_parser_t self, int ch)
             size_t length = strlen(MENU_ERROR_MSG) + strlen(self -> token) - 1;
             char *buffer;
 
-            if ((buffer = (char *)malloc(length)) != NULL)
+            if ((buffer = malloc(length)) != NULL)
             {
                 snprintf(buffer, length, MENU_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -466,7 +466,7 @@ static int lex_nazi(groups_parser_t self, int ch)
             size_t length = strlen(NAZI_ERROR_MSG) + strlen(self -> token) - 1;
             char *buffer;
 
-            if ((buffer = (char *)malloc(length)) != NULL)
+            if ((buffer = malloc(length)) != NULL)
             {
                 snprintf(buffer, length, NAZI_ERROR_MSG, self -> token);
                 parse_error(self, buffer);
@@ -616,7 +616,7 @@ static int lex_bad_time(groups_parser_t self, int ch)
 
         /* Generate an error message */
         length = strlen(TIMEOUT_ERROR_MSG) + strlen(self -> token) - 1;
-        if ((buffer = (char *)malloc(length)) != NULL)
+        if ((buffer = malloc(length)) != NULL)
         {
             snprintf(buffer, length, TIMEOUT_ERROR_MSG, self -> token);
             parse_error(self, buffer);
@@ -747,7 +747,7 @@ static int lex_superfluous(groups_parser_t self, int ch)
 
         /* Generate an error message */
         length = strlen(EXTRA_ERROR_MSG) + strlen(self -> token) - 1;
-        if ((buffer = (char *)malloc(length)) != NULL)
+        if ((buffer = malloc(length)) != NULL)
         {
             snprintf(buffer, length, EXTRA_ERROR_MSG, self -> token);
             parse_error(self, buffer);
@@ -795,7 +795,7 @@ groups_parser_t groups_parser_alloc(
     groups_parser_t self;
 
     /* Allocate memory for the new groups_parser */
-    if ((self = (groups_parser_t)malloc(sizeof(struct groups_parser))) == NULL)
+    if ((self = malloc(sizeof(struct groups_parser))) == NULL)
     {
         return NULL;
     }
@@ -809,7 +809,7 @@ groups_parser_t groups_parser_alloc(
     }
 
     /* Allocate room for the token buffer */
-    if ((self -> token = (char *)malloc(INITIAL_TOKEN_SIZE)) == NULL)
+    if ((self -> token = malloc(INITIAL_TOKEN_SIZE)) == NULL)
     {
         groups_parser_free(self);
         return NULL;

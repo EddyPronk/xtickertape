@@ -671,7 +671,7 @@ static glyph_holder_t glyph_holder_alloc(glyph_t glyph, int width)
     glyph_holder_t self;
 
     /* Allocate memory for the receiver */
-    if ((self = (glyph_holder_t) malloc(sizeof(struct glyph_holder))) == NULL)
+    if ((self = malloc(sizeof(struct glyph_holder))) == NULL)
     {
         return NULL;
     }

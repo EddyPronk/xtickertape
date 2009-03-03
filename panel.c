@@ -1716,7 +1716,7 @@ static void action_clear(Widget button, control_panel_t self, XtPointer ignored)
     domain = tickertape_domain_name(self -> tickertape);
     length = strlen(USER_FMT) + strlen(user) + strlen(domain) - 3;
 
-    if (*domain == '\0' || (buffer = (char *)malloc(length)) == NULL)
+    if (*domain == '\0' || (buffer = malloc(length)) == NULL)
     {
         set_user(self, user);
     }
@@ -1779,7 +1779,7 @@ control_panel_t control_panel_alloc(
     Widget parent,
     unsigned int send_history_count)
 {
-    control_panel_t self = (control_panel_t)malloc(sizeof(struct control_panel));
+    control_panel_t self = malloc(sizeof(struct control_panel));
 
     /* Set the receiver's contents to something sane */
     memset(self, 0, sizeof(struct control_panel));
@@ -1925,7 +1925,7 @@ void *control_panel_add_subscription(
     menu_item_tuple_t tuple;
 
     /* Create a tuple to hold callback information */
-    if ((tuple = (menu_item_tuple_t)malloc(sizeof(struct menu_item_tuple))) == NULL)
+    if ((tuple = malloc(sizeof(struct menu_item_tuple))) == NULL)
     {
         fprintf(stderr, PACKAGE ": out of memory\n");
         exit(1);
