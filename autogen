@@ -4,4 +4,4 @@
 #
 
 echo "Generating build environment"
-aclocal -I m4 && autoheader && automake -a && autoconf && echo "done" || echo "failed"
+aclocal -I m4 && autoheader && automake -ac && autoconf && echo "done" || echo "failed"
