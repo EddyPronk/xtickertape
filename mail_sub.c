@@ -1,36 +1,41 @@
-/***************************************************************
+/* -*- mode: c; c-file-style: "elvin" -*- */
+/***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
-  The software contained on this media is the property of the
-  DSTC Pty Ltd.  Use of this software is strictly in accordance
-  with the license agreement in the accompanying LICENSE.DOC
-  file.  If your distribution of this software does not contain
-  a LICENSE.DOC file then you have no rights to use this
-  software in any manner and should contact DSTC at the address
-  below to determine an appropriate licensing arrangement.
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions
+   are met:
 
-     DSTC Pty Ltd
-     Level 7, GP South
-     University of Queensland
-     St Lucia, 4072
-     Australia
-     Tel: +61 7 3365 4310
-     Fax: +61 7 3365 4311
-     Email: enquiries@dstc.edu.au
+   * Redistributions of source code must retain the above
+     copyright notice, this list of conditions and the following
+     disclaimer.
 
-  This software is being provided "AS IS" without warranty of
-  any kind.  In no event shall DSTC Pty Ltd be liable for
-  damage of any kind arising out of or in connection with
-  the use or performance of this software.
+   * Redistributions in binary form must reproduce the above
+     copyright notice, this list of conditions and the following
+     disclaimer in the documentation and/or other materials
+     provided with the distribution.
 
-****************************************************************/
+   * Neither the name of the Mantara Software nor the names
+     of its contributors may be used to endorse or promote
+     products derived from this software without specific prior
+     written permission.
 
-#ifndef lint
-static const char cvsid[] =
-    "$Id: mail_sub.c,v 1.40 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+   REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE.
+
+***********************************************************************/
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -374,3 +379,5 @@ mail_sub_set_connection(mail_sub_t self,
         free(buffer);
     }
 }
+
+/**********************************************************************/

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -43,11 +44,6 @@
 
 #ifndef KEYS_PARSER_H
 #define KEYS_PARSER_H
-
-#ifndef lint
-static const char cvs_KEYS_PARSER_H[] =
-    "$Id: keys_parser.h,v 1.6 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #include <elvin/elvin.h>
 

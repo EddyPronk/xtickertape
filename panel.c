@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -35,11 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] =
-    "$Id: panel.c,v 1.95 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -2307,3 +2303,5 @@ control_panel_history_next(control_panel_t self)
                                self->send_history_count;
     deconstruct_message(self, self->send_history[self->send_history_point]);
 }
+
+/**********************************************************************/

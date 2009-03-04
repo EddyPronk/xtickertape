@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -35,11 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] =
-    "$Id: usenet_sub.c,v 1.42 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -866,3 +862,5 @@ usenet_sub_set_connection(usenet_sub_t self,
         self->is_pending = 1;
     }
 }
+
+/**********************************************************************/

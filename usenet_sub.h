@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -38,11 +39,6 @@
 
 #ifndef USENET_SUB_H
 #define USENET_SUB_H
-
-#ifndef lint
-static const char cvs_USENET_SUB_H[] =
-    "$Id: usenet_sub.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 /* The subscription data type */
 typedef struct usenet_sub *usenet_sub_t;

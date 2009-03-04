@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -43,11 +44,6 @@
 
 #ifndef GROUP_SUB_H
 #define GROUP_SUB_H
-
-#ifndef lint
-static const char cvs_GROUP_SUB_H[] =
-    "$Id: group_sub.h,v 1.16 2009/03/09 05:26:26 phelps Exp $";
-#endif /* lint */
 
 /* The subscription data type */
 typedef struct group_sub *group_sub_t;

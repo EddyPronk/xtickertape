@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -35,11 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] =
-    "$Id: show-url.c,v 1.20 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -580,3 +576,5 @@ main(int argc, char *argv[])
     free(url);
     exit(1);
 }
+
+/**********************************************************************/

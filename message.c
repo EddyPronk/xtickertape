@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -35,11 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] =
-    "$Id: message.c,v 1.32 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -555,3 +551,5 @@ message_set_killed(message_t self, int is_killed)
 {
     self->is_killed = is_killed;
 }
+
+/**********************************************************************/

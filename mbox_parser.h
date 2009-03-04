@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -38,11 +39,6 @@
 
 #ifndef MBOX_PARSER_H
 #define MBOX_PARSER_H
-
-#ifndef lint
-static const char cvs_MBOX_PARSER_H[] =
-    "$Id: mbox_parser.h,v 1.7 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 #include <stdio.h>
 

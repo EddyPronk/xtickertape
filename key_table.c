@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -35,11 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] =
-    "$Id: key_table.c,v 1.13 2009/03/09 05:26:26 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -697,3 +693,5 @@ key_table_diff(key_table_t old_key_table,
         elvin_keys_free(keys_to_remove, NULL);
     }
 }
+
+/**********************************************************************/

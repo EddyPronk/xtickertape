@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -44,11 +45,6 @@
 
 #ifndef MESSAGE_H
 #define MESSAGE_H
-
-#ifndef lint
-static const char cvs_MESSAGE_H[] =
-    "$Id: message.h,v 1.16 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 /* The message_t type */
 typedef struct message *message_t;

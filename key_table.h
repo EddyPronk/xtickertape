@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -38,11 +39,6 @@
 
 #ifndef KEY_TABLE_H
 #define KEY_TABLE_H
-
-#ifndef lint
-static const char cvs_KEY_TABLE_H[] =
-    "$Id: key_table.h,v 1.6 2009/03/09 05:26:26 phelps Exp $";
-#endif /* lint */
 
 /* The key table data type */
 typedef struct key_table *key_table_t;

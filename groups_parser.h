@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -44,11 +45,6 @@
 
 #ifndef GROUPS_PARSER_H
 #define GROUPS_PARSER_H
-
-#ifndef lint
-static const char cvs_GROUPS_PARSER_H[] =
-    "$Id: groups_parser.h,v 1.13 2009/03/09 05:26:26 phelps Exp $";
-#endif /* lint */
 
 /* The groups parser data type */
 typedef struct groups_parser *groups_parser_t;

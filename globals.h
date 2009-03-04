@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -38,11 +39,6 @@
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
-
-#ifndef lint
-static const char cvs_GLOBALS_H[] =
-    "$Id: globals.h,v 1.7 2009/03/09 05:26:26 phelps Exp $";
-#endif /* lint */
 
 #if defined(ELVIN_VERSION_AT_LEAST)
 # if ELVIN_VERSION_AT_LEAST(4, 1, -1)

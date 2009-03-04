@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -40,11 +41,6 @@
 #define UTF8_H
 
 #include <Xm/XmAll.h>
-
-#ifndef lint
-static const char cvs_UTF8_H[] =
-    "$Id: utf8.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 /* Make sure that ICONV_CONST is defined */
 #ifndef ICONV_CONST

@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -45,11 +46,6 @@
 
 #ifndef TICKERTAPE_H
 #define TICKERTAPE_H
-
-#ifndef lint
-static const char cvs_TICKERTAPE_H[] =
-    "$Id: tickertape.h,v 1.25 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 typedef struct tickertape *tickertape_t;
 

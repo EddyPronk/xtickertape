@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
@@ -38,11 +39,6 @@
 
 #ifndef USENET_PARSER_H
 #define USENET_PARSER_H
-
-#ifndef lint
-static const char cvs_USENET_PARSER_H[] =
-    "$Id: usenet_parser.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
-#endif /* lint */
 
 /* The usenet parser data type */
 typedef struct usenet_parser *usenet_parser_t;
