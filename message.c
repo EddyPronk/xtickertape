@@ -85,12 +85,6 @@ struct message {
     /* The receiver's string (tickertext) */
     char *string;
 
-    /* The receiver's MIME attachment */
-    char *attachment;
-
-    /* The length of the receiver's MIME attachment */
-    size_t length;
-
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
 
@@ -108,6 +102,15 @@ struct message {
 
     /* Non-zero if the message has been killed */
     int is_killed;
+
+    /* The receiver's MIME attachment */
+    char *attachment;
+
+    /* The length of the receiver's MIME attachment */
+    size_t length;
+
+    /* The buffer in which the actual string data is kept. */
+    char data[1];
 };
 
 typedef enum {
@@ -199,6 +202,20 @@ cleanse_header(char *attachment,
     *length_out = out - copy;
 }
 
+static char *
+append_data(char **point, char *string, size_t size)
+{
+    char *result = *point;
+
+    if (string == NULL) {
+        return string;
+    }
+
+    memcpy(result, string, size);
+    *point = result + size;
+    return result;
+}
+
 /* Creates and returns a new message */
 message_t
 message_alloc(char *info,
@@ -214,65 +231,79 @@ message_alloc(char *info,
               char *thread_id)
 {
     message_t self;
+    size_t info_size, group_size, user_size, string_size;
+    size_t tag_size, id_size, reply_size, thread_size, len;
+    char *point;
 
-    /* Allocate some space for the message_t */
-    self = malloc(sizeof(struct message));
+    /* Make sure the mandatory fields have values. */
+    assert(group != NULL);
+    assert(user != NULL);
+    assert(string != NULL);
+
+    /* Measure each of the strings, including the NUL terminator. */
+    info_size = (info == NULL) ? 0 : strlen(info) + 1;
+    group_size = strlen(group) + 1;
+    user_size = strlen(user) + 1;
+    string_size = strlen(string) + 1;
+    tag_size = (tag == NULL) ? 0 : strlen(tag) + 1;
+    id_size = (id == NULL) ? 0 : strlen(id) + 1;
+    reply_size = (reply_id == NULL) ? 0 : strlen(reply_id) + 1;
+    thread_size = (thread_id == NULL) ? 0 : strlen(thread_id) + 1;
+
+    /* Compute the total number of bytes needed to hold all of the
+     * string data. */
+    len = info_size + group_size + user_size + string_size + tag_size +
+        id_size + reply_size + thread_size + length;
+
+    /* Allocate space for the message_t, including space for all of
+     * the strings. */
+    self = malloc(sizeof(struct message) + len - 1);
     if (self == NULL) {
         return NULL;
     }
 
-    /* Set its contents to sane values */
-    memset(self, 0, sizeof(struct message));
-
-    /* Initialize the contents to sane values */
-    self->ref_count = 1;
-
-    if (info != NULL) {
-        self->info = strdup(info);
+    /* Record the time the message was created. */
+    if (time(&self->creation_time) == (time_t)-1) {
+        perror("time failed");
     }
 
-    assert(group != NULL);
-    self->group = strdup(group);
+    /* Copy each of the strings info the data array. */
+    point = self->data;
+    self->ref_count = 0;
+    self->info = append_data(&point, info, info_size);
+    self->group = append_data(&point, group, group_size);
+    self->user = append_data(&point, user, user_size);
+    self->string = append_data(&point, string, string_size);
+    self->timeout = timeout;
+    self->tag = append_data(&point, tag, tag_size);
+    self->id = append_data(&point, id, id_size);
+    self->reply_id = append_data(&point, reply_id, reply_size);
+    self->thread_id = append_data(&point, thread_id, thread_size);
+    self->is_killed = 0;
 
-    assert(user != NULL);
-    self->user = strdup(user);
-
-    assert(string != NULL);
-    self->string = strdup(string);
+    /* Check our addition. */
+    assert(point + length == self->data + len);
 
     if (length == 0) {
         self->attachment = NULL;
         self->length = 0;
     } else {
-        /* Allocate some room for a copy of the mime args */
-        self->attachment = malloc(length);
-        if (self->attachment == NULL) {
-            self->length = 0;
-        } else {
-            cleanse_header(attachment,
-                           length,
-                           self->attachment,
-                           &self->length);
-        }
+        /* Clean up the attachment's linefeeds for metamail. */
+        cleanse_header(attachment, length, point, &self->length);
+        self->attachment = point;
+        point += self->length;
     }
 
-    self->timeout = timeout;
-
-    self->tag = (tag == NULL) ? NULL : strdup(tag);
-    self->id = (id == NULL) ? NULL : strdup(id);
-    self->reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
-    self->thread_id = (thread_id == NULL) ? NULL : strdup(thread_id);
-
-    /* Record the time of creation */
-    if (time(&self->creation_time) == (time_t)-1) {
-        perror("time(): failed");
-    }
+    /* Check our addition again. */
+    assert(point <= self->data + len);
 
 #ifdef DEBUG
     printf("allocated message_t %p (%ld)\n", self, ++message_count);
     message_debug(self);
 #endif /* DEBUG */
 
+    /* Allocate a reference to the caller. */
+    self->ref_count++;
     return self;
 }
 
@@ -297,52 +328,6 @@ message_free(message_t self)
     printf("freeing message_t %p (%ld):\n", self, --message_count);
     message_debug(self);
 #endif /* DEBUG */
-
-    /* Out of references -- release the hounds! */
-    if (self->info != NULL) {
-        free(self->info);
-        self->info = NULL;
-    }
-
-    if (self->group != NULL) {
-        free(self->group);
-        self->group = NULL;
-    }
-
-    if (self->user != NULL) {
-        free(self->user);
-        self->user = NULL;
-    }
-
-    if (self->string != NULL) {
-        free(self->string);
-        self->string = NULL;
-    }
-
-    if (self->attachment != NULL) {
-        free(self->attachment);
-        self->attachment = NULL;
-    }
-
-    if (self->tag != NULL) {
-        free(self->tag);
-        self->tag = NULL;
-    }
-
-    if (self->id != NULL) {
-        free(self->id);
-        self->id = NULL;
-    }
-
-    if (self->reply_id != NULL) {
-        free(self->reply_id);
-        self->reply_id = NULL;
-    }
-
-    if (self->thread_id != NULL) {
-        free(self->thread_id);
-        self->thread_id = NULL;
-    }
 
     free(self);
 }
