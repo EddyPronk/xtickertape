@@ -340,7 +340,7 @@ node_free(node_t self)
 }
 
 /* Returns the id of the node's message */
-static char *
+static const char *
 node_get_id(node_t self)
 {
     return message_get_id(self->message);
@@ -378,7 +378,7 @@ node_get_id(node_t self)
  */
 static void
 node_add1(node_t *self,
-          char *parent_id,
+          const char *parent_id,
           node_t *child,
           int *index,
           int *index_out,
@@ -387,7 +387,7 @@ node_add1(node_t *self,
 {
     /* Traverse all of our siblings */
     while (*self != NULL) {
-        char *id;
+        const char *id;
 
         /* If no match yet, then check for one here */
         if (parent_id && *child != NULL &&
@@ -473,7 +473,7 @@ node_add1(node_t *self,
  */
 static void
 node_add(node_t *self,
-         char *parent_id,
+         const char *parent_id,
          node_t child,
          int count,
          int *index_out,
@@ -2485,12 +2485,12 @@ HistorySelect(Widget widget, message_t message)
 
 /* Selects the parent of the message in the history */
 void
-HistorySelectId(Widget widget, char *message_id)
+HistorySelectId(Widget widget, const char *message_id)
 {
     HistoryWidget self = (HistoryWidget)widget;
     message_t message;
     unsigned int i;
-    char *string;
+    const char *string;
 
     /* Save the effort if there's no id */
     if (message_id != NULL) {

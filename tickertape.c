@@ -1629,10 +1629,10 @@ int
 tickertape_show_attachment(tickertape_t self, message_t message)
 {
 #if defined(HAVE_DUP2) && defined(HAVE_FORK)
-    char *attachment;
+    const char *attachment;
     size_t count;
-    char *pointer;
-    char *end;
+    const char *pointer;
+    const char *end;
     pid_t pid;
     int fds_stdin[2];
     int status;

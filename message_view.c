@@ -143,7 +143,7 @@ paint_string(Display *display,
              XRectangle *bbox,
              string_sizes_t sizes,
              utf8_renderer_t renderer,
-             char *string,
+             const char *string,
              Bool has_underline)
 {
     XGCValues values;
@@ -332,7 +332,7 @@ message_view_paint(message_view_t self,
 {
 #if (DEBUG_PER_CHAR - 1) == 0
     XGCValues values;
-    char *string;
+    const char *string;
     long px;
 #endif /* DEBUG_PER_CHAR */
 

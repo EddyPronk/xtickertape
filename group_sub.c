@@ -736,10 +736,10 @@ send_message(group_sub_t self, message_t message)
 {
     elvin_notification_t notification;
     unsigned int timeout;
-    char *message_id;
-    char *reply_id;
-    char *thread_id;
-    char *attachment;
+    const char *message_id;
+    const char *reply_id;
+    const char *thread_id;
+    const char *attachment;
     uint32_t length;
     char *buffer = NULL;
     char *mime_type;

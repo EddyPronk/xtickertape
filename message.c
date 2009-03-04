@@ -74,37 +74,37 @@ struct message {
     time_t creation_time;
 
     /* A string which identifies the subscription info in the control panel */
-    char *info;
+    const char *info;
 
     /* The receiver's group */
-    char *group;
+    const char *group;
 
     /* The receiver's user */
-    char *user;
+    const char *user;
 
     /* The receiver's string (tickertext) */
-    char *string;
+    const char *string;
 
     /* The lifetime of the receiver in seconds */
     unsigned long timeout;
 
     /* The message's replacement tag */
-    char *tag;
+    const char *tag;
 
     /* The identifier for this message */
-    char *id;
+    const char *id;
 
     /* The identifier for the message for which this is a reply */
-    char *reply_id;
+    const char *reply_id;
 
     /* The identifier for the thread for which this is a reply */
-    char *thread_id;
+    const char *thread_id;
 
     /* Non-zero if the message has been killed */
     int is_killed;
 
     /* The receiver's MIME attachment */
-    char *attachment;
+    const char *attachment;
 
     /* The length of the receiver's MIME attachment */
     size_t length;
@@ -123,13 +123,13 @@ typedef enum {
 
 /* Copies a MIME attachment, replacing \r or \r\n in the header with \n */
 static void
-cleanse_header(char *attachment,
+cleanse_header(const char *attachment,
                size_t length,
                char *copy,
                size_t *length_out)
 {
-    char *end = attachment + length;
-    char *in = attachment;
+    const char *end = attachment + length;
+    const char *in = attachment;
     char *out = copy;
     state_t state;
     int ch;
@@ -203,12 +203,12 @@ cleanse_header(char *attachment,
 }
 
 static char *
-append_data(char **point, char *string, size_t size)
+append_data(char **point, const char *string, size_t size)
 {
     char *result = *point;
 
     if (string == NULL) {
-        return string;
+        return NULL;
     }
 
     memcpy(result, string, size);
@@ -218,17 +218,17 @@ append_data(char **point, char *string, size_t size)
 
 /* Creates and returns a new message */
 message_t
-message_alloc(char *info,
-              char *group,
-              char *user,
-              char *string,
+message_alloc(const char *info,
+              const char *group,
+              const char *user,
+              const char *string,
               unsigned int timeout,
-              char *attachment,
+              const char *attachment,
               size_t length,
-              char *tag,
-              char *id,
-              char *reply_id,
-              char *thread_id)
+              const char *tag,
+              const char *id,
+              const char *reply_id,
+              const char *thread_id)
 {
     message_t self;
     size_t info_size, group_size, user_size, string_size;
@@ -355,7 +355,7 @@ message_debug(message_t self)
 #endif /* DEBUG */
 
 /* Answers the Subscription matched to generate the receiver */
-char *
+const char *
 message_get_info(message_t self)
 {
     return self->info;
@@ -369,21 +369,21 @@ message_get_creation_time(message_t self)
 }
 
 /* Answers the receiver's group */
-char *
+const char *
 message_get_group(message_t self)
 {
     return self->group;
 }
 
 /* Answers the receiver's user */
-char *
+const char *
 message_get_user(message_t self)
 {
     return self->user;
 }
 
 /* Answers the receiver's string */
-char *
+const char *
 message_get_string(message_t self)
 {
     return self->string;
@@ -412,7 +412,7 @@ message_has_attachment(message_t self)
 
 /* Answers the receiver's MIME arguments */
 size_t
-message_get_attachment(message_t self, char **attachment_out)
+message_get_attachment(message_t self, const char **attachment_out)
 {
     *attachment_out = self->attachment;
     return self->length;
@@ -496,28 +496,28 @@ message_decode_attachment(message_t self, char **type_out, char **body_out)
 }
 
 /* Answers the receiver's tag */
-char *
+const char *
 message_get_tag(message_t self)
 {
     return self->tag;
 }
 
 /* Answers the receiver's id */
-char *
+const char *
 message_get_id(message_t self)
 {
     return self->id;
 }
 
 /* Answers the id of the message_t for which this is a reply */
-char *
+const char *
 message_get_reply_id(message_t self)
 {
     return self->reply_id;
 }
 
 /* Answers the thread id of the message for which this is a reply */
-char *
+const char *
 message_get_thread_id(message_t self)
 {
     return self->thread_id;

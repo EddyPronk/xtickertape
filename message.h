@@ -51,17 +51,17 @@ typedef struct message *message_t;
 
 /* Creates and returns a new message */
 message_t
-message_alloc(char *info,
-              char *group,
-              char *user,
-              char *string,
-              unsigned int timeout,
-              char *attachment,
+message_alloc(const char *info,
+              const char *group,
+              const char *user,
+              const char *string,
+              const unsigned int timeout,
+              const char *attachment,
               size_t length,
-              char *tag,
-              char *id,
-              char *reply_id,
-              char *thread_id);
+              const char *tag,
+              const char *id,
+              const char *reply_id,
+              const char *thread_id);
 
 
 /* Allocates another reference to the message_t */
@@ -80,7 +80,7 @@ message_debug(message_t self);
 
 
 /* Answers the Subscription info for the receiver's subscription */
-char *
+const char *
 message_get_info(message_t self);
 
 
@@ -90,17 +90,17 @@ message_get_creation_time(message_t self);
 
 
 /* Answers the receiver's group */
-char *
+const char *
 message_get_group(message_t self);
 
 
 /* Answers the receiver's user */
-char *
+const char *
 message_get_user(message_t self);
 
 
 /* Answers the receiver's string */
-char *
+const char *
 message_get_string(message_t self);
 
 
@@ -121,7 +121,7 @@ message_has_attachment(message_t self);
 
 /* Answers the length of the attachment, and a pointer to its bytes */
 size_t
-message_get_attachment(message_t self, char **attachment_out);
+message_get_attachment(message_t self, const char **attachment_out);
 
 
 /* Decodes the attachment into a content type, character set and body */
@@ -130,22 +130,22 @@ message_decode_attachment(message_t self, char **type_out, char **body_out);
 
 
 /* Answers the receiver's tag */
-char *
+const char *
 message_get_tag(message_t self);
 
 
 /* Answers the receiver's id */
-char *
+const char *
 message_get_id(message_t self);
 
 
 /* Answers the id of the message for which this is a reply */
-char *
+const char *
 message_get_reply_id(message_t self);
 
 
 /* Answers the thread id of the message for which this is a reply */
-char *
+const char *
 message_get_thread_id(message_t self);
 
 

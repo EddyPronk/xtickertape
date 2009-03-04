@@ -201,7 +201,7 @@ HistorySelect(Widget widget, message_t message);
 
 /* Selects the parent of the message in the history */
 void
-HistorySelectId(Widget widget, char *message_id);
+HistorySelectId(Widget widget, const char *message_id);
 
 
 /* Returns the selected message or NULL if none is selected */

@@ -86,7 +86,7 @@ utf8_renderer_free(utf8_renderer_t self);
 /* Measures all of the characters in a string */
 void
 utf8_renderer_measure_string(utf8_renderer_t self,
-                             ICONV_CONST char *string,
+                             const char *string,
                              string_sizes_t sizes);
 
 
@@ -100,7 +100,7 @@ utf8_renderer_draw_string(Display *display,
                           int x,
                           int y,
                           XRectangle *bbox,
-                          ICONV_CONST char *string);
+                          const char *string);
 
 
 /* Draw an underline under a string */
@@ -129,12 +129,12 @@ utf8_encoder_free(utf8_encoder_t self);
 
 /* Encodes a string */
 char *
-utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input);
+utf8_encoder_encode(utf8_encoder_t self, const char *input);
 
 
 /* Decodes a string */
 char *
-utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input);
+utf8_encoder_decode(utf8_encoder_t self, const char *input);
 
 
 #endif /* MESSAGE_VIEW_H */

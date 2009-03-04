@@ -373,13 +373,13 @@ select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignored);
 static void
 set_group_selection(control_panel_t self, menu_item_tuple_t tuple);
 static menu_item_tuple_t
-get_tuple_from_tag(control_panel_t self, char *tag);
+get_tuple_from_tag(control_panel_t self, const char *tag);
 static void
-set_user(control_panel_t self, char *user);
+set_user(control_panel_t self, const char *user);
 static char *
 get_user(control_panel_t self);
 static void
-set_text(control_panel_t self, char *text);
+set_text(control_panel_t self, const char *text);
 static char *
 get_text(control_panel_t self);
 static void
@@ -1335,7 +1335,7 @@ set_group_selection(control_panel_t self, menu_item_tuple_t tuple)
 
 /* Sets the receiver's user */
 static void
-set_user(control_panel_t self, char *user)
+set_user(control_panel_t self, const char *user)
 {
     char *raw;
 
@@ -1365,7 +1365,7 @@ get_user(control_panel_t self)
 
 /* Sets the receiver's text */
 static void
-set_text(control_panel_t self, char *text)
+set_text(control_panel_t self, const char *text)
 {
     char *raw;
 
@@ -2154,7 +2154,7 @@ control_panel_retitle_subscription(control_panel_t self,
 
 /* Locates the tuple with the given tag */
 static menu_item_tuple_t
-get_tuple_from_tag(control_panel_t self, char *tag)
+get_tuple_from_tag(control_panel_t self, const char *tag)
 {
     Cardinal num_children;
     Widget *children;
@@ -2205,7 +2205,7 @@ prepare_reply(control_panel_t self, message_t message)
     /* If a message_t was provided that is in the menu, then select it
      * and set the message_id so that we can do threading */
     if (message != NULL) {
-        char *id;
+        const char *id;
 
         tuple = get_tuple_from_tag(self, message_get_info(message));
         if (tuple != NULL) {

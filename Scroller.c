@@ -596,7 +596,7 @@ queue_add(glyph_t tail, glyph_t glyph)
 
 /* Locates the item in the queue with the given tag */
 static glyph_t
-queue_find(glyph_t head, char *tag)
+queue_find(glyph_t head, const char *tag)
 {
     glyph_t probe;
 
@@ -608,7 +608,7 @@ queue_find(glyph_t head, char *tag)
     /* Look for the tag in the queue */
     for (probe = head->next; probe != head; probe = probe->next) {
         message_t message;
-        char *probe_tag;
+        const char *probe_tag;
 
         /* Check for a match */
         message = glyph_get_message(probe);

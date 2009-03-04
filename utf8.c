@@ -338,13 +338,13 @@ static int
 cd_dimension(iconv_t cd)
 {
     char buffer[MAX_CHAR_SIZE];
-    ICONV_CONST char *string = "a";
+    const char *string = "a";
     char *point = buffer;
     size_t in_length = 1;
     size_t out_length = MAX_CHAR_SIZE;
 
     /* Try to encode one character */
-    if (iconv(cd, &string, &in_length, &point, &out_length) == (size_t)-1) {
+    if (iconv(cd, (ICONV_CONST char**)&string, &in_length, &point, &out_length) == (size_t)-1) {
         return -1;
     }
 
@@ -458,7 +458,7 @@ utf8_renderer_alloc(Display *display, XFontStruct *font, const char *tocode)
 /* Wrapper around iconv() to catch most of the nasty gotchas */
 static size_t
 utf8_renderer_iconv(utf8_renderer_t self,
-                    ICONV_CONST char **inbuf,
+                    const char **inbuf,
                     size_t *inbytesleft,
                     char **outbuf,
                     size_t *outbytesleft)
@@ -497,7 +497,7 @@ utf8_renderer_iconv(utf8_renderer_t self,
     /* Watch for a NULL transformation */
     if (inbytesleft == NULL || outbytesleft == NULL) {
         self->is_skipping = 0;
-        return iconv(self->cd, inbuf, inbytesleft, outbuf, outbytesleft);
+        return iconv(self->cd, (ICONV_CONST char**)inbuf, inbytesleft, outbuf, outbytesleft);
     }
 
     /* Keep going even when we encounter invalid or unrepresentable
@@ -522,7 +522,7 @@ utf8_renderer_iconv(utf8_renderer_t self,
         }
 
         /* Try to convert the sequence */
-        n = iconv(self->cd, inbuf, inbytesleft, outbuf, outbytesleft);
+        n = iconv(self->cd, (ICONV_CONST char**)inbuf, inbytesleft, outbuf, outbytesleft);
         if (n == (size_t)-1) {
             switch (errno) {
             case E2BIG:
@@ -568,7 +568,7 @@ utf8_renderer_iconv(utf8_renderer_t self,
 /* Measures all of the characters in a string */
 void
 utf8_renderer_measure_string(utf8_renderer_t self,
-                             ICONV_CONST char *string,
+                             const char *string,
                              string_sizes_t sizes)
 {
     char buffer[BUFFER_SIZE];
@@ -663,7 +663,7 @@ utf8_renderer_draw_string(Display *display,
                           int x,
                           int y,
                           XRectangle *bbox,
-                          ICONV_CONST char *string)
+                          const char *string)
 {
     char buffer[BUFFER_SIZE];
     XCharStruct *info;
@@ -690,13 +690,14 @@ utf8_renderer_draw_string(Display *display,
 
         /* Are characters in this code set one byte wide? */
         if (renderer->dimension == 1) {
-            char *first;
-            char *last;
+            const char *first;
+            const char *last;
 
             /* Look for visible characters in the buffer */
             first = buffer;
             while (first < out_point) {
-                info = per_char(renderer->font, 0, *(unsigned char *)first);
+                info = per_char(renderer->font, 0,
+                                *(const unsigned char*)first);
 
                 /* Skip anything to the left of the bounding box */
                 if (left + info->rbearing < bbox->x) {
@@ -708,7 +709,7 @@ utf8_renderer_draw_string(Display *display,
                     right = left;
                     while (last < out_point) {
                         info = per_char(renderer->font, 0,
-					*(unsigned char*)last);
+					*(const unsigned char*)last);
 
                         if (right + info->lbearing < bbox->x + bbox->width) {
                             right = right + (long)info->width;
@@ -877,7 +878,7 @@ utf8_encoder_alloc(Display *display, XmFontList font_list, char *code_set)
 
 /* Encodes a string */
 char *
-utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
+utf8_encoder_encode(utf8_encoder_t self, const char *input)
 {
     char *buffer;
     char *output;
@@ -932,8 +933,9 @@ utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Otherwise encode away! */
     while (in_length != 0) {
-        if (iconv(self->encoder_cd, &input, &in_length, &output,
-                  &out_length) == (size_t)-1) {
+        if (iconv(self->encoder_cd,
+                  (ICONV_CONST char**)&input, &in_length,
+                  &output, &out_length) == (size_t)-1) {
             /* If we're out of space then allocate some more */
             if (errno == E2BIG) {
                 char *new_buffer;
@@ -964,7 +966,7 @@ utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input)
 
 /* Decodes a string */
 char *
-utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
+utf8_encoder_decode(utf8_encoder_t self, const char *input)
 {
     char *buffer;
     char *output;
@@ -1021,8 +1023,9 @@ utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input)
 
     /* Encode away */
     while (in_length != 0) {
-        if (iconv(self->decoder_cd, &input, &in_length, &output,
-                  &out_length) == (size_t)-1) {
+        if (iconv(self->decoder_cd,
+                  (ICONV_CONST char**)&input, &in_length,
+                  &output, &out_length) == (size_t)-1) {
             /* If we're out of space then allocate some more */
             if (errno == E2BIG) {
                 char *new_buffer;
