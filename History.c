@@ -1250,7 +1250,7 @@ paint(HistoryWidget self, XRectangle *bbox)
 
     /* Draw all visible message views */
     while (index < self->history.message_count) {
-        /* Skip NULL message views */
+        /* Stop if we run out of message views. */
         view = self->history.message_views[index++];
         if (view == NULL) {
             return;
