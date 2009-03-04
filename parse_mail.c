@@ -17,7 +17,7 @@
 #include <alloca.h>
 #include <assert.h>
 #ifdef HAVE_ICONV_H
-#include <iconv.h>
+# include <iconv.h>
 #endif
 #include "parse_mail.h"
 
@@ -39,14 +39,12 @@
 
 #define ALIGN_4(x) ((((x) + 3) >> 2) << 2)
 
-typedef enum
-{
+typedef enum {
     ENC_BASE64,
     ENC_QPRINT
 } enc_t;
 
-typedef enum
-{
+typedef enum {
     CSET_OTHER,
     CSET_US_ASCII,
     CSET_UTF_8,
@@ -54,17 +52,29 @@ typedef enum
 } charset_t;
 
 /* Forward declarations for the state machine states */
-static int lex_error(lexer_t self, int ch);
-static int lex_start(lexer_t self, int ch);
-static int lex_name(lexer_t self, int ch);
-static int lex_dash(lexer_t self, int ch);
-static int lex_ws(lexer_t self, int ch);
-static int lex_body(lexer_t self, int ch);
-static int lex_body_ws(lexer_t self, int ch);
-static int lex_fold(lexer_t self, int ch);
-static int lex_skip_body(lexer_t self, int ch);
-static int lex_skip_fold(lexer_t self, int ch);
-static int lex_end(lexer_t self, int ch);
+static int
+lex_error(lexer_t self, int ch);
+static int
+lex_start(lexer_t self, int ch);
+static int
+lex_name(lexer_t self, int ch);
+static int
+lex_dash(lexer_t self, int ch);
+static int
+lex_ws(lexer_t self, int ch);
+static int
+lex_body(lexer_t self, int ch);
+static int
+lex_body_ws(lexer_t self, int ch);
+static int
+lex_fold(lexer_t self, int ch);
+static int
+lex_skip_body(lexer_t self, int ch);
+static int
+lex_skip_fold(lexer_t self, int ch);
+static int
+lex_end(lexer_t self, int ch);
+
 
 static const char nibbles[] =
 {
@@ -367,7 +377,11 @@ utf8_to_utf8(const char *string, char *buffer, size_t buflen)
 #if defined(HAVE_ICONV)
 /* Convert a string to UTF-8 */
 static ssize_t
-other_to_utf8(iconv_t cd, const char *string, size_t slen, char *buffer, size_t buflen)
+other_to_utf8(iconv_t cd,
+              const char *string,
+              size_t slen,
+              char *buffer,
+              size_t buflen)
 {
     size_t len;
     char *in = (char *)string;
@@ -388,7 +402,8 @@ static int
 rfc1522_decode(const char *charset,
                const char *encoding,
                const char *text,
-               char *buffer, size_t buflen)
+               char *buffer,
+               size_t buflen)
 {
     char buf[256];
     enc_t enc;
@@ -500,7 +515,8 @@ rfc1522_decode(const char *charset,
 static const char *from_string = "\0\0\0\4From";
 
 /* Initializes a lexer's state */
-void lexer_init(lexer_t self, char *buffer, ssize_t length)
+void
+lexer_init(lexer_t self, char *buffer, ssize_t length)
 {
     self->state = lex_start;
     self->buffer = buffer;
@@ -513,9 +529,11 @@ void lexer_init(lexer_t self, char *buffer, ssize_t length)
 }
 
 /* Writes an int32 into a buffer */
-static void write_int32(char *buffer, int value)
+static void
+write_int32(char *buffer, int value)
 {
     unsigned char *point = (unsigned char *)buffer;
+
     point[0] = (value >> 24) & 0xff;
     point[1] = (value >> 16) & 0xff;
     point[2] = (value >> 8) & 0xff;
@@ -523,14 +541,18 @@ static void write_int32(char *buffer, int value)
 }
 
 /* Reads an int32 from a buffer */
-static int read_int32(const char *buffer)
+static int
+read_int32(const char *buffer)
 {
     unsigned char *point = (unsigned char *)buffer;
-    return (point[0] << 24) | (point[1] << 16) | (point[2] << 8) | (point[3] << 0);
+
+    return (point[0] << 24) | (point[1] << 16) |
+        (point[2] << 8) | (point[3] << 0);
 }
 
 /* Append an int32 to the outgoing buffer */
-static int append_int32(lexer_t self, int value)
+static int
+append_int32(lexer_t self, int value)
 {
     /* Make sure there's room */
     if (self->point + 4 < self->end) {
@@ -543,7 +565,8 @@ static int append_int32(lexer_t self, int value)
 }
 
 /* Begin writing a string */
-static int begin_string(lexer_t self)
+static int
+begin_string(lexer_t self)
 {
     if (self->point + 4 < self->end) {
         self->length_point = self->point;
@@ -555,7 +578,8 @@ static int begin_string(lexer_t self)
 }
 
 /* Finish writing a string */
-static int end_string(lexer_t self)
+static int
+end_string(lexer_t self)
 {
     char *string = self->length_point + 4;
 
@@ -570,9 +594,9 @@ static int end_string(lexer_t self)
     return 0;
 }
 
-
 /* Append a character to the current string */
-static int append_char(lexer_t self, int ch)
+static int
+append_char(lexer_t self, int ch)
 {
     if (self->point < self->end) {
         *(self->point++) = ch;
@@ -583,7 +607,8 @@ static int append_char(lexer_t self, int ch)
 }
 
 /* Appends a C string to the buffer */
-static int append_string(lexer_t self, const char *string)
+static int
+append_string(lexer_t self, const char *string)
 {
     const char *point;
 
@@ -601,7 +626,8 @@ static int append_string(lexer_t self, const char *string)
 }
 
 /* Compares two length-prefixed strings for equality */
-static int lstring_eq(const char *string1, const char *string2)
+static int
+lstring_eq(const char *string1, const char *string2)
 {
     int len;
 
@@ -645,7 +671,8 @@ find_name(lexer_t self, const char *lstring)
 }
 
 /* Appends an int32 attribute to the buffer */
-static int append_int32_tuple(lexer_t self, char *name, int value)
+static int
+append_int32_tuple(lexer_t self, char *name, int value)
 {
     /* Write the name */
     if (append_string(self, name) < 0) {
@@ -667,7 +694,8 @@ static int append_int32_tuple(lexer_t self, char *name, int value)
 }
 
 /* Appends a string attribute to the buffer */
-static int append_string_tuple(lexer_t self, const char *name, const char *value)
+static int
+append_string_tuple(lexer_t self, const char *name, const char *value)
 {
     /* Write the name */
     if (append_string(self, name) < 0) {
@@ -688,11 +716,12 @@ static int append_string_tuple(lexer_t self, const char *name, const char *value
     return 0;
 }
 
-
-
 /* Writes a UNotify packet header */
-int lexer_append_unotify_header(lexer_t self, const char *user,
-                                const char *folder, const char *group)
+int
+lexer_append_unotify_header(lexer_t self,
+                            const char *user,
+                            const char *folder,
+                            const char *group)
 {
     /* Write the packet type */
     if (append_int32(self, UNOTIFY_PACKET) < 0) {
@@ -748,7 +777,8 @@ int lexer_append_unotify_header(lexer_t self, const char *user,
 }
 
 /* Writes the UNotify packet footer */
-int lexer_append_unotify_footer(lexer_t self, int msg_num)
+int
+lexer_append_unotify_footer(lexer_t self, int msg_num)
 {
     const char *subject;
 
@@ -761,7 +791,7 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
     }
 
     /* Append the message number (if provided) */
-    if (! (msg_num < 0)) {
+    if (!(msg_num < 0)) {
         if (append_int32_tuple(self, N_INDEX, msg_num) < 0) {
             return -1;
         }
@@ -780,7 +810,8 @@ int lexer_append_unotify_footer(lexer_t self, int msg_num)
 }
 
 /* Begin an attribute string value */
-static int begin_string_value(lexer_t self)
+static int
+begin_string_value(lexer_t self)
 {
     if (self->point + 4 < self->end) {
         /* Write the string typecode */
@@ -793,7 +824,8 @@ static int begin_string_value(lexer_t self)
 }
 
 /* End an attribute string value */
-static int end_string_value(lexer_t self)
+static int
+end_string_value(lexer_t self)
 {
     end_string(self);
     self->count++;
@@ -801,13 +833,15 @@ static int end_string_value(lexer_t self)
 }
 
 /* Ignore additional input */
-static int lex_error(lexer_t self, int ch)
+static int
+lex_error(lexer_t self, int ch)
 {
     return -1;
 }
 
 /* Get started */
-static int lex_start(lexer_t self, int ch)
+static int
+lex_start(lexer_t self, int ch)
 {
     /* Bitch and moan if we start with a space or a colon */
     if (ch == ':' || isspace(ch)) {
@@ -838,7 +872,8 @@ static int lex_start(lexer_t self, int ch)
 }
 
 /* Reading a field name */
-static int lex_name(lexer_t self, int ch)
+static int
+lex_name(lexer_t self, int ch)
 {
     /* The first line of a the message may be an out-of-band
      * 'From' line which doesn't end with a ':'.  In addition, MH
@@ -915,7 +950,8 @@ static int lex_name(lexer_t self, int ch)
 }
 
 /* We've read a `-' in a name */
-static int lex_dash(lexer_t self, int ch)
+static int
+lex_dash(lexer_t self, int ch)
 {
     /* If we find whitespace in a header field name there's a good
      * chance that we're actualy in the message body, so just pretend
@@ -962,7 +998,8 @@ static int lex_dash(lexer_t self, int ch)
 }
 
 /* Skip over whitespace */
-static int lex_ws(lexer_t self, int ch)
+static int
+lex_ws(lexer_t self, int ch)
 {
     /* Try to fold on a LF */
     if (ch == '\n') {
@@ -993,7 +1030,8 @@ static int lex_ws(lexer_t self, int ch)
 }
 
 /* Read the body */
-static int lex_body(lexer_t self, int ch)
+static int
+lex_body(lexer_t self, int ch)
 {
     int len;
     char buffer[256];
@@ -1008,12 +1046,14 @@ static int lex_body(lexer_t self, int ch)
 
     case 1:
     case 11:
-        self->rfc1522_state = (ch == '?') ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        self->rfc1522_state = (ch == '?') ?
+            (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
         break;
 
     case 2:
     case 12:
-        self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        self->rfc1522_state = istoken(ch) ?
+            (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
         break;
 
     case 3:
@@ -1030,13 +1070,15 @@ static int lex_body(lexer_t self, int ch)
     case 4:
     case 14:
         self->enc_enc_point = self->point;
-        self->rfc1522_state = istoken(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        self->rfc1522_state = istoken(ch) ?
+            (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
         break;
 
     case 6:
     case 16:
         self->enc_text_point = self->point;
-        self->rfc1522_state = isenc(ch) ? (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
+        self->rfc1522_state = isenc(ch) ?
+            (self->rfc1522_state + 1) : (ch == '=') ? 1 : 0;
         break;
 
     case 7:
@@ -1093,7 +1135,7 @@ static int lex_body(lexer_t self, int ch)
             self->point = self->enc_word_point + len;
 #ifdef DEBUG
             *self->point = 0;
-            printf("decoded w%crd: \"%s\"\n", 
+            printf("decoded w%crd: \"%s\"\n",
                    self->rfc1522_state == 19 ? '*' : 'o',
                    self->enc_word_point);
 #endif /* DEBUG */
@@ -1122,7 +1164,8 @@ static int lex_body(lexer_t self, int ch)
 }
 
 /* Compressing whitespace in the body */
-static int lex_body_ws(lexer_t self, int ch)
+static int
+lex_body_ws(lexer_t self, int ch)
 {
     /* Watch for linefeeds */
     if (ch == '\n') {
@@ -1146,7 +1189,8 @@ static int lex_body_ws(lexer_t self, int ch)
 }
 
 /* Try to fold */
-static int lex_fold(lexer_t self, int ch)
+static int
+lex_fold(lexer_t self, int ch)
 {
     /* A linefeed means that we're out of headers */
     if (ch == '\n') {
@@ -1201,7 +1245,8 @@ static int lex_fold(lexer_t self, int ch)
 }
 
 /* Discard the body */
-static int lex_skip_body(lexer_t self, int ch)
+static int
+lex_skip_body(lexer_t self, int ch)
 {
     /* Try to fold on LF */
     if (ch == '\n') {
@@ -1215,7 +1260,8 @@ static int lex_skip_body(lexer_t self, int ch)
 }
 
 /* Try to fold */
-static int lex_skip_fold(lexer_t self, int ch)
+static int
+lex_skip_fold(lexer_t self, int ch)
 {
     /* A linefeed means the end of the headers */
     if (ch == '\n') {
@@ -1252,20 +1298,23 @@ static int lex_skip_fold(lexer_t self, int ch)
 }
 
 /* Skip everything after the headers */
-static int lex_end(lexer_t self, int ch)
+static int
+lex_end(lexer_t self, int ch)
 {
     self->state = lex_end;
     return 0;
 }
 
 /* Returns the size of the buffer */
-size_t lexer_size(lexer_t self)
+size_t
+lexer_size(lexer_t self)
 {
     return self->point - self->buffer;
 }
 
 /* Run the buffer through the lexer */
-int lex(lexer_t self, char *buffer, ssize_t length)
+int
+lex(lexer_t self, char *buffer, ssize_t length)
 {
     char *point;
 
@@ -1274,7 +1323,9 @@ int lex(lexer_t self, char *buffer, ssize_t length)
         return self->state(self, EOF);
     }
 
-    for (point = buffer; point < buffer + length && self->state != lex_end; point++) {
+    for (point = buffer;
+         point < buffer + length && self->state != lex_end;
+         point++) {
         if (self->state(self, *point) < 0) {
             return -1;
         }

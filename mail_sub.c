@@ -28,18 +28,19 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: mail_sub.c,v 1.40 2009/03/09 05:26:27 phelps Exp $";
+static const char cvsid[] =
+    "$Id: mail_sub.c,v 1.40 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #include <stdio.h> /* exit, fprintf, snprintf */
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* exit, free, malloc */
+# include <stdlib.h> /* exit, free, malloc */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* strdup, strlen */
+# include <string.h> /* strdup, strlen */
 #endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
@@ -59,16 +60,15 @@ static const char cvsid[] = "$Id: mail_sub.c,v 1.40 2009/03/09 05:26:27 phelps E
 
 /* compatability code for return code of callbacks */
 #if !defined(ELVIN_VERSION_AT_LEAST)
-#  define ELVIN_RETURN_FAILURE
-#  define ELVIN_RETURN_SUCCESS
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
-#  define ELVIN_RETURN_FAILURE 0
-#  define ELVIN_RETURN_SUCCESS 1
+# define ELVIN_RETURN_FAILURE
+# define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+# define ELVIN_RETURN_FAILURE 0
+# define ELVIN_RETURN_SUCCESS 1
 #endif
 
 /* The MailSubscription data type */
-struct mail_sub
-{
+struct mail_sub {
     /* The receiver's user name */
     char *user;
 
@@ -89,15 +89,15 @@ struct mail_sub
 };
 
 
-#if ! defined(ELVIN_VERSION_AT_LEAST)
+#if !defined(ELVIN_VERSION_AT_LEAST)
 /* Delivers a notification which matches the receiver's e-mail subscription */
-static void notify_cb(
-    elvin_handle_t handle,
-    elvin_subscription_t subscription,
-    elvin_notification_t notification,
-    int is_secure,
-    void *rock,
-    elvin_error_t error)
+static void
+notify_cb(elvin_handle_t handle,
+          elvin_subscription_t subscription,
+          elvin_notification_t notification,
+          int is_secure,
+          void *rock,
+          elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
@@ -111,54 +111,44 @@ static void notify_cb(
 
     /* Get the name from the `From' field */
     if (elvin_notification_get(notification, F_FROM, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+        type == ELVIN_STRING) {
         from = value.s;
 
         /* Split the user name from the address. */
-        if ((mbox_parser_parse(self -> parser, from)) == 0)
-        {
-            from = mbox_parser_get_name(self -> parser);
-            if (*from == '\0')
-            {
+        if ((mbox_parser_parse(self->parser, from)) == 0) {
+            from = mbox_parser_get_name(self->parser);
+            if (*from == '\0') {
                 /* Otherwise resort to the e-mail address */
-                from = mbox_parser_get_email(self -> parser);
+                from = mbox_parser_get_email(self->parser);
             }
         }
-    }
-    else
-    {
+    } else {
         from = "anonymous";
     }
 
     /* Get the folder field */
-    if (elvin_notification_get(notification, F_FOLDER, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, F_FOLDER, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         folder = value.s;
 
         /* Format the folder name to use as the group */
         length = strlen(FOLDER_FMT) + strlen(folder) - 1;
         buffer = malloc(length);
-        if (buffer != NULL)
-        {
+        if (buffer != NULL) {
             snprintf(buffer, length, FOLDER_FMT, folder);
             folder = buffer;
         }
-    }
-    else
-    {
+    } else {
         folder = "mail";
     }
 
     /* Get the subject field */
-    if (elvin_notification_get(notification, F_SUBJECT, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, F_SUBJECT, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         subject = value.s;
-    }
-    else
-    {
+    } else {
         subject = "No subject";
     }
 
@@ -168,26 +158,25 @@ static void notify_cb(
         NULL, 0,
         NULL, NULL, NULL, NULL);
 
-    (*self -> callback)(self -> rock, message, False);
+    (*self->callback)(self->rock, message, False);
 
     /* Clean up */
     message_free(message);
 
     /* Free the folder name */
-    if (buffer != NULL)
-    {
+    if (buffer != NULL) {
         free(buffer);
     }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* Delivers a notification which matches the receiver's e-mail subscription */
-static int notify_cb(
-    elvin_handle_t handle,
-    elvin_subscription_t subscription,
-    elvin_notification_t notification,
-    int is_secure,
-    void *rock,
-    elvin_error_t error)
+static int
+notify_cb(elvin_handle_t handle,
+          elvin_subscription_t subscription,
+          elvin_notification_t notification,
+          int is_secure,
+          void *rock,
+          elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
@@ -199,21 +188,19 @@ static int notify_cb(
     int found;
 
     /* Get the name from the `From' field */
-    if (! elvin_notification_get_string(notification, F_FROM, &found, &from, error))
-    {
+    if (!elvin_notification_get_string(notification, F_FROM, &found, &from,
+                                       error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
     /* Split the user name from the address */
-    if ((mbox_parser_parse(self -> parser, from)) == 0)
-    {
-        from = mbox_parser_get_name(self -> parser);
-        if (*from == 0)
-        {
+    if ((mbox_parser_parse(self->parser, from)) == 0) {
+        from = mbox_parser_get_name(self->parser);
+        if (*from == 0) {
             /* Otherwise resort to the e-mail address */
-            from = mbox_parser_get_email(self -> parser);
+            from = mbox_parser_get_email(self->parser);
         }
     }
 
@@ -221,33 +208,29 @@ static int notify_cb(
     from = found ? from : "anonymous";
 
     /* Get the folder field */
-    if (! elvin_notification_get_string(notification, F_FOLDER, NULL, &folder, error))
-    {
+    if (!elvin_notification_get_string(notification, F_FOLDER, NULL, &folder,
+                                       error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
     /* If no folder provided then just call it `mail' */
-    if (folder == NULL)
-    {
+    if (folder == NULL) {
         folder = "mail";
-    }
-    else
-    {
+    } else {
         /* Format the folder name to use as the group */
         length = strlen(FOLDER_FMT) + strlen(folder) - 1;
         buffer = malloc(length);
-        if (buffer != NULL)
-        {
+        if (buffer != NULL) {
             snprintf(buffer, length, FOLDER_FMT, folder);
             folder = buffer;
         }
     }
 
     /* Get the subject field */
-    if (! elvin_notification_get_string(notification, F_SUBJECT, &found, &subject, error))
-    {
+    if (!elvin_notification_get_string(notification, F_SUBJECT, &found,
+                                       &subject, error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -261,21 +244,20 @@ static int notify_cb(
         NULL, folder, from, subject, 60,
         NULL, 0, NULL, NULL, NULL, NULL);
 
-    (*self -> callback)(self -> rock, message, False);
+    (*self->callback)(self->rock, message, False);
 
     /* Clean up */
     message_free(message);
 
     /* Free the folder name */
-    if (buffer != NULL)
-    {
+    if (buffer != NULL) {
         free(buffer);
     }
 
     return 1;
 }
 #else
-#error "Unsupported Elvin library version"
+# error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
 /*
@@ -285,107 +267,105 @@ static int notify_cb(
  */
 
 /* Answers a new mail_sub_t */
-mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
+mail_sub_t
+mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
 {
     mail_sub_t self;
 
     /* Allocate memory for the receiver */
     self = malloc(sizeof(struct mail_sub));
-    if (self == NULL)
-    {
+    if (self == NULL) {
         fprintf(stderr, PACKAGE ": out of memory\n");
         exit(1);
     }
 
     /* Allocate memory for the rfc822 mailbox parser */
-    self -> parser = mbox_parser_alloc();
-    if (self -> parser == NULL)
-    {
+    self->parser = mbox_parser_alloc();
+    if (self->parser == NULL) {
         free(self);
         return NULL;
     }
 
-    self -> user = strdup(user);
-    self -> handle = NULL;
-    self -> subscription = 0;
-    self -> callback = callback;
-    self -> rock = rock;
+    self->user = strdup(user);
+    self->handle = NULL;
+    self->subscription = 0;
+    self->callback = callback;
+    self->rock = rock;
     return self;
 }
 
 /* Releases the resources consumed by the receiver */
-void mail_sub_free(mail_sub_t self)
+void
+mail_sub_free(mail_sub_t self)
 {
-    if (self -> user != NULL)
-    {
-        free(self -> user);
+    if (self->user != NULL) {
+        free(self->user);
     }
 
-    if (self -> parser != NULL)
-    {
-        mbox_parser_free(self -> parser);
+    if (self->parser != NULL) {
+        mbox_parser_free(self->parser);
     }
 
     free(self);
 }
 
 /* Callback for a subscribe request */
-static 
+static
 #if !defined(ELVIN_VERSION_AT_LEAST)
 void
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 int
 #endif
-subscribe_cb(
-    elvin_handle_t handle, int result,
-    elvin_subscription_t subscription, void *rock,
-    elvin_error_t error)
+subscribe_cb(elvin_handle_t handle,
+             int result,
+             elvin_subscription_t subscription,
+             void *rock,
+             elvin_error_t error)
 {
     mail_sub_t self = (mail_sub_t)rock;
-    self -> subscription = subscription;
+
+    self->subscription = subscription;
 
     return ELVIN_RETURN_SUCCESS;
 }
 
 /* Sets the receiver's connection */
-void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error_t error)
+void
+mail_sub_set_connection(mail_sub_t self,
+                        elvin_handle_t handle,
+                        elvin_error_t error)
 {
     /* Unsubscribe from the old connection */
-    if (self -> handle != NULL)
-    {
+    if (self->handle != NULL) {
         if (elvin_async_delete_subscription(
-            self -> handle, self -> subscription,
-            NULL, NULL,
-            error) == 0)
-        {
+                self->handle, self->subscription,
+                NULL, NULL,
+                error) == 0) {
             fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
             exit(1);
         }
     }
 
-    self -> handle = handle;
+    self->handle = handle;
 
     /* Subscribe using the new handle */
-    if (self -> handle != NULL)
-    {
+    if (self->handle != NULL) {
         size_t length;
         char *buffer;
 
-        length = strlen(MAIL_SUB) + strlen(self -> user) - 1;
+        length = strlen(MAIL_SUB) + strlen(self->user) - 1;
         buffer = malloc(length);
-        if (buffer == NULL)
-        {
+        if (buffer == NULL) {
             return;
         }
 
-        snprintf(buffer, length, MAIL_SUB, self -> user);
+        snprintf(buffer, length, MAIL_SUB, self->user);
 
         /* Subscribe to elvinmail notifications */
-        if (elvin_async_add_subscription(self -> handle, buffer, NULL, 1,
-					 notify_cb, self,
-					 subscribe_cb, self,
-					 error) == 0)
-        {
+        if (elvin_async_add_subscription(self->handle, buffer, NULL, 1,
+                                         notify_cb, self,
+                                         subscribe_cb, self,
+                                         error) == 0) {
             fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
             exit(1);
         }

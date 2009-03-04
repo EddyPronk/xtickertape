@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define HistoryP_H
 
 #ifndef lint
-static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.30 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_HISTORYP_H[] =
+    "$Id: HistoryP.h,v 1.30 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -50,14 +51,12 @@ static const char cvs_HISTORYP_H[] = "$Id: HistoryP.h,v 1.30 2009/03/09 05:26:26
 
 
 /* New fields for the History widget record */
-typedef struct
-{
+typedef struct {
     int foo; /* Need to have something here */
 } HistoryClassPart;
 
 /* Full class record declaration */
-typedef struct _HistoryClassRec
-{
+typedef struct _HistoryClassRec {
     CoreClassPart core_class;
     XmPrimitiveClassPart primitive_class;
     HistoryClassPart history_class;
@@ -71,16 +70,14 @@ typedef struct translation_queue *translation_queue_t;
 typedef struct node *node_t;
 
 /* Which way are we dragging? */
-typedef enum
-{
+typedef enum {
     DRAG_NONE,
     DRAG_UP,
     DRAG_DOWN
 } drag_direction_t;
 
 /* New fields for the History widget record */
-typedef struct
-{
+typedef struct {
     /* Resources */
 
     /* When are these called? */
@@ -128,7 +125,7 @@ typedef struct
     /* The amount of time to wait before scrolling the list when
      * dragging the selection around */
     int drag_delay;
-    
+
     /* Private state */
 
     /* Our graphics context */
@@ -205,8 +202,7 @@ typedef struct
 } HistoryPart;
 
 /* Full instance record declaration */
-typedef struct _HistoryRec
-{
+typedef struct _HistoryRec {
     CorePart core;
     XmPrimitivePart primitive;
     HistoryPart history;

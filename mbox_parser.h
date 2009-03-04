@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define MBOX_PARSER_H
 
 #ifndef lint
-static const char cvs_MBOX_PARSER_H[] = "$Id: mbox_parser.h,v 1.7 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_MBOX_PARSER_H[] =
+    "$Id: mbox_parser.h,v 1.7 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -49,42 +50,54 @@ typedef struct mbox_parser *mbox_parser_t;
 
 /*
  * Allocates a new RFC-822 mailbox parser.  This takes a strings as
- * input, which it parses as a mailbox (commented e-mail address) into 
+ * input, which it parses as a mailbox (commented e-mail address) into
  * e-mail address and user name portions
  *
  * return values:
  *     success: a valid mbox_parser_t
  *     failure: NULL
  */
-mbox_parser_t mbox_parser_alloc();
+mbox_parser_t
+mbox_parser_alloc();
+
 
 /* Frees the resources consumed by the receiver */
-void mbox_parser_free(mbox_parser_t self);
+void
+mbox_parser_free(mbox_parser_t self);
+
 
 /* Prints out debugging information about the receiver */
-void mbox_parser_debug(mbox_parser_t self, FILE *out);
+void
+mbox_parser_debug(mbox_parser_t self, FILE *out);
+
 
 /* Parses `mailbox' as an RFC 822 mailbox, separating out the name and
- * e-mail address portions which can subsequently be accessed with the 
+ * e-mail address portions which can subsequently be accessed with the
  * mbox_parser_get_name() and mbox_parser_get_email() functions.
  *
  * return values:
  *     success: 0
  *     failure: -1
  */
-int mbox_parser_parse(mbox_parser_t self, char *mailbox);
+int
+mbox_parser_parse(mbox_parser_t self, char *mailbox);
+
 
 /*
  * Answers a pointer to the e-mail address (only valid after
  * a successful call to mbox_parser_parse).
  */
-char *mbox_parser_get_email(mbox_parser_t self);
+char *
+mbox_parser_get_email(mbox_parser_t self);
+
 
 /*
  * Answers a pointer to the name (only valid after a successful call
  * to mbox_parser_parse).  This will return NULL if no name was present in
  * the most recently parsed mailbox.
  */
-char *mbox_parser_get_name(mbox_parser_t self);
-   
+char *
+mbox_parser_get_name(mbox_parser_t self);
+
+
 #endif /* MBOX_PARSER_H */

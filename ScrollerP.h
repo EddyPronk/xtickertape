@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.51 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_SCROLLERP_H[] =
+    "$Id: ScrollerP.h,v 1.51 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>
@@ -49,15 +50,13 @@ static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.51 2009/03/09 05:26:
 
 
 /* New fields for the Scroller widget record */
-typedef struct
-{
+typedef struct {
     int foo;
 } ScrollerClassPart;
 
 
 /* Full class record declaration */
-typedef struct _ScrollerClassRec
-{
+typedef struct _ScrollerClassRec {
     CoreClassPart core_class;
     ScrollerClassPart scroller_class;
 } ScrollerClassRec;
@@ -67,8 +66,7 @@ typedef struct glyph *glyph_t;
 typedef struct glyph_holder *glyph_holder_t;
 
 /* New fields for the Scroller widget record */
-typedef struct
-{
+typedef struct {
     /* Resources */
     XtCallbackList callbacks;
     XtCallbackList attachment_callbacks;
@@ -185,20 +183,22 @@ typedef struct
 
 
 /* Full instance record declaration */
-typedef struct _ScrollerRec
-{
+typedef struct _ScrollerRec {
     CorePart core;
     ScrollerPart scroller;
 } ScrollerRec;
 
 
-
 /* Semi-private methods */
 
 /* Repaints the given glyph (if visible) */
-void ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);
+void
+ScRepaintGlyph(ScrollerWidget self, glyph_t glyph);
+
 
 /* Callback for expiring glyphs */
-void ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
+void
+ScGlyphExpired(ScrollerWidget self, glyph_t glyph);
+
 
 #endif /* SCROLLERP_H */

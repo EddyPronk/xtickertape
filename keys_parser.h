@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -35,8 +35,9 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
+
 /*
- * Description: 
+ * Description:
  *   Parses the Tickertape keys file
  */
 
@@ -44,7 +45,8 @@
 #define KEYS_PARSER_H
 
 #ifndef lint
-static const char cvs_KEYS_PARSER_H[] = "$Id: keys_parser.h,v 1.6 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_KEYS_PARSER_H[] =
+    "$Id: keys_parser.h,v 1.6 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #include <elvin/elvin.h>
@@ -61,18 +63,23 @@ typedef int (*keys_parser_callback_t)(
     int is_private);
 
 /* Allocates and initializes a new keys file parser */
-keys_parser_t keys_parser_alloc(
-    char *tickerdir,
-    keys_parser_callback_t callback,
-    void *rock,
-    char *tag);
+keys_parser_t
+keys_parser_alloc(char *tickerdir,
+                  keys_parser_callback_t callback,
+                  void *rock,
+                  char *tag);
+
 
 /* Frees the resources consumed by the receiver */
-void keys_parser_free(keys_parser_t self);
+void
+keys_parser_free(keys_parser_t self);
+
 
 /* Parses the given buffer, calling callbacks for each subscription
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
-int keys_parser_parse(keys_parser_t self, char *buffer, size_t length);
+int
+keys_parser_parse(keys_parser_t self, char *buffer, size_t length);
+
 
 #endif /* KEYS_PARSER_H */

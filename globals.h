@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,15 +40,16 @@
 #define GLOBALS_H
 
 #ifndef lint
-static const char cvs_GLOBALS_H[] = "$Id: globals.h,v 1.7 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_GLOBALS_H[] =
+    "$Id: globals.h,v 1.7 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 #if defined(ELVIN_VERSION_AT_LEAST)
-#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
+# if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 extern elvin_client_t client;
-#else
-#error "Unsupported Elvin library version"
-#endif
+# else
+#  error "Unsupported Elvin library version"
+# endif
 #endif
 
 /* Useful macros */

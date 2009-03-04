@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define CONTROL_PANEL_H
 
 #ifndef lint
-static const char cvs_CONTROL_PANEL_H[] = "$Id: panel.h,v 1.16 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_CONTROL_PANEL_H[] =
+    "$Id: panel.h,v 1.16 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #include <X11/Intrinsic.h>
@@ -56,64 +57,93 @@ typedef struct control_panel *control_panel_t;
 typedef void (*control_panel_callback_t)(void *context, message_t message);
 
 /* Allocates and initializes a new control_panel_t */
-control_panel_t control_panel_alloc(
-    tickertape_t tickertape,
-    Widget parent,
-    unsigned int send_history_count);
+control_panel_t
+control_panel_alloc(tickertape_t tickertape,
+                    Widget parent,
+                    unsigned int send_history_count);
+
 
 /* Releases the resources used by the receiver */
-void control_panel_free(control_panel_t self);
+void
+control_panel_free(control_panel_t self);
+
 
 /* Displays a message in the status line */
-void control_panel_set_status(
-    control_panel_t self,
-    char *message);
+void
+control_panel_set_status(control_panel_t self, char *message);
+
 
 /* Displays a message in the status line */
-void control_panel_set_status_message(
-    control_panel_t self,
-    message_t message);
+void
+control_panel_set_status_message(control_panel_t self, message_t message);
+
 
 /* This is called when the elvin connection status changes */
-void control_panel_set_connected(
-    control_panel_t self,
-    int is_connected);
+void
+control_panel_set_connected(control_panel_t self, int is_connected);
+
 
 /* Adds a subscription to the receiver.  Returns information which is
  * needed in order to later remove or re-index the subscription */
-void *control_panel_add_subscription(
-    control_panel_t self, char *tag, char *title,
-    control_panel_callback_t callback, void *rock);
+void *
+control_panel_add_subscription(control_panel_t self,
+                               char *tag,
+                               char *title,
+                               control_panel_callback_t callback,
+                               void *rock);
+
 
 /* Removes a subscription from the receiver */
-void control_panel_remove_subscription(control_panel_t self, void *rock);
+void
+control_panel_remove_subscription(control_panel_t self, void *rock);
+
 
 /* Adds a message to the control panel's history */
-void control_panel_add_message(control_panel_t self, message_t message);
+void
+control_panel_add_message(control_panel_t self, message_t message);
+
 
 /* Kills the thread rooted at message */
-void control_panel_kill_thread(control_panel_t self, message_t message);
+void
+control_panel_kill_thread(control_panel_t self, message_t message);
+
 
 /* Changes the location of the subscription in the control panel's menu */
-void control_panel_set_index(control_panel_t self, void *rock, int index);
+void
+control_panel_set_index(control_panel_t self, void *rock, int index);
+
 
 /* Changes the title of a subscription */
-void control_panel_retitle_subscription(control_panel_t self, void *rock, char *title);
+void
+control_panel_retitle_subscription(control_panel_t self,
+                                   void *rock,
+                                   char *title);
+
 
 /* Makes the control_panel visible and selects the given message in
  * the history list */
-void control_panel_select(control_panel_t self, message_t message);
+void
+control_panel_select(control_panel_t self, message_t message);
+
 
 /* Makes the control_panel visible */
-void control_panel_show(control_panel_t self);
+void
+control_panel_show(control_panel_t self);
+
 
 /* Handle notifications */
-void control_panel_handle_notify(control_panel_t self, Widget widget);
+void
+control_panel_handle_notify(control_panel_t self, Widget widget);
+
 
 /* Show the previous item the user has sent */
-void control_panel_history_prev(control_panel_t self);
+void
+control_panel_history_prev(control_panel_t self);
+
 
 /* Show the next item the user has sent */
-void control_panel_history_next(control_panel_t self);
+void
+control_panel_history_next(control_panel_t self);
+
 
 #endif /* CONTROLPANEL_H */

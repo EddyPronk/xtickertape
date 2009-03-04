@@ -25,7 +25,7 @@
   damage of any kind arising out of or in connection with
   the use or performance of this software.
 
-   Description: 
+   Description:
              A Widget which scrolls glyphs
 
 ****************************************************************/
@@ -34,7 +34,8 @@
 #define SCROLLER_H
 
 #ifndef lint
-static const char cvs_SCROLLER_H[] = "$Id: Scroller.h,v 1.19 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_SCROLLER_H[] =
+    "$Id: Scroller.h,v 1.19 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 /*
@@ -156,9 +157,13 @@ extern WidgetClass scrollerWidgetClass;
 #include "message.h"
 
 /* Adds a Message to the receiver */
-void ScAddMessage(Widget self, message_t message);
+void
+ScAddMessage(Widget self, message_t message);
+
 
 /* Purge any killed messages */
-void ScPurgeKilled(Widget self);
+void
+ScPurgeKilled(Widget self);
+
 
 #endif /* SCROLLER_H */

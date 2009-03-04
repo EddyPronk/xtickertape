@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define USENET_SUB_H
 
 #ifndef lint
-static const char cvs_USENET_SUB_H[] = "$Id: usenet_sub.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_USENET_SUB_H[] =
+    "$Id: usenet_sub.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* The subscription data type */
@@ -50,20 +51,33 @@ typedef struct usenet_sub *usenet_sub_t;
 #include "message.h"
 
 /* The format of the callback function */
-typedef void (*usenet_sub_callback_t)(void *rock, message_t message, int show_attachment);
+typedef void (*usenet_sub_callback_t)(void *rock, message_t message,
+                                      int show_attachment);
 
 /* Allocates and initializes a new usenet_sub_t */
-usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock);
-    
+usenet_sub_t
+usenet_sub_alloc(usenet_sub_callback_t callback, void *rock);
+
+
 /* Releases the resources consumed by the receiver */
-void usenet_sub_free(usenet_sub_t self);
+void
+usenet_sub_free(usenet_sub_t self);
+
 
 /* Adds a new entry to the usenet subscription */
-int usenet_sub_add(
-    usenet_sub_t self, int has_not, char *pattern,
-    struct usenet_expr *expressions, size_t count);
+int
+usenet_sub_add(usenet_sub_t self,
+               int has_not,
+               char *pattern,
+               struct usenet_expr *expressions,
+               size_t count);
+
 
 /* Sets the receiver's elvin connection */
-void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error);
+void
+usenet_sub_set_connection(usenet_sub_t self,
+                          elvin_handle_t handle,
+                          elvin_error_t error);
+
 
 #endif /* USENET_SUB_H */

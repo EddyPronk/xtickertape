@@ -28,36 +28,37 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: main.c,v 1.123 2009/03/09 05:26:27 phelps Exp $";
+static const char cvsid[] =
+    "$Id: main.c,v 1.123 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #include <stdio.h> /* fprintf */
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* exit, getenv */
+# include <stdlib.h> /* exit, getenv */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* strdup */
+# include <string.h> /* strdup */
 #endif
 #ifdef HAVE_UNISTD_H
-#include <unistd.h> /* getopt */
+# include <unistd.h> /* getopt */
 #endif
 #ifdef HAVE_GETOPT_H
-#include <getopt.h> /* getopt_long */
+# include <getopt.h> /* getopt_long */
 #endif
 #ifdef HAVE_PWD_H
-#include <pwd.h> /* getpwuid */
+# include <pwd.h> /* getpwuid */
 #endif
 #ifdef HAVE_SIGNAL_H
-#include <signal.h> /* signal */
+# include <signal.h> /* signal */
 #endif
 #ifdef HAVE_NETDB_H
-#include <netdb.h> /* gethostbyname */
+# include <netdb.h> /* gethostbyname */
 #endif
 #ifdef HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h> /* uname */
+# include <sys/utsname.h> /* uname */
 #endif
 #include <X11/Xlib.h> /* X.* */
 #include <X11/Intrinsic.h> /* Xt* */
@@ -87,7 +88,7 @@ static struct option long_options[] =
     { "proxy", required_argument, NULL, 'H' },
     { "idle", required_argument, NULL, 'I' },
     { "user", required_argument, NULL, 'u' },
-    { "domain" , required_argument, NULL, 'D' },
+    { "domain", required_argument, NULL, 'D' },
     { "ticker-dir", required_argument, NULL, 'T' },
     { "groups", required_argument, NULL, 'G' },
     { "usenet", required_argument, NULL, 'U' },
@@ -103,46 +104,49 @@ static struct option long_options[] =
 
 #if defined(HAVE_GETOPT_LONG)
 /* Print out usage message */
-static void usage(int argc, char *argv[])
+static void
+usage(int argc, char *argv[])
 {
     fprintf(stderr,
             "usage: %s [OPTION]...\n"
-        "  -e elvin-url,   --elvin=elvin-url\n"
-        "  -S scope,       --scope=scope\n"
-        "  -H http-proxy,  --proxy=http-proxy\n"
-        "  -I idle-period, --idle=idle-period\n"
-        "  -u user,        --user=user\n"
-        "  -D domain,      --domain=domain\n"
-        "  -T ticker-dir,  --ticker-dir=ticker-dir\n"
-        "  -G groups-file, --groups=groups-file\n"
-        "  -U usenet-file, --usenet=usenet-file\n"
-        "  -K keys-file,   --keys=keys-file\n"
-        "  -k keys-dir,    --keys-dir=keys-dir\n"
-        "  -v,             --version\n"
-        "  -h,             --help\n",
-        argv[0]);
+            "  -e elvin-url,   --elvin=elvin-url\n"
+            "  -S scope,       --scope=scope\n"
+            "  -H http-proxy,  --proxy=http-proxy\n"
+            "  -I idle-period, --idle=idle-period\n"
+            "  -u user,        --user=user\n"
+            "  -D domain,      --domain=domain\n"
+            "  -T ticker-dir,  --ticker-dir=ticker-dir\n"
+            "  -G groups-file, --groups=groups-file\n"
+            "  -U usenet-file, --usenet=usenet-file\n"
+            "  -K keys-file,   --keys=keys-file\n"
+            "  -k keys-dir,    --keys-dir=keys-dir\n"
+            "  -v,             --version\n"
+            "  -h,             --help\n",
+            argv[0]);
 }
 #else
 /* Print out usage message */
-static void usage(int argc, char *argv[])
+static void
+usage(int argc, char *argv[])
 {
     fprintf(stderr,
-        "usage: %s [OPTION]...\n"
-        "  -e elvin-url\n"
-        "  -S scope\n"
-        "  -H http-proxy\n"
-        "  -I idle-period\n"
-        "  -u user\n"
-        "  -D domain\n"
-        "  -T ticker-dir\n"
-        "  -G groups-file\n"
-        "  -U usenet-file\n"
-        "  -K keys-file\n"
-        "  -k keys-dir\n"
-        "  -v\n"
-        "  -h\n",
-        argv[0]);
+            "usage: %s [OPTION]...\n"
+            "  -e elvin-url\n"
+            "  -S scope\n"
+            "  -H http-proxy\n"
+            "  -I idle-period\n"
+            "  -u user\n"
+            "  -D domain\n"
+            "  -T ticker-dir\n"
+            "  -G groups-file\n"
+            "  -U usenet-file\n"
+            "  -K keys-file\n"
+            "  -k keys-dir\n"
+            "  -v\n"
+            "  -h\n",
+            argv[0]);
 }
+
 #endif
 
 
@@ -178,26 +182,30 @@ static XtResource resources[] =
 #undef offset
 
 /* Static function headers */
-static void do_quit(
-    Widget widget, XEvent *event,
-    String *params, Cardinal *nparams);
-static void do_history_prev(
-    Widget widget, XEvent *event,
-    String *params, Cardinal *nparams);
-static void do_history_next(
-    Widget widget, XEvent *event,
-    String *params, Cardinal *nparams);
+static void
+do_quit(Widget widget, XEvent *event, String *params, Cardinal *nparams);
+static void
+do_history_prev(Widget widget,
+                XEvent *event,
+                String *params,
+                Cardinal *nparams);
+static void
+do_history_next(Widget widget,
+                XEvent *event,
+                String *params,
+                Cardinal *nparams);
+
 
 /* The Tickertape */
 static tickertape_t tickertape;
 
 #if defined(ELVIN_VERSION_AT_LEAST)
-#if ELVIN_VERSION_AT_LEAST(4, 1, -1)
+# if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 /* The global elvin client information */
 elvin_client_t client = NULL;
-#else
-#error "Unsupported Elvin library version"
-#endif
+# else
+#  error "Unsupported Elvin library version"
+# endif
 #endif
 
 
@@ -206,98 +214,100 @@ static XtActionsRec actions[] =
 {
     { "history-prev", do_history_prev },
     { "history-next", do_history_next },
-    { "quit", do_quit}
+    { "quit", do_quit }
 };
 
 /* Callback for when the Window Manager wants to close a window */
-static void do_quit(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+static void
+do_quit(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     tickertape_quit(tickertape);
 }
 
 /* Callback for going backwards through the history */
-static void do_history_prev(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+static void
+do_history_prev(Widget widget,
+                XEvent *event,
+                String *params,
+                Cardinal *nparams)
 {
     tickertape_history_prev(tickertape);
 }
 
 /* Callback for going forwards through the history */
-static void do_history_next(Widget widget, XEvent *event, String *params, Cardinal *nparams)
+static void
+do_history_next(Widget widget,
+                XEvent *event,
+                String *params,
+                Cardinal *nparams)
 {
     tickertape_history_next(tickertape);
 }
 
 /* Returns the name of the user who started this program */
-static char *get_user()
+static char *
+get_user()
 {
     char *user;
 
     /* First try the `USER' environment variable */
     user = getenv("USER");
-    if (user != NULL)
-    {
+    if (user != NULL) {
         return user;
     }
 
     /* If that isn't set try `LOGNAME' */
     user = getenv("LOGNAME");
-    if (user != NULL)
-    {
+    if (user != NULL) {
         return user;
     }
 
     /* Go straight to the source for an unequivocal answer */
-    return getpwuid(getuid()) -> pw_name;
+    return getpwuid(getuid())->pw_name;
 }
 
 /* Looks up the domain name of the host */
-static char *get_domain()
+static char *
+get_domain()
 {
     char *domain;
 #ifdef HAVE_UNAME
     struct utsname name;
-#ifdef HAVE_GETHOSTBYNAME
+# ifdef HAVE_GETHOSTBYNAME
     struct hostent *host;
-#endif /* GETHOSTBYNAME */
+# endif /* GETHOSTBYNAME */
     char *point;
     int ch;
 #endif /* UNAME */
 
     /* If the `DOMAIN' environment variable is set then use it */
     domain = getenv("DOMAIN");
-    if (domain != NULL)
-    {
+    if (domain != NULL) {
         return strdup(domain);
     }
 
 #ifdef HAVE_UNAME
     /* Look up the node name */
-    if (uname(&name) < 0)
-    {
+    if (uname(&name) < 0) {
         return strdup(DEFAULT_DOMAIN);
     }
 
-#ifdef HAVE_GETHOSTBYNAME
+# ifdef HAVE_GETHOSTBYNAME
     /* Use that to get the canonical name */
     host = gethostbyname(name.nodename);
-    if (host == NULL)
-    {
+    if (host == NULL) {
         domain = strdup(name.nodename);
+    } else {
+        domain = strdup(host->h_name);
     }
-    else
-    {
-        domain = strdup(host -> h_name);
-    }
-#else /* GETHOSTBYNAME */
+# else /* GETHOSTBYNAME */
     domain = name.nodename;
-#endif /* GETHOSTBYNAME */
+# endif /* GETHOSTBYNAME */
 
     /* Strip everything up to and including the first `.' */
     point = domain;
-    while ((ch = *(point++)) != 0)
-    {
-        if (ch == '.')
-        {
+    while ((ch = *(point++)) != 0) {
+        if (ch == '.') {
             return strdup(point);
         }
     }
@@ -310,17 +320,19 @@ static char *get_domain()
 }
 
 /* Parses arguments and sets stuff up */
-static void parse_args(
-    int argc, char *argv[],
-    elvin_handle_t handle,
-    char **user_return, char **domain_return,
-    char **ticker_dir_return,
-    char **config_file_return,
-    char **groups_file_return,
-    char **usenet_file_return,
-    char **keys_file_return,
-    char **keys_dir_return,
-    elvin_error_t error)
+static void
+parse_args(int argc,
+           char *argv[],
+           elvin_handle_t handle,
+           char **user_return,
+           char **domain_return,
+           char **ticker_dir_return,
+           char **config_file_return,
+           char **groups_file_return,
+           char **usenet_file_return,
+           char **keys_file_return,
+           char **keys_dir_return,
+           elvin_error_t error)
 {
     char *http_proxy = NULL;
 
@@ -335,8 +347,7 @@ static void parse_args(
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
-    while (1)
-    {
+    while (1) {
         int choice;
 
 #if defined(HAVE_GETOPT_LONG)
@@ -345,134 +356,129 @@ static void parse_args(
         choice = getopt(argc, argv, OPTIONS);
 #endif
         /* End of options? */
-        if (choice < 0)
-        {
+        if (choice < 0) {
             break;
         }
 
         /* Which option was it then? */
-        switch (choice)
-        {
-            case 'e':
-                /* --elvin= or -e */
-                if (elvin_handle_append_url(handle, optarg, error) == 0)
-                {
-                    fprintf(stderr, PACKAGE ":bad URL: no doughnut \"%s\"\n", optarg);
-                    elvin_error_fprintf(stderr, error);
-                    exit(1);
-                }
-
-                break;
-
-            case 'S':
-                /* --scope= or -S */
-                if (! elvin_handle_set_discovery_scope(handle, optarg, error))
-                {
-                    fprintf(stderr, PACKAGE ": unable to set scope to %s\n", optarg);
-                    elvin_error_fprintf(stderr, error);
-                    exit(1);
-                }
-
-                break;
-
-            case 'H':
-                /* --proxy= or -H */
-                http_proxy = optarg;
-                break;
-
-            case 'I':
-                /* --idle= or -I */
-                if (! elvin_handle_set_idle_period(handle, atoi(optarg), error))
-                {
-                    fprintf(stderr, PACKAGE ": unable to set idle period to %d\n", atoi(optarg));
-                    elvin_error_fprintf(stderr, error);
-                    exit(1);
-                }
-
-                break;
-
-            case 'u':
-                /* --user= or -u */
-                *user_return = optarg;
-                break;
-
-            case 'D':
-                /* --domain= or -D */
-                *domain_return = strdup(optarg);
-                break;
-
-
-            case 'T':
-                /* --ticker-dir= or -T */
-                *ticker_dir_return = optarg;
-                break;
-
-            case 'c':
-                /* --config= or -c */
-                *config_file_return = optarg;
-                break;
-
-            case 'G':
-                /* --groups= or -G */
-                *groups_file_return = optarg;
-                break;
-
-            case 'U':
-                /* --usenet= or -U */
-                *usenet_file_return = optarg;
-                break;
-
-            case 'K':
-                /* --keys= or -K */
-                *keys_file_return = optarg;
-                break;
-
-            case 'k':
-                /* --keys-dir= or -k */
-                *keys_dir_return = optarg;
-                break;
-
-            case 'v':
-                /* --version or -v */
-                printf(PACKAGE " version " VERSION "\n");
-                exit(0);
-
-            case 'h':
-                /* --help or -h */
-                usage(argc, argv);
-                exit(0);
-
-            default:
-                /* Unknown option */
-                usage(argc, argv);
+        switch (choice) {
+        case 'e':
+            /* --elvin= or -e */
+            if (elvin_handle_append_url(handle, optarg, error) == 0) {
+                fprintf(stderr, PACKAGE ":bad URL: no doughnut \"%s\"\n",
+                        optarg);
+                elvin_error_fprintf(stderr, error);
                 exit(1);
+            }
+
+            break;
+
+        case 'S':
+            /* --scope= or -S */
+            if (!elvin_handle_set_discovery_scope(handle, optarg, error)) {
+                fprintf(stderr, PACKAGE ": unable to set scope to %s\n",
+                        optarg);
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
+
+            break;
+
+        case 'H':
+            /* --proxy= or -H */
+            http_proxy = optarg;
+            break;
+
+        case 'I':
+            /* --idle= or -I */
+            if (!elvin_handle_set_idle_period(handle, atoi(optarg), error)) {
+                fprintf(stderr, PACKAGE ": unable to set idle period to %d\n",
+                        atoi(optarg));
+                elvin_error_fprintf(stderr, error);
+                exit(1);
+            }
+
+            break;
+
+        case 'u':
+            /* --user= or -u */
+            *user_return = optarg;
+            break;
+
+        case 'D':
+            /* --domain= or -D */
+            *domain_return = strdup(optarg);
+            break;
+
+
+        case 'T':
+            /* --ticker-dir= or -T */
+            *ticker_dir_return = optarg;
+            break;
+
+        case 'c':
+            /* --config= or -c */
+            *config_file_return = optarg;
+            break;
+
+        case 'G':
+            /* --groups= or -G */
+            *groups_file_return = optarg;
+            break;
+
+        case 'U':
+            /* --usenet= or -U */
+            *usenet_file_return = optarg;
+            break;
+
+        case 'K':
+            /* --keys= or -K */
+            *keys_file_return = optarg;
+            break;
+
+        case 'k':
+            /* --keys-dir= or -k */
+            *keys_dir_return = optarg;
+            break;
+
+        case 'v':
+            /* --version or -v */
+            printf(PACKAGE " version " VERSION "\n");
+            exit(0);
+
+        case 'h':
+            /* --help or -h */
+            usage(argc, argv);
+            exit(0);
+
+        default:
+            /* Unknown option */
+            usage(argc, argv);
+            exit(1);
         }
     }
 
     /* Generate a user name if none provided */
-    if (*user_return == NULL)
-    {
+    if (*user_return == NULL) {
         *user_return = get_user();
     }
 
     /* Generate a domain name if none provided */
-    if (*domain_return == NULL)
-    {
+    if (*domain_return == NULL) {
         *domain_return = get_domain();
     }
 
     /* If we now have a proxy, then set its property */
-    if (http_proxy != NULL)
-    {
+    if (http_proxy != NULL) {
         elvin_handle_set_property(handle, "http.proxy", http_proxy, NULL);
     }
-    
+
     return;
 }
 
-
 /* Create the icon window */
-static Window create_icon(Widget shell)
+static Window
+create_icon(Widget shell)
 {
     Display *display = XtDisplay(shell);
     Screen *screen = XtScreen(shell);
@@ -525,7 +531,8 @@ static Window create_icon(Widget shell)
 }
 
 /* Signal handler which causes xtickertape to reload its subscriptions */
-static RETSIGTYPE reload_subs(int signum)
+static RETSIGTYPE
+reload_subs(int signum)
 {
     /* Put the signal handler back in place */
     signal(SIGHUP, reload_subs);
@@ -535,7 +542,8 @@ static RETSIGTYPE reload_subs(int signum)
 }
 
 /* Print an error message indicating that the app-defaults file is bogus */
-static void app_defaults_version_error(char *message)
+static void
+app_defaults_version_error(char *message)
 {
     fprintf(stderr,
             "%s: %s\n\n"
@@ -550,11 +558,12 @@ static void app_defaults_version_error(char *message)
             "XtResolvePathname for more information.\n", PACKAGE, message);
 }
 
-
 /* Parse args and go */
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     XtAppContext context;
+
 #ifndef HAVE_XTVAOPENAPPLICATION
     Display *display;
 #endif
@@ -580,7 +589,7 @@ int main(int argc, char *argv[])
         applicationShellWidgetClass,
         XtNborderWidth, 0,
         NULL);
-#else    
+#else
     /* Initialize the X Toolkit */
     XtToolkitInitialize();
 
@@ -589,9 +598,8 @@ int main(int argc, char *argv[])
 
     /* Open the display */
     display = XtOpenDisplay(context, NULL, NULL, "XTickertape",
-			    NULL, 0, &argc, argv);
-    if (display == NULL)
-    {
+                            NULL, 0, &argc, argv);
+    if (display == NULL) {
         fprintf(stderr, "Error: Can't open display\n");
         exit(1);
     }
@@ -606,16 +614,14 @@ int main(int argc, char *argv[])
                               NULL, 0);
 
     /* Make sure our app-defaults file has a version number */
-    if (rc.version_tag == NULL)
-    {
+    if (rc.version_tag == NULL) {
         app_defaults_version_error("app-defaults file not found or "
                                    "out of date");
         exit(1);
     }
 
     /* Make sure that version number is the one we want */
-    if (strcmp(rc.version_tag, PACKAGE "-" VERSION) != 0)
-    {
+    if (strcmp(rc.version_tag, PACKAGE "-" VERSION) != 0) {
         app_defaults_version_error("app-defaults file has the wrong "
                                    "version number");
         exit(1);
@@ -624,18 +630,16 @@ int main(int argc, char *argv[])
     /* Add a calback for when it gets destroyed */
     XtAppAddActions(context, actions, XtNumber(actions));
 
-#if ! defined(ELVIN_VERSION_AT_LEAST)
+#if !defined(ELVIN_VERSION_AT_LEAST)
     /* Initialize the elvin client library */
     error = elvin_xt_init(context);
-    if (error == NULL)
-    {
+    if (error == NULL) {
         fprintf(stderr, "*** elvin_xt_init(): failed\n");
         exit(1);
     }
 
     /* Double-check that the initialization worked */
-    if (elvin_error_is_error(error))
-    {
+    if (elvin_error_is_error(error)) {
         fprintf(stderr, "*** elvin_xt_init(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -643,8 +647,7 @@ int main(int argc, char *argv[])
 
     /* Create a new elvin connection handle */
     handle = elvin_handle_alloc(error);
-    if (handle == NULL)
-    {
+    if (handle == NULL) {
         fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -660,8 +663,7 @@ int main(int argc, char *argv[])
 
     /* Initialize the elvin client library */
     client = elvin_xt_init_default(context, error);
-    if (client == NULL)
-    {
+    if (client == NULL) {
         fprintf(stderr, PACKAGE ": elvin_xt_init() failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -669,14 +671,13 @@ int main(int argc, char *argv[])
 
     /* Create a new elvin connection handle */
     handle = elvin_handle_alloc(client, error);
-    if (handle == NULL)
-    {
+    if (handle == NULL) {
         fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 #else /* ELVIN_VERSION_AT_LEAST */
-#error "Unsupported Elvin library version"
+# error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
     /* Scan what's left of the arguments */
@@ -713,4 +714,3 @@ int main(int argc, char *argv[])
     /* Keep the compiler happy */
     return 0;
 }
-

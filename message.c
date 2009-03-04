@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -37,27 +37,28 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: message.c,v 1.32 2009/03/09 05:26:27 phelps Exp $";
+static const char cvsid[] =
+    "$Id: message.c,v 1.32 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #include <stdio.h> /* perror, printf */
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* free, malloc */
+# include <stdlib.h> /* free, malloc */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* memset, strdup */
+# include <string.h> /* memset, strdup */
 #endif
 #ifdef HAVE_CTYPE_H
-#include <ctype.h> /* isspace */
+# include <ctype.h> /* isspace */
 #endif
 #ifdef HAVE_TIME_H
-#include <time.h> /* time */
+# include <time.h> /* time */
 #endif
 #ifdef HAVE_ASSERT_H
-#include <assert.h> /* assert */
+# include <assert.h> /* assert */
 #endif
 #include "replace.h"
 #include "message.h"
@@ -69,8 +70,7 @@ static long message_count;
 
 #define CONTENT_TYPE "Content-Type:"
 
-struct message
-{
+struct message {
     /* The receiver's reference count */
     int ref_count;
 
@@ -114,8 +114,7 @@ struct message
     int is_killed;
 };
 
-typedef enum
-{
+typedef enum {
     ST_START = 0,
     ST_CR,
     ST_CRLF,
@@ -124,7 +123,11 @@ typedef enum
 } state_t;
 
 /* Copies a MIME attachment, replacing \r or \r\n in the header with \n */
-static void cleanse_header(char *attachment, size_t length, char *copy, size_t *length_out)
+static void
+cleanse_header(char *attachment,
+               size_t length,
+               char *copy,
+               size_t *length_out)
 {
     char *end = attachment + length;
     char *in = attachment;
@@ -134,42 +137,30 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
 
     /* Go through one character at a time */
     state = ST_START;
-    for (in = attachment; in < end; in++)
-    {
+    for (in = attachment; in < end; in++) {
         ch = *in;
 
-        switch (state)
-        {
+        switch (state) {
         case ST_START:
-            if (ch == '\r')
-            {
+            if (ch == '\r') {
                 *out++ = '\n';
                 state = ST_CR;
-            }
-            else if (ch == '\n')
-            {
+            } else if (ch == '\n') {
                 *out++ = ch;
                 state = ST_CRLF;
-            }
-            else
-            {
+            } else {
                 *out++ = ch;
             }
 
             break;
 
         case ST_CR:
-            if (ch == '\r')
-            {
+            if (ch == '\r') {
                 *out++ = '\n';
                 state = ST_BODY;
-            }
-            else if (ch == '\n')
-            {
+            } else if (ch == '\n') {
                 state = ST_CRLF;
-            }
-            else
-            {
+            } else {
                 *out++ = ch;
                 state = ST_START;
             }
@@ -177,18 +168,13 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
             break;
 
         case ST_CRLF:
-            if (ch == '\r')
-            {
+            if (ch == '\r') {
                 *out++ = '\n';
                 state = ST_CRLFCR;
-            }
-            else if (ch == '\n')
-            {
+            } else if (ch == '\n') {
                 *out++ = ch;
                 state = ST_BODY;
-            }
-            else
-            {
+            } else {
                 *out++ = ch;
                 state = ST_START;
             }
@@ -196,12 +182,9 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
             break;
 
         case ST_CRLFCR:
-            if (ch == '\n')
-            {
+            if (ch == '\n') {
                 state = ST_BODY;
-            }
-            else
-            {
+            } else {
                 *out++ = ch;
                 state = ST_BODY;
             }
@@ -220,27 +203,25 @@ static void cleanse_header(char *attachment, size_t length, char *copy, size_t *
     *length_out = out - copy;
 }
 
-
 /* Creates and returns a new message */
-message_t message_alloc(
-    char *info,
-    char *group,
-    char *user,
-    char *string,
-    unsigned int timeout,
-    char *attachment,
-    size_t length,
-    char *tag,
-    char *id,
-    char *reply_id,
-    char *thread_id)
+message_t
+message_alloc(char *info,
+              char *group,
+              char *user,
+              char *string,
+              unsigned int timeout,
+              char *attachment,
+              size_t length,
+              char *tag,
+              char *id,
+              char *reply_id,
+              char *thread_id)
 {
     message_t self;
 
     /* Allocate some space for the message_t */
     self = malloc(sizeof(struct message));
-    if (self == NULL)
-    {
+    if (self == NULL) {
         return NULL;
     }
 
@@ -248,51 +229,46 @@ message_t message_alloc(
     memset(self, 0, sizeof(struct message));
 
     /* Initialize the contents to sane values */
-    self -> ref_count = 1;
+    self->ref_count = 1;
 
-    if (info != NULL)
-    {
-        self -> info = strdup(info);
+    if (info != NULL) {
+        self->info = strdup(info);
     }
 
     assert(group != NULL);
-    self -> group = strdup(group);
+    self->group = strdup(group);
 
     assert(user != NULL);
-    self -> user = strdup(user);
+    self->user = strdup(user);
 
     assert(string != NULL);
-    self -> string = strdup(string);
+    self->string = strdup(string);
 
-    if (length == 0)
-    {
-        self -> attachment = NULL;
-        self -> length = 0;
-    }
-    else
-    {
+    if (length == 0) {
+        self->attachment = NULL;
+        self->length = 0;
+    } else {
         /* Allocate some room for a copy of the mime args */
-        self -> attachment = malloc(length);
-        if (self -> attachment == NULL)
-        {
-            self -> length = 0;
-        }
-        else
-        {
-            cleanse_header(attachment, length, self->attachment, &self->length);
+        self->attachment = malloc(length);
+        if (self->attachment == NULL) {
+            self->length = 0;
+        } else {
+            cleanse_header(attachment,
+                           length,
+                           self->attachment,
+                           &self->length);
         }
     }
 
-    self -> timeout = timeout;
+    self->timeout = timeout;
 
-    self -> tag = (tag == NULL) ? NULL : strdup(tag);
-    self -> id = (id == NULL) ? NULL : strdup(id);
-    self -> reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
-    self -> thread_id = (thread_id == NULL) ? NULL : strdup(thread_id);
+    self->tag = (tag == NULL) ? NULL : strdup(tag);
+    self->id = (id == NULL) ? NULL : strdup(id);
+    self->reply_id = (reply_id == NULL) ? NULL : strdup(reply_id);
+    self->thread_id = (thread_id == NULL) ? NULL : strdup(thread_id);
 
     /* Record the time of creation */
-    if (time(&self -> creation_time) == (time_t)-1)
-    {
+    if (time(&self->creation_time) == (time_t)-1) {
         perror("time(): failed");
     }
 
@@ -305,18 +281,19 @@ message_t message_alloc(
 }
 
 /* Allocates another reference to the message_t */
-message_t message_alloc_reference(message_t self)
+message_t
+message_alloc_reference(message_t self)
 {
-    self -> ref_count++;
+    self->ref_count++;
     return self;
 }
 
 /* Frees the memory used by the receiver */
-void message_free(message_t self)
+void
+message_free(message_t self)
 {
     /* Decrement the reference count */
-    if (--self -> ref_count > 0)
-    {
+    if (--self->ref_count > 0) {
         return;
     }
 
@@ -326,204 +303,196 @@ void message_free(message_t self)
 #endif /* DEBUG */
 
     /* Out of references -- release the hounds! */
-    if (self -> info != NULL)
-    {
-        free(self -> info);
-        self -> info = NULL;
+    if (self->info != NULL) {
+        free(self->info);
+        self->info = NULL;
     }
 
-    if (self -> group != NULL)
-    {
-        free(self -> group);
-        self -> group = NULL;
+    if (self->group != NULL) {
+        free(self->group);
+        self->group = NULL;
     }
 
-    if (self -> user != NULL)
-    {
-        free(self -> user);
-        self -> user = NULL;
+    if (self->user != NULL) {
+        free(self->user);
+        self->user = NULL;
     }
 
-    if (self -> string != NULL)
-    {
-        free(self -> string);
-        self -> string = NULL;
+    if (self->string != NULL) {
+        free(self->string);
+        self->string = NULL;
     }
 
-    if (self -> attachment != NULL)
-    {
-        free(self -> attachment);
-        self -> attachment = NULL;
+    if (self->attachment != NULL) {
+        free(self->attachment);
+        self->attachment = NULL;
     }
 
-    if (self -> tag != NULL)
-    {
-        free(self -> tag);
-        self -> tag = NULL;
+    if (self->tag != NULL) {
+        free(self->tag);
+        self->tag = NULL;
     }
 
-    if (self -> id != NULL)
-    {
-        free(self -> id);
-        self -> id = NULL;
+    if (self->id != NULL) {
+        free(self->id);
+        self->id = NULL;
     }
 
-    if (self -> reply_id != NULL)
-    {
-        free(self -> reply_id);
-        self -> reply_id = NULL;
+    if (self->reply_id != NULL) {
+        free(self->reply_id);
+        self->reply_id = NULL;
     }
 
-    if (self -> thread_id != NULL)
-    {
-        free(self -> thread_id);
-        self -> thread_id = NULL;
+    if (self->thread_id != NULL) {
+        free(self->thread_id);
+        self->thread_id = NULL;
     }
 
     free(self);
 }
 
-
 #ifdef DEBUG
 /* Prints debugging information */
-void message_debug(message_t self)
+void
+message_debug(message_t self)
 {
     printf("message_t (%p)\n", self);
-    printf("  ref_count=%d\n", self -> ref_count);
-    printf("  info = \"%s\"\n", (self -> info == NULL) ? "<null>" : self -> info);
-    printf("  group = \"%s\"\n", self -> group);
-    printf("  user = \"%s\"\n", self -> user);
-    printf("  string = \"%s\"\n", self -> string);
-    printf("  attachment = \"%p\" [%d]\n", self -> attachment, self -> length);
-    printf("  timeout = %ld\n", self -> timeout);
-    printf("  tag = \"%s\"\n", (self -> tag == NULL) ? "<null>" : self -> tag);
-    printf("  id = \"%s\"\n", (self -> id == NULL) ? "<null>" : self -> id);
-    printf("  reply_id = \"%s\"\n", (self -> reply_id == NULL) ? "<null>" : self -> reply_id);
-    printf("  thread_id = \"%s\"\n", (self -> thread_id == NULL) ? "<null>" : self -> thread_id);
+    printf("  ref_count=%d\n", self->ref_count);
+    printf("  info = \"%s\"\n", (self->info == NULL) ? "<null>" : self->info);
+    printf("  group = \"%s\"\n", self->group);
+    printf("  user = \"%s\"\n", self->user);
+    printf("  string = \"%s\"\n", self->string);
+    printf("  attachment = \"%p\" [%d]\n", self->attachment, self->length);
+    printf("  timeout = %ld\n", self->timeout);
+    printf("  tag = \"%s\"\n", (self->tag == NULL) ? "<null>" : self->tag);
+    printf("  id = \"%s\"\n", (self->id == NULL) ? "<null>" : self->id);
+    printf("  reply_id = \"%s\"\n",
+           (self->reply_id == NULL) ? "<null>" : self->reply_id);
+    printf("  thread_id = \"%s\"\n",
+           (self->thread_id == NULL) ? "<null>" : self->thread_id);
 }
 #endif /* DEBUG */
 
 /* Answers the Subscription matched to generate the receiver */
-char *message_get_info(message_t self)
+char *
+message_get_info(message_t self)
 {
-    return self -> info;
+    return self->info;
 }
 
 /* Answers the receiver's creation time */
-time_t *message_get_creation_time(message_t self)
+time_t *
+message_get_creation_time(message_t self)
 {
-    return &self -> creation_time;
+    return &self->creation_time;
 }
 
 /* Answers the receiver's group */
-char *message_get_group(message_t self)
+char *
+message_get_group(message_t self)
 {
-    return self -> group;
+    return self->group;
 }
 
 /* Answers the receiver's user */
-char *message_get_user(message_t self)
+char *
+message_get_user(message_t self)
 {
-    return self -> user;
+    return self->user;
 }
 
-
 /* Answers the receiver's string */
-char *message_get_string(message_t self)
+char *
+message_get_string(message_t self)
 {
-    return self -> string;
+    return self->string;
 }
 
 /* Answers the receiver's timout */
-unsigned long message_get_timeout(message_t self)
+unsigned long
+message_get_timeout(message_t self)
 {
-    return self -> timeout;
+    return self->timeout;
 }
 
 /* Sets the receiver's timeout */
-void message_set_timeout(message_t self, unsigned long timeout)
+void
+message_set_timeout(message_t self, unsigned long timeout)
 {
-    self -> timeout = timeout;
+    self->timeout = timeout;
 }
 
 /* Answers non-zero if the receiver has a MIME attachment */
-int message_has_attachment(message_t self)
+int
+message_has_attachment(message_t self)
 {
-    return (self -> attachment != NULL);
+    return self->attachment != NULL;
 }
 
 /* Answers the receiver's MIME arguments */
-size_t message_get_attachment(message_t self, char **attachment_out)
+size_t
+message_get_attachment(message_t self, char **attachment_out)
 {
-    *attachment_out = self -> attachment;
-    return self -> length;
+    *attachment_out = self->attachment;
+    return self->length;
 }
 
 /* Decodes the attachment into a content type, character set and body */
-int message_decode_attachment(message_t self, char **type_out, char **body_out)
+int
+message_decode_attachment(message_t self, char **type_out, char **body_out)
 {
-    char *point = self -> attachment;
+    char *point = self->attachment;
     char *mark = point;
-    char *end = point + self -> length;
+    char *end = point + self->length;
     size_t ct_length = sizeof(CONTENT_TYPE) - 1;
 
     *type_out = NULL;
     *body_out = NULL;
 
     /* If no attachment then return lots of NULLs */
-    if (self -> attachment == NULL)
-    {
+    if (self->attachment == NULL) {
         return 0;
     }
 
     /* Look through the attachment's MIME header */
-    while (point < end)
-    {
+    while (point < end) {
         /* End of line? */
-        if (*point == '\n')
-        {
+        if (*point == '\n') {
             /* Is this the Content-Type line? */
             if (ct_length < point - mark &&
-                strncasecmp(mark, CONTENT_TYPE, ct_length) == 0)
-            {
+                strncasecmp(mark, CONTENT_TYPE, ct_length) == 0) {
                 char *p;
 
                 /* Skip to the beginning of the value */
                 mark += ct_length;
-                while (mark < point && isspace(*(unsigned char *)mark))
-                {
+                while (mark < point && isspace(*(unsigned char *)mark)) {
                     mark++;
                 }
 
                 /* Look for a ';' in the content type */
                 p = memchr(mark, ';', point - mark);
-                if (p == NULL)
-                {
+                if (p == NULL) {
                     p = point;
                 }
 
                 /* If multiple content-types are given then use the last */
-                if (*type_out != NULL)
-                {
+                if (*type_out != NULL) {
                     free(*type_out);
                 }
 
                 /* Allocate a string to hold the content type */
                 *type_out = malloc(p - mark + 1);
-                if (*type_out == NULL)
-                {
+                if (*type_out == NULL) {
                     return -1;
                 }
                 memcpy(*type_out, mark, p - mark);
                 (*type_out)[p - mark] = 0;
-            }
-            else if (point - mark == 0)
-            {
+            } else if (point - mark == 0) {
                 point++;
 
                 /* Trim any CRs and LFs from the end of the body */
-                while (point < end - 1 && (*(end - 1) == '\r' || *(end - 1) == '\n'))
-                {
+                while (point < end - 1 &&
+                       (*(end - 1) == '\r' || *(end - 1) == '\n')) {
                     end--;
                 }
 
@@ -546,37 +515,43 @@ int message_decode_attachment(message_t self, char **type_out, char **body_out)
 }
 
 /* Answers the receiver's tag */
-char *message_get_tag(message_t self)
+char *
+message_get_tag(message_t self)
 {
-    return self -> tag;
+    return self->tag;
 }
 
 /* Answers the receiver's id */
-char *message_get_id(message_t self)
+char *
+message_get_id(message_t self)
 {
-    return self -> id;
+    return self->id;
 }
 
 /* Answers the id of the message_t for which this is a reply */
-char *message_get_reply_id(message_t self)
+char *
+message_get_reply_id(message_t self)
 {
-    return self -> reply_id;
+    return self->reply_id;
 }
 
 /* Answers the thread id of the message for which this is a reply */
-char *message_get_thread_id(message_t self)
+char *
+message_get_thread_id(message_t self)
 {
-    return self -> thread_id;
+    return self->thread_id;
 }
 
 /* Answers non-zero if the mesage has been killed */
-int message_is_killed(message_t self)
+int
+message_is_killed(message_t self)
 {
-    return self -> is_killed;
+    return self->is_killed;
 }
 
 /* Set the message's killed status */
-void message_set_killed(message_t self, int is_killed)
+void
+message_set_killed(message_t self, int is_killed)
 {
-    self -> is_killed = is_killed;
+    self->is_killed = is_killed;
 }

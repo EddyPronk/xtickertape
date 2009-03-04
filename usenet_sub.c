@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -37,18 +37,19 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: usenet_sub.c,v 1.42 2009/03/09 05:26:27 phelps Exp $";
+static const char cvsid[] =
+    "$Id: usenet_sub.c,v 1.42 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #include <stdio.h> /* fprintf, snprintf */
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* exit, free, malloc, realloc */
+# include <stdlib.h> /* exit, free, malloc, realloc */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* strlen */
+# include <string.h> /* strlen */
 #endif
 #include <X11/Intrinsic.h>
 #include <elvin/elvin.h>
@@ -92,24 +93,23 @@ static const char cvsid[] = "$Id: usenet_sub.c,v 1.42 2009/03/09 05:26:27 phelps
 #define USENET_PREFIX "usenet: %s"
 #define NEWS_URL "news://%s/%s"
 
-#define ATTACHMENT_FMT \
-    "MIME-Version: 1.0\n" \
+#define ATTACHMENT_FMT                     \
+    "MIME-Version: 1.0\n"                  \
     "Content-Type: %s; charset=us-ascii\n" \
-    "\n" \
+    "\n"                                   \
     "%s\n"
 
 /* compatability code for return code of callbacks */
 #if !defined(ELVIN_VERSION_AT_LEAST)
-#  define ELVIN_RETURN_FAILURE
-#  define ELVIN_RETURN_SUCCESS
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
-#  define ELVIN_RETURN_FAILURE 0
-#  define ELVIN_RETURN_SUCCESS 1
+# define ELVIN_RETURN_FAILURE
+# define ELVIN_RETURN_SUCCESS
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
+# define ELVIN_RETURN_FAILURE 0
+# define ELVIN_RETURN_SUCCESS 1
 #endif
 
 /* The structure of a usenet subscription */
-struct usenet_sub
-{
+struct usenet_sub {
     /* The receiver's subscription expression */
     char *expression;
 
@@ -132,15 +132,16 @@ struct usenet_sub
     int is_pending;
 };
 
-#if ! defined(ELVIN_VERSION_AT_LEAST)
-/* Delivers a notification which matches the receiver's subscription expression */
-static void notify_cb(
-    elvin_handle_t handle,
-    elvin_subscription_t subscription,
-    elvin_notification_t notification,
-    int is_secure,
-    void *rock,
-    elvin_error_t error)
+#if !defined(ELVIN_VERSION_AT_LEAST)
+/* Delivers a notification which matches the receiver's subscription
+ * expression */
+static void
+notify_cb(elvin_handle_t handle,
+          elvin_subscription_t subscription,
+          elvin_notification_t notification,
+          int is_secure,
+          void *rock,
+          elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
@@ -157,146 +158,121 @@ static void notify_cb(
     char *buffer = NULL;
 
     /* If we don't have a callback than bail out now */
-    if (self -> callback == NULL)
-    {
+    if (self->callback == NULL) {
         return;
     }
 
     /* Get the newsgroups to which the message was posted */
-    if (elvin_notification_get(notification, NEWSGROUPS, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, NEWSGROUPS, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         string = value.s;
-    }
-    else
-    {
+    } else {
         string = "news";
     }
 
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
     newsgroups = malloc(length);
-    if (newsgroups == NULL)
-    {
+    if (newsgroups == NULL) {
         return;
     }
 
     snprintf(newsgroups, length, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
-    if (elvin_notification_get(notification, FROM_NAME, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, FROM_NAME, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         name = value.s;
-    }
-    else
-    {
+    } else {
         /* If no FROM_NAME field then try FROM_EMAIL */
-        if (elvin_notification_get(notification, FROM_EMAIL, &type, &value, error) &&
-            type == ELVIN_STRING)
-        {
+        if (elvin_notification_get(notification, FROM_EMAIL, &type, &value,
+                                   error) &&
+            type == ELVIN_STRING) {
             name = value.s;
-        }
-        else
-        {
+        } else {
             /* If no FROM_EMAIL then try FROM */
-            if (elvin_notification_get(notification, FROM, &type, &value, error) &&
-                type == ELVIN_STRING)
-            {
+            if (elvin_notification_get(notification, FROM, &type, &value,
+                                       error) &&
+                type == ELVIN_STRING) {
                 name = value.s;
-            }
-            else
-            {
+            } else {
                 name = "anonymous";
             }
         }
     }
 
     /* Get the SUBJECT field (if provided) */
-    if (elvin_notification_get(notification, SUBJECT, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, SUBJECT, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         subject = value.s;
-    }
-    else
-    {
+    } else {
         subject = "[no subject]";
     }
 
     /* Get the MIME_ARGS field (if provided) */
-    if (elvin_notification_get(notification, MIME_ARGS, &type, &value, error) &&
-        type == ELVIN_STRING)
-    {
+    if (elvin_notification_get(notification, MIME_ARGS, &type, &value,
+                               error) &&
+        type == ELVIN_STRING) {
         mime_args = value.s;
 
         /* Get the MIME_TYPE field (if provided) */
-        if (elvin_notification_get(notification, MIME_TYPE, &type, &value, error) &&
-            type == ELVIN_STRING)
-        {
+        if (elvin_notification_get(notification, MIME_TYPE, &type, &value,
+                                   error) &&
+            type == ELVIN_STRING) {
             mime_type = value.s;
-        }
-        else
-        {
+        } else {
             mime_type = URL_MIME_TYPE;
         }
-    }
-    /* No MIME_ARGS provided.  Construct one using the Message-ID field */
-    else
-    {
-        if (elvin_notification_get(notification, MESSAGE_ID, &type, &value, error) &&
-            type == ELVIN_STRING)
-        {
+    } else {
+        /* No MIME_ARGS provided.  Construct one using the Message-ID
+         * field */
+        if (elvin_notification_get(notification, MESSAGE_ID, &type, &value,
+                                   error) &&
+            type == ELVIN_STRING) {
             char *message_id = value.s;
             char *news_host;
 
-            if (elvin_notification_get(notification, X_NNTP_HOST, &type, &value, error)
-                && type == ELVIN_STRING)
-            {
+            if (elvin_notification_get(notification, X_NNTP_HOST, &type,
+                                       &value, error) &&
+                type == ELVIN_STRING) {
                 news_host = value.s;
-            }
-            else
-            {
+            } else {
                 news_host = "news";
             }
 
-            length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
+            length = strlen(NEWS_URL) + strlen(news_host) +
+                     strlen(message_id) - 3;
             buffer = malloc(length);
-            if (buffer == NULL)
-            {
+            if (buffer == NULL) {
                 mime_type = NULL;
                 mime_args = NULL;
-            }
-            else
-            {
+            } else {
                 snprintf(buffer, length, NEWS_URL, news_host, message_id);
                 mime_args = buffer;
                 mime_type = NEWS_MIME_TYPE;
             }
-        }
-        else
-        {
+        } else {
             mime_type = NULL;
             mime_args = NULL;
         }
     }
 
     /* Convert the mime type and args into an attachment */
-    if (mime_type == NULL || mime_args == NULL)
-    {
+    if (mime_type == NULL || mime_args == NULL) {
         attachment = NULL;
         length = 0;
-    }
-    else
-    {
-        length = strlen(ATTACHMENT_FMT) + strlen(mime_type) + strlen(mime_args) - 4;
+    } else {
+        length = strlen(ATTACHMENT_FMT) + strlen(mime_type) + strlen(
+            mime_args) - 4;
         attachment = malloc(length + 1);
-        if (attachment == NULL)
-        {
+        if (attachment == NULL) {
             length = 0;
-        }
-        else
-        {
-            snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+        } else {
+            snprintf(attachment, length + 1, ATTACHMENT_FMT,
+                     mime_type, mime_args);
         }
     }
 
@@ -304,34 +280,32 @@ static void notify_cb(
     message = message_alloc(NULL, newsgroups, name, subject, 300,
                             attachment, length - 1,
                             NULL, NULL, NULL, NULL);
-    if (message != NULL)
-    {
+    if (message != NULL) {
         /* Deliver the message */
-        (*self -> callback)(self -> rock, message, False);
+        (*self->callback)(self->rock, message, False);
         message_free(message);
     }
 
     /* Clean up */
     free(newsgroups);
-    if (buffer != NULL)
-    {
+    if (buffer != NULL) {
         free(buffer);
     }
 
-    if (attachment != NULL)
-    {
+    if (attachment != NULL) {
         free(attachment);
     }
 }
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-/* Delivers a notification which matches the receiver's subscription expression */
-static int notify_cb(
-    elvin_handle_t handle,
-    elvin_subscription_t subscription,
-    elvin_notification_t notification,
-    int is_secure,
-    void *rock,
-    elvin_error_t error)
+/* Delivers a notification which matches the receiver's subscription
+ * expression */
+static int
+notify_cb(elvin_handle_t handle,
+          elvin_subscription_t subscription,
+          elvin_notification_t notification,
+          int is_secure,
+          void *rock,
+          elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
     message_t message;
@@ -347,14 +321,13 @@ static int notify_cb(
     int found;
 
     /* If we don't have a callback than bail out now */
-    if (self -> callback == NULL)
-    {
+    if (self->callback == NULL) {
         return 1;
     }
 
     /* Get the newsgroups to which the message was posted */
-    if (! elvin_notification_get_string(notification, NEWSGROUPS, &found, &string, error))
-    {
+    if (!elvin_notification_get_string(notification, NEWSGROUPS, &found,
+                                       &string, error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -366,43 +339,39 @@ static int notify_cb(
     /* Prepend `usenet:' to the beginning of the group field */
     length = strlen(USENET_PREFIX) + strlen(string) - 1;
     newsgroups = malloc(length);
-    if (newsgroups == NULL)
-    {
+    if (newsgroups == NULL) {
         return 0;
     }
 
     snprintf(newsgroups, length, USENET_PREFIX, string);
 
     /* Get the name from the FROM_NAME field (if provided) */
-    if (! elvin_notification_get_string(notification, FROM_NAME, &found, &name, error))
-    {
+    if (!elvin_notification_get_string(notification, FROM_NAME, &found, &name,
+                                       error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
-    if (! found)
-    {
+    if (!found) {
         /* No FROM_NAME field, so try FROM_EMAIL */
-        if (! elvin_notification_get_string(notification, FROM_EMAIL, &found, &name, error))
-        {
+        if (!elvin_notification_get_string(notification, FROM_EMAIL, &found,
+                                           &name, error)) {
             fprintf(stderr, "elvin_notification_get_string(): failed\n");
             elvin_error_fprintf(stderr, error);
             exit(1);
         }
 
-        if (! found)
-        {
+        if (!found) {
             /* No FROM_EMAIL, so try FROM */
-            if (! elvin_notification_get_string(notification, FROM, &found, &name, error))
-            {
+            if (!elvin_notification_get_string(notification, FROM, &found,
+                                               &name, error)) {
                 fprintf(stderr, "elvin_notification_get_string(): failed\n");
                 elvin_error_fprintf(stderr, error);
                 exit(1);
             }
 
-            if (! found)
-            {
+            if (!found) {
                 /* Give up */
                 name = "anonymous";
             }
@@ -410,8 +379,8 @@ static int notify_cb(
     }
 
     /* Get the SUBJECT field (if provided) */
-    if (! elvin_notification_get_string(notification, SUBJECT, &found, &subject, error))
-    {
+    if (!elvin_notification_get_string(notification, SUBJECT, &found,
+                                       &subject, error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
@@ -421,19 +390,18 @@ static int notify_cb(
     subject = found ? subject : "[no subject]";
 
     /* Get the MIME_ARGS field (if provided) */
-    if (! elvin_notification_get_string(notification, MIME_ARGS, &found, &mime_args, error))
-    {
+    if (!elvin_notification_get_string(notification, MIME_ARGS, &found,
+                                       &mime_args, error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
     /* Was the MIME_ARGS field provided? */
-    if (found)
-    {
+    if (found) {
         /* Get the MIME_TYPE field (if provided) */
-        if (! elvin_notification_get_string(notification, MIME_TYPE, &found, &mime_type, error))
-        {
+        if (!elvin_notification_get_string(notification, MIME_TYPE, &found,
+                                           &mime_type, error)) {
             fprintf(stderr, "elvin_notification_get_string(): failed\n");
             elvin_error_fprintf(stderr, error);
             exit(1);
@@ -441,30 +409,26 @@ static int notify_cb(
 
         /* Use a default if none found */
         mime_type = found ? mime_type : URL_MIME_TYPE;
-    }
-    else
-    {
+    } else {
         char *message_id;
 
         /* No MIME_ARGS.  Look for a message-id */
-        if (! elvin_notification_get_string( notification, MESSAGE_ID, &found, &message_id, error))
-        {
+        if (!elvin_notification_get_string(notification, MESSAGE_ID, &found,
+                                           &message_id, error)) {
             fprintf(stderr, "elvin_notification_get_string(): failed\n");
             elvin_error_fprintf(stderr, error);
             exit(1);
         }
 
-        if (found)
-        {
+        if (found) {
             char *news_host;
 
             /* Look up the news host field */
-            if (! elvin_notification_get_string(
+            if (!elvin_notification_get_string(
                     notification,
                     X_NNTP_HOST,
                     &found, &news_host,
-                    error))
-            {
+                    error)) {
                 fprintf(stderr, "elvin_notification_get_string(): failed\n");
                 elvin_error_fprintf(stderr, error);
                 exit(1);
@@ -472,43 +436,35 @@ static int notify_cb(
 
             news_host = found ? news_host : "news";
 
-            length = strlen(NEWS_URL) + strlen(news_host) + strlen(message_id) - 3;
+            length = strlen(NEWS_URL) + strlen(news_host) +
+                strlen(message_id) - 3;
             buffer = malloc(length);
-            if (buffer == NULL)
-            {
+            if (buffer == NULL) {
                 mime_type = NULL;
                 mime_args = NULL;
-            }
-            else
-            {
+            } else {
                 snprintf(buffer, length, NEWS_URL, news_host, message_id);
                 mime_args = buffer;
                 mime_type = NEWS_MIME_TYPE;
             }
-        }
-        else
-        {
+        } else {
             mime_type = NULL;
             mime_args = NULL;
         }
     }
 
     /* Convert the mime type and args into an attachment */
-    if (mime_type == NULL || mime_args == NULL)
-    {
+    if (mime_type == NULL || mime_args == NULL) {
         attachment = NULL;
         length = 0;
-    }
-    else
-    {
-        length = strlen(ATTACHMENT_FMT) - 4 + strlen(mime_type) + strlen(mime_args);
-        if ((attachment = malloc(length + 1)) == NULL)
-        {
+    } else {
+        length = strlen(ATTACHMENT_FMT) - 4 + strlen(mime_type) + strlen(
+            mime_args);
+        if ((attachment = malloc(length + 1)) == NULL) {
             length = 0;
-        }
-        else
-        {
-            snprintf(attachment, length + 1, ATTACHMENT_FMT, mime_type, mime_args);
+        } else {
+            snprintf(attachment, length + 1, ATTACHMENT_FMT,
+                     mime_type, mime_args);
         }
     }
 
@@ -516,28 +472,27 @@ static int notify_cb(
     message = message_alloc(NULL, newsgroups, name, subject, 60,
                             attachment, length,
                             NULL, NULL, NULL, NULL);
-    if (message != NULL)
-    {
+    if (message != NULL) {
         /* Deliver the message */
-        (*self -> callback)(self -> rock, message, False);
+        (*self->callback)(self->rock, message, False);
         message_free(message);
     }
 
     /* Clean up */
     free(newsgroups);
-    if (buffer != NULL)
-    {
+    if (buffer != NULL) {
         free(buffer);
     }
 
     return 1;
 }
 #else
-#error "Unsupported Elvin library version"
+# error "Unsupported Elvin library version"
 #endif /* ELVIN_VERSION_AT_LEAST */
 
 /* Construct a portion of the subscription expression */
-static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
+static char *
+alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 {
     char *field_name;
     char *format;
@@ -546,8 +501,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     char *result;
 
     /* Get the string representation for the field */
-    switch (expression -> field)
-    {
+    switch (expression->field) {
     case F_BODY:
         /* body -> BODY */
         field_name = BODY;
@@ -585,8 +539,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     }
 
     /* Look up the string representation for the operator */
-    switch (expression -> operator)
-    {
+    switch (expression->operator) {
     case O_MATCHES:
         /* matches */
         format = F_MATCHES;
@@ -601,8 +554,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     case O_EQ:
         /* = */
-        if (expression -> field == F_XPOSTS)
-        {
+        if (expression->field == F_XPOSTS) {
             format = F_EQ;
             format_length = sizeof(F_EQ);
             break;
@@ -614,8 +566,7 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     case O_NEQ:
         /* != */
-        if (expression -> field == F_XPOSTS)
-        {
+        if (expression->field == F_XPOSTS) {
             format = F_NEQ;
             format_length = sizeof(F_NEQ);
             break;
@@ -655,22 +606,25 @@ static char *alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
     }
 
     /* Allocate space for the result */
-    length = format_length + strlen(field_name) + strlen(expression -> pattern) - 3;
+    length = format_length + strlen(field_name) +
+        strlen(expression->pattern) - 3;
     result = malloc(length);
-    if (result == NULL)
-    {
+    if (result == NULL) {
         return NULL;
     }
 
     /* Construct the string */
-    snprintf(result, length, format, field_name, expression -> pattern);
+    snprintf(result, length, format, field_name, expression->pattern);
     return result;
 }
 
 /* Construct a subscription expression for the given group entry */
-static char *alloc_sub(
-    usenet_sub_t self, int has_not, char *pattern,
-    struct usenet_expr *expressions, size_t count)
+static char *
+alloc_sub(usenet_sub_t self,
+          int has_not,
+          char *pattern,
+          struct usenet_expr *expressions,
+          size_t count)
 {
     struct usenet_expr *pointer;
     char *not_string = has_not ? "!" : "";
@@ -678,12 +632,11 @@ static char *alloc_sub(
     size_t length;
 
     /* Shortcut -- if there are no expressions then we don't need parens */
-    if (count == 0)
-    {
-        length = strlen(PATTERN_ONLY) + strlen(not_string) + strlen(pattern) - 3;
+    if (count == 0) {
+        length = strlen(PATTERN_ONLY) + strlen(not_string) +
+                 strlen(pattern) - 3;
         result = malloc(length);
-        if (result == NULL)
-        {
+        if (result == NULL) {
             return NULL;
         }
 
@@ -695,30 +648,28 @@ static char *alloc_sub(
      * the initial pattern and then extend it for each of the expressions */
     length = strlen(PATTERN_PLUS) + strlen(not_string) + strlen(pattern) - 3;
     result = malloc(length);
-    if (result == NULL)
-    {
+    if (result == NULL) {
         return NULL;
     }
 
     snprintf(result, length, PATTERN_PLUS, not_string, pattern);
 
     /* Insert the expressions */
-    for (pointer = expressions; pointer < expressions + count; pointer++)
-    {
+    for (pointer = expressions; pointer < expressions + count; pointer++) {
         /* Get the string for the expression */
         char *expr = alloc_expr(self, pointer);
         size_t new_length = length + strlen(expr) + 4;
 
         /* Expand the buffer */
         result = realloc(result, new_length);
-        if (result == NULL)
-        {
+        if (result == NULL) {
             free(expr);
             return NULL;
         }
 
         /* Overwrite the trailing right paren with the new stuff */
-        snprintf(result + length - 2, new_length - length + 2, " && %s)", expr);
+        snprintf(result + length - 2, new_length - length + 2,
+                 " && %s)", expr);
         length = new_length;
         free(expr);
     }
@@ -727,41 +678,40 @@ static char *alloc_sub(
 }
 
 /* Allocates and initializes a new usenet_sub_t */
-usenet_sub_t usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
+usenet_sub_t
+usenet_sub_alloc(usenet_sub_callback_t callback, void *rock)
 {
     usenet_sub_t self;
 
     /* Allocate memory for the new subscription */
     self = malloc(sizeof(struct usenet_sub));
-    if (self == NULL)
-    {
+    if (self == NULL) {
         return NULL;
     }
 
     /* Initialize its contents */
-    self -> expression = NULL;
-    self -> expression_size = 0;
-    self -> handle = NULL;
-    self -> subscription = NULL;
-    self -> callback = callback;
-    self -> rock = rock;
-    self -> is_pending = 0;
+    self->expression = NULL;
+    self->expression_size = 0;
+    self->handle = NULL;
+    self->subscription = NULL;
+    self->callback = callback;
+    self->rock = rock;
+    self->is_pending = 0;
     return self;
 }
-    
+
 /* Releases the resources consumed by the receiver */
-void usenet_sub_free(usenet_sub_t self)
+void
+usenet_sub_free(usenet_sub_t self)
 {
     /* Free the subscription expression */
-    if (self -> expression != NULL)
-    {
-        free(self -> expression);
-        self -> expression = NULL;
+    if (self->expression != NULL) {
+        free(self->expression);
+        self->expression = NULL;
     }
 
     /* Don't free a pending subscription */
-    if (self -> is_pending)
-    {
+    if (self->is_pending) {
         return;
     }
 
@@ -769,22 +719,20 @@ void usenet_sub_free(usenet_sub_t self)
     free(self);
 }
 
-
 /* Adds a new entry to the usenet subscription */
-int usenet_sub_add(
-    usenet_sub_t self,
-    int has_not,
-    char *pattern,
-    struct usenet_expr *expressions,
-    size_t count)
+int
+usenet_sub_add(usenet_sub_t self,
+               int has_not,
+               char *pattern,
+               struct usenet_expr *expressions,
+               size_t count)
 {
     char *entry_sub;
     size_t entry_length;
 
     /* Figure out what the new entry is */
     entry_sub = alloc_sub(self, has_not, pattern, expressions, count);
-    if (entry_sub == NULL)
-    {
+    if (entry_sub == NULL) {
         return -1;
     }
 
@@ -792,43 +740,37 @@ int usenet_sub_add(
     entry_length = strlen(entry_sub);
 
     /* If we had no previous expression, then simply create one */
-    if (self -> expression == NULL)
-    {
-        self -> expression_size = strlen(ONE_SUB) + entry_length - 1;
-        self -> expression = malloc(self -> expression_size);
-        if (self -> expression == NULL)
-        {
+    if (self->expression == NULL) {
+        self->expression_size = strlen(ONE_SUB) + entry_length - 1;
+        self->expression = malloc(self->expression_size);
+        if (self->expression == NULL) {
             free(entry_sub);
             return -1;
         }
 
-        snprintf(self -> expression, self -> expression_size, ONE_SUB, entry_sub);
-    }
-    else
-    {
+        snprintf(self->expression, self->expression_size, ONE_SUB, entry_sub);
+    } else {
         /* We need to extend the existing expression */
         size_t new_size;
         char *new_expression;
 
         /* Expand the expression buffer */
-        new_size = self -> expression_size + entry_length + 4;
-        new_expression = realloc(self -> expression, new_size);
-        if (new_expression == NULL)
-        {
+        new_size = self->expression_size + entry_length + 4;
+        new_expression = realloc(self->expression, new_size);
+        if (new_expression == NULL) {
             return -1;
         }
 
         /* Overwrite the trailing right paren with the new stuff */
-        snprintf(new_expression + self -> expression_size - 2,
-                 new_size - self -> expression_size + 2,
+        snprintf(new_expression + self->expression_size - 2,
+                 new_size - self->expression_size + 2,
                  " || %s)", entry_sub);
-        self -> expression = new_expression;
-        self -> expression_size = new_size;
+        self->expression = new_expression;
+        self->expression_size = new_size;
     }
 
     /* If we're connected then resubscribe */
-    if (self -> handle != NULL)
-    {
+    if (self->handle != NULL) {
         fprintf(stderr, PACKAGE ": hmmm\n");
         abort();
     }
@@ -839,24 +781,25 @@ int usenet_sub_add(
 }
 
 /* Callback for a subscribe request */
-static 
+static
 #if !defined(ELVIN_VERSION_AT_LEAST)
 void
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 int
 #endif
-subscribe_cb(
-    elvin_handle_t handle, int result,
-    elvin_subscription_t subscription, void *rock,
-    elvin_error_t error)
+subscribe_cb(elvin_handle_t handle,
+             int result,
+             elvin_subscription_t subscription,
+             void *rock,
+             elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
-    self -> subscription = subscription;
-    self -> is_pending = 0;
+
+    self->subscription = subscription;
+    self->is_pending = 0;
 
     /* Unsubscribe if we were pending when we were freed */
-    if (self -> expression == NULL)
-    {
+    if (self->expression == NULL) {
         usenet_sub_set_connection(self, NULL, error);
     }
 
@@ -864,63 +807,62 @@ subscribe_cb(
 }
 
 /* Callback for an unsubscribe request */
-static 
+static
 #if !defined(ELVIN_VERSION_AT_LEAST)
 void
-#elif ELVIN_VERSION_AT_LEAST(4,1,-1)
+#elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
 int
 #endif
-unsubscribe_cb(
-    elvin_handle_t handle, int result,
-    elvin_subscription_t subscription, void *rock,
-    elvin_error_t error)
+unsubscribe_cb(elvin_handle_t handle,
+               int result,
+               elvin_subscription_t subscription,
+               void *rock,
+               elvin_error_t error)
 {
     usenet_sub_t self = (usenet_sub_t)rock;
-    self -> is_pending = 0;
+
+    self->is_pending = 0;
 
     /* Free the receiver if it was pending when it was freed */
-    if (self -> expression == NULL)
-    {
+    if (self->expression == NULL) {
         usenet_sub_free(self);
     }
 
     return ELVIN_RETURN_SUCCESS;
 }
 
-
 /* Sets the receiver's elvin connection */
-void usenet_sub_set_connection(usenet_sub_t self, elvin_handle_t handle, elvin_error_t error)
+void
+usenet_sub_set_connection(usenet_sub_t self,
+                          elvin_handle_t handle,
+                          elvin_error_t error)
 {
     /* Disconnect from the old connection */
-    if ((self -> handle != NULL) && (self -> subscription != NULL))
-    {
-        if (elvin_async_delete_subscription(self -> handle,
-                                            self -> subscription,
+    if ((self->handle != NULL) && (self->subscription != NULL)) {
+        if (elvin_async_delete_subscription(self->handle,
+                                            self->subscription,
                                             unsubscribe_cb, self,
-                                            error) == 0)
-        {
+                                            error) == 0) {
             fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
             exit(1);
         }
 
-        self -> is_pending = 1;
+        self->is_pending = 1;
     }
 
     /* Connect to the new one */
-    self -> handle = handle;
+    self->handle = handle;
 
-    if ((self -> handle != NULL) && (self -> expression != NULL))
-    {
-        if (elvin_async_add_subscription(self -> handle,
-                                         self -> expression, NULL, 1,
+    if ((self->handle != NULL) && (self->expression != NULL)) {
+        if (elvin_async_add_subscription(self->handle,
+                                         self->expression, NULL, 1,
                                          notify_cb, self,
                                          subscribe_cb, self,
-                                         error) == 0)
-        {
+                                         error) == 0) {
             fprintf(stderr, "elvin_async_add_subscription(): failed\n");
             exit(1);
         }
 
-        self -> is_pending = 1;
+        self->is_pending = 1;
     }
 }

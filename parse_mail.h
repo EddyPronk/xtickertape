@@ -7,8 +7,7 @@ typedef struct lexer *lexer_t;
 typedef int (*lexer_state_t)(lexer_t self, int ch);
 
 /* A bunch of state information for the lexer */
-struct lexer
-{
+struct lexer {
     /* The current lexical state */
     lexer_state_t state;
 
@@ -51,19 +50,31 @@ struct lexer
 
 
 /* Initializes a lexer_t */
-void lexer_init(lexer_t self, char *buffer, ssize_t length);
+void
+lexer_init(lexer_t self, char *buffer, ssize_t length);
+
 
 /* Writes a UNotify packet header */
-int lexer_append_unotify_header(lexer_t self, const char *user,
-                                const char *folder, const char *group);
+int
+lexer_append_unotify_header(lexer_t self,
+                            const char *user,
+                            const char *folder,
+                            const char *group);
+
 
 /* Run the buffer through the lexer */
-int lex(lexer_t self, char *buffer, ssize_t length);
+int
+lex(lexer_t self, char *buffer, ssize_t length);
+
 
 /* Writes the UNotify packet footer */
-int lexer_append_unotify_footer(lexer_t self, int msg_num);
+int
+lexer_append_unotify_footer(lexer_t self, int msg_num);
+
 
 /* Returns the size of the buffer */
-size_t lexer_size(lexer_t self);
+size_t
+lexer_size(lexer_t self);
+
 
 #endif /* PARSE_MAIL_H */

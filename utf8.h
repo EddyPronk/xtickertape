@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -42,20 +42,20 @@
 #include <Xm/XmAll.h>
 
 #ifndef lint
-static const char cvs_UTF8_H[] = "$Id: utf8.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_UTF8_H[] =
+    "$Id: utf8.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* Make sure that ICONV_CONST is defined */
 #ifndef ICONV_CONST
-#define ICONV_CONST
+# define ICONV_CONST
 #endif
 
 /* String measurements */
 typedef struct string_sizes *string_sizes_t;
 
 /* Use for string measurement results */
-struct string_sizes
-{
+struct string_sizes {
     /* The distance from the origin to the left edge of the string */
     long lbearing;
 
@@ -78,56 +78,67 @@ typedef struct utf8_renderer *utf8_renderer_t;
 /* Returns a utf8_renderer which can be used to render UTF-8
  * characters in the given font.  If code_set is NULL then the
  * renderer will attempt to guess it from the font's properties. */
-utf8_renderer_t utf8_renderer_alloc(
-    Display *display,
-    XFontStruct *font,
-    const char *code_set);
+utf8_renderer_t
+utf8_renderer_alloc(Display *display, XFontStruct *font, const char *code_set);
+
 
 /* Releases the resources allocated by a utf8_renderer_t */
-void utf8_renderer_free(utf8_renderer_t self);
+void
+utf8_renderer_free(utf8_renderer_t self);
+
 
 /* Measures all of the characters in a string */
-void utf8_renderer_measure_string(
-    utf8_renderer_t self,
-    ICONV_CONST char *string,
-    string_sizes_t sizes);
+void
+utf8_renderer_measure_string(utf8_renderer_t self,
+                             ICONV_CONST char *string,
+                             string_sizes_t sizes);
+
 
 /* Draw a string within the bounding box, measuring the characters so
  * as to minimize bandwidth requirements */
-void utf8_renderer_draw_string(
-    Display *display,
-    Drawable drawable,
-    GC gc,
-    utf8_renderer_t renderer,
-    int x, int y,
-    XRectangle *bbox,
-    ICONV_CONST char *string);
+void
+utf8_renderer_draw_string(Display *display,
+                          Drawable drawable,
+                          GC gc,
+                          utf8_renderer_t renderer,
+                          int x,
+                          int y,
+                          XRectangle *bbox,
+                          ICONV_CONST char *string);
+
 
 /* Draw an underline under a string */
-void utf8_renderer_draw_underline(
-    utf8_renderer_t self,
-    Display *display,
-    Drawable drawable,
-    GC gc,
-    int x, int y,
-    XRectangle *bbox,
-    long width);
+void
+utf8_renderer_draw_underline(utf8_renderer_t self,
+                             Display *display,
+                             Drawable drawable,
+                             GC gc,
+                             int x,
+                             int y,
+                             XRectangle *bbox,
+                             long width);
+
 
 typedef struct utf8_encoder *utf8_encoder_t;
 
 /* Returns a utf8_encoder */
-utf8_encoder_t utf8_encoder_alloc(
-    Display *display,
-    XmFontList font_list,
-    char *code_set);
+utf8_encoder_t
+utf8_encoder_alloc(Display *display, XmFontList font_list, char *code_set);
+
 
 /* Releases the resources allocated by a utf8_encoder_t */
-void utf8_encoder_free(utf8_encoder_t self);
+void
+utf8_encoder_free(utf8_encoder_t self);
+
 
 /* Encodes a string */
-char *utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input);
+char *
+utf8_encoder_encode(utf8_encoder_t self, ICONV_CONST char *input);
+
 
 /* Decodes a string */
-char *utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input);
+char *
+utf8_encoder_decode(utf8_encoder_t self, ICONV_CONST char *input);
+
 
 #endif /* MESSAGE_VIEW_H */

@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -37,23 +37,24 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: key_table.c,v 1.13 2009/03/09 05:26:26 phelps Exp $";
+static const char cvsid[] =
+    "$Id: key_table.c,v 1.13 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #ifdef HAVE_STDIO_H
-#include <stdio.h> /* fprintf */
+# include <stdio.h> /* fprintf */
 #endif
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* calloc, free, malloc, qsort, realloc */
+# include <stdlib.h> /* calloc, free, malloc, qsort, realloc */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* memcpy, memset, strcmp, strdup, strerror */
+# include <string.h> /* memcpy, memset, strcmp, strdup, strerror */
 #endif
 #ifdef HAVE_ERRNO_H
-#include <errno.h> /* errno */
+# include <errno.h> /* errno */
 #endif
 #include <elvin/elvin.h>
 #include "replace.h"
@@ -62,29 +63,34 @@ static const char cvsid[] = "$Id: key_table.c,v 1.13 2009/03/09 05:26:26 phelps 
 #define TABLE_MIN_SIZE 8
 
 #if !defined(ELVIN_VERSION_AT_LEAST)
-#define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
-#define elvin_sha1_digest(client, data, length, public_key, error) \
+# define ELVIN_SHA1_DIGESTLEN SHA1DIGESTLEN
+# define elvin_sha1_digest(client, data, length, public_key, error) \
     elvin_sha1digest(data, length, public_key)
-#define ELVIN_KEYS_ALLOC(client, error) \
+# define ELVIN_KEYS_ALLOC(client, error) \
     elvin_keys_alloc(error)
-#define ELVIN_KEYS_ADD(keys, scheme, key_set_index, bytes, length, rock, error) \
+# define ELVIN_KEYS_ADD(keys,          \
+                        scheme,        \
+                        key_set_index, \
+                        bytes,         \
+                        length,        \
+                        rock,          \
+                        error)         \
     elvin_keys_add(keys, scheme, key_set_index, bytes, length, error)
 #elif ELVIN_VERSION_AT_LEAST(4, 1, -1)
-#define ELVIN_KEYS_ADD elvin_keys_add
-#define ELVIN_KEYS_ALLOC elvin_keys_alloc
+# define ELVIN_KEYS_ADD elvin_keys_add
+# define ELVIN_KEYS_ALLOC elvin_keys_alloc
 #else
-#error "Unsupported version of libelvin"
+# error "Unsupported version of libelvin"
 #endif
 
 #ifdef DEBUG
-#define DPRINTF(x) fprintf x
+# define DPRINTF(x) fprintf x
 #else
-#define DPRINTF(x)
+# define DPRINTF(x)
 #endif
 
 typedef struct key_entry *key_entry_t;
-struct key_entry
-{
+struct key_entry {
     /* The label the user gave to the key. */
     char *name;
 
@@ -104,22 +110,19 @@ struct key_entry
     int is_private;
 };
 
-static void key_entry_free(key_entry_t self);
+static void
+key_entry_free(key_entry_t self);
+
 
 /* Allocates and initializes a new key_entry_t */
 static key_entry_t
-key_entry_alloc(
-    char *name,
-    char *data,
-    int length,
-    int is_private)
+key_entry_alloc(char *name, char *data, int length, int is_private)
 {
     key_entry_t self;
 
     /* Allocate memory for the key's context */
     self = malloc(sizeof(struct key_entry));
-    if (self == NULL)
-    {
+    if (self == NULL) {
         return self;
     }
 
@@ -127,49 +130,43 @@ key_entry_alloc(
     memset(self, 0, sizeof(struct key_entry));
 
     /* Take a copy of the name */
-    self -> name = strdup(name);
-    if (self -> name == NULL)
-    {
+    self->name = strdup(name);
+    if (self->name == NULL) {
         key_entry_free(self);
         return NULL;
     }
 
-    if (is_private)
-    {
+    if (is_private) {
         /* Take a copy of the data */
-        self -> data = malloc(length);
-        if (self -> data == NULL)
-        {
+        self->data = malloc(length);
+        if (self->data == NULL) {
             key_entry_free(self);
             return NULL;
         }
-        memcpy(self -> data, data, length);
-        self -> data_length = length;
+        memcpy(self->data, data, length);
+        self->data_length = length;
 
         /* Compute the hash */
-        self -> hash = malloc(ELVIN_SHA1_DIGESTLEN);
-        if (self -> hash == NULL) {
+        self->hash = malloc(ELVIN_SHA1_DIGESTLEN);
+        if (self->hash == NULL) {
             key_entry_free(self);
             return NULL;
         }
 
-        elvin_sha1_digest(NULL, data, length, self -> hash, NULL);
-        self -> hash_length = ELVIN_SHA1_DIGESTLEN;
-    }
-    else
-    {
-        self -> hash = malloc(length);
-        if (self -> hash == NULL)
-        {
+        elvin_sha1_digest(NULL, data, length, self->hash, NULL);
+        self->hash_length = ELVIN_SHA1_DIGESTLEN;
+    } else {
+        self->hash = malloc(length);
+        if (self->hash == NULL) {
             key_entry_free(self);
             return NULL;
         }
-        memcpy(self -> hash, data, length);
-        self -> hash_length = length;
+        memcpy(self->hash, data, length);
+        self->hash_length = length;
     }
 
     /* Store the other values */
-    self -> is_private = is_private;
+    self->is_private = is_private;
     return self;
 }
 
@@ -178,21 +175,18 @@ static void
 key_entry_free(key_entry_t self)
 {
     /* Free the key name. */
-    if (self -> name != NULL)
-    {
-        free(self -> name);
+    if (self->name != NULL) {
+        free(self->name);
     }
 
     /* Free the key data. */
-    if (self -> data != NULL)
-    {
-        free(self -> data);
+    if (self->data != NULL) {
+        free(self->data);
     }
 
     /* Free the hash data */
-    if (self -> hash != NULL)
-    {
-        free(self -> hash);
+    if (self->hash != NULL) {
+        free(self->hash);
     }
 
     /* Free the memory used by the key's context. */
@@ -200,88 +194,82 @@ key_entry_free(key_entry_t self)
 }
 
 static void
-key_entry_add_to_keys(
-    key_entry_t self,
-    int is_for_notify,
-    elvin_keys_t keys,
-    elvin_error_t error)
+key_entry_add_to_keys(key_entry_t self,
+                      int is_for_notify,
+                      elvin_keys_t keys,
+                      elvin_error_t error)
 {
     /* If this is a private key then add the raw data */
-    if (self -> is_private)
-    {
-        if (! ELVIN_KEYS_ADD(keys,
-			     ELVIN_KEY_SCHEME_SHA1_DUAL,
-			     is_for_notify ?
-			     ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
-			     ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-			     self -> data, self -> data_length, NULL,
-			     error))
-        {
+    if (self->is_private) {
+        if (!ELVIN_KEYS_ADD(keys,
+                            ELVIN_KEY_SCHEME_SHA1_DUAL,
+                            is_for_notify ?
+                            ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+                            ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+                            self->data, self->data_length, NULL,
+                            error)) {
             fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
-		    self -> name);
+                    self->name);
             abort();
         }
     }
 
     /* Add the hashed key data */
-    if (! ELVIN_KEYS_ADD(keys, ELVIN_KEY_SCHEME_SHA1_DUAL,
-			 is_for_notify ?
-			 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
-			 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
-			 self -> hash, self -> hash_length, NULL,
-			 error))
-    {
-        fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
+    if (!ELVIN_KEYS_ADD(keys, ELVIN_KEY_SCHEME_SHA1_DUAL,
+                        is_for_notify ?
+                        ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX :
+                        ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
+                        self->hash, self->hash_length, NULL,
+                        error)) {
+        fprintf(stderr,
+                PACKAGE ": elvin_keys_add failed for key %s\n",
+                self->name);
         abort();
     }
 
     /* Add it as a producer key too */
-    if (! ELVIN_KEYS_ADD(keys,
-			 is_for_notify ?
-			 ELVIN_KEY_SCHEME_SHA1_CONSUMER :
-			 ELVIN_KEY_SCHEME_SHA1_PRODUCER,
-			 is_for_notify ?
-			 ELVIN_KEY_SHA1_CONSUMER_INDEX :
-			 ELVIN_KEY_SHA1_PRODUCER_INDEX,
-			 self -> hash, self -> hash_length, NULL,
-			 error))
-    {
-        fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n", self -> name);
+    if (!ELVIN_KEYS_ADD(keys,
+                        is_for_notify ?
+                        ELVIN_KEY_SCHEME_SHA1_CONSUMER :
+                        ELVIN_KEY_SCHEME_SHA1_PRODUCER,
+                        is_for_notify ?
+                        ELVIN_KEY_SHA1_CONSUMER_INDEX :
+                        ELVIN_KEY_SHA1_PRODUCER_INDEX,
+                        self->hash, self->hash_length, NULL,
+                        error)) {
+        fprintf(stderr,
+                PACKAGE ": elvin_keys_add failed for key %s\n",
+                self->name);
         abort();
     }
 }
 
 static void
-key_entry_promote(
-    key_entry_t self,
-    int is_for_notify,
-    elvin_keys_t keys,
-    elvin_error_t error)
+key_entry_promote(key_entry_t self,
+                  int is_for_notify,
+                  elvin_keys_t keys,
+                  elvin_error_t error)
 {
     /* Sanity check */
-    if (! self -> is_private)
-    {
+    if (!self->is_private) {
         fprintf(stderr, PACKAGE ": internal error\n");
         abort();
     }
 
-    if (! ELVIN_KEYS_ADD(keys,
-			 ELVIN_KEY_SCHEME_SHA1_DUAL,
-			 is_for_notify ?
-			 ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
-			 ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
-			 self -> data, self -> data_length, NULL,
-			 error))
-    {
+    if (!ELVIN_KEYS_ADD(keys,
+                        ELVIN_KEY_SCHEME_SHA1_DUAL,
+                        is_for_notify ?
+                        ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX :
+                        ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
+                        self->data, self->data_length, NULL,
+                        error)) {
         fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
-		self -> name);
+                self->name);
         abort();
     }
 }
 
-
-struct key_table
-{
+struct key_table {
     /* The entries in the table. */
     key_entry_t *entries;
 
@@ -293,14 +281,14 @@ struct key_table
 };
 
 /* Allocates and initializes a new key_table */
-key_table_t key_table_alloc()
+key_table_t
+key_table_alloc()
 {
     key_table_t self;
 
     /* Allocate memory for the new table's context */
     self = malloc(sizeof(struct key_table));
-    if (self == NULL)
-    {
+    if (self == NULL) {
         return NULL;
     }
 
@@ -308,11 +296,10 @@ key_table_t key_table_alloc()
     memset(self, 0, sizeof(struct key_table));
 
     /* Initialize its contents */
-    self -> entries_used = 0;
-    self -> entries_size = TABLE_MIN_SIZE;
-    self -> entries = calloc(self -> entries_size, sizeof(key_entry_t));
-    if (self -> entries == NULL)
-    {
+    self->entries_used = 0;
+    self->entries_size = TABLE_MIN_SIZE;
+    self->entries = calloc(self->entries_size, sizeof(key_entry_t));
+    if (self->entries == NULL) {
         key_table_free(self);
         return NULL;
     }
@@ -321,20 +308,19 @@ key_table_t key_table_alloc()
 }
 
 /* Frees the resources consumed by the key_table */
-void key_table_free(key_table_t self)
+void
+key_table_free(key_table_t self)
 {
     int i;
 
-    if (self -> entries != NULL)
-    {
+    if (self->entries != NULL) {
         /* Free each key in the table. */
-        for (i = 0; i < self -> entries_used; i++)
-        {
-            key_entry_free(self -> entries[i]);
+        for (i = 0; i < self->entries_used; i++) {
+            key_entry_free(self->entries[i]);
         }
 
         /* Free the table. */
-        free(self -> entries);
+        free(self->entries);
     }
 
     /* Free the table's context. */
@@ -348,12 +334,10 @@ key_table_search(key_table_t self, char *name)
     int i;
 
     /* Simple linear search. */
-    for (i = 0; i < self -> entries_used; i++)
-    {
-        if (strcmp(self -> entries[i] -> name, name) == 0)
-        {
+    for (i = 0; i < self->entries_used; i++) {
+        if (strcmp(self->entries[i]->name, name) == 0) {
             /* We found it. */
-            return self -> entries + i;
+            return self->entries + i;
         }
     }
 
@@ -363,52 +347,41 @@ key_table_search(key_table_t self, char *name)
 
 /* Returns the information about the named key. */
 int
-key_table_lookup(
-    key_table_t self,
-    char *name,
-    char **data_out,
-    int *length_out,
-    int *is_private_out)
+key_table_lookup(key_table_t self,
+		 char *name,
+		 char **data_out,
+		 int *length_out,
+		 int *is_private_out)
 {
     key_entry_t *entry;
 
     /* Find the position of the key entry. */
     entry = key_table_search(self, name);
-    if (entry == NULL)
-    {
+    if (entry == NULL) {
         return -1;
     }
 
     /* Return the data. */
-    if (data_out != NULL)
-    {
-        if ((*entry) -> is_private)
-        {
-            *data_out = (*entry) -> data;
-        }
-        else
-        {
-            *data_out = (*entry) -> hash;
+    if (data_out != NULL) {
+        if ((*entry)->is_private) {
+            *data_out = (*entry)->data;
+        } else {
+            *data_out = (*entry)->hash;
         }
     }
 
     /* Return the length. */
-    if (length_out != NULL)
-    {
-        if ((*entry) -> is_private)
-        {
-            *length_out = (*entry) -> data_length;
-        }
-        else
-        {
-            *length_out = (*entry) -> hash_length;
+    if (length_out != NULL) {
+        if ((*entry)->is_private) {
+            *length_out = (*entry)->data_length;
+        } else {
+            *length_out = (*entry)->hash_length;
         }
     }
 
     /* Return whether the key is private. */
-    if (is_private_out != NULL)
-    {
-        *is_private_out = (*entry) -> is_private;
+    if (is_private_out != NULL) {
+        *is_private_out = (*entry)->is_private;
     }
 
     return 0;
@@ -416,40 +389,36 @@ key_table_lookup(
 
 /* Adds a new key to the table. */
 int
-key_table_add(
-    key_table_t self,
-    char *name,
-    char *data,
-    int length,
-    int is_private)
+key_table_add(key_table_t self,
+	      char *name,
+	      char *data,
+	      int length,
+	      int is_private)
 {
     key_entry_t entry;
 
     /* Allocate a new entry. */
     entry = key_entry_alloc(name, data, length, is_private);
-    if (entry == NULL)
-    {
+    if (entry == NULL) {
         return -1;
     }
 
     /* Grow the table if necessary */
-    if (! (self -> entries_size < self -> entries_used))
-    {
+    if (!(self->entries_size < self->entries_used)) {
         key_entry_t *new_entries;
 
-        new_entries = realloc(self -> entries, self -> entries_size * 2);
-        if (new_entries == NULL)
-        {
+        new_entries = realloc(self->entries, self->entries_size * 2);
+        if (new_entries == NULL) {
             key_entry_free(entry);
             return -1;
         }
 
-        self -> entries = new_entries;
-        self -> entries_size *= 2;
+        self->entries = new_entries;
+        self->entries_size *= 2;
     }
 
     /* Append this key. */
-    self -> entries[self -> entries_used++] = entry;
+    self->entries[self->entries_used++] = entry;
     return 0;
 }
 
@@ -461,8 +430,7 @@ key_table_remove(key_table_t self, char *name)
 
     /* Find the location of the key in the table. */
     position = key_table_search(self, name);
-    if (position == NULL)
-    {
+    if (position == NULL) {
         return -1;
     }
 
@@ -470,7 +438,7 @@ key_table_remove(key_table_t self, char *name)
     key_entry_free(*position);
 
     /* Fill up the empty space. */
-    *position = self -> entries[--self -> entries_used];
+    *position = self->entries[--self->entries_used];
     return 0;
 }
 
@@ -484,61 +452,43 @@ entry_compare(const void *val1, const void *val2)
     int result;
 
     /* Sort NULL keys to the end of the table */
-    if (entry1 == NULL)
-    {
-        if (entry2 == NULL)
-        {
+    if (entry1 == NULL) {
+        if (entry2 == NULL) {
             return 0;
-        }
-        else
-        {
+        } else {
             return 1;
         }
-    }
-    else if (entry2 == NULL)
-    {
+    } else if (entry2 == NULL) {
         return -1;
     }
 
     /* Work out which value comes first */
-    if (entry1 -> hash_length < entry2 -> hash_length)
-    {
-        result = memcmp(entry1 -> hash, entry2 -> hash, entry1 -> hash_length);
-        if (result == 0)
-        {
+    if (entry1->hash_length < entry2->hash_length) {
+        result = memcmp(entry1->hash, entry2->hash, entry1->hash_length);
+        if (result == 0) {
             return -1;
-        }
-        else
-        {
+        } else {
             return result;
         }
-    }
-    else if (entry1 -> hash_length > entry2 -> hash_length)
-    {
-        result = memcmp(entry1 -> hash, entry2 -> hash, entry2 -> hash_length);
-        if (result == 0)
-        {
+    } else if (entry1->hash_length > entry2->hash_length) {
+        result = memcmp(entry1->hash, entry2->hash, entry2->hash_length);
+        if (result == 0) {
             return 1;
-        }
-        else
-        {
+        } else {
             return result;
         }
-    }
-    else
-    {
-        return memcmp(entry1 -> hash, entry2 -> hash, entry1 -> hash_length);
+    } else {
+        return memcmp(entry1->hash, entry2->hash, entry1->hash_length);
     }
 }
 
 static void
-get_sorted_entries(
-    key_table_t self,
-    char **key_names,
-    int key_count,
-    int do_warn,
-    key_entry_t **entries_out,
-    int *count_out)
+get_sorted_entries(key_table_t self,
+		   char **key_names,
+		   int key_count,
+		   int do_warn,
+		   key_entry_t **entries_out,
+		   int *count_out)
 {
     key_entry_t *entries;
     key_entry_t *entry;
@@ -565,7 +515,7 @@ get_sorted_entries(
         if (entry == NULL) {
             if (do_warn) {
                 fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n",
-			key_names[i]);
+                        key_names[i]);
             }
             entries[i] = NULL;
         } else {
@@ -578,29 +528,31 @@ get_sorted_entries(
 
     /* Strip out duplicates and missing keys */
     last = NULL;
-    for (i = 0; i < key_count;) {
+    for (i = 0; i < key_count; ) {
         /* NULLs are sorted to the end, so we're done */
         if (entries[i] == NULL) {
             break;
         }
 
         /* Look for duplicate values */
-        if (last && last -> hash_length == entries[i] -> hash_length &&
-            memcmp(last -> hash, entries[i] -> hash, entries[i] -> hash_length) == 0) {
+        if (last && last->hash_length == entries[i]->hash_length &&
+            memcmp(last->hash, entries[i]->hash,
+                   entries[i]->hash_length) == 0) {
             if (do_warn) {
-                fprintf(stderr, PACKAGE ": warning: duplicate keys: \"%s\" and \"%s\"\n",
-                        last -> name, entries[i] -> name);
+                fprintf(stderr,
+                    PACKAGE ": warning: duplicate keys: \"%s\" and \"%s\"\n",
+                    last->name, entries[i]->name);
             }
 
             /* Keep the private key over a public one */
-            if (! last -> is_private && entries[i] -> is_private) {
+            if (!last->is_private && entries[i]->is_private) {
                 last = entries[i];
                 entries[i - 1] = entries[i];
             }
 
             /* Stomp out the duplicate */
             memmove(entries + i, entries + i + 1,
-		    (key_count - i - 1) * sizeof(key_entry_t));
+                    (key_count - i - 1) * sizeof(key_entry_t));
             entries[key_count - 1] = NULL;
         } else {
             last = entries[i];
@@ -621,16 +573,15 @@ ensure_keys(elvin_keys_t *keys_in_out)
 }
 
 void
-key_table_diff(
-    key_table_t old_key_table,
-    char **old_key_names,
-    int old_key_count,
-    key_table_t new_key_table,
-    char **new_key_names,
-    int new_key_count,
-    int is_for_notify,
-    elvin_keys_t *keys_to_add_out,
-    elvin_keys_t *keys_to_remove_out)
+key_table_diff(key_table_t old_key_table,
+	       char **old_key_names,
+	       int old_key_count,
+	       key_table_t new_key_table,
+	       char **new_key_names,
+	       int new_key_count,
+	       int is_for_notify,
+	       elvin_keys_t *keys_to_add_out,
+	       elvin_keys_t *keys_to_remove_out)
 {
     elvin_keys_t keys_to_add = NULL;
     elvin_keys_t keys_to_remove = NULL;
@@ -643,7 +594,7 @@ key_table_diff(
     /* Look up the old keys and sort them */
     get_sorted_entries(
         old_key_table,
-        old_key_names, 
+        old_key_names,
         old_key_count,
         0,
         &old_entries,
@@ -661,50 +612,43 @@ key_table_diff(
     /* Walk the two tables and find differences */
     old_index = 0;
     new_index = 0;
-    while (old_index < old_count && new_index < new_count)
-    {
-        result = entry_compare(old_entries + old_index, new_entries + new_index);
-        if (result < 0) 
-        {
-            DPRINTF((stdout, "removing key: \"%s\"\n", old_entries[old_index] -> name));
+    while (old_index < old_count && new_index < new_count) {
+        result = entry_compare(old_entries + old_index,
+                               new_entries + new_index);
+        if (result < 0) {
+            DPRINTF((stdout, "removing key: \"%s\"\n",
+                     old_entries[old_index]->name));
             ensure_keys(&keys_to_remove);
             key_entry_add_to_keys(
                 old_entries[old_index++],
                 is_for_notify,
                 keys_to_remove, NULL);
-        }
-        else if (result > 0)
-        {
-            DPRINTF((stdout, "adding key: \"%s\"\n", new_entries[new_index] -> name));
+        } else if (result > 0) {
+            DPRINTF((stdout, "adding key: \"%s\"\n",
+                     new_entries[new_index]->name));
             ensure_keys(&keys_to_add);
             key_entry_add_to_keys(
                 new_entries[new_index++],
                 is_for_notify,
                 keys_to_add, NULL);
-        }
-        else
-        {
-            if (old_entries[old_index] -> is_private == new_entries[new_index] -> is_private)
-            {
+        } else {
+            if (old_entries[old_index]->is_private ==
+                new_entries[old_index]->is_private) {
                 DPRINTF((stdout, "keeping key: \"%s\" -> \"%s\"\n",
-                         old_entries[old_index] -> name,
-                         new_entries[new_index] -> name));
-            }
-            else if (old_entries[old_index] -> is_private)
-            {
+                         old_entries[old_index]->name,
+                         new_entries[new_index]->name));
+            } else if (old_entries[old_index]->is_private) {
                 DPRINTF((stdout, "demoting key: \"%s\" -> \"%s\"\n",
-                         old_entries[old_index] -> name,
-                         new_entries[new_index] -> name));
+                         old_entries[old_index]->name,
+                         new_entries[new_index]->name));
                 ensure_keys(&keys_to_remove);
                 key_entry_promote(old_entries[old_index],
                                   is_for_notify,
                                   keys_to_remove, NULL);
-            }
-            else if (new_entries[new_index] -> is_private)
-            {
+            } else if (new_entries[new_index]->is_private) {
                 DPRINTF((stdout, "promoting key: \"%s\" -> \"%s\"\n",
-                         old_entries[old_index] -> name,
-                         new_entries[new_index] -> name));
+                         old_entries[old_index]->name,
+                         new_entries[new_index]->name));
                 ensure_keys(&keys_to_add);
                 key_entry_promote(new_entries[new_index],
                                   is_for_notify,
@@ -716,9 +660,9 @@ key_table_diff(
         }
     }
 
-    while (old_index < old_count)
-    {
-        DPRINTF((stdout, "removing key: \"%s\"\n", old_entries[old_index] -> name));
+    while (old_index < old_count) {
+        DPRINTF((stdout, "removing key: \"%s\"\n",
+                 old_entries[old_index]->name));
         ensure_keys(&keys_to_remove);
         key_entry_add_to_keys(
             old_entries[old_index++],
@@ -726,10 +670,9 @@ key_table_diff(
             keys_to_remove, NULL);
     }
 
-    while (new_index < new_count)
-    {
+    while (new_index < new_count) {
         DPRINTF((stdout, "adding key: \"%s\"\n",
-		 new_entries[new_index] -> name));
+                 new_entries[new_index]->name));
         ensure_keys(&keys_to_add);
         key_entry_add_to_keys(
             new_entries[new_index++],
@@ -742,21 +685,15 @@ key_table_diff(
     free(old_entries);
     free(new_entries);
 
-    if (keys_to_add_out)
-    {
+    if (keys_to_add_out) {
         *keys_to_add_out = keys_to_add;
-    }
-    else if (keys_to_add)
-    {
+    } else if (keys_to_add) {
         elvin_keys_free(keys_to_add, NULL);
     }
 
-    if (keys_to_remove_out)
-    {
+    if (keys_to_remove_out) {
         *keys_to_remove_out = keys_to_remove;
-    }
-    else if (keys_to_remove)
-    {
+    } else if (keys_to_remove) {
         elvin_keys_free(keys_to_remove, NULL);
     }
 }

@@ -25,7 +25,7 @@
   damage of any kind arising out of or in connection with
   the use or performance of this software.
 
-   Description: 
+   Description:
              Transforms elvinmail notifications into tickertape
              messages suitable for scrolling
 
@@ -35,28 +35,40 @@
 #define MAIL_SUB_H
 
 #ifndef lint
-static const char cvs_MAIL_SUB_H[] = "$Id: mail_sub.h,v 1.9 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_MAIL_SUB_H[] =
+    "$Id: mail_sub.h,v 1.9 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* The mail_sub_t data type */
 typedef struct mail_sub *mail_sub_t;
 
 /* The mail_sub callback type */
-typedef void (*mail_sub_callback_t)(void *rock, message_t message, int show_attachment);
+typedef void (*mail_sub_callback_t)(void *rock, message_t message,
+                                    int show_attachment);
 
 
 /* Exported functions */
 
 /* Answers a new mail_sub */
-mail_sub_t mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock);
+mail_sub_t
+mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock);
+
 
 /* Releases the resources consumed by the receiver */
-void mail_sub_free(mail_sub_t self);
+void
+mail_sub_free(mail_sub_t self);
+
 
 /* Prints debugging information about the receiver */
-void mail_sub_debug(mail_sub_t self);
+void
+mail_sub_debug(mail_sub_t self);
+
 
 /* Sets the receiver's connection */
-void mail_sub_set_connection(mail_sub_t self, elvin_handle_t handle, elvin_error_t error);
+void
+mail_sub_set_connection(mail_sub_t self,
+                        elvin_handle_t handle,
+                        elvin_error_t error);
+
 
 #endif /* MAIL_SUB_H */

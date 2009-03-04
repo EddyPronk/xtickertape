@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -35,8 +35,9 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
+
 /*
- * Description: 
+ * Description:
  *   Manages tickertape group subscriptions and can parse the
  *   groups file
  */
@@ -45,7 +46,8 @@
 #define GROUPS_PARSER_H
 
 #ifndef lint
-static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.13 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_GROUPS_PARSER_H[] =
+    "$Id: groups_parser.h,v 1.13 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 /* The groups parser data type */
@@ -60,17 +62,20 @@ typedef int (*groups_parser_callback_t)(
     int key_name_count);
 
 /* Allocates and initializes a new groups file parser */
-groups_parser_t groups_parser_alloc(
-    groups_parser_callback_t callback,
-    void *rock,
-    char *tag);
+groups_parser_t
+groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag);
+
 
 /* Frees the resources consumed by the receiver */
-void groups_parser_free(groups_parser_t self);
+void
+groups_parser_free(groups_parser_t self);
+
 
 /* Parses the given buffer, calling callbacks for each subscription
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
-int groups_parser_parse(groups_parser_t self, char *buffer, size_t length);
+int
+groups_parser_parse(groups_parser_t self, char *buffer, size_t length);
+
 
 #endif /* GROUPS_PARSER_H */

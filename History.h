@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,7 +40,8 @@
 #define HISTORY_H
 
 #ifndef lint
-static const char cvs_HISTORY_H[] = "$Id: History.h,v 1.16 2009/03/09 05:26:26 phelps Exp $";
+static const char cvs_HISTORY_H[] =
+    "$Id: History.h,v 1.16 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 
@@ -169,32 +170,48 @@ extern WidgetClass historyWidgetClass;
  */
 
 /* Set the widget's display to be threaded or not */
-void HistorySetThreaded(Widget widget, Boolean is_threaded);
+void
+HistorySetThreaded(Widget widget, Boolean is_threaded);
+
 
 /* Returns whether or not the history is threaded */
-Boolean HistoryIsThreaded(Widget widget);
+Boolean
+HistoryIsThreaded(Widget widget);
+
 
 /* Set the widget's display to show timestamps or not */
-void HistorySetShowTimestamps(Widget widget, Boolean show_timestamps);
+void
+HistorySetShowTimestamps(Widget widget, Boolean show_timestamps);
+
 
 /* Returns whether or not the timestamps are visible */
-Boolean HistoryIsShowingTimestamps(Widget widget);
+Boolean
+HistoryIsShowingTimestamps(Widget widget);
 
 
 /* Adds a new message to the History */
-void HistoryAddMessage(Widget widget, message_t message);
+void
+HistoryAddMessage(Widget widget, message_t message);
+
 
 /* Kills the thread of the given message */
-void HistoryKillThread(Widget widget, message_t message);
+void
+HistoryKillThread(Widget widget, message_t message);
+
 
 /* Selects a message in the history */
-void HistorySelect(Widget widget, message_t message);
+void
+HistorySelect(Widget widget, message_t message);
+
 
 /* Selects the parent of the message in the history */
-void HistorySelectId(Widget widget, char *message_id);
+void
+HistorySelectId(Widget widget, char *message_id);
+
 
 /* Returns the selected message or NULL if none is selected */
-message_t HistoryGetSelection(Widget widget);
+message_t
+HistoryGetSelection(Widget widget);
 
 
 #endif /* HISTORY_H */

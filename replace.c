@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -37,17 +37,17 @@
 ***********************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 #include <stdio.h> /* snprintf, vsprintf */
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h> /* NULL */
+# include <stdlib.h> /* NULL */
 #endif
 #ifdef HAVE_CTYPE_H
-#include <ctype.h> /* toupper */
+# include <ctype.h> /* toupper */
 #endif
 #ifdef HAVE_STRING_H
-#include <string.h> /* memcpy */
+# include <string.h> /* memcpy */
 #endif
 #include "replace.h"
 
@@ -56,13 +56,13 @@
 
 #ifndef HAVE_MEMSET
 /* A slow but correct implementation of memset */
-void *memset(void *s, int c, size_t n)
+void *
+memset(void *s, int c, size_t n)
 {
     char *point = (char *)s;
     char *end = point + n;
 
-    while (point < end)
-    {
+    while (point < end) {
         *(point++) = c;
     }
 
@@ -72,9 +72,10 @@ void *memset(void *s, int c, size_t n)
 
 #ifndef HAVE_SNPRINTF
 /* A dodgy hack to replace a real snprintf implementation */
-#include <stdarg.h>
+# include <stdarg.h>
 
-int snprintf(char *s, size_t n, const char *format, ...)
+int
+snprintf(char *s, size_t n, const char *format, ...)
 {
     va_list ap;
     int result;
@@ -90,40 +91,33 @@ int snprintf(char *s, size_t n, const char *format, ...)
 
 #ifndef HAVE_STRCASECMP
 /* A slow but correct implementation of strcasecmp */
-int strcasecmp(const char *s1, const char *s2)
+int
+strcasecmp(const char *s1, const char *s2)
 {
     size_t i = 0;
     int c1, c2;
 
-    while (1)
-    {
+    while (1) {
         c1 = toupper(s1[i]);
         c2 = toupper(s2[i]);
 
-        if (c1 == 0)
-        {
-            if (c2 == 0)
-            {
+        if (c1 == 0) {
+            if (c2 == 0) {
                 return 0;
-            }
-            else
-            {
+            } else {
                 return -1;
             }
         }
 
-        if (c2 == 0)
-        {
+        if (c2 == 0) {
             return 1;
         }
-        
-        if (c1 < c2)
-        {
+
+        if (c1 < c2) {
             return -1;
         }
 
-        if (c1 > c2)
-        {
+        if (c1 > c2) {
             return 1;
         }
 
@@ -135,15 +129,14 @@ int strcasecmp(const char *s1, const char *s2)
 
 #ifndef HAVE_STRCHR
 /* A slow but correct implementation of strchr */
-char *strchr(const char *s, int c)
+char *
+strchr(const char *s, int c)
 {
     size_t i = 0;
     int ch;
 
-    while ((ch = s[i]) != 0)
-    {
-        if (ch == c)
-        {
+    while ((ch = s[i]) != 0) {
+        if (ch == c) {
             return s + i;
         }
 
@@ -156,15 +149,15 @@ char *strchr(const char *s, int c)
 
 #ifndef HAVE_STRDUP
 /* A slow but correct implementation of strdup */
-char *strdup(const char *s)
+char *
+strdup(const char *s)
 {
     size_t length;
     char *result;
 
     length = strlen(s) + 1;
     result = malloc(length);
-    if (result == NULL)
-    {
+    if (result == NULL) {
         return NULL;
     }
 
@@ -175,15 +168,14 @@ char *strdup(const char *s)
 
 #ifndef HAVE_STRRCHR
 /* A slow but correct implementation of strrchr */
-char *strrchr(const char *s, int c)
+char *
+strrchr(const char *s, int c)
 {
     char *result = NULL;
     int ch;
 
-    while ((ch = *s) != 0)
-    {
-        if (ch == c)
-        {
+    while ((ch = *s) != 0) {
+        if (ch == c) {
             result = (char *)s;
         }
 
@@ -195,9 +187,10 @@ char *strrchr(const char *s, int c)
 #endif
 
 #ifndef HAVE_STRERROR
-#define BUFFER_SIZE 32
+# define BUFFER_SIZE 32
 static char buffer[BUFFER_SIZE];
-char *strerror(int errnum)
+char *
+strerror(int errnum)
 {
     snprintf(buffer, BUFFER_SIZE, "errno=%d\n", errnum);
     return buffer;

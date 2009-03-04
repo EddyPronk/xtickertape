@@ -105,7 +105,8 @@ xwrite(int fd, const char *buffer, size_t len)
     }
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     struct lexer lexer;
     struct addrinfo *addrinfo, *addr, hints;
@@ -152,7 +153,9 @@ int main(int argc, char *argv[])
 
         case 'i':
             if (path != NULL) {
-                fprintf(stderr, "%s: error: only one input file may be named\n", progname);
+                fprintf(stderr,
+                        "%s: error: only one input file may be named\n",
+                        progname);
                 exit(1);
             }
 
@@ -178,11 +181,12 @@ int main(int argc, char *argv[])
             break;
 
         case 'v':
-             printf("%s (" PACKAGE ") version " VERSION "\n", progname);
+            printf("%s (" PACKAGE ") version " VERSION "\n", progname);
             exit(0);
 
         case '?':
-            fprintf(stderr, "%s: error: unknown option -%c\n", progname, optopt);
+            fprintf(stderr, "%s: error: unknown option -%c\n",
+                    progname, optopt);
             exit(1);
 
         default:
@@ -246,7 +250,8 @@ int main(int argc, char *argv[])
 
         /* Create a socket */
         for (addr = addrinfo; addr; addr = addr->ai_next) {
-            sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+            sock = socket(addr->ai_family, addr->ai_socktype,
+                          addr->ai_protocol);
             if (sock < 0) {
                 continue;
             }

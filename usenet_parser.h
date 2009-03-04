@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -40,15 +40,15 @@
 #define USENET_PARSER_H
 
 #ifndef lint
-static const char cvs_USENET_PARSER_H[] = "$Id: usenet_parser.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
+static const char cvs_USENET_PARSER_H[] =
+    "$Id: usenet_parser.h,v 1.10 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* The usenet parser data type */
 typedef struct usenet_parser *usenet_parser_t;
 
 /* The field type */
-enum field_name
-{
+enum field_name {
     F_NONE,
     F_BODY,
     F_FROM,
@@ -62,8 +62,7 @@ typedef enum field_name field_name_t;
 
 
 /* The operator type */
-enum op_name
-{
+enum op_name {
     O_NONE,
     O_MATCHES,
     O_NOT,
@@ -79,8 +78,7 @@ typedef enum op_name op_name_t;
 
 
 /* The structure of an expression used in the callback */
-struct usenet_expr
-{
+struct usenet_expr {
     /* The field */
     field_name_t field;
 
@@ -98,14 +96,20 @@ typedef int (*usenet_parser_callback_t)(
     struct usenet_expr *expressions, size_t expr_count);
 
 /* Allocates and initializes a new usenet subscription parser */
-usenet_parser_t usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag);
+usenet_parser_t
+usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag);
+
 
 /* Frees the resources consumed by the receiver */
-void usenet_parser_free(usenet_parser_t self);
+void
+usenet_parser_free(usenet_parser_t self);
+
 
 /* Parses the given buffer, calling callbacks for each usenet
  * subscription expression that is successfully read.  A zero-length
  * buffer is interpreted as an end-of-input marker */
-int usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length);
+int
+usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length);
+
 
 #endif /* USENET_PARSER_H */
