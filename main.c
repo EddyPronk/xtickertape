@@ -397,8 +397,8 @@ parse_args(int argc,
         case 'I':
             /* --idle= or -I */
             if (!elvin_handle_set_idle_period(handle, atoi(optarg), error)) {
-                fprintf(stderr, PACKAGE ": unable to set idle period to %d\n",
-                        atoi(optarg));
+                fprintf(stderr, PACKAGE ": unable to set idle period to %s\n",
+                        optarg);
                 elvin_error_fprintf(stderr, error);
                 exit(1);
             }
