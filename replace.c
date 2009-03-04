@@ -98,7 +98,7 @@ strcasecmp(const char *s1, const char *s2)
     size_t i = 0;
     int c1, c2;
 
-    while (1) {
+    for (;;) {
         c1 = toupper(s1[i]);
         c2 = toupper(s2[i]);
 

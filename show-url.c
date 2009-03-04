@@ -229,7 +229,7 @@ append_url(char *url, int quote_count)
     }
 
     point = url;
-    while (1) {
+    for (;;) {
         int ch = *point;
         int esc_type;
 
@@ -281,7 +281,7 @@ invoke(char *browser, char *url)
     cmd_index = 0;
 
     /* Copy from the browser string */
-    while (1) {
+    for (;;) {
         int ch = *point;
 
         switch (ch) {
@@ -398,7 +398,7 @@ main(int argc, char *argv[])
         browser = DEF_BROWSER;
     }
 
-    while (1) {
+    for (;;) {
         int choice;
 
 #if defined(HAVE_GETOPT_LONG)

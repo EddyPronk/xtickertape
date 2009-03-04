@@ -1457,7 +1457,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
     assert(!self->scroller.use_pixmap);
 
     /* Process all of the GraphicsExpose events in one go */
-    while (1) {
+    for (;;) {
         XGraphicsExposeEvent *g_event;
 
         /* See if the server has synced with our local state */

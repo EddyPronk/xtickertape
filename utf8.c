@@ -846,7 +846,7 @@ utf8_encoder_alloc(Display *display, XmFontList font_list, char *code_set)
     }
 
     /* Look for a font */
-    while (1) {
+    for (;;) {
         /* Get the next font from the font list */
         if (!XmFontListGetNextFont(context, &charset, &font)) {
             perror("XmFontListGetNextFont() failed");

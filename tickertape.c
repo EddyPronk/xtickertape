@@ -553,7 +553,7 @@ parse_groups_file(tickertape_t self)
     }
 
     /* Keep reading from the file until we've read it all or got an error */
-    while (1) {
+    for (;;) {
         char buffer[BUFFER_SIZE];
         ssize_t length;
 
@@ -625,7 +625,7 @@ parse_usenet_file(tickertape_t self)
     }
 
     /* Keep reading from the file until we've read it all or got an error */
-    while (1) {
+    for (;;) {
         char buffer[BUFFER_SIZE];
         ssize_t length;
 
@@ -707,7 +707,7 @@ parse_keys_file(tickertape_t self)
     }
 
     /* Keep reading from the file until we've read it all or got an error */
-    while (1) {
+    for (;;) {
         char buffer[BUFFER_SIZE];
         ssize_t length;
 

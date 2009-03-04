@@ -1382,7 +1382,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
     XRectangle bbox;
 
     /* Process all of the GraphicsExpose events in one hit */
-    while (1) {
+    for (;;) {
         XGraphicsExposeEvent *g_event;
 
         /* Sanity check */

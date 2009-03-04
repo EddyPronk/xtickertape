@@ -352,7 +352,7 @@ parse_args(int argc,
     *usenet_file_return = NULL;
 
     /* Read each argument using getopt */
-    while (1) {
+    for (;;) {
         int choice;
 
 #if defined(HAVE_GETOPT_LONG)
