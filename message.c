@@ -422,16 +422,16 @@ message_get_attachment(message_t self, const char **attachment_out)
 int
 message_decode_attachment(message_t self, char **type_out, char **body_out)
 {
-    char *point = self->attachment;
-    char *mark = point;
-    char *end = point + self->length;
+    const char *point = self->attachment;
+    const char *mark = point;
+    const char *end = point + self->length;
     size_t ct_length = sizeof(CONTENT_TYPE) - 1;
 
     *type_out = NULL;
     *body_out = NULL;
 
     /* If no attachment then return lots of NULLs */
-    if (self->attachment == NULL) {
+    if (point == NULL) {
         return 0;
     }
 
@@ -440,9 +440,9 @@ message_decode_attachment(message_t self, char **type_out, char **body_out)
         /* End of line? */
         if (*point == '\n') {
             /* Is this the Content-Type line? */
-            if (ct_length < point - mark &&
+            if (mark + ct_length < point &&
                 strncasecmp(mark, CONTENT_TYPE, ct_length) == 0) {
-                char *p;
+                const char *p;
 
                 /* Skip to the beginning of the value */
                 mark += ct_length;
