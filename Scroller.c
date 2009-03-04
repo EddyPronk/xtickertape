@@ -1284,7 +1284,8 @@ scroll(ScrollerWidget self, int offset)
     }
 
     /* Bail if we're at the target position */
-    if ((delta = self->scroller.target_delta) == 0) {
+    delta = self->scroller.target_delta;
+    if (delta == 0) {
         return;
     }
 

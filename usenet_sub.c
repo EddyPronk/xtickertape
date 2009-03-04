@@ -456,7 +456,8 @@ notify_cb(elvin_handle_t handle,
     } else {
         length = strlen(ATTACHMENT_FMT) - 4 + strlen(mime_type) + strlen(
             mime_args);
-        if ((attachment = malloc(length + 1)) == NULL) {
+        attachment = malloc(length + 1);
+        if (attachment == NULL) {
             length = 0;
         } else {
             snprintf(attachment, length + 1, ATTACHMENT_FMT,

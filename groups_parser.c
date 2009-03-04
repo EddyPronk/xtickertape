@@ -200,9 +200,11 @@ accept_key(groups_parser_t self, char *name)
     self->key_names = new_names;
 
     /* Record the new key name */
-    if ((new_names[self->key_count++] = strdup(name)) == NULL) {
+    new_names[self->key_count] = strdup(name);
+    if (new_names[self->key_count] == NULL) {
         return -1;
     }
+    self->key_count++;
 
     return 0;
 }

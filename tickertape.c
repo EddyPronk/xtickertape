@@ -1490,11 +1490,13 @@ tickertape_ticker_dir(tickertape_t self)
     }
 
     /* Use the TICKERDIR environment variable if it is set */
-    if ((dir = getenv("TICKERDIR")) != NULL) {
+    dir = getenv("TICKERDIR");
+    if (dir != NULL) {
         self->ticker_dir = strdup(dir);
     } else {
         /* Otherwise grab the user's home directory */
-        if ((dir = getenv("HOME")) == NULL) {
+        dir = getenv("HOME");
+        if (dir == NULL) {
             dir = "/";
         }
 
