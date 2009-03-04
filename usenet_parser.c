@@ -610,7 +610,7 @@ static int
 lex_field(usenet_parser_t self, int ch)
 {
     /* Watch for EOF or LF in the middle of the field */
-    if ((ch == EOF) || (ch == '\n')) {
+    if (ch == EOF || ch == '\n') {
         parse_error(self, "unexpected end of line");
         return -1;
     }
@@ -739,13 +739,13 @@ lex_op(usenet_parser_t self, int ch)
 
         /* Make sure there's agreement between the field and the operator */
         if (self->field == F_XPOSTS) {
-            if ((self->operator == O_MATCHES) || (self->operator == O_NOT)) {
+            if (self->operator == O_MATCHES || self->operator == O_NOT) {
                 parse_error(self, "illegal field/operator combination");
                 return -1;
             }
         } else {
-            if ((self->operator == O_LT) || (self->operator == O_GT) ||
-                (self->operator == O_LE) || (self->operator == O_GE)) {
+            if (self->operator == O_LT || self->operator == O_GT ||
+                self->operator == O_LE || self->operator == O_GE) {
                 parse_error(self, "illegal field/operator combination");
                 return -1;
             }
@@ -801,7 +801,7 @@ static int
 lex_pattern(usenet_parser_t self, int ch)
 {
     /* Watch for EOF or linefeed */
-    if ((ch == EOF) || (ch == '\n')) {
+    if (ch == EOF || ch == '\n') {
         /* Null-terminate the token */
         if (append_char(self, '\0') < 0) {
             return -1;
@@ -876,7 +876,7 @@ static int
 lex_pattern_ws(usenet_parser_t self, int ch)
 {
     /* Watch for EOF and newline */
-    if ((ch == EOF) || (ch == '\n')) {
+    if (ch == EOF || ch == '\n') {
         /* Trim off the trailing whitespace */
         *self->token_mark = '\0';
 

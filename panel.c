@@ -2034,7 +2034,7 @@ control_panel_remove_subscription(control_panel_t self, void *info)
             }
 
             /* Remember the first tuple just in case */
-            if ((child_tuple->index == 0) && (child_tuple->widget != NULL)) {
+            if (child_tuple->index == 0 && child_tuple->widget != NULL) {
                 first_tuple = child_tuple;
             }
         }

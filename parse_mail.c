@@ -626,7 +626,7 @@ end_string(lexer_t self)
     write_int32(self->length_point, self->point - string);
 
     /* Pad the string out to a 4-byte boundary */
-    while ((intptr_t)(self->point) & 3) {
+    while ((intptr_t)self->point & 3) {
         *(self->point++) = '\0';
     }
 

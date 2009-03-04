@@ -1213,9 +1213,9 @@ adjust_left(ScrollerWidget self)
         }
 
         /* Check for the magical stop condition */
-        if ((self->scroller.left_holder == self->scroller.right_holder) &&
-            (self->scroller.left_holder->glyph == self->scroller.gap) &&
-            (queue_is_empty(self->scroller.gap))) {
+        if (self->scroller.left_holder == self->scroller.right_holder &&
+            self->scroller.left_holder->glyph == self->scroller.gap &&
+            queue_is_empty(self->scroller.gap)) {
             /* Tidy up and stop */
             self->scroller.left_offset = 0;
             self->scroller.right_offset = 0;
@@ -1252,9 +1252,9 @@ adjust_right(ScrollerWidget self)
         }
 
         /* Check for the magical stop condition */
-        if ((self->scroller.left_holder == self->scroller.right_holder) &&
-            (self->scroller.right_holder->glyph == self->scroller.gap) &&
-            (queue_is_empty(self->scroller.gap))) {
+        if (self->scroller.left_holder == self->scroller.right_holder &&
+            self->scroller.right_holder->glyph == self->scroller.gap &&
+            queue_is_empty(self->scroller.gap)) {
             /* Tidy up and stop */
             self->scroller.left_offset = 0;
             self->scroller.right_offset = 0;
@@ -1783,8 +1783,8 @@ delete_left_to_right(ScrollerWidget self, glyph_t glyph)
 
                 /* If the glyph was surrounded by gaps then join the
                  * gaps into one */
-                if ((previous->glyph == self->scroller.gap) &&
-                    (holder->next->glyph == self->scroller.gap)) {
+                if (previous->glyph == self->scroller.gap &&
+                    holder->next->glyph == self->scroller.gap) {
                     glyph_holder_t right_gap = holder->next;
                     glyph_holder_t left_gap = previous;
 
@@ -1863,8 +1863,8 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 
                 /* If the glyph was surrounded by gaps, then join the
                  * gaps into one */
-                if ((next->glyph == self->scroller.gap) &&
-                    (holder->previous->glyph == self->scroller.gap)) {
+                if (next->glyph == self->scroller.gap &&
+                    holder->previous->glyph == self->scroller.gap) {
                     glyph_holder_t left_gap = holder->previous;
                     glyph_holder_t right_gap = next;
 
@@ -1947,8 +1947,8 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
 
                     /* If the glyph was surrounded by gaps then join
                      * them into a single big one */
-                    if ((next->glyph == self->scroller.gap) &&
-                        (previous->glyph == self->scroller.gap)) {
+                    if (next->glyph == self->scroller.gap) &&
+                        (previous->glyph == self->scroller.gap) {
                         /* Remove the right gap from the list */
                         previous->next = next->next;
                         if (next->next == NULL) {

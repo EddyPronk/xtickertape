@@ -120,7 +120,7 @@ notify_cb(elvin_handle_t handle,
         from = value.s;
 
         /* Split the user name from the address. */
-        if ((mbox_parser_parse(self->parser, from)) == 0) {
+        if (mbox_parser_parse(self->parser, from) == 0) {
             from = mbox_parser_get_name(self->parser);
             if (*from == '\0') {
                 /* Otherwise resort to the e-mail address */
@@ -201,7 +201,7 @@ notify_cb(elvin_handle_t handle,
     }
 
     /* Split the user name from the address */
-    if ((mbox_parser_parse(self->parser, from)) == 0) {
+    if (mbox_parser_parse(self->parser, from) == 0) {
         from = mbox_parser_get_name(self->parser);
         if (*from == 0) {
             /* Otherwise resort to the e-mail address */

@@ -834,7 +834,7 @@ usenet_sub_set_connection(usenet_sub_t self,
                           elvin_error_t error)
 {
     /* Disconnect from the old connection */
-    if ((self->handle != NULL) && (self->subscription != NULL)) {
+    if (self->handle != NULL && self->subscription != NULL) {
         if (elvin_async_delete_subscription(self->handle,
                                             self->subscription,
                                             unsubscribe_cb, self,
@@ -849,7 +849,7 @@ usenet_sub_set_connection(usenet_sub_t self,
     /* Connect to the new one */
     self->handle = handle;
 
-    if ((self->handle != NULL) && (self->expression != NULL)) {
+    if (self->handle != NULL && self->expression != NULL) {
         if (elvin_async_add_subscription(self->handle,
                                          self->expression, NULL, 1,
                                          notify_cb, self,

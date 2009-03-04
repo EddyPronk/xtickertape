@@ -1263,8 +1263,7 @@ group_sub_set_control_panel(group_sub_t self, control_panel_t control_panel)
         return;
     }
 
-    if ((self->control_panel != NULL) &&
-        (self->control_panel_rock != NULL)) {
+    if (self->control_panel != NULL && self->control_panel_rock != NULL) {
         control_panel_remove_subscription(self->control_panel,
                                           self->control_panel_rock);
         self->control_panel_rock = NULL;
@@ -1307,7 +1306,7 @@ group_sub_set_control_panel_index(group_sub_t self,
 
         /* If we weren't in the control panel's menu but are now, then
          * add us */
-        if ((self->control_panel_rock == NULL) && (self->in_menu)) {
+        if (self->control_panel_rock == NULL && self->in_menu) {
             self->control_panel_rock = control_panel_add_subscription(
                 control_panel, self->name, self->name,
                 (control_panel_callback_t)send_message, self);
