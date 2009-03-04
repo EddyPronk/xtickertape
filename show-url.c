@@ -187,7 +187,7 @@ static void
 append_char(int ch)
 {
     /* Make sure there's enough room */
-    if (!(cmd_index < cmd_length)) {
+    if (cmd_index >= cmd_length) {
         dprintf(3, "growing buffer\n");
 
         /* Double the buffer size */

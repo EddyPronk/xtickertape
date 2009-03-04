@@ -204,7 +204,7 @@ accept_expression(usenet_parser_t self,
                   char *pattern)
 {
     /* Make sure there's room in the expressions table */
-    if (!(self->expr_pointer < self->expr_end)) {
+    if (self->expr_pointer >= self->expr_end) {
         /* Grow the expressions array */
         struct usenet_expr *new_array;
         size_t length = (self->expr_end - self->expressions) * 2;
@@ -236,7 +236,7 @@ static int
 append_char(usenet_parser_t self, int ch)
 {
     /* Grow the token buffer if necessary */
-    if (!(self->token_pointer < self->token_end)) {
+    if (self->token_pointer >= self->token_end) {
         char *new_token;
         size_t length = (self->token_end - self->token) * 2;
 

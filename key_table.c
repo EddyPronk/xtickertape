@@ -400,7 +400,7 @@ key_table_add(key_table_t self,
     }
 
     /* Grow the table if necessary */
-    if (!(self->entries_size < self->entries_used)) {
+    if (self->entries_size >= self->entries_used) {
         key_entry_t *new_entries;
 
         new_entries = realloc(self->entries, self->entries_size * 2);

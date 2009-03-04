@@ -1281,7 +1281,7 @@ paint(HistoryWidget self, XRectangle *bbox)
         y += self->history.line_height;
 
         /* Bail out if the next line is past the end of the screen */
-        if (!(y < self->core.height)) {
+        if (y >= self->core.height) {
             return;
         }
     }
@@ -1322,7 +1322,7 @@ redisplay_index(HistoryWidget self, unsigned int index)
     long y;
 
     /* Bail if the index is out of range */
-    if (!(index < self->history.message_count)) {
+    if (index >= self->history.message_count) {
         return;
     }
 
@@ -1949,7 +1949,7 @@ drag_timeout_cb(XtPointer closure, XtIntervalId *id)
          * bottom margin visible */
         if (self->history.selection_index ==
             self->history.message_count - 1) {
-            if (!(self->history.height < self->core.height)) {
+            if (self->history.height >= self->core.height) {
                 set_origin(self, self->history.x,
                            self->history.height - self->core.height, 1);
             }
@@ -1964,7 +1964,7 @@ drag_timeout_cb(XtPointer closure, XtIntervalId *id)
         index = index_of_y(self, y);
 
         /* Don't go past the last message */
-        if (!(index < self->history.message_count)) {
+        if (index >= self->history.message_count) {
             index = self->history.message_count - 1;
         }
 
@@ -2070,7 +2070,7 @@ do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 
     /* Anything past the last message is considered part of that
      * message for our purposes here */
-    if (!(index < self->history.message_count)) {
+    if (index >= self->history.message_count) {
         index = self->history.message_count - 1;
     }
 
@@ -2096,7 +2096,7 @@ toggle_selection(Widget widget,
              self->history.margin_height) / self->history.line_height;
 
     /* Are we selecting past the end of the list? */
-    if (!(index < self->history.message_count)) {
+    if (index >= self->history.message_count) {
         index = self->history.message_count - 1;
     }
 
@@ -2174,7 +2174,7 @@ select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     index = self->history.selection_index + 1;
 
     /* Bail if there is no next item */
-    if (!(index < self->history.message_count)) {
+    if (index >= self->history.message_count) {
         return;
     }
 

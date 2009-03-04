@@ -212,7 +212,7 @@ static int
 append_char(groups_parser_t self, int ch)
 {
     /* Grow the token buffer if necessary */
-    if (!(self->token_pointer < self->token_end)) {
+    if (self->token_pointer >= self->token_end) {
         char *new_token;
         size_t length = (self->token_end - self->token) * 2;
 

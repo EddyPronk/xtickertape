@@ -830,7 +830,7 @@ lexer_append_unotify_footer(lexer_t self, int msg_num)
     }
 
     /* Append the message number (if provided) */
-    if (!(msg_num < 0)) {
+    if (msg_num >= 0) {
         if (append_int32_tuple(self, N_INDEX, msg_num) < 0) {
             return -1;
         }

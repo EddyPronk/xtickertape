@@ -423,7 +423,7 @@ glyph_tick(XtPointer closure, XtIntervalId *id)
     self->timeout = None;
 
     /* Have we faded through all of the levels yet? */
-    if (!(self->fade_level + 1 < level_count)) {
+    if (self->fade_level + 1 >= level_count) {
         /* Don't expire more than once */
         if (!self->is_expired) {
             /* FIX THIS: we can do this ourselves */
@@ -1461,8 +1461,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
         XGraphicsExposeEvent *g_event;
 
         /* See if the server has synced with our local state */
-        if (!(LastKnownRequestProcessed(display) <
-              self->scroller.request_id)) {
+        if (LastKnownRequestProcessed(display) >= self->scroller.request_id) {
             self->scroller.local_delta = 0;
         }
 
