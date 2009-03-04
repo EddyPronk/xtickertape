@@ -475,7 +475,7 @@ parse_args(int argc,
 
     /* If we now have a proxy, then set its property */
     if (http_proxy != NULL) {
-        elvin_handle_set_property(handle, "http.proxy", http_proxy, NULL);
+        elvin_handle_set_string_property(handle, "http.proxy", http_proxy, NULL);
     }
 
     return;
