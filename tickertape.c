@@ -217,11 +217,6 @@ static const char *
 tickertape_ticker_dir(tickertape_t self);
 
 
-#if 0
-static const char *
-tickertape_config_filename(tickertape_t self);
-#endif
-
 static const char *
 tickertape_groups_filename(tickertape_t self);
 static const char *
@@ -445,55 +440,6 @@ open_config_file(tickertape_t self, const char *filename, const char *template)
     /* Success */
     return fd;
 }
-
-#if 0
-/* The callback for the config file parser */
-static int
-parse_config_callback(void *rock,
-                      uint32_t count,
-                      subscription_t *subs,
-                      elvin_error_t error)
-{
-    printf("parsed!\n");
-}
-#endif
-
-#if 0
-/* Reads the configuration file */
-static int
-read_config_file(tickertape_t self, elvin_error_t error)
-{
-    const char *filename = tickertape_config_filename(self);
-    parser_t parser;
-    int fd;
-
-    /* Make sure we can read the config file */
-    fd = open_config_file(self, filename, default_config_file);
-    if (fd < 0) {
-        return 0;
-    }
-
-    /* Allocate a new config file parser */
-    parser = parser_alloc(parse_config_callback, self, error);
-    if (parser == NULL) {
-        return 0;
-    }
-
-    /* Use it to read the config file */
-    if (!parser_parse_file(parser, fd, filename, error)) {
-        return 0;
-    }
-
-    /* Close the file */
-    if (close(fd) < 0) {
-        perror("close(): failed");
-        exit(1);
-    }
-
-    /* Clean up */
-    return parser_free(parser, error);
-}
-#endif
 
 /* The callback for the groups file parser */
 static int
@@ -1522,23 +1468,6 @@ tickertape_ticker_dir(tickertape_t self)
 
     return self->ticker_dir;
 }
-
-#if 0
-/* Answers the receiver's config file filename */
-static const char *
-tickertape_config_filename(tickertape_t self)
-{
-    if (self->config_file == NULL) {
-        const char *dir = tickertape_ticker_dir(self);
-
-        self->config_file = malloc(strlen(
-                                       dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
-        sprintf(self->config_file, "%s/%s", dir, DEFAULT_CONFIG_FILE);
-    }
-
-    return self->config_file;
-}
-#endif
 
 /* Answers the receiver's groups file filename */
 static const char *
