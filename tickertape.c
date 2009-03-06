@@ -201,22 +201,6 @@ struct tickertape {
  * Static function headers
  *
  */
-static int
-mkdirhier(char *dirname);
-static void
-menu_callback(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-receive_callback(void *rock, message_t message, int show_attachment);
-static int
-parse_groups_file(tickertape_t self);
-static int
-parse_keys_file(tickertape_t self);
-static void
-init_ui(tickertape_t self);
-static const char *
-tickertape_ticker_dir(tickertape_t self);
-
-
 static const char *
 tickertape_groups_filename(tickertape_t self);
 static const char *

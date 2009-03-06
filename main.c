@@ -186,21 +186,6 @@ static XtResource resources[] =
 };
 #undef offset
 
-/* Static function headers */
-static void
-do_quit(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-do_history_prev(Widget widget,
-                XEvent *event,
-                String *params,
-                Cardinal *nparams);
-static void
-do_history_next(Widget widget,
-                XEvent *event,
-                String *params,
-                Cardinal *nparams);
-
-
 /* The Tickertape */
 static tickertape_t tickertape;
 
@@ -213,14 +198,6 @@ elvin_client_t client = NULL;
 # endif
 #endif
 
-
-/* The default application actions table */
-static XtActionsRec actions[] =
-{
-    { "history-prev", do_history_prev },
-    { "history-next", do_history_next },
-    { "quit", do_quit }
-};
 
 /* Callback for when the Window Manager wants to close a window */
 static void
@@ -248,6 +225,14 @@ do_history_next(Widget widget,
 {
     tickertape_history_next(tickertape);
 }
+
+/* The default application actions table */
+static XtActionsRec actions[] =
+{
+    { "history-prev", do_history_prev },
+    { "history-next", do_history_next },
+    { "quit", do_quit }
+};
 
 /* Returns the name of the user who started this program */
 static const char *

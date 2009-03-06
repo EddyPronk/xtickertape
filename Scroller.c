@@ -161,65 +161,11 @@ static XtResource resources[] =
 
 
 /*
- * Action declarations
- */
-static void
-start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-show_attachment(Widget widget,
-                XEvent *event,
-                String *params,
-                Cardinal *nparams);
-static void
-expire(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-delete(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-do_kill(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-faster(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-slower(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-
-
-/*
- * Actions table
- */
-static XtActionsRec actions[] =
-{
-    { "start-drag", start_drag },
-    { "stop-drag", stop_drag },
-    { "drag", drag },
-    { "show-menu", show_menu },
-    { "show-attachment", show_attachment },
-    { "expire", expire },
-    { "delete", delete },
-    { "kill", do_kill },
-    { "faster", faster },
-    { "slower", slower },
-    { "set-speed", set_speed }
-};
-
-/*
  * Method declarations
  */
 static void
 scroll(ScrollerWidget self, int offset);
 
-static void
-initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args);
-static void
-realize(Widget widget,
-        XtValueMask *value_mask,
-        XSetWindowAttributes *attributes);
 static void
 redisplay(ScrollerWidget self, Region region);
 static void
@@ -230,72 +176,6 @@ paint(ScrollerWidget self,
       int y,
       unsigned int width,
       unsigned int height);
-static void
-destroy(Widget widget);
-static void
-resize(Widget widget);
-static void
-expose(Widget widget, XEvent *event, Region region);
-static Boolean
-set_values(Widget current,
-           Widget request,
-           Widget new,
-           ArgList args,
-           Cardinal *num_args);
-static XtGeometryResult
-query_geometry(Widget widget,
-               XtWidgetGeometry *intended,
-               XtWidgetGeometry *preferred);
-
-
-/*
- * Class record initialization
- */
-ScrollerClassRec scrollerClassRec =
-{
-    /* core_class fields */
-    {
-        (WidgetClass)&widgetClassRec, /* superclass */
-        "Scroller", /* class_name */
-        sizeof(ScrollerRec), /* widget_size */
-        NULL, /* class_initialize */
-        NULL, /* class_part_initialize */
-        False, /* class_inited */
-        initialize, /* initialize */
-        NULL, /* initialize_hook */
-        realize, /* realize */
-        actions, /* actions */
-        XtNumber(actions), /* num_actions */
-        resources, /* resources */
-        XtNumber(resources), /* num_resources */
-        NULLQUARK, /* xrm_class */
-        True, /* compress_motion */
-        True, /* compress_exposure */
-        True, /* compress_enterleave */
-        False, /* visible_interest */
-        destroy, /* destroy */
-        resize, /* resize */
-        expose, /* expose */
-        set_values, /* set_values */
-        NULL, /* set_values_hook */
-        XtInheritSetValuesAlmost, /* set_values_almost */
-        NULL, /* get_values_hook */
-        NULL, /* accept_focus */
-        XtVersion, /* version */
-        NULL, /* callback_private */
-        NULL, /* tm_table */
-        query_geometry, /* query_geometry */
-        XtInheritDisplayAccelerator, /* display_accelerator */
-        NULL /* extension */
-    },
-
-    /* Scroller class fields initialization */
-    {
-        0 /* ignored */
-    }
-};
-
-WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
 
 
 /* The structure of a glyph */
@@ -2209,6 +2089,24 @@ stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 }
 
 /*
+ * Actions table
+ */
+static XtActionsRec actions[] =
+{
+    { "start-drag", start_drag },
+    { "stop-drag", stop_drag },
+    { "drag", drag },
+    { "show-menu", show_menu },
+    { "show-attachment", show_attachment },
+    { "expire", expire },
+    { "delete", delete },
+    { "kill", do_kill },
+    { "faster", faster },
+    { "slower", slower },
+    { "set-speed", set_speed }
+};
+
+/*
  *Public methods
  */
 
@@ -2290,5 +2188,54 @@ ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
         queue_remove(glyph);
     }
 }
+
+/*
+ * Class record initialization
+ */
+ScrollerClassRec scrollerClassRec =
+{
+    /* core_class fields */
+    {
+        (WidgetClass)&widgetClassRec, /* superclass */
+        "Scroller", /* class_name */
+        sizeof(ScrollerRec), /* widget_size */
+        NULL, /* class_initialize */
+        NULL, /* class_part_initialize */
+        False, /* class_inited */
+        initialize, /* initialize */
+        NULL, /* initialize_hook */
+        realize, /* realize */
+        actions, /* actions */
+        XtNumber(actions), /* num_actions */
+        resources, /* resources */
+        XtNumber(resources), /* num_resources */
+        NULLQUARK, /* xrm_class */
+        True, /* compress_motion */
+        True, /* compress_exposure */
+        True, /* compress_enterleave */
+        False, /* visible_interest */
+        destroy, /* destroy */
+        resize, /* resize */
+        expose, /* expose */
+        set_values, /* set_values */
+        NULL, /* set_values_hook */
+        XtInheritSetValuesAlmost, /* set_values_almost */
+        NULL, /* get_values_hook */
+        NULL, /* accept_focus */
+        XtVersion, /* version */
+        NULL, /* callback_private */
+        NULL, /* tm_table */
+        query_geometry, /* query_geometry */
+        XtInheritDisplayAccelerator, /* display_accelerator */
+        NULL /* extension */
+    },
+
+    /* Scroller class fields initialization */
+    {
+        0 /* ignored */
+    }
+};
+
+WidgetClass scrollerWidgetClass = (WidgetClass)&scrollerClassRec;
 
 /**********************************************************************/

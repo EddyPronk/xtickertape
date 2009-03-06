@@ -304,103 +304,11 @@ struct control_panel {
  * Static function prototypes
  *
  */
-static void
-file_groups(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-file_usenet(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-file_keys(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-file_exit(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-create_file_menu(control_panel_t self, Widget parent);
 
-static void
-help_about(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-create_help_menu(control_panel_t self, Widget parent);
-
-static void
-options_threaded(Widget widget, XtPointer rock, XtPointer data);
-static void
-options_show_time(Widget widget, XtPointer rock, XtPointer data);
-static void
-options_close_policy(Widget widget, XtPointer rock, XtPointer data);
-static void
-create_options_menu(control_panel_t self, Widget parent);
-
-static void
-configure_about_box(Widget widget, XtPointer closure, XEvent *event,
-                    Boolean* continue_to_dispatch);
-static Widget
-create_about_box(control_panel_t self, Widget parent);
-
-static Cardinal
-order_group_menu(Widget item);
-static Widget
-create_group_menu(control_panel_t self, Widget parent);
-static Widget
-create_timeout_menu(control_panel_t self, Widget parent);
-
-static void
-history_selection_callback(Widget widget,
-                           XtPointer closure,
-                           XtPointer call_data);
-static void
-history_attachment_callback(Widget widget,
-                            XtPointer closure,
-                            XtPointer call_data);
-static void
-create_history_box(control_panel_t self, Widget parent);
-
-static void
-create_top_box(control_panel_t self, Widget parent);
-static void
-create_text_box(control_panel_t self, Widget parent);
-static Widget
-create_mime_type_menu(control_panel_t self, Widget parent);
-static void
-create_mime_box(control_panel_t self, Widget parent);
-static void
-create_bottom_box(control_panel_t self, Widget parent);
-
-static void
-configure_control_panel(Widget widget, XtPointer closure, XEvent *event,
-                        Boolean* continue_to_dispatch);
-static void
-init_ui(control_panel_t self, Widget parent);
-
-static void
-select_group(Widget widget, XtPointer closure, XtPointer call_data);
-static void
-set_group_selection(control_panel_t self, menu_item_tuple_t tuple);
 static menu_item_tuple_t
 get_tuple_from_tag(control_panel_t self, const char *tag);
-static void
-set_user(control_panel_t self, const char *user);
-static char *
-get_user(control_panel_t self);
-static void
-set_text(control_panel_t self, const char *text);
 static char *
 get_text(control_panel_t self);
-static void
-reset_timeout(control_panel_t self);
-static int
-get_timeout(control_panel_t self);
-static char *
-get_mime_type(control_panel_t self);
-static void
-set_mime_args(control_panel_t self, const char *args);
-static char *
-get_mime_args(control_panel_t self);
-
-static void
-create_uuid(control_panel_t self, char *uuid);
-static message_t
-construct_message(control_panel_t self);
-static void
-deconstruct_message(control_panel_t self, message_t message);
 
 static void
 action_send(Widget widget, XtPointer closure, XtPointer call_data);

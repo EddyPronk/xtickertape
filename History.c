@@ -178,55 +178,6 @@ static XtResource resources[] =
 #undef offset
 
 
-/* Action declarations */
-static void
-drag(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-drag_done(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-do_select(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-toggle_selection(Widget widget,
-                 XEvent *event,
-                 String *params,
-                 Cardinal *nparams);
-static void
-show_attachment(Widget widget,
-                XEvent *event,
-                String *params,
-                Cardinal *nparams);
-static void
-select_previous(Widget widget,
-                XEvent *event,
-                String *params,
-                Cardinal *nparams);
-static void
-select_next(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-scroll_up(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-scroll_down(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-scroll_left(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-static void
-scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams);
-
-
-static XtActionsRec actions[] =
-{
-    { "drag", drag },
-    { "drag-done", drag_done },
-    { "select", do_select },
-    { "toggle-selection", toggle_selection },
-    { "show-attachment", show_attachment },
-    { "select-previous", select_previous },
-    { "select-next", select_next },
-    { "scroll-up", scroll_up },
-    { "scroll-down", scroll_down },
-    { "scroll-left", scroll_left },
-    { "scroll-right", scroll_right }
-};
-
 /* We try to be efficient and use XCopyArea to scroll the history
  * widget, relying on GraphicsExpose events t tell us which parts of
  * the window to repaint afterwards.  Because of the asynchronous
@@ -615,114 +566,6 @@ node_populate(node_t self,
         self = self->sibling;
     }
 }
-
-/*
- *
- * Method declarations
- *
- */
-
-static void
-init(Widget request, Widget widget, ArgList args, Cardinal *num_args);
-static void
-realize(Widget widget,
-        XtValueMask *value_mask,
-        XSetWindowAttributes *attributes);
-static void
-redisplay(Widget self, XEvent *event, Region region);
-static void
-gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
-static void
-motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored);
-static void
-destroy(Widget self);
-static void
-resize(Widget self);
-static Boolean
-set_values(Widget current,
-           Widget request,
-           Widget new,
-           ArgList args,
-           Cardinal *num_args);
-static XtGeometryResult
-query_geometry(Widget self,
-               XtWidgetGeometry *intended,
-               XtWidgetGeometry *preferred);
-static void
-border_highlight(Widget widget);
-static void
-border_unhighlight(Widget widget);
-
-
-/*
- *
- * Class record initializations
- *
- */
-
-HistoryClassRec historyClassRec =
-{
-    /* core_class fields */
-    {
-        (WidgetClass)&xmPrimitiveClassRec, /* superclass */
-        "History", /* class_name */
-        sizeof(HistoryRec), /* widget_size */
-        NULL, /* class_initialize */
-        NULL, /* class_part_initialize */
-        False, /* class_inited */
-        init, /* initialize */
-        NULL, /* initialize_hook */
-        realize, /* realize */
-        actions, /* actions */
-        XtNumber(actions), /* num_actions */
-        resources, /* resources */
-        XtNumber(resources), /* num_resources */
-        NULLQUARK, /* xrm_class */
-        True, /* compress_motion */
-        XtExposeCompressMaximal, /* compress_exposure */
-        True, /* compress_enterleave */
-        False, /* visible_interest */
-        destroy, /* destroy */
-        resize, /* resize */
-        redisplay, /* expose */
-        set_values, /* set_values */
-        NULL, /* set_values_hook */
-        XtInheritSetValuesAlmost, /* set_values_almost */
-        NULL, /* get_values_hook */
-        NULL, /* accept_focus */
-        XtVersion, /* version */
-        NULL, /* callback_private */
-        NULL, /* tm_table */
-        query_geometry, /* query_geometry */
-        XtInheritDisplayAccelerator, /* display_accelerator */
-        NULL /* extension */
-    },
-
-    /* Primitive class fields initialization */
-    {
-        border_highlight, /* border_highlight */
-        border_unhighlight, /* border_unhighlight */
-        NULL, /* translations */
-        NULL, /* arm_and_activate_proc */
-        NULL, /* synthetic resources */
-        0, /* num syn res */
-        NULL, /* extension */
-    },
-
-    /* History class fields initialization */
-    {
-        0 /* foo */
-    }
-};
-
-WidgetClass historyWidgetClass = (WidgetClass)&historyClassRec;
-
-
-/*
- *
- * Private static variables
- *
- */
 
 /*
  *
@@ -1119,35 +962,6 @@ update_scrollbars(Widget widget, long *x_out, long *y_out)
     *y_out = y;
 }
 
-/* Realize the widget by creating a window in which to display it */
-static void
-realize(Widget widget,
-        XtValueMask *value_mask,
-        XSetWindowAttributes *attributes)
-{
-    HistoryWidget self = (HistoryWidget)widget;
-    Display *display = XtDisplay(self);
-    XGCValues values;
-
-    dprintf(("History.realize()\n"));
-
-    /* Create our window */
-    XtCreateWindow(widget, InputOutput, CopyFromParent,
-                   *value_mask, attributes);
-
-    /* Create a GC for our own nefarious purposes */
-    values.background = self->core.background_pixel;
-    values.font = self->history.font->fid;
-    self->history.gc = XCreateGC(display, XtWindow(widget),
-                                 GCBackground | GCFont, &values);
-
-    /* Register to receive GraphicsExpose events */
-    XtAddEventHandler(widget, 0, True, gexpose, NULL);
-
-    /* Register to receive motion callbacks */
-    XtAddEventHandler(widget, PointerMotionMask, False, motion_cb, NULL);
-}
-
 /* Draws the highlight */
 static void
 paint_highlight(HistoryWidget self)
@@ -1343,7 +1157,8 @@ redisplay_index(HistoryWidget self, unsigned int index)
 
 /* This is called in response to pointer motion */
 static void
-motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
+motion_cb(Widget widget, XtPointer closure, XEvent *event,
+          Boolean *continue_to_dispatch)
 {
     HistoryWidget self = (HistoryWidget)widget;
     XMotionEvent *mevent;
@@ -1374,7 +1189,8 @@ motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 
 /* Repaint the bits of the widget that didn't get copied */
 static void
-gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
+gexpose(Widget widget, XtPointer closure, XEvent *event,
+        Boolean *continue_to_dispatch)
 {
     HistoryWidget self = (HistoryWidget)widget;
     Display *display = XtDisplay(widget);
@@ -1452,6 +1268,35 @@ recompute_dimensions(HistoryWidget self)
     /* And update the scrollbars */
     update_scrollbars((Widget)self, &x, &y);
     set_origin(self, x, y, False);
+}
+
+/* Realize the widget by creating a window in which to display it */
+static void
+realize(Widget widget,
+        XtValueMask *value_mask,
+        XSetWindowAttributes *attributes)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    Display *display = XtDisplay(self);
+    XGCValues values;
+
+    dprintf(("History.realize()\n"));
+
+    /* Create our window */
+    XtCreateWindow(widget, InputOutput, CopyFromParent,
+                   *value_mask, attributes);
+
+    /* Create a GC for our own nefarious purposes */
+    values.background = self->core.background_pixel;
+    values.font = self->history.font->fid;
+    self->history.gc = XCreateGC(display, XtWindow(widget),
+                                 GCBackground | GCFont, &values);
+
+    /* Register to receive GraphicsExpose events */
+    XtAddEventHandler(widget, 0, True, gexpose, NULL);
+
+    /* Register to receive motion callbacks */
+    XtAddEventHandler(widget, PointerMotionMask, False, motion_cb, NULL);
 }
 
 /* Insert a message before the given index */
@@ -2279,6 +2124,21 @@ redraw_all(Widget widget)
     paint(self, &bbox);
 }
 
+static XtActionsRec actions[] =
+{
+    { "drag", drag },
+    { "drag-done", drag_done },
+    { "select", do_select },
+    { "toggle-selection", toggle_selection },
+    { "show-attachment", show_attachment },
+    { "select-previous", select_previous },
+    { "select-next", select_next },
+    { "scroll-up", scroll_up },
+    { "scroll-down", scroll_down },
+    { "scroll-left", scroll_left },
+    { "scroll-right", scroll_right }
+};
+
 /*
  *
  * Method definitions
@@ -2523,5 +2383,68 @@ HistoryGetSelection(Widget widget)
     dprintf(("HistoryGetSelection(): not yet implemented\n"));
     return NULL;
 }
+
+/*
+ *
+ * Class record initializations
+ *
+ */
+
+HistoryClassRec historyClassRec =
+{
+    /* core_class fields */
+    {
+        (WidgetClass)&xmPrimitiveClassRec, /* superclass */
+        "History", /* class_name */
+        sizeof(HistoryRec), /* widget_size */
+        NULL, /* class_initialize */
+        NULL, /* class_part_initialize */
+        False, /* class_inited */
+        init, /* initialize */
+        NULL, /* initialize_hook */
+        realize, /* realize */
+        actions, /* actions */
+        XtNumber(actions), /* num_actions */
+        resources, /* resources */
+        XtNumber(resources), /* num_resources */
+        NULLQUARK, /* xrm_class */
+        True, /* compress_motion */
+        XtExposeCompressMaximal, /* compress_exposure */
+        True, /* compress_enterleave */
+        False, /* visible_interest */
+        destroy, /* destroy */
+        resize, /* resize */
+        redisplay, /* expose */
+        set_values, /* set_values */
+        NULL, /* set_values_hook */
+        XtInheritSetValuesAlmost, /* set_values_almost */
+        NULL, /* get_values_hook */
+        NULL, /* accept_focus */
+        XtVersion, /* version */
+        NULL, /* callback_private */
+        NULL, /* tm_table */
+        query_geometry, /* query_geometry */
+        XtInheritDisplayAccelerator, /* display_accelerator */
+        NULL /* extension */
+    },
+
+    /* Primitive class fields initialization */
+    {
+        border_highlight, /* border_highlight */
+        border_unhighlight, /* border_unhighlight */
+        NULL, /* translations */
+        NULL, /* arm_and_activate_proc */
+        NULL, /* synthetic resources */
+        0, /* num syn res */
+        NULL, /* extension */
+    },
+
+    /* History class fields initialization */
+    {
+        0 /* foo */
+    }
+};
+
+WidgetClass historyWidgetClass = (WidgetClass)&historyClassRec;
 
 /**********************************************************************/
