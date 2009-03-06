@@ -250,10 +250,10 @@ do_history_next(Widget widget,
 }
 
 /* Returns the name of the user who started this program */
-static char *
+static const char *
 get_user()
 {
-    char *user;
+    const char *user;
 
     /* First try the `USER' environment variable */
     user = getenv("USER");
@@ -272,16 +272,16 @@ get_user()
 }
 
 /* Looks up the domain name of the host */
-static char *
+static const char *
 get_domain()
 {
-    char *domain;
+    const char *domain;
 #ifdef HAVE_UNAME
     struct utsname name;
 # ifdef HAVE_GETHOSTBYNAME
     struct hostent *host;
 # endif /* GETHOSTBYNAME */
-    char *point;
+    const char *point;
     int ch;
 #endif /* UNAME */
 
@@ -329,17 +329,17 @@ static void
 parse_args(int argc,
            char *argv[],
            elvin_handle_t handle,
-           char **user_return,
-           char **domain_return,
-           char **ticker_dir_return,
-           char **config_file_return,
-           char **groups_file_return,
-           char **usenet_file_return,
-           char **keys_file_return,
-           char **keys_dir_return,
+           const char **user_return,
+           const char **domain_return,
+           const char **ticker_dir_return,
+           const char **config_file_return,
+           const char **groups_file_return,
+           const char **usenet_file_return,
+           const char **keys_file_return,
+           const char **keys_dir_return,
            elvin_error_t error)
 {
-    char *http_proxy = NULL;
+    const char *http_proxy = NULL;
 
     /* Initialize arguments to sane values */
     *user_return = NULL;
@@ -548,7 +548,7 @@ reload_subs(int signum)
 
 /* Print an error message indicating that the app-defaults file is bogus */
 static void
-app_defaults_version_error(char *message)
+app_defaults_version_error(const char *message)
 {
     fprintf(stderr,
             "%s: %s\n\n"
@@ -575,14 +575,14 @@ main(int argc, char *argv[])
     XTickertapeRec rc;
     elvin_handle_t handle;
     elvin_error_t error;
-    char *user;
-    char *domain;
-    char *ticker_dir;
-    char *config_file;
-    char *groups_file;
-    char *usenet_file;
-    char *keys_file;
-    char *keys_dir;
+    const char *user;
+    const char *domain;
+    const char *ticker_dir;
+    const char *config_file;
+    const char *groups_file;
+    const char *usenet_file;
+    const char *keys_file;
+    const char *keys_dir;
     Widget top;
 
 #ifdef HAVE_XTVAOPENAPPLICATION

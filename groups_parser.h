@@ -51,15 +51,16 @@ typedef struct groups_parser *groups_parser_t;
 
 /* The groups_parser callback type */
 typedef int (*groups_parser_callback_t)(
-    void *rock, char *name,
+    void *rock, const char *name,
     int in_menu, int has_nazi,
     int min_time, int max_time,
-    char **key_names,
+    char *const *key_names,
     int key_name_count);
 
 /* Allocates and initializes a new groups file parser */
 groups_parser_t
-groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag);
+groups_parser_alloc(groups_parser_callback_t callback, void *rock,
+                    const char *tag);
 
 
 /* Frees the resources consumed by the receiver */
@@ -71,7 +72,7 @@ groups_parser_free(groups_parser_t self);
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
 int
-groups_parser_parse(groups_parser_t self, char *buffer, size_t length);
+groups_parser_parse(groups_parser_t self, const char *buffer, size_t length);
 
 
 #endif /* GROUPS_PARSER_H */

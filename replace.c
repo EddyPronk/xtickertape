@@ -130,7 +130,7 @@ strcasecmp(const char *s1, const char *s2)
 
 #ifndef HAVE_STRCHR
 /* A slow but correct implementation of strchr */
-char *
+const char *
 strchr(const char *s, int c)
 {
     size_t i = 0;
@@ -169,7 +169,7 @@ strdup(const char *s)
 
 #ifndef HAVE_STRRCHR
 /* A slow but correct implementation of strrchr */
-char *
+const char *
 strrchr(const char *s, int c)
 {
     char *result = NULL;

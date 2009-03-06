@@ -76,14 +76,14 @@ mbox_parser_debug(mbox_parser_t self, FILE *out);
  *     failure: -1
  */
 int
-mbox_parser_parse(mbox_parser_t self, char *mailbox);
+mbox_parser_parse(mbox_parser_t self, const char *mailbox);
 
 
 /*
  * Answers a pointer to the e-mail address (only valid after
  * a successful call to mbox_parser_parse).
  */
-char *
+const char *
 mbox_parser_get_email(mbox_parser_t self);
 
 
@@ -92,7 +92,7 @@ mbox_parser_get_email(mbox_parser_t self);
  * to mbox_parser_parse).  This will return NULL if no name was present in
  * the most recently parsed mailbox.
  */
-char *
+const char *
 mbox_parser_get_name(mbox_parser_t self);
 
 

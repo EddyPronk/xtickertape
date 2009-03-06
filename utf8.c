@@ -84,15 +84,15 @@ static Atom encoding = None;
 /* The format of a guesses table entry */
 struct guess {
     /* The name of the font's registry-encoding */
-    char *code;
+    const char *code;
 
     /* The guess strings/formats */
-    char *guesses[8];
+    const char *const guesses[8];
 };
 
 
 /* The guesses table */
-struct guess guesses[] =
+static const struct guess guesses[] =
 {
     { "UTF-8", { "utf8", NULL } },
     { "ISO10646-1", { "UCS-2BE", "ucs2", NULL } },
@@ -123,14 +123,14 @@ typedef void *iconv_t;
 #endif
 
 /* The empty character */
-static XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
+static const XCharStruct empty_char = { 0, 0, 0, 0, 0, 0 };
 
 #ifdef HAVE_ICONV
 /* Locates the guess with the given name in the guesses table */
-static struct guess *
+static const struct guess *
 find_guess(const char *code)
 {
-    struct guess *guess = guesses;
+    const struct guess *guess = guesses;
 
     /* Go through the guesses */
     for (guess = guesses; guess->code != NULL; guess++) {
@@ -149,8 +149,8 @@ find_guess(const char *code)
 static iconv_t
 do_iconv_open(const char *tocode, const char *fromcode)
 {
-    struct guess *to_guess;
-    struct guess *from_guess;
+    const struct guess *to_guess;
+    const struct guess *from_guess;
     const char *to_string;
     const char *from_string;
     iconv_t cd;
@@ -197,7 +197,7 @@ do_iconv_open(const char *tocode, const char *fromcode)
 #ifndef HAVE_ICONV
 size_t
 iconv(iconv_t cd,
-      char **inbuf,
+      char *const *inbuf,
       size_t *inbytesleft,
       char **outbuf,
       size_t *outbytesleft)
@@ -284,7 +284,7 @@ struct utf8_renderer {
 };
 
 /* Answers the statistics to use for a given character in the font */
-static XCharStruct *
+static const XCharStruct *
 per_char(XFontStruct *font, unsigned char byte1, unsigned char byte2)
 {
     XCharStruct *info;
@@ -572,7 +572,7 @@ utf8_renderer_measure_string(utf8_renderer_t self,
                              string_sizes_t sizes)
 {
     char buffer[BUFFER_SIZE];
-    XCharStruct *info;
+    const XCharStruct *info;
     long lbearing = 0;
     long rbearing = 0;
     long width = 0;
@@ -666,7 +666,7 @@ utf8_renderer_draw_string(Display *display,
                           const char *string)
 {
     char buffer[BUFFER_SIZE];
-    XCharStruct *info;
+    const XCharStruct *info;
     long left, right;
     char *out_point;
     size_t in_length;
@@ -815,7 +815,8 @@ struct utf8_encoder {
 
 /* Allocate and initialize a utf8_encoder */
 utf8_encoder_t
-utf8_encoder_alloc(Display *display, XmFontList font_list, char *code_set)
+utf8_encoder_alloc(Display *display, XmFontList font_list,
+                   const char *code_set)
 {
     utf8_encoder_t self;
     XmFontContext context;

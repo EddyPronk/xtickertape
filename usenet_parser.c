@@ -168,7 +168,7 @@ lex_pattern_ws(usenet_parser_t self, int ch);
 
 /* Prints a consistent error message */
 static void
-parse_error(usenet_parser_t self, char *message)
+parse_error(usenet_parser_t self, const char *message)
 {
     fprintf(stderr, "%s: parse error line %d: %s\n",
             self->tag, self->line_num, message);
@@ -176,7 +176,7 @@ parse_error(usenet_parser_t self, char *message)
 
 /* This is called when a complete group entry has been read */
 static int
-accept_group(usenet_parser_t self, int has_not, char *group)
+accept_group(usenet_parser_t self, int has_not, const char *group)
 {
     int result;
     struct usenet_expr *pointer;
@@ -201,7 +201,7 @@ static int
 accept_expression(usenet_parser_t self,
                   field_name_t field,
                   op_name_t operator,
-                  char *pattern)
+                  const char *pattern)
 {
     /* Make sure there's room in the expressions table */
     if (self->expr_pointer >= self->expr_end) {
@@ -260,7 +260,7 @@ append_char(usenet_parser_t self, int ch)
 /* Answers the field_name_t corresponding to the given string (or
  * F_NONE if none match) */
 static field_name_t
-translate_field(char *field)
+translate_field(const char *field)
 {
     switch (*field) {
     case 'B':
@@ -319,7 +319,7 @@ translate_field(char *field)
 /* Answers the op_name_t corresponding to the given string (or O_NONE if none
   match) */
 static op_name_t
-translate_op(char *operator)
+translate_op(const char *operator)
 {
     switch (*operator) {
     case '!':
@@ -927,7 +927,8 @@ lex_pattern_ws(usenet_parser_t self, int ch)
 
 /* Allocates and initializes a new usenet file parser */
 usenet_parser_t
-usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag)
+usenet_parser_alloc(usenet_parser_callback_t callback, void *rock,
+                    const char *tag)
 {
     usenet_parser_t self;
 
@@ -992,10 +993,10 @@ usenet_parser_free(usenet_parser_t self)
  * subscription expression that is successfully read.  A zero-length
  * buffer is interpreted as an end-of-input marker */
 int
-usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length)
+usenet_parser_parse(usenet_parser_t self, const char *buffer, size_t length)
 {
-    char *end = buffer + length;
-    char *pointer;
+    const char *end = buffer + length;
+    const char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0) {

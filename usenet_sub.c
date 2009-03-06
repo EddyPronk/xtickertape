@@ -491,8 +491,8 @@ notify_cb(elvin_handle_t handle,
 static char *
 alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 {
-    char *field_name;
-    char *format;
+    const char *field_name;
+    const char *format;
     size_t format_length;
     size_t length;
     char *result;
@@ -619,12 +619,12 @@ alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 static char *
 alloc_sub(usenet_sub_t self,
           int has_not,
-          char *pattern,
+          const char *pattern,
           struct usenet_expr *expressions,
           size_t count)
 {
     struct usenet_expr *pointer;
-    char *not_string = has_not ? "!" : "";
+    const char *not_string = has_not ? "!" : "";
     char *result;
     size_t length;
 
@@ -720,7 +720,7 @@ usenet_sub_free(usenet_sub_t self)
 int
 usenet_sub_add(usenet_sub_t self,
                int has_not,
-               char *pattern,
+               const char *pattern,
                struct usenet_expr *expressions,
                size_t count)
 {

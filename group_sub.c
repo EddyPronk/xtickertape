@@ -188,7 +188,7 @@ notify_cb(elvin_handle_t handle,
     int timeout;
     char *attachment = NULL;
     uint32_t length = 0;
-    char *mime_type;
+    const char *mime_type;
     char *buffer = NULL;
     size_t header_length = 0;
     elvin_opaque_t mime_args;
@@ -978,14 +978,14 @@ group_sub_update_keys(group_sub_t self,
 
 /* Allocates and initializes a new group_sub_t */
 group_sub_t
-group_sub_alloc(char *name,
-                char *expression,
+group_sub_alloc(const char *name,
+                const char *expression,
                 int in_menu,
                 int has_nazi,
                 int min_time,
                 int max_time,
                 key_table_t key_table,
-                char **key_names,
+                char *const *key_names,
                 int key_count,
                 group_sub_callback_t callback,
                 void *rock)
@@ -1076,7 +1076,7 @@ group_sub_free(group_sub_t self)
 }
 
 /* Answers the receiver's subscription expression */
-char *
+const char *
 group_sub_expression(group_sub_t self)
 {
     return self->expression;
@@ -1091,7 +1091,7 @@ group_sub_update_from_sub(group_sub_t self,
                           key_table_t old_keys,
                           key_table_t new_keys)
 {
-    char *expression = NULL;
+    const char *expression = NULL;
     elvin_keys_t keys_to_add = NULL;
     elvin_keys_t keys_to_remove = NULL;
     int accept_insecure;

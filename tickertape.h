@@ -54,10 +54,10 @@ typedef struct tickertape *tickertape_t;
 /* The structure of the application shell resources */
 typedef struct {
     /* The version tag from the app-defaults file */
-    char *version_tag;
+    const char *version_tag;
 
     /* The name of the metamail executable */
-    char *metamail;
+    const char *metamail;
 
     /* The number of messages to record in the send history */
     int send_history_count;
@@ -68,14 +68,14 @@ typedef struct {
 tickertape_t
 tickertape_alloc(XTickertapeRec *resources,
                  elvin_handle_t handle,
-                 char *user,
-                 char *domain,
-                 char *ticker_dir,
-                 char *config_file,
-                 char *groups_file,
-                 char *usenet_file,
-                 char *keys_file,
-                 char *keys_dir,
+                 const char *user,
+                 const char *domain,
+                 const char *ticker_dir,
+                 const char *config_file,
+                 const char *groups_file,
+                 const char *usenet_file,
+                 const char *keys_file,
+                 const char *keys_dir,
                  Widget top,
                  elvin_error_t error);
 
@@ -91,12 +91,12 @@ tickertape_debug(tickertape_t self);
 
 
 /* Answers the tickertape's user name */
-char *
+const char *
 tickertape_user_name(tickertape_t self);
 
 
 /* Answers the tickertape's domain name */
-char *
+const char *
 tickertape_domain_name(tickertape_t self);
 
 

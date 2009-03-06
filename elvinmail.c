@@ -82,9 +82,9 @@ usage(void)
 
 /* Print out the bytes of a stream */
 void
-fhexdump(char *buffer, size_t length, FILE *out)
+fhexdump(const char *buffer, size_t length, FILE *out)
 {
-    char *point;
+    const char *point;
     int i, ch;
 
     /* Go through the buffer in 16-byte chunks */
@@ -152,13 +152,13 @@ main(int argc, char *argv[])
     struct passwd *pwent;
     char packet[MAX_PACKET_SIZE];
     char buffer[BUFFER_SIZE];
-    char *host = DEFAULT_HOST;
-    char *serv = DEFAULT_SERV;
-    char *path = NULL;
-    char *folder = NULL;
-    char *group = NULL;
-    char *user = NULL;
-    char *point;
+    const char *host = DEFAULT_HOST;
+    const char *serv = DEFAULT_SERV;
+    const char *path = NULL;
+    const char *folder = NULL;
+    const char *group = NULL;
+    const char *user = NULL;
+    const char *point;
     int err, choice;
     int fd = STDIN_FILENO;
     int sock = -1;

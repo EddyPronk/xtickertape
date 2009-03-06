@@ -57,14 +57,14 @@ typedef void (*group_sub_callback_t)(void *rock, message_t message,
 
 /* Allocates and initializes a new group_sub_t */
 group_sub_t
-group_sub_alloc(char *group,
-                char *expression,
+group_sub_alloc(const char *group,
+                const char *expression,
                 int in_menu,
                 int has_nazi,
                 int min_time,
                 int max_time,
                 key_table_t key_table,
-                char **key_names,
+                char *const *key_names,
                 int key_count,
                 group_sub_callback_t callback,
                 void *rock);
@@ -76,7 +76,7 @@ group_sub_free(group_sub_t self);
 
 
 /* Answers the receiver's subscription expression */
-char *
+const char *
 group_sub_expression(group_sub_t self);
 
 

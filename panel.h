@@ -66,7 +66,7 @@ control_panel_free(control_panel_t self);
 
 /* Displays a message in the status line */
 void
-control_panel_set_status(control_panel_t self, char *message);
+control_panel_set_status(control_panel_t self, const char *message);
 
 
 /* Displays a message in the status line */
@@ -83,8 +83,8 @@ control_panel_set_connected(control_panel_t self, int is_connected);
  * needed in order to later remove or re-index the subscription */
 void *
 control_panel_add_subscription(control_panel_t self,
-                               char *tag,
-                               char *title,
+                               const char *tag,
+                               const char *title,
                                control_panel_callback_t callback,
                                void *rock);
 
@@ -113,7 +113,7 @@ control_panel_set_index(control_panel_t self, void *rock, int index);
 void
 control_panel_retitle_subscription(control_panel_t self,
                                    void *rock,
-                                   char *title);
+                                   const char *title);
 
 
 /* Makes the control_panel visible and selects the given message in

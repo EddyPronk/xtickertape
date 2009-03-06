@@ -53,17 +53,17 @@ typedef struct keys_parser *keys_parser_t;
 /* The keys_parser callback type */
 typedef int (*keys_parser_callback_t)(
     void *rock,
-    char *name,
-    char *key_data,
+    const char *name,
+    const char *key_data,
     int key_length,
     int is_private);
 
 /* Allocates and initializes a new keys file parser */
 keys_parser_t
-keys_parser_alloc(char *tickerdir,
+keys_parser_alloc(const char *tickerdir,
                   keys_parser_callback_t callback,
                   void *rock,
-                  char *tag);
+                  const char *tag);
 
 
 /* Frees the resources consumed by the receiver */
@@ -75,7 +75,7 @@ keys_parser_free(keys_parser_t self);
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
 int
-keys_parser_parse(keys_parser_t self, char *buffer, size_t length);
+keys_parser_parse(keys_parser_t self, const char *buffer, size_t length);
 
 
 #endif /* KEYS_PARSER_H */

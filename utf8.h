@@ -119,7 +119,8 @@ typedef struct utf8_encoder *utf8_encoder_t;
 
 /* Returns a utf8_encoder */
 utf8_encoder_t
-utf8_encoder_alloc(Display *display, XmFontList font_list, char *code_set);
+utf8_encoder_alloc(Display *display, XmFontList font_list,
+                   const char *code_set);
 
 
 /* Releases the resources allocated by a utf8_encoder_t */

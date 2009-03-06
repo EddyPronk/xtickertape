@@ -179,7 +179,7 @@ accept_subscription(groups_parser_t self)
 
 /* Prints a consistent error message */
 static void
-parse_error(groups_parser_t self, char *message)
+parse_error(groups_parser_t self, const char *message)
 {
     fprintf(stderr, "%s: parse error line %d: %s\n",
             self->tag, self->line_num, message);
@@ -187,7 +187,7 @@ parse_error(groups_parser_t self, char *message)
 
 /* Adds a key to the current list */
 static int
-accept_key(groups_parser_t self, char *name)
+accept_key(groups_parser_t self, const char *name)
 {
     char **new_names;
 
@@ -738,7 +738,8 @@ parse_char(groups_parser_t self, int ch)
 
 /* Allocates and initializes a new groups file parser */
 groups_parser_t
-groups_parser_alloc(groups_parser_callback_t callback, void *rock, char *tag)
+groups_parser_alloc(groups_parser_callback_t callback, void *rock,
+                    const char *tag)
 {
     groups_parser_t self;
 
@@ -786,10 +787,10 @@ groups_parser_free(groups_parser_t self)
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
 int
-groups_parser_parse(groups_parser_t self, char *buffer, size_t length)
+groups_parser_parse(groups_parser_t self, const char *buffer, size_t length)
 {
-    char *end = buffer + length;
-    char *pointer;
+    const char *end = buffer + length;
+    const char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0) {

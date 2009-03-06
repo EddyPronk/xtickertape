@@ -711,7 +711,7 @@ find_name(lexer_t self, const char *lstring)
 
 /* Appends an int32 attribute to the buffer */
 static int
-append_int32_tuple(lexer_t self, char *name, int value)
+append_int32_tuple(lexer_t self, const char *name, int value)
 {
     /* Write the name */
     if (append_string(self, name) < 0) {

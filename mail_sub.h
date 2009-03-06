@@ -52,7 +52,7 @@ typedef void (*mail_sub_callback_t)(void *rock, message_t message,
 
 /* Answers a new mail_sub */
 mail_sub_t
-mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock);
+mail_sub_alloc(const char *user, mail_sub_callback_t callback, void *rock);
 
 
 /* Releases the resources consumed by the receiver */

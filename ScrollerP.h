@@ -68,7 +68,7 @@ typedef struct {
     XtCallbackList attachment_callbacks;
     XtCallbackList kill_callbacks;
     XFontStruct *font;
-    char *code_set;
+    const char *code_set;
     Pixel group_pixel;
     Pixel user_pixel;
     Pixel string_pixel;

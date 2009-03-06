@@ -64,7 +64,7 @@ usenet_sub_free(usenet_sub_t self);
 int
 usenet_sub_add(usenet_sub_t self,
                int has_not,
-               char *pattern,
+               const char *pattern,
                struct usenet_expr *expressions,
                size_t count);
 

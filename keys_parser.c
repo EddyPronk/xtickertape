@@ -149,7 +149,7 @@ lex_data(keys_parser_t self, int ch);
 
 /* Prints a consistent error message */
 static void
-parse_error(keys_parser_t self, char *message)
+parse_error(keys_parser_t self, const char *message)
 {
     fprintf(stderr, "%s: parse error line %d: %s\n",
             self->tag, self->line_num, message);
@@ -188,7 +188,7 @@ accept_key(keys_parser_t self)
         /* Open the key file. */
         fd = open(self->key_data, O_RDONLY);
         if (fd < 0) {
-            char *error_string = strerror(errno);
+            const char *error_string = strerror(errno);
             size_t length;
             char *buffer;
 
@@ -626,10 +626,10 @@ parse_char(keys_parser_t self, int ch)
 
 /* Allocates and initializes a new keys file parser */
 keys_parser_t
-keys_parser_alloc(char *keys_dir,
+keys_parser_alloc(const char *keys_dir,
                   keys_parser_callback_t callback,
                   void *rock,
-                  char *tag)
+                  const char *tag)
 {
     keys_parser_t self;
 
@@ -696,10 +696,10 @@ keys_parser_free(keys_parser_t self)
  * expression that is successfully read.  A zero-length buffer is
  * interpreted as an end-of-input marker */
 int
-keys_parser_parse(keys_parser_t self, char *buffer, size_t length)
+keys_parser_parse(keys_parser_t self, const char *buffer, size_t length)
 {
-    char *end = buffer + length;
-    char *pointer;
+    const char *end = buffer + length;
+    const char *pointer;
 
     /* Length of 0 indicates EOF */
     if (length == 0) {

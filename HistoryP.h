@@ -89,7 +89,7 @@ typedef struct {
     XFontStruct *font;
 
     /* The code set used by the font */
-    char *code_set;
+    const char *code_set;
 
     /* The color to use when drawing the timestamp */
     Pixel timestamp_pixel;

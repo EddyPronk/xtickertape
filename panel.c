@@ -106,19 +106,19 @@
 
 
 /* The list of timeouts for the timeout menu */
-char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
+static const char *timeouts[] = { "1", "5", "10", "30", "60", NULL };
 
 /* The default message timeout */
 #define DEFAULT_TIMEOUT 5
 
 /* The list of mime types */
-char *mime_types[] = { "text/uri-list", "x-elvin/url", NULL };
+static const char *mime_types[] = { "text/uri-list", "x-elvin/url", NULL };
 
 /* The format of the default user field */
 #define USER_FMT "%s@%s"
 
 /* The characters to use when converting a hex digit to ASCII */
-static char hex_chars[] = "0123456789abcdef";
+static const char *hex_chars = "0123456789abcdef";
 
 
 /* The structure used to hold font code-set information */
@@ -127,7 +127,7 @@ typedef struct {
     XmFontList font_list;
 
     /* The font's code set */
-    char *code_set;
+    const char *code_set;
 } TextWidgetRec;
 
 /* Additional resources for Motif text widgets */
@@ -389,7 +389,7 @@ get_timeout(control_panel_t self);
 static char *
 get_mime_type(control_panel_t self);
 static void
-set_mime_args(control_panel_t self, char *args);
+set_mime_args(control_panel_t self, const char *args);
 static char *
 get_mime_args(control_panel_t self);
 
@@ -1443,7 +1443,7 @@ get_timeout(control_panel_t self)
 
 /* Sets the receiver's MIME type. */
 static void
-set_mime_type(control_panel_t self, char *string)
+set_mime_type(control_panel_t self, const char *string)
 {
     int i;
 
@@ -1487,7 +1487,7 @@ get_mime_type(control_panel_t self)
 
 /* Sets the receiver's MIME args */
 static void
-set_mime_args(control_panel_t self, char *args)
+set_mime_args(control_panel_t self, const char *args)
 {
     char *raw;
 
@@ -1566,7 +1566,7 @@ create_uuid(control_panel_t self, char *result)
 
     /* Convert those digits into bytes */
     for (index = 0; index < ELVIN_SHA1_DIGESTLEN; index++) {
-        int ch = (uchar)digest[index];
+        int ch = *(unsigned char *)(digest + index);
         result[index * 2] = hex_chars[ch >> 4];
         result[index * 2 + 1] = hex_chars[ch & 0xF];
     }
@@ -1744,8 +1744,8 @@ action_send(Widget button, control_panel_t self, XtPointer ignored)
 static void
 action_clear(Widget button, control_panel_t self, XtPointer ignored)
 {
-    char *user;
-    char *domain;
+    const char *user;
+    const char *domain;
     size_t length;
     char *buffer;
 
@@ -1848,19 +1848,19 @@ control_panel_free(control_panel_t self)
 
 /* Show a status message in the status bar */
 static void
-show_status(control_panel_t self, char *message)
+show_status(control_panel_t self, const char *message)
 {
     XmString string;
 
     /* Create an XmString version of the string */
-    string = XmStringCreateSimple(message ? message : " ");
+    string = XmStringCreateSimple((char*)(message ? message : " "));
     XtVaSetValues(self->status_line, XmNlabelString, string, NULL);
     XmStringFree(string);
 }
 
 /* Sets the control panel status message */
 void
-control_panel_set_status(control_panel_t self, char *message)
+control_panel_set_status(control_panel_t self, const char *message)
 {
     /* Free the old status message */
     if (self->status != NULL) {
@@ -1946,8 +1946,8 @@ control_panel_set_connected(control_panel_t self, int is_connected)
 /* Adds a subscription to the receiver at the end of the groups list */
 void *
 control_panel_add_subscription(control_panel_t self,
-                               char *tag,
-                               char *title,
+                               const char *tag,
+                               const char *title,
                                control_panel_callback_t callback,
                                void *rock)
 {
@@ -1972,7 +1972,7 @@ control_panel_add_subscription(control_panel_t self,
     /* Create a menu item for the subscription.  Use the user data
      * field to point to the tuple so that we can find our way back to
      * the control panel when we want to order the menu items */
-    string = XmStringCreateSimple(title);
+    string = XmStringCreateSimple((char*)title);
     tuple->widget = XtVaCreateManagedWidget(
         title, xmPushButtonWidgetClass, self->group_menu,
         XmNlabelString, string,
@@ -2128,7 +2128,7 @@ control_panel_set_index(control_panel_t self, void *info, int index)
 void
 control_panel_retitle_subscription(control_panel_t self,
                                    void *info,
-                                   char *title)
+                                   const char *title)
 {
     menu_item_tuple_t tuple;
     XmString string;
@@ -2139,7 +2139,7 @@ control_panel_retitle_subscription(control_panel_t self,
     tuple->title = strdup(title);
 
     /* Update the menu item's label */
-    string = XmStringCreateSimple(title);
+    string = XmStringCreateSimple((char*)title);
     XtVaSetValues(tuple->widget,
                   XmNlabelString, string,
                   NULL);

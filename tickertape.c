@@ -213,22 +213,22 @@ static int
 parse_keys_file(tickertape_t self);
 static void
 init_ui(tickertape_t self);
-static char *
+static const char *
 tickertape_ticker_dir(tickertape_t self);
 
 
 #if 0
-static char *
+static const char *
 tickertape_config_filename(tickertape_t self);
 #endif
 
-static char *
+static const char *
 tickertape_groups_filename(tickertape_t self);
-static char *
+static const char *
 tickertape_usenet_filename(tickertape_t self);
-static char *
+static const char *
 tickertape_keys_filename(tickertape_t self);
-static char *
+static const char *
 tickertape_keys_directory(tickertape_t self);
 
 
@@ -350,9 +350,9 @@ receive_callback(void *rock, message_t message, int show_attachment)
 
 /* Write the template to the given file, doing some substitutions */
 static int
-write_default_file(tickertape_t self, FILE *out, char *template)
+write_default_file(tickertape_t self, FILE *out, const char *template)
 {
-    char *pointer;
+    const char *pointer;
 
     for (pointer = template; *pointer != '\0'; pointer++) {
         if (*pointer == '%') {
@@ -396,7 +396,7 @@ write_default_file(tickertape_t self, FILE *out, char *template)
  * Returns the file descriptor of the open config file on success,
  * -1 on failure */
 static int
-open_config_file(tickertape_t self, char *filename, char *template)
+open_config_file(tickertape_t self, const char *filename, const char *template)
 {
     int fd;
     FILE *out;
@@ -454,7 +454,7 @@ parse_config_callback(void *rock,
 static int
 read_config_file(tickertape_t self, elvin_error_t error)
 {
-    char *filename = tickertape_config_filename(self);
+    const char *filename = tickertape_config_filename(self);
     parser_t parser;
     int fd;
 
@@ -489,12 +489,12 @@ read_config_file(tickertape_t self, elvin_error_t error)
 /* The callback for the groups file parser */
 static int
 parse_groups_callback(void *rock,
-                      char *name,
+                      const char *name,
                       int in_menu,
                       int has_nazi,
                       int min_time,
                       int max_time,
-                      char **key_names,
+                      char *const *key_names,
                       int key_count)
 {
     tickertape_t self = (tickertape_t)rock;
@@ -535,7 +535,7 @@ parse_groups_callback(void *rock,
 static int
 parse_groups_file(tickertape_t self)
 {
-    char *filename = tickertape_groups_filename(self);
+    const char *filename = tickertape_groups_filename(self);
     groups_parser_t parser;
     int fd;
 
@@ -585,7 +585,7 @@ parse_groups_file(tickertape_t self)
 static int
 parse_usenet_callback(tickertape_t self,
                       int has_not,
-                      char *pattern,
+                      const char *pattern,
                       struct usenet_expr *expressions,
                       size_t count)
 {
@@ -598,7 +598,7 @@ parse_usenet_callback(tickertape_t self,
 static int
 parse_usenet_file(tickertape_t self)
 {
-    char *filename = tickertape_usenet_filename(self);
+    const char *filename = tickertape_usenet_filename(self);
     usenet_parser_t parser;
     int fd;
 
@@ -656,8 +656,8 @@ parse_usenet_file(tickertape_t self)
 /* The callback for the keys file parser */
 static int
 parse_keys_callback(void *rock,
-                    char *name,
-                    char *data,
+                    const char *name,
+                    const char *data,
                     int length,
                     int is_private)
 {
@@ -680,7 +680,7 @@ parse_keys_callback(void *rock,
 static int
 parse_keys_file(tickertape_t self)
 {
-    char *filename = tickertape_keys_filename(self);
+    const char *filename = tickertape_keys_filename(self);
     keys_parser_t parser;
     int fd;
 
@@ -737,7 +737,7 @@ parse_keys_file(tickertape_t self)
 
 /* Returns the index of the group with the given expression (-1 if none) */
 static int
-find_group(group_sub_t *groups, int count, char *expression)
+find_group(group_sub_t *groups, int count, const char *expression)
 {
     group_sub_t *pointer;
 
@@ -1120,8 +1120,8 @@ status_cb(elvin_handle_t handle,
     message_t message;
     size_t length;
     char *buffer = NULL;
-    char *string;
-    char *url;
+    const char *string;
+    const char *url;
 
     /* Construct an appropriate message string */
     switch (event->type) {
@@ -1307,14 +1307,14 @@ status_cb(elvin_handle_t handle,
 tickertape_t
 tickertape_alloc(XTickertapeRec *resources,
                  elvin_handle_t handle,
-                 char *user,
-                 char *domain,
-                 char *ticker_dir,
-                 char *config_file,
-                 char *groups_file,
-                 char *usenet_file,
-                 char *keys_file,
-                 char *keys_dir,
+                 const char *user,
+                 const char *domain,
+                 const char *ticker_dir,
+                 const char *config_file,
+                 const char *groups_file,
+                 const char *usenet_file,
+                 const char *keys_file,
+                 const char *keys_dir,
                  Widget top,
                  elvin_error_t error)
 {
@@ -1442,14 +1442,14 @@ tickertape_free(tickertape_t self)
 }
 
 /* Answers the tickertape's user name */
-char *
+const const char *
 tickertape_user_name(tickertape_t self)
 {
     return self->user;
 }
 
 /* Answers the tickertape's domain name */
-char *
+const char *
 tickertape_domain_name(tickertape_t self)
 {
     return self->domain;
@@ -1478,10 +1478,10 @@ tickertape_quit(tickertape_t self)
 }
 
 /* Answers the receiver's ticker_dir filename */
-static char *
+static const char *
 tickertape_ticker_dir(tickertape_t self)
 {
-    char *dir;
+    const char *dir;
     size_t length;
 
     /* See if we've already looked it up */
@@ -1519,11 +1519,11 @@ tickertape_ticker_dir(tickertape_t self)
 
 #if 0
 /* Answers the receiver's config file filename */
-static char *
+static const char *
 tickertape_config_filename(tickertape_t self)
 {
     if (self->config_file == NULL) {
-        char *dir = tickertape_ticker_dir(self);
+        const char *dir = tickertape_ticker_dir(self);
 
         self->config_file = malloc(strlen(
                                        dir) + sizeof(DEFAULT_CONFIG_FILE) + 1);
@@ -1535,11 +1535,11 @@ tickertape_config_filename(tickertape_t self)
 #endif
 
 /* Answers the receiver's groups file filename */
-static char *
+static const char *
 tickertape_groups_filename(tickertape_t self)
 {
     if (self->groups_file == NULL) {
-        char *dir = tickertape_ticker_dir(self);
+        const char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_GROUPS_FILE) + 2;
 
         self->groups_file = malloc(length);
@@ -1555,11 +1555,11 @@ tickertape_groups_filename(tickertape_t self)
 }
 
 /* Answers the receiver's usenet filename */
-static char *
+static const char *
 tickertape_usenet_filename(tickertape_t self)
 {
     if (self->usenet_file == NULL) {
-        char *dir = tickertape_ticker_dir(self);
+        const char *dir = tickertape_ticker_dir(self);
         size_t length = strlen(dir) + strlen(DEFAULT_USENET_FILE) + 2;
 
         self->usenet_file = malloc(length);
@@ -1575,11 +1575,11 @@ tickertape_usenet_filename(tickertape_t self)
 }
 
 /* Answers the receiver's keys filename */
-static char *
+static const char *
 tickertape_keys_filename(tickertape_t self)
 {
     if (self->keys_file == NULL) {
-        char *dir = tickertape_ticker_dir(self);
+        const char *dir = tickertape_ticker_dir(self);
         size_t length;
 
         length = strlen(dir) + sizeof(DEFAULT_KEYS_FILE) + 1;
@@ -1596,12 +1596,12 @@ tickertape_keys_filename(tickertape_t self)
 }
 
 /* Answers the receiver's keys directory */
-static char *
+static const char *
 tickertape_keys_directory(tickertape_t self)
 {
     if (self->keys_dir == NULL) {
-        char *file = tickertape_keys_filename(self);
-        char *point;
+        const char *file = tickertape_keys_filename(self);
+        const char *point;
         size_t length;
 
         /* Default to the directory name from the keys filename */

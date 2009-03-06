@@ -112,7 +112,7 @@ key_entry_free(key_entry_t self);
 
 /* Allocates and initializes a new key_entry_t */
 static key_entry_t
-key_entry_alloc(char *name, char *data, int length, int is_private)
+key_entry_alloc(const char *name, const char *data, int length, int is_private)
 {
     key_entry_t self;
 
@@ -325,7 +325,7 @@ key_table_free(key_table_t self)
 
 /* Returns the position of the key with the given name in the table. */
 static key_entry_t *
-key_table_search(key_table_t self, char *name)
+key_table_search(key_table_t self, const char *name)
 {
     int i;
 
@@ -344,10 +344,10 @@ key_table_search(key_table_t self, char *name)
 /* Returns the information about the named key. */
 int
 key_table_lookup(key_table_t self,
-		 char *name,
-		 char **data_out,
-		 int *length_out,
-		 int *is_private_out)
+                 const char *name,
+                 const char **data_out,
+                 int *length_out,
+                 int *is_private_out)
 {
     key_entry_t *entry;
 
@@ -386,10 +386,10 @@ key_table_lookup(key_table_t self,
 /* Adds a new key to the table. */
 int
 key_table_add(key_table_t self,
-	      char *name,
-	      char *data,
-	      int length,
-	      int is_private)
+              const char *name,
+              const char *data,
+              int length,
+              int is_private)
 {
     key_entry_t entry;
 
@@ -420,7 +420,7 @@ key_table_add(key_table_t self,
 
 /* Remove the key with the given name from the table. */
 int
-key_table_remove(key_table_t self, char *name)
+key_table_remove(key_table_t self, const char *name)
 {
     key_entry_t *position;
 

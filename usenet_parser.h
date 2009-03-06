@@ -88,12 +88,13 @@ struct usenet_expr {
 
 /* The usenet parser callback type */
 typedef int (*usenet_parser_callback_t)(
-    void *rock, int has_not, char *pattern,
+    void *rock, int has_not, const char *pattern,
     struct usenet_expr *expressions, size_t expr_count);
 
 /* Allocates and initializes a new usenet subscription parser */
 usenet_parser_t
-usenet_parser_alloc(usenet_parser_callback_t callback, void *rock, char *tag);
+usenet_parser_alloc(usenet_parser_callback_t callback, void *rock,
+                    const char *tag);
 
 
 /* Frees the resources consumed by the receiver */
@@ -105,7 +106,7 @@ usenet_parser_free(usenet_parser_t self);
  * subscription expression that is successfully read.  A zero-length
  * buffer is interpreted as an end-of-input marker */
 int
-usenet_parser_parse(usenet_parser_t self, char *buffer, size_t length);
+usenet_parser_parse(usenet_parser_t self, const char *buffer, size_t length);
 
 
 #endif /* USENET_PARSER_H */

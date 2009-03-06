@@ -56,22 +56,22 @@ key_table_free(key_table_t self);
 /* Adds a new key to the table. */
 int
 key_table_add(key_table_t self,
-              char *name,
-              char *data,
+              const char *name,
+              const char *data,
               int length,
               int is_private);
 
 
 /* Remove the key with the given name from the table. */
 int
-key_table_remove(key_table_t self, char *name);
+key_table_remove(key_table_t self, const char *name);
 
 
 /* Returns the information about the named key. */
 int
 key_table_lookup(key_table_t self,
-                 char *name,
-                 char **data_out,
+                 const char *name,
+                 const char **data_out,
                  int *length_out,
                  int *is_private_out);
 

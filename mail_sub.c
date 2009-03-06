@@ -185,64 +185,66 @@ notify_cb(elvin_handle_t handle,
 {
     mail_sub_t self = (mail_sub_t)rock;
     message_t message;
-    char *from;
-    char *folder;
-    char *subject;
+    char *value;
+    const char *from;
+    const char *folder;
+    const char *subject;
     char *buffer = NULL;
     size_t length;
     int found;
 
     /* Get the name from the `From' field */
-    if (!elvin_notification_get_string(notification, F_FROM, &found, &from,
+    if (!elvin_notification_get_string(notification, F_FROM, &found, &value,
                                        error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
-    /* Split the user name from the address */
-    if (mbox_parser_parse(self->parser, from) == 0) {
-        from = mbox_parser_get_name(self->parser);
-        if (*from == 0) {
-            /* Otherwise resort to the e-mail address */
-            from = mbox_parser_get_email(self->parser);
+    from = "anonymous";
+    if (found) {
+        /* Split the user name from the address */
+        if (mbox_parser_parse(self->parser, value) == 0) {
+            from = mbox_parser_get_name(self->parser);
+            if (*from == 0) {
+                /* Otherwise resort to the e-mail address */
+                from = mbox_parser_get_email(self->parser);
+            }
         }
     }
 
-    /* Default to an anonymous sender */
-    from = found ? from : "anonymous";
-
     /* Get the folder field */
-    if (!elvin_notification_get_string(notification, F_FOLDER, NULL, &folder,
+    if (!elvin_notification_get_string(notification, F_FOLDER, NULL, &value,
                                        error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
-    /* If no folder provided then just call it `mail' */
-    if (folder == NULL) {
-        folder = "mail";
-    } else {
+    folder = "mail";
+    if (found) {
         /* Format the folder name to use as the group */
-        length = strlen(FOLDER_FMT) + strlen(folder) - 1;
+        length = strlen(FOLDER_FMT) + strlen(value) - 1;
         buffer = malloc(length);
         if (buffer != NULL) {
-            snprintf(buffer, length, FOLDER_FMT, folder);
+            snprintf(buffer, length, FOLDER_FMT, value);
             folder = buffer;
         }
     }
 
     /* Get the subject field */
     if (!elvin_notification_get_string(notification, F_SUBJECT, &found,
-                                       &subject, error)) {
+                                       &value, error)) {
         fprintf(stderr, "elvin_notification_get_string(): failed\n");
         elvin_error_fprintf(stderr, error);
         exit(1);
     }
 
     /* Have a default subject */
-    subject = found ? subject : "[No subject]";
+    subject = "[No subject]";
+    if (found) {
+        subject = value;
+    }
 
     /* Construct a message_t out of all of that */
     message = message_alloc(
@@ -273,7 +275,7 @@ notify_cb(elvin_handle_t handle,
 
 /* Answers a new mail_sub_t */
 mail_sub_t
-mail_sub_alloc(char *user, mail_sub_callback_t callback, void *rock)
+mail_sub_alloc(const char *user, mail_sub_callback_t callback, void *rock)
 {
     mail_sub_t self;
 

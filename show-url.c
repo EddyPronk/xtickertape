@@ -94,14 +94,14 @@ static struct option long_options[] =
 #endif
 
 /* A table converting a number into a hex nibble */
-static char hex[] =
+static const char hex[] =
 {
     '0', '1', '2', '3', '4', '5', '6', '7', '8',
     '9', 'a', 'b', 'c', 'd', 'e', 'f'
 };
 
 /* Characters which should be escaped */
-static char no_esc[] =
+static const char no_esc[] =
 {
     2, 1, 2, 0,  1, 0, 1, 1,  1, 2, 1, 0,  2, 0, 0, 0,  /* 0x20 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 1,  1, 0, 1, 1,  /* 0x30 */
@@ -112,7 +112,7 @@ static char no_esc[] =
 };
 
 /* Characters which need to be escaped inside double-quotes */
-static char dq_esc[] =
+static const char dq_esc[] =
 {
     2, 2, 2, 0,  1, 0, 0, 0,  0, 2, 0, 0,  2, 0, 0, 0,  /* 0x20 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x30 */
@@ -123,7 +123,7 @@ static char dq_esc[] =
 };
 
 /* Characters which need to be escaped inside single-quotes */
-static char sq_esc[] =
+static const char sq_esc[] =
 {
     2, 0, 2, 0,  0, 0, 0, 2,  0, 2, 0, 0,  2, 0, 0, 0,  /* 0x20 */
     0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  /* 0x30 */
@@ -134,7 +134,7 @@ static char sq_esc[] =
 };
 
 /* The program name */
-static char *progname = NULL;
+static const char *progname = NULL;
 
 /* The buffer used to construct the command */
 static char *cmd_buffer = NULL;
@@ -204,10 +204,10 @@ append_char(int ch)
 
 /* Appends an URL to the command buffer, apply escapes as appropriate */
 static void
-append_url(char *url, int quote_count)
+append_url(const char *url, int quote_count)
 {
-    char *point;
-    char *esc_table;
+    const char *point;
+    const char *esc_table;
 
     /* Figure out which escape table to use */
     switch (quote_count) {
@@ -269,11 +269,11 @@ append_url(char *url, int quote_count)
 }
 
 /* Invoke the browser on the given URL */
-char *
-invoke(char *browser, char *url)
+const char *
+invoke(const char *browser, const char *url)
 {
     int did_subst = 0;
-    char *point = browser;
+    const char *point = browser;
     int quote_count = 0;
     int status;
 
@@ -375,14 +375,14 @@ invoke(char *browser, char *url)
 int
 main(int argc, char *argv[])
 {
-    char *browser;
+    const char *browser;
     char buffer[MAX_URL_SIZE + 1];
     struct stat statbuf;
     char *url = NULL;
     char *filename = NULL;
     FILE *file;
     size_t length, i;
-    char *point;
+    const char *point;
 
     /* Extract the program name from argv[0] */
     progname = strrchr(argv[0], '/');
