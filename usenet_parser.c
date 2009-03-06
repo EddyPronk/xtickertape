@@ -182,9 +182,9 @@ accept_group(usenet_parser_t self, int has_not, const char *group)
     struct usenet_expr *pointer;
 
     /* Call the callback */
-    result = (self->callback)(self->rock, has_not, group,
-                              self->expressions,
-                              self->expr_pointer - self->expressions);
+    result = self->callback(self->rock, has_not, group,
+                            self->expressions,
+                            self->expr_pointer - self->expressions);
 
     /* Clean up */
     for (pointer = self->expressions; pointer < self->expr_pointer;

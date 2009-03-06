@@ -289,9 +289,9 @@ accept_key(keys_parser_t self)
 
     /* Call the callback with the information */
     if (self->callback != NULL) {
-        result = (self->callback)(self->rock, self->name,
-                                  self->key_data, self->key_length,
-                                  self->is_private);
+        result = self->callback(self->rock, self->name,
+                                self->key_data, self->key_length,
+                                self->is_private);
     }
 
     /* Clean up */

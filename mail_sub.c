@@ -163,7 +163,7 @@ notify_cb(elvin_handle_t handle,
         NULL, 0,
         NULL, NULL, NULL, NULL);
 
-    (*self->callback)(self->rock, message, False);
+    self->callback(self->rock, message, False);
 
     /* Clean up */
     message_free(message);
@@ -251,7 +251,7 @@ notify_cb(elvin_handle_t handle,
         NULL, folder, from, subject, 60,
         NULL, 0, NULL, NULL, NULL, NULL);
 
-    (*self->callback)(self->rock, message, False);
+    self->callback(self->rock, message, False);
 
     /* Clean up */
     message_free(message);

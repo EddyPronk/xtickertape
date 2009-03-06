@@ -278,7 +278,7 @@ notify_cb(elvin_handle_t handle,
                             NULL, NULL, NULL, NULL);
     if (message != NULL) {
         /* Deliver the message */
-        (*self->callback)(self->rock, message, False);
+        self->callback(self->rock, message, False);
         message_free(message);
     }
 
@@ -471,7 +471,7 @@ notify_cb(elvin_handle_t handle,
                             NULL, NULL, NULL, NULL);
     if (message != NULL) {
         /* Deliver the message */
-        (*self->callback)(self->rock, message, False);
+        self->callback(self->rock, message, False);
         message_free(message);
     }
 

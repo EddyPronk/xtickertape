@@ -420,7 +420,7 @@ notify_cb(elvin_handle_t handle,
                             tag, message_id, reply_id, thread_id);
 
     /* Deliver the message */
-    (*self->callback)(self->rock, message, self->has_nazi);
+    self->callback(self->rock, message, self->has_nazi);
 
     /* Clean up */
     message_free(message);
@@ -716,7 +716,7 @@ notify_cb(elvin_handle_t handle,
                             tag, message_id, reply_id, thread_id);
 
     /* Deliver the message */
-    (*self->callback)(self->rock, message, self->has_nazi);
+    self->callback(self->rock, message, self->has_nazi);
 
     /* Clean up */
     message_free(message);
