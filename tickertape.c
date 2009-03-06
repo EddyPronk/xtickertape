@@ -204,7 +204,7 @@ struct tickertape {
 static int
 mkdirhier(char *dirname);
 static void
-menu_callback(Widget widget, tickertape_t self, message_t message);
+menu_callback(Widget widget, XtPointer closure, XtPointer call_data);
 static void
 receive_callback(void *rock, message_t message, int show_attachment);
 static int
@@ -293,16 +293,22 @@ mkdirhier(char *dirname)
 
 /* Callback for a menu() action in the Scroller */
 static void
-menu_callback(Widget widget, tickertape_t self, message_t message)
+menu_callback(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    tickertape_t self = (tickertape_t)closure;
+    message_t message = (message_t)call_data;
+
     control_panel_select(self->control_panel, message);
     control_panel_show(self->control_panel);
 }
 
 /* Callback for an action() action in the Scroller */
 static void
-mime_callback(Widget widget, tickertape_t self, message_t message)
+mime_callback(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    tickertape_t self = (tickertape_t)closure;
+    message_t message = (message_t)call_data;
+
     /* Bail if no message provided */
     if (message == NULL) {
         return;
@@ -314,8 +320,11 @@ mime_callback(Widget widget, tickertape_t self, message_t message)
 
 /* Callback for a kill() action in the Scroller */
 static void
-kill_callback(Widget widget, tickertape_t self, message_t message)
+kill_callback(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    tickertape_t self = (tickertape_t)closure;
+    message_t message = (message_t)call_data;
+
     if (message == NULL) {
         return;
     }
@@ -931,12 +940,9 @@ init_ui(tickertape_t self)
     self->scroller = XtVaCreateManagedWidget(
         "scroller", scrollerWidgetClass, self->top,
         NULL);
-    XtAddCallback(self->scroller, XtNcallback,
-                  (XtCallbackProc)menu_callback, self);
-    XtAddCallback(self->scroller, XtNattachmentCallback,
-                  (XtCallbackProc)mime_callback, self);
-    XtAddCallback(self->scroller, XtNkillCallback,
-                  (XtCallbackProc)kill_callback, self);
+    XtAddCallback(self->scroller, XtNcallback, menu_callback, self);
+    XtAddCallback(self->scroller, XtNattachmentCallback, mime_callback, self);
+    XtAddCallback(self->scroller, XtNkillCallback, kill_callback, self);
     XtRealizeWidget(self->top);
 }
 

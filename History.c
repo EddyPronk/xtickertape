@@ -1369,8 +1369,7 @@ motion_cb(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 
     /* Call the callbacks */
     XtCallCallbackList(widget, self->history.motion_callbacks,
-                       (XtPointer)(view ? message_view_get_message(view) :
-                                   NULL));
+                       view ? message_view_get_message(view) : NULL);
 }
 
 /* Repaint the bits of the widget that didn't get copied */
@@ -1784,8 +1783,7 @@ set_selection(HistoryWidget self, unsigned int index, message_t message)
     }
 
     /* Call the callback with our new selection */
-    XtCallCallbackList((Widget)self, self->history.callbacks,
-                       (XtPointer)message);
+    XtCallCallbackList((Widget)self, self->history.callbacks, message);
 }
 
 /* Selects the message at the given index */
@@ -1977,7 +1975,7 @@ drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     self->history.drag_timeout =
         XtAppAddTimeOut(XtWidgetToApplicationContext((Widget)self),
                         self->history.drag_delay,
-                        drag_timeout_cb, (XtPointer)self);
+                        drag_timeout_cb, self);
 }
 
 /* Dragging selects */
@@ -2039,7 +2037,7 @@ drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 
     /* Call the drag timeout callback to update the selection and set
      * a timeout */
-    drag_timeout_cb((XtPointer)self, &self->history.drag_timeout);
+    drag_timeout_cb(self, &self->history.drag_timeout);
 }
 
 /* End of the dragging */
@@ -2132,7 +2130,7 @@ show_attachment(Widget widget,
     /* Call the attachment callbacks */
     if (self->history.selection) {
         XtCallCallbackList(widget, self->history.attachment_callbacks,
-                           (XtPointer)self->history.selection);
+                           self->history.selection);
     }
 }
 

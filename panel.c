@@ -305,18 +305,18 @@ struct control_panel {
  *
  */
 static void
-file_groups(Widget widget, control_panel_t self, XtPointer unused);
+file_groups(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-file_usenet(Widget widget, control_panel_t self, XtPointer unused);
+file_usenet(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-file_keys(Widget widget, control_panel_t self, XtPointer unused);
+file_keys(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-file_exit(Widget widget, control_panel_t self, XtPointer unused);
+file_exit(Widget widget, XtPointer closure, XtPointer call_data);
 static void
 create_file_menu(control_panel_t self, Widget parent);
 
 static void
-help_about(Widget widget, control_panel_t self, XtPointer unused);
+help_about(Widget widget, XtPointer closure, XtPointer call_data);
 static void
 create_help_menu(control_panel_t self, Widget parent);
 
@@ -330,7 +330,8 @@ static void
 create_options_menu(control_panel_t self, Widget parent);
 
 static void
-configure_about_box(Widget shell, XtPointer rock, XConfigureEvent *event);
+configure_about_box(Widget widget, XtPointer closure, XEvent *event,
+                    Boolean* continue_to_dispatch);
 static Widget
 create_about_box(control_panel_t self, Widget parent);
 
@@ -364,12 +365,13 @@ static void
 create_bottom_box(control_panel_t self, Widget parent);
 
 static void
-configure_control_panel(Widget top, XtPointer rock, XConfigureEvent *event);
+configure_control_panel(Widget widget, XtPointer closure, XEvent *event,
+                        Boolean* continue_to_dispatch);
 static void
 init_ui(control_panel_t self, Widget parent);
 
 static void
-select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignored);
+select_group(Widget widget, XtPointer closure, XtPointer call_data);
 static void
 set_group_selection(control_panel_t self, menu_item_tuple_t tuple);
 static menu_item_tuple_t
@@ -401,17 +403,15 @@ static void
 deconstruct_message(control_panel_t self, message_t message);
 
 static void
-action_send(Widget button, control_panel_t self, XtPointer ignored);
+action_send(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-action_clear(Widget button, control_panel_t self, XtPointer ignored);
+action_clear(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-action_cancel(Widget button, control_panel_t self, XtPointer ignored);
+action_cancel(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-action_return(Widget textField,
-              control_panel_t self,
-              XmAnyCallbackStruct *cbs);
+action_return(Widget widget, XtPointer closure, XtPointer call_data);
 static void
-action_dismiss(Widget button, control_panel_t self, XtPointer ignored);
+action_dismiss(Widget widget, XtPointer closure, XtPointer call_data);
 
 static void
 prepare_reply(control_panel_t self, message_t message);
@@ -419,29 +419,37 @@ prepare_reply(control_panel_t self, message_t message);
 
 /* This gets called when the user selects the "reloadGroups" menu item */
 static void
-file_groups(Widget widget, control_panel_t self, XtPointer unused)
+file_groups(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     tickertape_reload_groups(self->tickertape);
 }
 
 /* This gets called when the user selects the "reloadUsenet" menu item */
 static void
-file_usenet(Widget widget, control_panel_t self, XtPointer unused)
+file_usenet(Widget widget, XtPointer closure, XtPointer unused)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     tickertape_reload_usenet(self->tickertape);
 }
 
 static void
-file_keys(Widget widget, control_panel_t self, XtPointer unused)
+file_keys(Widget widget, XtPointer closure, XtPointer unused)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     tickertape_reload_keys(self->tickertape);
 }
 
 /* This gets called when the user selects the "exit" menu item from
  * the file menu */
 static void
-file_exit(Widget widget, control_panel_t self, XtPointer unused)
+file_exit(Widget widget, XtPointer closure, XtPointer unused)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     tickertape_quit(self->tickertape);
 }
 
@@ -458,20 +466,17 @@ create_file_menu(control_panel_t self, Widget parent)
     /* Create the `reload groups' menu item */
     item = XtVaCreateManagedWidget("reloadGroups", xmPushButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNactivateCallback,
-                  (XtCallbackProc)file_groups, (XtPointer)self);
+    XtAddCallback(item, XmNactivateCallback, file_groups, self);
 
     /* Create the `reload usenet' menu item */
     item = XtVaCreateManagedWidget("reloadUsenet", xmPushButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNactivateCallback,
-                  (XtCallbackProc)file_usenet, (XtPointer)self);
+    XtAddCallback(item, XmNactivateCallback, file_usenet, self);
 
     /* Create the `reload keys' menu item */
     item = XtVaCreateManagedWidget("reloadKeys", xmPushButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNactivateCallback,
-                  (XtCallbackProc)file_keys, (XtPointer)self);
+    XtAddCallback(item, XmNactivateCallback, file_keys, self);
 
     /* Create a separator */
     XtVaCreateManagedWidget("separator", xmSeparatorGadgetClass, menu, NULL);
@@ -479,8 +484,7 @@ create_file_menu(control_panel_t self, Widget parent)
     /* Create the "exit" menu item */
     item = XtVaCreateManagedWidget("exit", xmPushButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNactivateCallback,
-                  (XtCallbackProc)file_exit, (XtPointer)self);
+    XtAddCallback(item, XmNactivateCallback, file_exit, self);
 
     /* Create the menu's cascade button */
     XtVaCreateManagedWidget(
@@ -532,22 +536,19 @@ create_options_menu(control_panel_t self, Widget parent)
     /* Create the `threaded' menu item */
     item = XtVaCreateManagedWidget("threaded", xmToggleButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback,
-                  options_threaded, (XtPointer)self);
+    XtAddCallback(item, XmNvalueChangedCallback, options_threaded, self);
     self->is_threaded = XmToggleButtonGetState(item);
 
     /* Create the `show time' menu item */
     item = XtVaCreateManagedWidget("showTime", xmToggleButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback,
-                  options_show_time, (XtPointer)self);
+    XtAddCallback(item, XmNvalueChangedCallback, options_show_time, self);
     self->show_timestamps = XmToggleButtonGetState(item);
 
     /* Create a `close policy' menu item */
     item = XtVaCreateManagedWidget("closePolicy", xmToggleButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNvalueChangedCallback,
-                  options_close_policy, (XtPointer)self);
+    XtAddCallback(item, XmNvalueChangedCallback, options_close_policy, self);
     self->close_on_send = XmToggleButtonGetState(item);
 
     /* Create the menu's cascade button */
@@ -557,7 +558,8 @@ create_options_menu(control_panel_t self, Widget parent)
 
 /* Sets the minimum size of the `About Box' to its initial dimensions */
 static void
-configure_about_box(Widget shell, XtPointer rock, XConfigureEvent *event)
+configure_about_box(Widget widget, XtPointer closure, XEvent *event,
+                    Boolean* continue_to_dispatch)
 {
     /* Ignore events that aren't about the structure */
     if (event->type != ConfigureNotify) {
@@ -565,14 +567,13 @@ configure_about_box(Widget shell, XtPointer rock, XConfigureEvent *event)
     }
 
     /* We won't need to be called again */
-    XtRemoveEventHandler(
-        shell, StructureNotifyMask, False,
-        (XtEventHandler)configure_about_box, rock);
+    XtRemoveEventHandler(widget, StructureNotifyMask, False,
+                         configure_about_box, closure);
 
     /* Set the minimum width/height to be the current width/height */
-    XtVaSetValues(shell,
-                  XmNminWidth, event->width,
-                  XmNminHeight, event->height,
+    XtVaSetValues(widget,
+                  XmNminWidth, event->xconfigure.width,
+                  XmNminHeight, event->xconfigure.height,
                   NULL);
 }
 
@@ -599,14 +600,12 @@ create_about_box(control_panel_t self, Widget parent)
 
     /* Add a handler for the WM_DELETE_WINDOW protocol */
     wm_delete_window = XmInternAtom(XtDisplay(top), "WM_DELETE_WINDOW", False);
-    XmAddWMProtocolCallback(
-        top, wm_delete_window,
-        (XtCallbackProc)action_dismiss, (XtPointer)self);
+    XmAddWMProtocolCallback(top, wm_delete_window, action_dismiss, self);
 
     /* Add an event handler so that we can set the minimum size to be
      * the initial size */
     XtAddEventHandler(top, StructureNotifyMask, False,
-                      (XtEventHandler)configure_about_box, (XtPointer)NULL);
+                      configure_about_box, NULL);
 
     /* Create a Form widget to manage the dialog box's children */
     form = XtVaCreateWidget("aboutBoxForm", xmFormWidgetClass, top,
@@ -670,8 +669,7 @@ create_about_box(control_panel_t self, Widget parent)
         XmNleftPosition, 40,
         XmNrightPosition, 60,
         NULL);
-    XtAddCallback(button, XmNactivateCallback,
-                  (XtCallbackProc)action_dismiss, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback, action_dismiss, self);
 
     XtManageChild(button_form);
 
@@ -682,8 +680,10 @@ create_about_box(control_panel_t self, Widget parent)
 
 /* Pop up an about box */
 static void
-help_about(Widget widget, control_panel_t self, XtPointer unused)
+help_about(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     if (self->about_box == NULL) {
         self->about_box = create_about_box(self, XtParent(self->top));
     }
@@ -705,8 +705,7 @@ create_help_menu(control_panel_t self, Widget parent)
     /* Create the "about" menu item */
     item = XtVaCreateManagedWidget("about", xmPushButtonGadgetClass,
                                    menu, NULL);
-    XtAddCallback(item, XmNactivateCallback,
-                  (XtCallbackProc)help_about, (XtPointer)self);
+    XtAddCallback(item, XmNactivateCallback, help_about, self);
 
     /* Create the menu's cascade button */
     cascade = XtVaCreateManagedWidget(
@@ -864,15 +863,15 @@ create_history_box(control_panel_t self, Widget parent)
 
     /* Add a callback for selection changes */
     XtAddCallback(self->history, XtNcallback,
-                  history_selection_callback, (XtPointer)self);
+                  history_selection_callback, self);
 
     /* Add a callback for showing attachments */
     XtAddCallback(self->history, XtNattachmentCallback,
-                  history_attachment_callback, (XtPointer)self);
+                  history_attachment_callback, self);
 
     /* Add a callback for showing message attachments */
     XtAddCallback(self->history, XtNmotionCallback,
-                  history_motion_callback, (XtPointer)self);
+                  history_motion_callback, self);
 }
 
 /* Constructs the status line */
@@ -1027,13 +1026,11 @@ create_text_box(control_panel_t self, Widget parent)
                                             rc.font_list, rc.code_set);
 
     /* Alert us when the message text changes */
-    XtAddCallback(self->text, XmNvalueChangedCallback,
-                  text_changed, (XtPointer)self);
+    XtAddCallback(self->text, XmNvalueChangedCallback, text_changed, self);
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
-    XtAddCallback(self->text, XmNactivateCallback,
-                  (XtCallbackProc)action_return, (XtPointer)self);
+    XtAddCallback(self->text, XmNactivateCallback, action_return, self);
 }
 
 /* Constructs the Mime type menu */
@@ -1095,8 +1092,7 @@ create_mime_box(control_panel_t self, Widget parent)
 
     /* Add a callback to the text field so that we can send the
      * notification if the user hits Return */
-    XtAddCallback(self->mime_args, XmNactivateCallback,
-                  (XtCallbackProc)action_return, (XtPointer)self);
+    XtAddCallback(self->mime_args, XmNactivateCallback, action_return, self);
 }
 
 /* Creates the bottom box (where the buttons live) */
@@ -1117,8 +1113,7 @@ create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_send when it gets pressed */
-    XtAddCallback(self->send, XmNactivateCallback,
-                  (XtCallbackProc)action_send, (XtPointer)self);
+    XtAddCallback(self->send, XmNactivateCallback, action_send, self);
 
     /* Create the "Clear" button */
     button = XtVaCreateManagedWidget(
@@ -1133,8 +1128,7 @@ create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_clear when it gets pressed */
-    XtAddCallback(button, XmNactivateCallback,
-                  (XtCallbackProc)action_clear, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback, action_clear, self);
 
 
     /* Create the "Cancel" button */
@@ -1150,15 +1144,15 @@ create_bottom_box(control_panel_t self, Widget parent)
         NULL);
 
     /* Have it call action_cancel when it gets pressed */
-    XtAddCallback(button, XmNactivateCallback,
-                  (XtCallbackProc)action_cancel, (XtPointer)self);
+    XtAddCallback(button, XmNactivateCallback, action_cancel, self);
 }
 
 /* Configures the control panel's minimum dimensions */
 static void
-configure_control_panel(Widget top, XtPointer rock, XConfigureEvent *event)
+configure_control_panel(Widget widget, XtPointer closure, XEvent *event,
+                        Boolean* continue_to_dispatch)
 {
-    control_panel_t self = (control_panel_t)rock;
+    control_panel_t self = (control_panel_t)closure;
     Dimension history_height;
 
     /* Make sure we've got a ConfigureNotify event */
@@ -1167,9 +1161,8 @@ configure_control_panel(Widget top, XtPointer rock, XConfigureEvent *event)
     }
 
     /* We're no longer interested in configure events */
-    XtRemoveEventHandler(
-        top, StructureNotifyMask, False,
-        (XtEventHandler)configure_control_panel, rock);
+    XtRemoveEventHandler(widget, StructureNotifyMask, False,
+                         configure_control_panel, closure);
 
     /* Figure out how tall the history list is */
     XtVaGetValues(self->history_form,
@@ -1177,9 +1170,9 @@ configure_control_panel(Widget top, XtPointer rock, XConfigureEvent *event)
                   NULL);
 
     /* Set the minimum width and height */
-    XtVaSetValues(top,
-                  XmNminWidth, event->width,
-                  XmNminHeight, event->height - history_height,
+    XtVaSetValues(widget,
+                  XmNminWidth, event->xconfigure.width,
+                  XmNminHeight, event->xconfigure.height - history_height,
                   NULL);
 }
 
@@ -1207,13 +1200,11 @@ init_ui(control_panel_t self, Widget parent)
     /* Add a handler for the WM_DELETE_WINDOW protocol */
     wm_delete_window = XmInternAtom(XtDisplay(self->top),
                                     "WM_DELETE_WINDOW", False);
-    XmAddWMProtocolCallback(self->top, wm_delete_window,
-                            (XtCallbackProc)action_cancel, (XtPointer)self);
+    XmAddWMProtocolCallback(self->top, wm_delete_window, action_cancel, self);
 
     /* Register an event handler for the first structure event */
     XtAddEventHandler(self->top, StructureNotifyMask, False,
-                      (XtEventHandler)configure_control_panel,
-                      (XtPointer)self);
+                      configure_control_panel, self);
 
     /* Create a form widget to manage the dialog box's children */
     form = XtVaCreateWidget("controlPanelForm", xmFormWidgetClass, self->top,
@@ -1312,8 +1303,9 @@ init_ui(control_panel_t self, Widget parent)
 
 /* This gets called when the user selects a group from the UI */
 static void
-select_group(Widget widget, menu_item_tuple_t tuple, XtPointer ignored)
+select_group(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    menu_item_tuple_t tuple = (menu_item_tuple_t)closure;
     control_panel_t self = tuple->control_panel;
 
     /* Record the tuple for later use */
@@ -1702,8 +1694,10 @@ deconstruct_message(control_panel_t self, message_t message)
 
 /* Callback for `Send' button */
 static void
-action_send(Widget button, control_panel_t self, XtPointer ignored)
+action_send(Widget button, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     /* Make sure a group is selected */
     if (self->selection != NULL) {
         message_t message;
@@ -1742,8 +1736,9 @@ action_send(Widget button, control_panel_t self, XtPointer ignored)
 
 /* Callback for `Clear' button */
 static void
-action_clear(Widget button, control_panel_t self, XtPointer ignored)
+action_clear(Widget button, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
     const char *user;
     const char *domain;
     size_t length;
@@ -1776,17 +1771,20 @@ action_clear(Widget button, control_panel_t self, XtPointer ignored)
 
 /* Callback for `Cancel' button */
 static void
-action_cancel(Widget button, control_panel_t self, XtPointer ignored)
+action_cancel(Widget button, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     XtPopdown(self->top);
 }
 
 /* Call back for the Return key in the text and mime_args fields */
 static void
-action_return(Widget textField,
-              control_panel_t self,
-              XmAnyCallbackStruct *cbs)
+action_return(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+    XmAnyCallbackStruct *cbs = (XmAnyCallbackStruct *)call_data;
+
     /* If the `Send' button is enabled then tickle it */
     if (XtIsSensitive(self->send)) {
         XtCallActionProc(self->send, "ArmAndActivate", cbs->event,
@@ -1796,8 +1794,10 @@ action_return(Widget textField,
 
 /* Callback for the `Dismiss' button on the about box */
 static void
-action_dismiss(Widget button, control_panel_t self, XtPointer ignored)
+action_dismiss(Widget button, XtPointer closure, XtPointer call_data)
 {
+    control_panel_t self = (control_panel_t)closure;
+
     /* This check is probably a bit paranoid, but it doesn't hurt... */
     if (self->about_box != NULL) {
         XtPopdown(self->about_box);
@@ -1981,8 +1981,7 @@ control_panel_add_subscription(control_panel_t self,
     XmStringFree(string);
 
     /* Add a callback to update the selection when the item is selected */
-    XtAddCallback(tuple->widget, XmNactivateCallback,
-                  (XtCallbackProc)select_group, (XtPointer)tuple);
+    XtAddCallback(tuple->widget, XmNactivateCallback, select_group, tuple);
 
     /* If this is our first menu item, then select it by default */
     if (self->selection == NULL) {
@@ -2114,8 +2113,7 @@ control_panel_set_index(control_panel_t self, void *info, int index)
     XmStringFree(string);
 
     /* Add a callback to update the selection when the item is specified */
-    XtAddCallback(tuple->widget, XmNactivateCallback,
-                  (XtCallbackProc)select_group, (XtPointer)tuple);
+    XtAddCallback(tuple->widget, XmNactivateCallback, select_group, tuple);
 
     /* If it was the selection, then make sure it is still selected in
      * the menu */

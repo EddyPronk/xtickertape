@@ -843,7 +843,7 @@ set_clock(ScrollerWidget self)
         self->scroller.timer = XtAppAddTimeOut(
             XtWidgetToApplicationContext((Widget)self),
             1000L / self->scroller.frequency,
-            tick, (XtPointer)self);
+            tick, self);
     }
 }
 
@@ -1706,7 +1706,7 @@ show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     /* Pop up the menu and select the message that was clicked on */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(widget, self->scroller.callbacks,
-                       (XtPointer)glyph_get_message(glyph));
+                       glyph_get_message(glyph));
 }
 
 /* Spawn metamail to decode the message's attachment */
@@ -1724,7 +1724,7 @@ show_attachment(Widget widget,
     /* Deliver the chosen message to the callbacks */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(widget, self->scroller.attachment_callbacks,
-                       (XtPointer)glyph_get_message(glyph));
+                       glyph_get_message(glyph));
 }
 
 /* Expires a message in short order */
@@ -2043,7 +2043,7 @@ do_kill(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     /* Figure out which glyph to kill */
     glyph = glyph_at_event(self, event);
     XtCallCallbackList(widget, self->scroller.kill_callbacks,
-                       (XtPointer)glyph_get_message(glyph));
+                       glyph_get_message(glyph));
 }
 
 /* Scroll more quickly */
