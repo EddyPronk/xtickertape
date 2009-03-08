@@ -95,11 +95,10 @@ XTickertape.sendHistoryCapacity: 32
 !
 *xtickertape.title: XTickertape
 *controlPanel.title: XTickertape Control Panel
-*userLabel.labelString: User
-*group.labelString: Group
-*timeout.labelString: Timeout
-*textLabel.labelString: Text
-*mimeType.labelString: Mime
+*userLabel.labelString: User:
+*group.labelString: Group:
+*timeout.labelString: Timeout:
+*textLabel.labelString: Text:
 *send.labelString: Send
 *clear.labelString: Clear
 *cancel.labelString: Cancel
