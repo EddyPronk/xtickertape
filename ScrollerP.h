@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 #define SCROLLERP_H
 
 #ifndef lint
-static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.50 2007/12/28 15:34:19 phelps Exp $";
+static const char cvs_SCROLLERP_H[] = "$Id: ScrollerP.h,v 1.51 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 #include <X11/CoreP.h>

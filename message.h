@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@
 #define MESSAGE_H
 
 #ifndef lint
-static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.15 2007/12/28 15:34:19 phelps Exp $";
+static const char cvs_MESSAGE_H[] = "$Id: message.h,v 1.16 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* The message_t type */

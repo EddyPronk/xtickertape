@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 #define MESSAGE_VIEW_H
 
 #ifndef lint
-static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.13 2007/12/28 15:34:19 phelps Exp $";
+static const char cvs_MESSAGE_VIEW_H[] = "$Id: message_view.h,v 2.14 2009/03/09 05:26:27 phelps Exp $";
 #endif /* lint */
 
 /* The message_view type */

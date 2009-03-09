@@ -1,6 +1,6 @@
 /***********************************************************************
 
-  Copyright (C) 1997-2008 by Mantara Software (ABN 17 105 665 594).
+  Copyright (C) 1997-2009 by Mantara Software (ABN 17 105 665 594).
   All Rights Reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
 #define GROUPS_PARSER_H
 
 #ifndef lint
-static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.12 2007/12/28 15:34:19 phelps Exp $";
+static const char cvs_GROUPS_PARSER_H[] = "$Id: groups_parser.h,v 1.13 2009/03/09 05:26:26 phelps Exp $";
 #endif /* lint */
 
 /* The groups parser data type */
