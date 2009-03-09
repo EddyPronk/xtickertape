@@ -36,7 +36,7 @@ dnl
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(tickertape.c)
-AM_INIT_AUTOMAKE(xtickertape, 2.0rc2)
+AM_INIT_AUTOMAKE(xtickertape, 2.0)
 
 dnl Checks for programs.
 AC_PROG_AWK
