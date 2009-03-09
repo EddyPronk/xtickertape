@@ -115,6 +115,13 @@ XTickertape.sendHistoryCapacity: 32
 *menuBar*exit.accelerator: Alt<Key>Q
 *menuBar*exit.acceleratorText: Alt+Q
 
+! edit menu labels
+*menuBar.editMenu.labelString: Edit
+*menuBar.editMenu.mnemonic: E
+
+*menuBar*copy.labelString: Copy
+*menuBar*copyLink.labelString: Copy Link
+
 ! options menu labels
 *menuBar*optionsMenu.labelString: Options
 *menuBar*optionsMenu.mnemonic: O

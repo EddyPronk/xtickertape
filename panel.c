@@ -392,6 +392,108 @@ create_file_menu(control_panel_t self, Widget parent)
         NULL);
 }
 
+static void
+edit_copy(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    control_panel_t self = (control_panel_t)closure;
+    message_t message;
+    char *buffer;
+    size_t group_len, user_len, string_len, len;
+    XmString label;
+    int status;
+    long id;
+
+    /* Look up the current selection. */
+    message = HistoryGetSelection(self->history);
+    if (message == NULL) {
+        return;
+    }
+
+    /* Measure the message's strings. */
+    group_len = strlen(message_get_group(message));
+    user_len = strlen(message_get_user(message));
+    string_len = strlen(message_get_string(message));
+
+    /* Allocate a buffer big enough to hold the whole message. */
+    len = group_len + 1 + user_len + 1 + string_len;
+    buffer = malloc(len + 1);
+    if (buffer == NULL) {
+        perror("malloc failed");
+        return;
+    }
+
+    /* Construct a string composed of the group, user and message
+     * portions of the currently selected message in the history
+     * widget. */
+    snprintf(buffer, len + 1, "%s:%s:%s",
+           message_get_group(message),
+           message_get_user(message),
+           message_get_string(message));
+
+    /* Create a string to label the selection. */
+    label = XmStringCreateLocalized("to_clipbd");
+    if (label == NULL) {
+        perror("XmStringCreateLocalized failed");
+        free(buffer);
+        return;
+    }
+
+    /* Lock the clipboard. */
+    do {
+        status = XmClipboardStartCopy(XtDisplay(widget), XtWindow(widget),
+                                      label, CurrentTime, NULL, NULL, &id);
+    } while (status == ClipboardLocked);
+
+    /* Copy the data. */
+    do {
+        status = XmClipboardCopy(XtDisplay(widget), XtWindow(widget), id,
+                                 "STRING", buffer, len, 0, NULL);
+    } while (status == ClipboardLocked);
+
+    /* Unlock the clipboard. */
+    do {
+        status = XmClipboardEndCopy(XtDisplay(widget), XtWindow(widget), id);
+    } while (status == ClipboardLocked);
+
+    /* Clean up. */
+    XmStringFree(label);
+    free(buffer);
+}
+
+static void
+edit_copy_link(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    control_panel_t self = (control_panel_t)closure;
+
+    printf("[panel=%p] Edit>Copy Link\n", self);
+}
+
+/* Create the 'Edit' menu. */
+static void
+create_edit_menu(control_panel_t self, Widget parent)
+{
+    Widget menu;
+    Widget item;
+
+    /* Create the menu itself. */
+    menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
+
+    /* Create the 'copy' menu item. */
+    item = XtVaCreateManagedWidget("copy", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, edit_copy, self);
+
+    /* Create the 'copy link' menu item. */
+    item = XtVaCreateManagedWidget("copyLink", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, edit_copy_link, self);
+
+    /* Create the menu's cascade button. */
+    XtVaCreateManagedWidget("editMenu", xmCascadeButtonWidgetClass, parent,
+                            XmNsubMenuId, menu,
+                            NULL);
+}
+
 /* This is called when the `threaded' toggle button is changed */
 static void
 options_threaded(Widget widget, XtPointer rock, XtPointer data)
@@ -1119,6 +1221,9 @@ init_ui(control_panel_t self, Widget parent)
 
     /* Create the `file' menu */
     create_file_menu(self, menubar);
+
+    /* Create the 'edit' menu. */
+    create_edit_menu(self, menubar);
 
     /* Create the `options' menu */
     create_options_menu(self, menubar);
