@@ -1,7 +1,0 @@
-suppress umr _libc_write; _XFlushInt
-suppress umr GetDatabase
-suppress umr XrmCombineDatabase
-suppress umr XrmDestroyDatabase
-suppress umr Initialize
-suppress umr _XSunCreateIC
-suppress umr position_cascade
