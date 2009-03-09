@@ -1,5 +1,11 @@
 Things that would be nice to have in future versions of xtickertape:
 
+General:
+
+- XTickertape should be able to keep a history of notifications so
+  that restarting isn't quite so painful.  An on-disk format similar
+  to ep's output seems like a good starting point.
+
 Configuration
 
 - Errors in the configuration files should be reported to somewhere
