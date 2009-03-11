@@ -2380,8 +2380,9 @@ HistorySelectId(Widget widget, const char *message_id)
 message_t
 HistoryGetSelection(Widget widget)
 {
-    dprintf(("HistoryGetSelection(): not yet implemented\n"));
-    return NULL;
+    HistoryWidget self = (HistoryWidget)widget;
+
+    return self->history.selection;
 }
 
 /*
