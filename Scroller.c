@@ -53,6 +53,9 @@
 #include <X11/Xlib.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
+#include <X11/CoreP.h>
+#include <Xm/XmAll.h>
+#include <Xm/PrimitiveP.h>
 #include "globals.h"
 #include "replace.h"
 #include "utf8.h"
@@ -849,11 +852,6 @@ initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_holder_t holder;
 
-    /* Make sure we have a width */
-    if (self->core.width == 0) {
-        self->core.width = 400;
-    }
-
     /* Try to allocate a conversion descriptor */
     self->scroller.renderer = utf8_renderer_alloc(XtDisplay(widget),
                                                   self->scroller.font,
@@ -867,6 +865,11 @@ initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     /* Record the height and width for future reference */
     self->scroller.height = self->scroller.font->ascent +
                             self->scroller.font->descent;
+
+    /* Set the default dimensions of the widget.  These will be
+     * overridden later when the widget is realized. */
+    self->core.width = 400;
+    self->core.height = self->scroller.height;
 
     /* Record the width of 8 'n' characters as the minimum gap width */
     self->scroller.min_gap_width = compute_min_gap_width(self->scroller.font);
@@ -2196,7 +2199,7 @@ ScrollerClassRec scrollerClassRec =
 {
     /* core_class fields */
     {
-        (WidgetClass)&widgetClassRec, /* superclass */
+        (WidgetClass)&xmPrimitiveClassRec, /* superclass */
         "Scroller", /* class_name */
         sizeof(ScrollerRec), /* widget_size */
         NULL, /* class_initialize */
@@ -2228,6 +2231,17 @@ ScrollerClassRec scrollerClassRec =
         query_geometry, /* query_geometry */
         XtInheritDisplayAccelerator, /* display_accelerator */
         NULL /* extension */
+    },
+
+    /* Primitive class fields initialization */
+    {
+        NULL, /* border_highlight */
+        NULL, /* border_unhighlight */
+        NULL, /* translations */
+        NULL, /* arm_and_activate_proc */
+        NULL, /* synthetic resources */
+        0, /* num syn res */
+        NULL, /* extension */
     },
 
     /* Scroller class fields initialization */

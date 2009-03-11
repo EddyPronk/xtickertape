@@ -54,6 +54,7 @@ typedef struct {
 /* Full class record declaration */
 typedef struct _ScrollerClassRec {
     CoreClassPart core_class;
+    XmPrimitiveClassPart primitive_class;
     ScrollerClassPart scroller_class;
 } ScrollerClassRec;
 
@@ -181,6 +182,7 @@ typedef struct {
 /* Full instance record declaration */
 typedef struct _ScrollerRec {
     CorePart core;
+    XmPrimitivePart primitive;
     ScrollerPart scroller;
 } ScrollerRec;
 
