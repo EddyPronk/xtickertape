@@ -120,7 +120,9 @@ XTickertape.sendHistoryCapacity: 32
 *menuBar.editMenu.mnemonic: E
 
 *menuBar*copy.labelString: Copy
+*menuBar*copyId.labelString: Copy Message-Id
 *menuBar*copyLink.labelString: Copy Link
+*menuBar*copyMessage.labelString: Copy Message
 
 ! options menu labels
 *menuBar*optionsMenu.labelString: Options

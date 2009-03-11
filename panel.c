@@ -461,11 +461,27 @@ edit_copy(Widget widget, XtPointer closure, XtPointer call_data)
 }
 
 static void
+edit_copy_id(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    control_panel_t self = (control_panel_t)closure;
+
+    printf("[panel=%p] Edit>Copy Message-Id\n", self);
+}
+
+static void
 edit_copy_link(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
 
     printf("[panel=%p] Edit>Copy Link\n", self);
+}
+
+static void
+edit_copy_message(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    control_panel_t self = (control_panel_t)closure;
+
+    printf("[panel=%p] Edit>Copy Message\n", self);
 }
 
 /* Create the 'Edit' menu. */
@@ -483,10 +499,20 @@ create_edit_menu(control_panel_t self, Widget parent)
                                    menu, NULL);
     XtAddCallback(item, XmNactivateCallback, edit_copy, self);
 
+    /* Create the 'copyId' menu item. */
+    item = XtVaCreateManagedWidget("copyId", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, edit_copy_id, self);
+
     /* Create the 'copy link' menu item. */
     item = XtVaCreateManagedWidget("copyLink", xmPushButtonGadgetClass,
                                    menu, NULL);
     XtAddCallback(item, XmNactivateCallback, edit_copy_link, self);
+
+    /* Create the 'copy link' menu item. */
+    item = XtVaCreateManagedWidget("copyMessage", xmPushButtonGadgetClass,
+                                   menu, NULL);
+    XtAddCallback(item, XmNactivateCallback, edit_copy_message, self);
 
     /* Create the menu's cascade button. */
     XtVaCreateManagedWidget("editMenu", xmCascadeButtonWidgetClass, parent,
