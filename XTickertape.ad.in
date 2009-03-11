@@ -245,6 +245,7 @@ XTickertape.sendHistoryCapacity: 32
 	Ctrl<Key>n: select-next()\n\
 	Ctrl<Key>b: scroll-left()\n\
 	Ctrl<Key>f: scroll-right()\n\
+	Ctrl<Key>c: copy-selection(body, PRIMARY)\n\
 	<Key>osfUp: select-previous()\n\
 	<Key>osfDown: select-next()\n\
 	<Key>osfLeft: scroll-left()\n\

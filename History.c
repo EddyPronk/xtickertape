@@ -58,6 +58,8 @@
 #include <X11/Xaw/SimpleP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
+#include <Xm/TransferT.h>
+#include <Xm/TraitP.h>
 #include "globals.h"
 #include "replace.h"
 #include "message.h"
@@ -776,6 +778,52 @@ horiz_scrollbar_cb(Widget widget, XtPointer client_data, XtPointer call_data)
     set_origin(self, cbs->value, self->history.y, 0);
 }
 
+static void
+history_convert(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
+    Display *display = XtDisplay(widget);
+    Atom TARGETS, EXPORTS, CB_TARGETS, UTF8_STRING, STRING;
+    Atom *targets;
+    char *string;
+
+    printf("convert callback invoked (target=%lu)\n", data->target);
+
+    /* Intern atoms.  FIXME: do this in initialization instead. */
+    TARGETS = XInternAtom(display, "TARGETS", False);
+    EXPORTS = XInternAtom(display, "_MOTIF_EXPORT_TARGETS", False);
+    CB_TARGETS = XInternAtom(display, "_MOTIF_CLIPBOARD_TARGETS", False);
+    UTF8_STRING = XInternAtom(display, "UTF8_STRING", False);
+    STRING = XInternAtom(display, "STRING", False);
+
+    /* If the destination has requested the list of targets then we
+     * return this as the convert data. */
+    if (data->target == TARGETS || data->target == CB_TARGETS ||
+        data->target == EXPORTS) {
+        targets = (Atom *)XtMalloc(sizeof(Atom) * 2);
+        targets[0] = UTF8_STRING;
+        targets[1] = STRING;
+        data->type = XA_ATOM;
+        data->value = targets;
+        data->length = 2;
+        data->format = 32;
+
+        /* Support all of the standard traits too. */
+        data->status = XmCONVERT_MERGE;
+    } else if (data->target == UTF8_STRING || data->target == STRING) {
+        string = XtMalloc(12);
+        memcpy(string, "hello sailor", 12);
+
+        data->value = string;
+        data->length = 12;
+        data->type = data->target;
+        data->format = 8;
+        data->status = XmCONVERT_DONE;
+    } else {
+        data->status = XmCONVERT_MERGE;
+    }
+}
+
 /* Initializes the History-related stuff */
 /* ARGSUSED */
 static void
@@ -892,6 +940,18 @@ init(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     XtAddCallback(scrollbar, XmNtoBottomCallback, vert_scrollbar_cb, self);
     XtAddCallback(scrollbar, XmNvalueChangedCallback, vert_scrollbar_cb, self);
     self->history.vscrollbar = scrollbar;
+}
+
+/* Transfer traits */
+static XmTransferTraitRec transfer_traits = {
+    0, history_convert, NULL, NULL
+};
+
+static void
+class_part_init(WidgetClass wclass)
+{
+    /* Install data transfer traits. */
+    XmeTraitSet(wclass, XmQTtransfer, (XtPointer)&transfer_traits);
 }
 
 /* Returns the message index corresponding to the given y coordinate */
@@ -2098,6 +2158,75 @@ scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams)
                self->history.y, 1);
 }
 
+static void
+copy_selection(Widget widget, XEvent* event, char **params,
+               Cardinal *num_params)
+{
+    HistoryWidget self = (HistoryWidget)widget;
+    Time when;
+    Boolean res;
+    const char *what;
+    const char *target;
+
+    /* Bail if there's no selection. */
+    if (self->history.selection == NULL) {
+        dprintf(("No selection to copy.\n"));
+        return;
+    }
+
+    /* Determine the time of the event. */
+    switch (event->type) {
+    case KeyPress:
+    case KeyRelease:
+        when = event->xkey.time;
+        break;
+
+    case ButtonPress:
+    case ButtonRelease:
+        when = event->xbutton.time;
+        break;
+
+    case MotionNotify:
+        when = event->xmotion.time;
+        break;
+
+    case EnterNotify:
+    case LeaveNotify:
+        when = event->xcrossing.time;
+        break;
+
+    default:
+        printf("doh!\n");
+        return;
+    }
+
+    /* Decide what to copy. */
+    what = (*num_params < 1) ? "body" : params[0];
+    if (strcmp(what, "id") == 0) {
+        printf("message-id\n");
+    } else if (strcmp(what, "message") == 0) {
+        printf("message\n");
+    } else if (strcmp(what, "link") == 0) {
+        printf("link\n");
+    } else /* default to body */ {
+        printf("body\n");
+    }
+
+
+    /* Decide where to put it. */
+    target = (*num_params < 2) ? "PRIMARY" : params[1];
+    if (strcmp(target, "SECONDARY") == 0) {
+        res = XmeSecondarySource(widget, when);
+    } else if (strcmp(target, "CLIPBOARD") == 0) {
+        res = XmeClipboardSource(widget, XmCOPY, when);
+    } else /* default to primary */{
+        res = XmePrimarySource(widget, when);
+    }
+
+    res = XmePrimarySource(widget, when);
+    printf("XmePrimarySource: %s\n", res ? "true" : "false");
+}
+
 /* Redraw the widget */
 static void
 redraw_all(Widget widget)
@@ -2146,7 +2275,8 @@ static XtActionsRec actions[] =
     { "scroll-up", scroll_up },
     { "scroll-down", scroll_down },
     { "scroll-left", scroll_left },
-    { "scroll-right", scroll_right }
+    { "scroll-right", scroll_right },
+    { "copy-selection", copy_selection }
 };
 
 /*
@@ -2409,7 +2539,7 @@ HistoryClassRec historyClassRec =
         "History", /* class_name */
         sizeof(HistoryRec), /* widget_size */
         NULL, /* class_initialize */
-        NULL, /* class_part_initialize */
+        class_part_init, /* class_part_initialize */
         False, /* class_inited */
         init, /* initialize */
         NULL, /* initialize_hook */
