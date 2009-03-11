@@ -1188,53 +1188,63 @@ motion_cb(Widget widget, XtPointer closure, XEvent *event,
 }
 
 /* Repaint the bits of the widget that didn't get copied */
+static Boolean
+gexpose(HistoryWidget self, XGraphicsExposeEvent *event)
+{
+    XRectangle bbox;
+
+    /* Get the bounding box of the event. */
+    bbox.x = event->x;
+    bbox.y = event->y;
+    bbox.width = event->width;
+    bbox.height = event->height;
+
+    /* Compensate for unprocessed CopyArea requests */
+    dprintf(("process_events() request_id=%lu\n", event->serial));
+    dprintf(("before: %dx%d+%d+%d\n",
+             bbox.width, bbox.height,
+             bbox.x, bbox.y));
+    compensate_bbox(self, event->serial, &bbox);
+    dprintf(("after: %dx%d+%d+%d\n",
+             bbox.width, bbox.height,
+             bbox.x, bbox.y));
+
+    /* Update this portion of the widget. */
+    paint(self, &bbox);
+
+    /* Arrange to stop if this is the last GraphicsExpose event in the
+     * batch. */
+    return event->count != 0;
+}
+
 static void
-gexpose(Widget widget, XtPointer closure, XEvent *event,
-        Boolean *continue_to_dispatch)
+process_events(Widget widget, XtPointer closure, XEvent *event,
+               Boolean *continue_to_dispatch)
 {
     HistoryWidget self = (HistoryWidget)widget;
     Display *display = XtDisplay(widget);
     XEvent event_buffer;
-    XRectangle bbox;
 
     /* Process all of the GraphicsExpose events in one hit */
     for (;;) {
-        XGraphicsExposeEvent *g_event;
+        switch (event->type) {
+        case NoExpose:
+            /* Stop drawing if the widget is obscured. */
+            return;
 
-        /* Sanity check */
-        assert(event->type == GraphicsExpose || event->type == NoExpose);
+        case GraphicsExpose:
+            /* Continue processing graphics expose evens until we've
+             * processed the entire batch. */
+            if (!gexpose(self, &event->xgraphicsexpose)) {
+                return;
+            }
 
-        /* Coerce the event */
-        g_event = (XGraphicsExposeEvent *)event;
-
-        /* Get the bounding box of the event */
-        bbox.x = g_event->x;
-        bbox.y = g_event->y;
-        bbox.width = g_event->width;
-        bbox.height = g_event->height;
-
-        /* Compensate for unprocessed CopyArea requests */
-        dprintf(("gexpose() request_id=%lu\n", g_event->serial));
-        dprintf(("before: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x,
-                 bbox.y));
-        compensate_bbox(self, g_event->serial, &bbox);
-        dprintf(("after: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x,
-                 bbox.y));
-
-        /* Stop drawing stuff if the widget is obscured */
-        if (event->type == NoExpose) {
+        default:
+            dprintf(("ignoring unknown event type: %d\n", event->type));
             return;
         }
 
-        /* Update this portion of the history */
-        paint(self, &bbox);
-
-        /* Bail out if this is the last GraphicsExpose event */
-        if (g_event->count < 1) {
-            return;
-        }
-
-        /* Otherwise grab the next one */
+        /* Otherwise grab the next event */
         XNextEvent(display, &event_buffer);
         event = &event_buffer;
     }
@@ -1293,7 +1303,7 @@ realize(Widget widget,
                                  GCBackground | GCFont, &values);
 
     /* Register to receive GraphicsExpose events */
-    XtAddEventHandler(widget, 0, True, gexpose, NULL);
+    XtAddEventHandler(widget, 0, True, process_events, NULL);
 
     /* Register to receive motion callbacks */
     XtAddEventHandler(widget, PointerMotionMask, False, motion_cb, NULL);
