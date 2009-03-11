@@ -28,6 +28,11 @@ Control Panel:
   widget with focus.  This should allow us to cut and paste messages
   from the history into another application. [Thanks David Arnold]
 
+  Useful information on selections and clipboards can be found at
+  freedesktop.org:
+
+    http://standards.freedesktop.org/clipboards-spec/clipboards-latest.txt
+
 - The message in the status bar should include the time when of last
   change.
 
