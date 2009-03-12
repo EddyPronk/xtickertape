@@ -238,15 +238,6 @@ struct control_panel {
     /* The status line widget */
     Widget status_line;
 
-    /* The tool-tip timer */
-    XtIntervalId timer;
-
-    /* The tool-tip's shell widget */
-    Widget tool_tip;
-
-    /* The tool-tip's label widget */
-    Widget tool_tip_label;
-
     /* The x position of the pointer when the timer was last set */
     Position x;
 
