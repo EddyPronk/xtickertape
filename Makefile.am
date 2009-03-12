@@ -64,6 +64,7 @@ xtickertape_SOURCES = \
 	mask.xbm red.xbm white.xbm \
 	replace.h replace.c \
 	utf8.h utf8.c \
+	utils.h utils.c \
 	globals.h main.c
 
 # show-url only has one
