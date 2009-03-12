@@ -496,6 +496,18 @@ edit_copy_msg(Widget widget, XtPointer closure, XtPointer call_data)
     printf("[panel=%p] Edit>Copy Message\n", self);
 }
 
+/* Select the edit menu items appropriate for the selected message. */
+static void
+prepare_edit_menu(control_panel_t self, message_t message)
+{
+    XtSetSensitive(self->copy, message != NULL);
+    XtSetSensitive(self->copy_id,
+                   message != NULL && message_get_id(message) != NULL);
+    XtSetSensitive(self->copy_link,
+                   message != NULL && message_has_attachment(message));
+    XtSetSensitive(self->copy_msg, message != NULL);
+}
+
 /* Create the 'Edit' menu. */
 static void
 create_edit_menu(control_panel_t self, Widget parent)
@@ -847,6 +859,9 @@ history_selection_callback(Widget widget,
 {
     control_panel_t self = (control_panel_t)closure;
     message_t message = (message_t)call_data;
+
+    /* Configure the edit menu accoding to the selected message. */
+    prepare_edit_menu(self, message);
 
     /* Reconfigure to reply to the selected message (or lack thereof) */
     prepare_reply(self, message);
