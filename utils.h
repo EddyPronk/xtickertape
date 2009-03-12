@@ -49,6 +49,6 @@
  * like localtime.  Also compute the determine the number of seconds
  * east of (before) UTC that time zone is/was/will be at that time. */
 struct tm *
-localtime_offset(time_t *when, int* utc_off)
+localtime_offset(time_t *when, int* utc_off);
 
 #endif /* UTILS_H */
