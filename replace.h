@@ -42,55 +42,41 @@
 
 /* Replacements for standard functions */
 
-
 #ifndef HAVE_MEMSET
 /* A slow but correct implementation of memset */
 void *
 memset(void *s, int c, size_t n);
-
-
 #endif /* HAVE_MEMSET */
 
 #ifndef HAVE_SNPRINTF
 /* A dodgy hack for platforms without snprintf() */
 int
 snprintf(char *s, size_t n, const char *format, ...);
-
-
 #endif
 
 #ifndef HAVE_STRCASECMP
 int
 strcasecmp(const char *s1, const char *s2);
-
-
 #endif /* HAVE_STRCASECMP */
 
 #ifndef HAVE_STRCHR
 char *
 strchr(const char *s, int c);
-
-
 #endif
 
 #ifndef HAVE_STRDUP
 char *
 strdup(const char *s);
-
-
 #endif
 
 #ifndef HAVE_STRRCHR
 char *
 strrchr(const char *s, int c);
-
-
 #endif
 
 #ifndef HAVE_STRERROR
 char *
 strerror(int errnum);
-
-
 #endif
+
 #endif /* REPLACE_H */
