@@ -45,6 +45,15 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+/* Useful macros */
+#if !defined(MIN)
+# define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+
+#if !defined(MAX)
+# define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
+
 /* Transform a time_t into a broken-down time in the local time zone,
  * like localtime.  Also compute the determine the number of seconds
  * east of (before) UTC that time zone is/was/will be at that time. */

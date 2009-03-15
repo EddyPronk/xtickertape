@@ -60,8 +60,9 @@
 #include <Xm/XmAll.h>
 #include <Xm/RowColumnP.h>
 #include <X11/Xmu/Editres.h>
-#include "globals.h"
 #include "replace.h"
+#include "globals.h"
+#include "utils.h"
 #include "utf8.h"
 #include "panel.h"
 #include "History.h"

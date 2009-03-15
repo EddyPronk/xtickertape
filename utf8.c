@@ -54,7 +54,7 @@
 #endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-#include "globals.h"
+#include "utils.h"
 #include "utf8.h"
 
 /* Make sure EILSEQ is defined for our switch statement */

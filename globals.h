@@ -48,13 +48,4 @@ extern elvin_client_t client;
 # endif
 #endif
 
-/* Useful macros */
-#if !defined(MIN)
-# define MIN(x, y) ((x) < (y) ? (x) : (y))
-#endif
-
-#if !defined(MAX)
-# define MAX(x, y) ((x) > (y) ? (x) : (y))
-#endif
-
 #endif /* GLOBALS_H */

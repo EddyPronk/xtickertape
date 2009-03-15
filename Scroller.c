@@ -56,8 +56,8 @@
 #include <X11/CoreP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
-#include "globals.h"
 #include "replace.h"
+#include "utils.h"
 #include "utf8.h"
 #include "message.h"
 #include "message_view.h"

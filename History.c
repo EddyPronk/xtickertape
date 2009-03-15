@@ -60,8 +60,8 @@
 #include <Xm/PrimitiveP.h>
 #include <Xm/TransferT.h>
 #include <Xm/TraitP.h>
-#include "globals.h"
 #include "replace.h"
+#include "utils.h"
 #include "message.h"
 #include "utf8.h"
 #include "message_view.h"
