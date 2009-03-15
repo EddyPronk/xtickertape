@@ -57,6 +57,7 @@
 # include <assert.h> /* assert */
 #endif
 #include "replace.h"
+#include "utils.h"
 #include "message.h"
 
 
@@ -535,6 +536,57 @@ void
 message_set_killed(message_t self, int is_killed)
 {
     self->is_killed = is_killed;
+}
+
+size_t
+message_part_size(message_t self, message_part_t part)
+{
+    switch (part) {
+    case MSGPART_ID:
+        return (self->id == NULL) ? 0 : strlen(self->id);
+
+    case MSGPART_TEXT:
+        return strlen(self->string);
+
+    case MSGPART_LINK:
+        return self->length;
+        
+    case MSGPART_ALL:
+        abort();
+    }
+
+    return 0;
+}
+
+char *
+message_get_part(message_t self, message_part_t part,
+                 char *buffer, size_t buflen)
+{
+    switch (part) {
+    case MSGPART_ID:
+        if (self->id == NULL) {
+            return NULL;
+        }
+        strncpy(buffer, self->id, buflen);
+        return buffer;
+
+    case MSGPART_TEXT:
+        assert(self->string != NULL);
+        strncpy(buffer, self->string, buflen);
+        return buffer;
+
+    case MSGPART_LINK:
+        if (self->attachment == NULL) {
+            return NULL;
+        }
+        memcpy(buffer, self->attachment, MIN(buflen, self->length));
+        return buffer;
+
+    case MSGPART_ALL:
+        abort();
+    }
+
+    return NULL;
 }
 
 /**********************************************************************/

@@ -786,14 +786,14 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
     Display *display = XtDisplay(widget);
     Atom TARGETS, EXPORTS, CB_TARGETS, UTF8_STRING, STRING;
     Atom *targets;
-    char *string;
+    message_t message;
+    char *bytes;
+    size_t len;
 
     /* There must be a message to copy. */
-    assert(self->history.copy_message != NULL);
-
+    message = self->history.copy_message;
+    assert(message != NULL);
     printf("convert callback invoked (target=%lu)\n", data->target);
-    printf("  message:\n");
-    message_write(self->history.copy_message, stdout);
 
     /* Intern atoms.  FIXME: do this in initialization instead. */
     TARGETS = XInternAtom(display, "TARGETS", False);
@@ -817,11 +817,15 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
         /* Support all of the standard traits too. */
         data->status = XmCONVERT_MERGE;
     } else if (data->target == UTF8_STRING || data->target == STRING) {
-        string = XtMalloc(12);
-        memcpy(string, "hello sailor", 12);
-
-        data->value = string;
-        data->length = 12;
+        len = message_part_size(message, self->history.copy_part);
+        bytes = XtMalloc(len);
+        if (bytes == NULL) {
+            perror("XtMalloc failed");
+            return;
+        }
+        message_get_part(message, self->history.copy_part, bytes, len);
+        data->value = bytes;
+        data->length = len;
         data->type = data->target;
         data->format = 8;
         data->status = XmCONVERT_DONE;

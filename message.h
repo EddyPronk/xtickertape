@@ -169,4 +169,17 @@ void
 message_set_killed(message_t self, int is_killed);
 
 
+/* Returns how many bytes are required to hold the named message
+ * part. */
+size_t
+message_part_size(message_t self, message_part_t part);
+
+
+/* Writes the message part into the supplied buffer, returning a
+ * pointer to that buffer or NULL if no such part exists. */
+char *
+message_get_part(message_t self, message_part_t part,
+                 char *buffer, size_t buflen);
+
+
 #endif /* MESSAGE_H */
