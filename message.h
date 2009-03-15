@@ -49,6 +49,16 @@
 /* The message_t type */
 typedef struct message *message_t;
 
+
+/* Portions of the message which may be copied via copy and paste. */
+typedef enum {
+    MSGPART_ID,
+    MSGPART_TEXT,
+    MSGPART_ALL,
+    MSGPART_LINK
+} message_part_t;
+
+
 /* Creates and returns a new message */
 message_t
 message_alloc(const char *info,

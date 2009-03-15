@@ -42,6 +42,7 @@
 
 #include <X11/CoreP.h>
 
+#include "message.h"
 #include "message_view.h"
 #include "History.h"
 
@@ -195,6 +196,12 @@ typedef struct {
 
     /* Non-zero if the timestamps should be displayed */
     int show_timestamps;
+
+    /* The message selected for copying from the history. */
+    message_t copy_message;
+
+    /* The part of copy_message to copy. */
+    message_part_t copy_part;
 } HistoryPart;
 
 /* Full instance record declaration */

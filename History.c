@@ -781,13 +781,19 @@ horiz_scrollbar_cb(Widget widget, XtPointer client_data, XtPointer call_data)
 static void
 history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 {
+    HistoryWidget self = (HistoryWidget)widget;
     XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
     Display *display = XtDisplay(widget);
     Atom TARGETS, EXPORTS, CB_TARGETS, UTF8_STRING, STRING;
     Atom *targets;
     char *string;
 
+    /* There must be a message to copy. */
+    assert(self->history.copy_message != NULL);
+
     printf("convert callback invoked (target=%lu)\n", data->target);
+    printf("  message:\n");
+    message_write(self->history.copy_message, stdout);
 
     /* Intern atoms.  FIXME: do this in initialization instead. */
     TARGETS = XInternAtom(display, "TARGETS", False);
@@ -889,6 +895,10 @@ init(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     self->history.drag_timeout = None;
     self->history.drag_direction = DRAG_NONE;
     self->history.show_timestamps = False;
+
+    /* Nothing has been copied yet. */
+    self->history.copy_message = NULL;
+    self->history.copy_part = MSGPART_TEXT;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget("HorizScrollBar",
@@ -2159,20 +2169,29 @@ scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 }
 
 static void
+set_copy_message(HistoryWidget self, message_t message)
+{
+    if (self->history.copy_message != NULL) {
+        message_free(self->history.copy_message);
+    }
+
+    if (message == NULL) {
+        self->history.copy_message = NULL;
+    } else {
+        self->history.copy_message = message_alloc_reference(message);
+    }
+}
+
+static void
 copy_selection(Widget widget, XEvent* event, char **params,
                Cardinal *num_params)
 {
     HistoryWidget self = (HistoryWidget)widget;
     Time when;
     Boolean res;
-    const char *what;
+    message_t message;
+    message_part_t part;
     const char *target;
-
-    /* Bail if there's no selection. */
-    if (self->history.selection == NULL) {
-        dprintf(("No selection to copy.\n"));
-        return;
-    }
 
     /* Determine the time of the event. */
     switch (event->type) {
@@ -2196,35 +2215,48 @@ copy_selection(Widget widget, XEvent* event, char **params,
         break;
 
     default:
-        printf("doh!\n");
+        /* FIXME: we need a way to get a timestamp. */
+        abort();
         return;
     }
 
+    /* Bail if there's no selection. */
+    message = self->history.selection;
+    if (message == NULL) {
+        dprintf(("No selection to copy.\n"));
+        return;
+    }
+
+    /* Record the selected message. */
+    set_copy_message(self, message);
+
     /* Decide what to copy. */
-    what = (*num_params < 1) ? "body" : params[0];
-    if (strcmp(what, "id") == 0) {
-        printf("message-id\n");
-    } else if (strcmp(what, "message") == 0) {
-        printf("message\n");
-    } else if (strcmp(what, "link") == 0) {
-        printf("link\n");
-    } else /* default to body */ {
-        printf("body\n");
+    if (*num_params < 1) {
+        part = MSGPART_TEXT;
+    } else if (strcmp(params[0], "id") == 0) {
+        part = MSGPART_ID;
+    } else if (strcmp(params[0], "body") == 0) {
+        part = MSGPART_TEXT;
+    } else if (strcmp(params[0], "message") == 0) {
+        part = MSGPART_ALL;
+    } else if (strcmp(params[0], "link") == 0) {
+        part = MSGPART_LINK;
+    } else {
+        part = MSGPART_TEXT;
     }
+    self->history.copy_part = part;
 
-
-    /* Decide where to put it. */
-    target = (*num_params < 2) ? "PRIMARY" : params[1];
-    if (strcmp(target, "SECONDARY") == 0) {
-        res = XmeSecondarySource(widget, when);
-    } else if (strcmp(target, "CLIPBOARD") == 0) {
-        res = XmeClipboardSource(widget, XmCOPY, when);
-    } else /* default to primary */{
+    /* Decide where we're copying to. */
+    target = (*num_params < 2) ? "CLIPBOARD" : params[1];
+    if (strcmp(target, "PRIMARY") == 0) {
         res = XmePrimarySource(widget, when);
+    } else if (strcmp(target, "SECONDARY") == 0) {
+        res = XmeSecondarySource(widget, when);
+    } else /* if (strcmp(target, "CLIPBOARD") == 0) */ {
+        res = XmeClipboardSource(widget, XmCOPY, when);
     }
 
-    res = XmePrimarySource(widget, when);
-    printf("XmePrimarySource: %s\n", res ? "true" : "false");
+    printf("XmeXXXSource: %s\n", res ? "true" : "false");
 }
 
 /* Redraw the widget */
