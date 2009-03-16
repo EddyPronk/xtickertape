@@ -53,6 +53,9 @@
 #ifdef HAVE_TIME_H
 # include <time.h> /* time */
 #endif
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h> /* time */
+#endif
 #ifdef HAVE_ASSERT_H
 # include <assert.h> /* assert */
 #endif
@@ -72,7 +75,7 @@ struct message {
     int ref_count;
 
     /* The time when the message was created */
-    time_t creation_time;
+    struct timeval creation_time;
 
     /* A string which identifies the subscription info in the control panel */
     const char *info;
@@ -264,8 +267,8 @@ message_alloc(const char *info,
     }
 
     /* Record the time the message was created. */
-    if (time(&self->creation_time) == (time_t)-1) {
-        perror("time failed");
+    if (gettimeofday(&self->creation_time, NULL) < 0) {
+        perror("gettimeofday failed");
     }
 
     /* Copy each of the strings info the data array. */
@@ -366,7 +369,7 @@ message_get_info(message_t self)
 time_t *
 message_get_creation_time(message_t self)
 {
-    return &self->creation_time;
+    return &self->creation_time.tv_sec;
 }
 
 /* Answers the receiver's group */
