@@ -125,6 +125,54 @@ typedef enum {
     ST_BODY
 } state_t;
 
+struct escape_seq {
+    const char *seq;
+    size_t len;
+};
+
+#define DECLARE_ESC(seq) \
+    { seq, sizeof(seq) - 1 }
+
+/* The string values for the escape sequences to use for ASCII
+ * characters 0-31. */
+static const struct escape_seq escapes[32] = {
+    DECLARE_ESC("\\0"),
+    DECLARE_ESC("\\001"),
+    DECLARE_ESC("\\002"),
+    DECLARE_ESC("\\003"),
+    DECLARE_ESC("\\004"),
+    DECLARE_ESC("\\005"),
+    DECLARE_ESC("\\006"),
+    DECLARE_ESC("\\a"),
+
+    DECLARE_ESC("\\b"),
+    DECLARE_ESC("\\t"),
+    DECLARE_ESC("\\n"),
+    DECLARE_ESC("\\v"),
+    DECLARE_ESC("\\f"),
+    DECLARE_ESC("\\r"),
+    DECLARE_ESC("\\016"),
+    DECLARE_ESC("\\017"),
+
+    DECLARE_ESC("\\020"),
+    DECLARE_ESC("\\021"),
+    DECLARE_ESC("\\022"),
+    DECLARE_ESC("\\023"),
+    DECLARE_ESC("\\024"),
+    DECLARE_ESC("\\025"),
+    DECLARE_ESC("\\026"),
+    DECLARE_ESC("\\027"),
+
+    DECLARE_ESC("\\030"),
+    DECLARE_ESC("\\031"),
+    DECLARE_ESC("\\032"),
+    DECLARE_ESC("\\033"),
+    DECLARE_ESC("\\034"),
+    DECLARE_ESC("\\035"),
+    DECLARE_ESC("\\036"),
+    DECLARE_ESC("\\037")
+};
+
 /* Copies a MIME attachment, replacing \r or \r\n in the header with \n */
 static void
 cleanse_header(const char *attachment,
@@ -204,6 +252,77 @@ cleanse_header(const char *attachment,
     }
 
     *length_out = out - copy;
+}
+
+/* Return the number of bytes required to hold the cooked version of a
+ * string.  See cook_string, below. */
+static size_t
+cooked_size(const char *string)
+{
+    const char *in;
+    size_t len;
+    int ch;
+
+    /* Count one for the initial double-quote. */
+    len = 1;
+
+    /* Visit each character in the string. */
+    for (in = string; (ch = *(unsigned char *)in) != '\0'; in++) {
+        assert(ch >= 0);
+        if (ch < 32) {
+            /* Convert control characters to escape sequences. */
+            len += escapes[ch].len;
+        } else if (ch == '"' || ch == '\\') {
+            /* Also escape backslashes and double-quotes. */
+            len += 2;
+        } else {
+            /* Anything else will be copied verbatim. */
+            len++;
+        }
+    }
+
+    /* Count one more for the trailing double-quote. */
+    return len + 1;
+}
+
+/* Write string into buffer, wrapping it in double-quotes and escaping
+ * any non-printing ASCII characters.  See also cooked_size. */
+static void
+cook_string(const char *string, char **buffer)
+{
+    const char *in;
+    char *out = *buffer;
+    int ch;
+
+    /* Start with a double-quote character. */
+    *out++ = '"';
+
+    /* Visit each character in the string. */
+    for (in = string; (ch = *(unsigned char *)in) != '\0'; in++) {
+        /* We've just converted from an unsigned char. */
+        assert(ch >= 0);
+
+        if (ch < 32) {
+            /* Convert control characters to escape sequences. */
+            memcpy(out, escapes[ch].seq, escapes[ch].len);
+            out += escapes[ch].len;
+        } else if (ch == '"' || ch == '\\') {
+            /* Also escape backslahes and quotes */
+            *out++ = '\\';
+            *out++ = ch;
+        } else {
+            /* Copy anything else verbatim. */
+            /* FIXME: this should deal with other non-printing Unicode
+             * code points. */
+            *out++ = ch;
+        }
+    }
+
+    /* End with a double-quote character. */
+    *out++ = '"';
+
+    /* Update the pointer. */
+    *buffer = out;
 }
 
 static char *
@@ -541,6 +660,78 @@ message_set_killed(message_t self, int is_killed)
     self->is_killed = is_killed;
 }
 
+static size_t
+measure_string_field(const char *name, const char *value)
+{
+    return (value == NULL) ? 0 : strlen(name) + 2 + cooked_size(value) + 1;
+}
+
+static void
+write_string_field(const char *name, const char *value, char **buffer)
+{
+    char *out = *buffer;
+    size_t len;
+
+    /* Skip this entry if it has no value. */
+    if (value == NULL) {
+        return;
+    }
+
+    /* Append the name, followed by a colon and a space. */
+    len = strlen(name);
+    memcpy(out, name, len);
+    out += len;
+    *out++ = ':';
+    *out++ = ' ';
+
+    /* Append the cooked string. */
+    cook_string(value, &out);
+    *out++ = '\n';
+
+    /* Update the pointer. */
+    *buffer = out;
+}
+
+static char *
+write_message(message_t self, char *buffer, size_t buflen)
+{
+    struct tm *tm;
+    int utc_off;
+    char sign = '+';
+    char *out;
+    size_t len;
+
+    /* Convert the timestamp to local time and determine the offset of
+     * local time from UTC at that point in time. */
+    tm = localtime_offset(&self->creation_time.tv_sec, &utc_off);
+    if (utc_off < 0) {
+        sign = '-';
+        utc_off = -utc_off;
+    }
+
+    /* Write the timestamp into the buffer. */
+    len = snprintf(buffer, buflen,
+                   "$time %04d-%02d-%02dT%02d:%02d:%02d.%06ld%c%02d%02d\n",
+                   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                   tm->tm_hour, tm->tm_min, tm->tm_sec,
+                   (long)self->creation_time.tv_usec,
+                   sign, utc_off / 3600, utc_off / 60 % 60);
+    assert(len == sizeof("$time YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM\n") - 1);
+    out = buffer + len;
+
+    /* Append each of the strings. */
+    write_string_field("Group", self->group, &out);
+    write_string_field("From", self->user, &out);
+    write_string_field("Message", self->string, &out);
+    write_string_field("Message-Id", self->id, &out);
+    write_string_field("In-Reply-To", self->reply_id, &out);
+    write_string_field("Thread-Id", self->thread_id, &out);
+    write_string_field("Attachment", self->attachment, &out);
+
+    assert(out - buffer == buflen);
+    return buffer;
+}
+
 size_t
 message_part_size(message_t self, message_part_t part)
 {
@@ -555,7 +746,14 @@ message_part_size(message_t self, message_part_t part)
         return self->length;
         
     case MSGPART_ALL:
-        abort();
+        return sizeof("$time YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM\n") - 1 +
+            measure_string_field("Group", self->group) +
+            measure_string_field("From", self->user) +
+            measure_string_field("Message", self->string) +
+            measure_string_field("Message-Id", self->id) +
+            measure_string_field("In-Reply-To", self->reply_id) +
+            measure_string_field("Thread-Id", self->thread_id) +
+            measure_string_field("Attachment", self->attachment);
     }
 
     return 0;
@@ -586,7 +784,7 @@ message_get_part(message_t self, message_part_t part,
         return buffer;
 
     case MSGPART_ALL:
-        abort();
+        return write_message(self, buffer, buflen);
     }
 
     return NULL;
