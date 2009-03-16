@@ -54,6 +54,7 @@
 #endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include "globals.h"
 #include "utils.h"
 #include "utf8.h"
 
@@ -61,14 +62,6 @@
 #ifndef EILSEQ
 # define EILSEQ -1
 #endif /* EILSEQ */
-
-/* The CHARSET_REGISTRY atom */
-#define CHARSET_REGISTRY "CHARSET_REGISTRY"
-static Atom registry = None;
-
-/* The CHARSET_ENCODING atom */
-#define CHARSET_ENCODING "CHARSET_ENCODING"
-static Atom encoding = None;
 
 /* The name of the UTF-8 code set that works with iconv() */
 #define UTF8_CODE "UTF-8"
@@ -217,23 +210,13 @@ alloc_font_code_set(Display *display, XFontStruct *font)
     char *string;
     size_t length;
 
-    /* Look up the CHARSET_REGISTRY atom */
-    if (registry == None) {
-        registry = XInternAtom(display, CHARSET_REGISTRY, False);
-    }
-
     /* Look up the font's CHARSET_REGISTRY property */
-    if (!XGetFontProperty(font, registry, &atoms[0])) {
+    if (!XGetFontProperty(font, atoms[AN_CHARSET_REGISTRY], &atoms[0])) {
         return NULL;
     }
 
-    /* Look up the CHARSET_ENCODING atom */
-    if (encoding == None) {
-        encoding = XInternAtom(display, CHARSET_ENCODING, False);
-    }
-
     /* Look up the font's CHARSET_ENCODING property */
-    if (!XGetFontProperty(font, encoding, &atoms[1])) {
+    if (!XGetFontProperty(font, atoms[AN_CHARSET_ENCODING], &atoms[1])) {
         return NULL;
     }
 

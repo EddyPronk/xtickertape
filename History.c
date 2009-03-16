@@ -61,6 +61,7 @@
 #include <Xm/TransferT.h>
 #include <Xm/TraitP.h>
 #include "replace.h"
+#include "globals.h"
 #include "utils.h"
 #include "message.h"
 #include "utf8.h"
@@ -783,8 +784,6 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)widget;
     XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
-    Display *display = XtDisplay(widget);
-    Atom TARGETS, EXPORTS, CB_TARGETS, UTF8_STRING, STRING;
     Atom *targets;
     message_t message;
     char *bytes;
@@ -795,20 +794,14 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
     assert(message != NULL);
     printf("convert callback invoked (target=%lu)\n", data->target);
 
-    /* Intern atoms.  FIXME: do this in initialization instead. */
-    TARGETS = XInternAtom(display, "TARGETS", False);
-    EXPORTS = XInternAtom(display, "_MOTIF_EXPORT_TARGETS", False);
-    CB_TARGETS = XInternAtom(display, "_MOTIF_CLIPBOARD_TARGETS", False);
-    UTF8_STRING = XInternAtom(display, "UTF8_STRING", False);
-    STRING = XInternAtom(display, "STRING", False);
-
     /* If the destination has requested the list of targets then we
      * return this as the convert data. */
-    if (data->target == TARGETS || data->target == CB_TARGETS ||
-        data->target == EXPORTS) {
+    if (data->target == atoms[AN_TARGETS] ||
+        data->target == atoms[AN__MOTIF_CLIPBOARD_TARGETS] ||
+        data->target == atoms[AN__MOTIF_EXPORT_TARGETS]) {
         targets = (Atom *)XtMalloc(sizeof(Atom) * 2);
-        targets[0] = UTF8_STRING;
-        targets[1] = STRING;
+        targets[0] = atoms[AN_UTF8_STRING];
+        targets[1] = atoms[AN_STRING];
         data->type = XA_ATOM;
         data->value = targets;
         data->length = 2;
@@ -816,7 +809,8 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 
         /* Support all of the standard traits too. */
         data->status = XmCONVERT_MERGE;
-    } else if (data->target == UTF8_STRING || data->target == STRING) {
+    } else if (data->target == atoms[AN_UTF8_STRING] ||
+               data->target == atoms[AN_STRING]) {
         len = message_part_size(message, self->history.copy_part);
         bytes = XtMalloc(len);
         if (bytes == NULL) {

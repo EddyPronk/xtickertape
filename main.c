@@ -84,6 +84,31 @@
 
 #define DEFAULT_DOMAIN "no.domain"
 
+/* The table of atoms to intern. */
+struct atom_info {
+    /* The index in the global atoms array. */
+    atom_index_t index;
+
+    /* The string corresponding to the atom's name. */
+    const char *name;
+};
+
+#define DECLARE_ATOM(name) \
+    { AN_##name, #name }
+
+Atom atoms[AN_MAX + 1];
+
+/* The table of X11 atoms to intern. */
+struct atom_info atom_list[AN_MAX + 1] = {
+    DECLARE_ATOM(CHARSET_ENCODING),
+    DECLARE_ATOM(CHARSET_REGISTRY),
+    DECLARE_ATOM(STRING),
+    DECLARE_ATOM(TARGETS),
+    DECLARE_ATOM(UTF8_STRING),
+    DECLARE_ATOM(_MOTIF_EXPORT_TARGETS),
+    DECLARE_ATOM(_MOTIF_CLIPBOARD_TARGETS)
+};
+
 #if defined(HAVE_GETOPT_LONG)
 /* The list of long options */
 static struct option long_options[] =
@@ -569,6 +594,8 @@ main(int argc, char *argv[])
     const char *keys_file;
     const char *keys_dir;
     Widget top;
+    Atom atom;
+    int i;
 
 #ifdef HAVE_XTVAOPENAPPLICATION
     /* Create the toplevel widget */
@@ -676,6 +703,16 @@ main(int argc, char *argv[])
                &groups_file, &usenet_file,
                &keys_file, &keys_dir,
                error);
+
+    /* Intern a bunch of atoms. */
+    for (i = 0; i <= AN_MAX; i++) {
+        atom = XInternAtom(XtDisplay(top), atom_list[i].name, False);
+        if (atom == None) {
+            fprintf(stderr, PACKAGE ": XtInternAtom %s failed\n", atom_list[i].name);
+        }
+        /*printf("ATOM %s=%lu\n", atom_list[i].name, atom);*/
+        atoms[atom_list[i].index] = atom;
+    }
 
     /* Create an Icon for the root shell */
     XtVaSetValues(top, XtNiconWindow, create_icon(top), NULL);

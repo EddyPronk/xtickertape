@@ -40,6 +40,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include <X11/X.h>
+
 #if defined(ELVIN_VERSION_AT_LEAST)
 # if ELVIN_VERSION_AT_LEAST(4, 1, -1)
 extern elvin_client_t client;
@@ -47,5 +49,18 @@ extern elvin_client_t client;
 #  error "Unsupported Elvin library version"
 # endif
 #endif
+
+typedef enum {
+    AN_CHARSET_ENCODING,
+    AN_CHARSET_REGISTRY,
+    AN_STRING,
+    AN_TARGETS,
+    AN_UTF8_STRING,
+    AN__MOTIF_CLIPBOARD_TARGETS,
+    AN__MOTIF_EXPORT_TARGETS,
+    AN_MAX = AN__MOTIF_EXPORT_TARGETS
+} atom_index_t;
+
+extern Atom atoms[AN_MAX + 1];
 
 #endif /* GLOBALS_H */
