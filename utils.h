@@ -45,6 +45,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <X11/Intrinsic.h>
+#include "message.h"
+
 /* Useful macros */
 #if !defined(MIN)
 # define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -59,5 +62,11 @@
  * east of (before) UTC that time zone is/was/will be at that time. */
 struct tm *
 localtime_offset(time_t *when, int* utc_off);
+
+/* Handle the conversion of a selected message to various clipboard
+ * types. */
+void
+message_convert(Widget widget, XtPointer *call_data,
+                message_t message, message_part_t part);
 
 #endif /* UTILS_H */

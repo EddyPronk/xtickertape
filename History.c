@@ -833,68 +833,9 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
         return;
     }
 
-    /* If the destination has requested the list of targets then we
-     * return this as the convert data. */
-    if (data->target == atoms[AN_TARGETS]) {
-        targets = XmeStandardTargets(widget, 2, &i);
-        if (targets == NULL) {
-            perror("XtMalloc failed");
-            data->status = XmCONVERT_REFUSE;
-            return;
-        }
-        targets[i++] = XA_STRING;
-        targets[i++] = atoms[AN_UTF8_STRING];
-        value = targets;
-        type = XA_ATOM;
-        len = i;
-        format = 32;
-    } else if (data->target == atoms[AN__MOTIF_CLIPBOARD_TARGETS]) {
-        targets = (Atom *)XtMalloc(1 * sizeof(Atom));
-        if (targets == NULL) {
-            perror("XtMalloc failed");
-            data->status = XmCONVERT_REFUSE;
-            return;
-        }
-        i = 0;
-        targets[i++] = XA_STRING;
-        value = targets;
-        type = XA_ATOM;
-        len = i;
-        format = 32;
-    } else if (data->target == atoms[AN__MOTIF_DEFERRED_CLIPBOARD_TARGETS] ||
-               data->target == atoms[AN__MOTIF_EXPORT_TARGETS]) {
-        return;
-    } else if (data->target == atoms[AN_UTF8_STRING] ||
-               data->target == XA_STRING) {
-        len = message_part_size(message, self->history.copy_part);
-        utf8 = XtMalloc(len + 1);
-        message_get_part(message, self->history.copy_part, utf8, len);
-        utf8[len] = '\0';
-
-        if (data->target == atoms[AN_UTF8_STRING]) {
-            value = utf8;
-        } else {
-            value = utf8_to_target(utf8, data->target, &len);
-            XtFree(utf8);
-        }
-            
-        type = data->target;
-        format = 8;
-    } else {
-        dprintf(("unexpected target: %ld\n", data->target));
-        return;
-    }
-
-    if (data->status == XmCONVERT_MERGE) {
-        XmeConvertMerge(value, type, format, len, data);
-        return;
-    }
-
-    data->value = value;
-    data->type = type;
-    data->format = format;
-    data->length = len;
-    data->status = XmCONVERT_DONE;
+    /* Otherwise convert the message. */
+    message_convert(widget, data, self->history.copy_message,
+                    self->history.copy_part);
 }
 
 /* Initializes the History-related stuff */

@@ -59,6 +59,11 @@
 #ifdef HAVE_ASSERT_H
 # include <assert.h>
 #endif
+#include <Xm/XmAll.h>
+#include <Xm/TransferT.h>
+#include "globals.h"
+#include "utf8.h"
+#include "utils.h"
 
 #define YYMMDD(tm) \
     (((tm)->tm_year << 16) | ((tm)->tm_mon << 8) | (tm)->tm_mday)
@@ -108,6 +113,118 @@ localtime_offset(time_t *when, int* utc_off)
     *utc_off = tm->tm_gmtoff;
 #endif /* DEBUG || !HAVE_STRUCT_TM_TM_GMTOFF */
     return tm;
+}
+
+static int
+do_convert(Widget widget, XmConvertCallbackStruct *data,
+           message_t message, message_part_t part,
+           XtPointer *value_out, Atom *type_out, size_t *length_out,
+           int *format_out)
+{
+    Atom *targets;
+    char *utf8;
+    size_t len;
+    int i;
+
+    /* If the destination has requested the list of targets then we
+     * return this as the value. */
+    if (data->target == atoms[AN_TARGETS]) {
+        /* We support all of the standard Motif targets. */
+        targets = XmeStandardTargets(widget, 2, &i);
+        if (targets == NULL) {
+            perror("XmeStandardTargets failed");
+            return -1;
+        }
+
+        /* We also support some textual types. */
+        targets[i++] = XA_STRING;
+        targets[i++] = atoms[AN_UTF8_STRING];
+        *value_out = targets;
+        *type_out = XA_ATOM;
+        *length_out = i;
+        *format_out = 32;
+        return 0;
+    }
+
+    /* If the destination has requested a set of Motif clipboard
+     * targets, then provide the supported string types. */
+    if (data->target == atoms[AN__MOTIF_CLIPBOARD_TARGETS]) {
+        targets = (Atom *)XtMalloc(2 * sizeof(Atom));
+        if (targets == NULL) {
+            perror("XtMalloc failed");
+            return -1;
+        }
+
+        i = 0;
+        targets[i++] = XA_STRING;
+        targets[i++] = atoms[AN_UTF8_STRING];
+        *value_out = targets;
+        *type_out = XA_ATOM;
+        *length_out = i;
+        *format_out = 32;
+        return 0;
+    }
+
+    /* String conversions. */
+    if (data->target == XA_STRING || data->target == atoms[AN_UTF8_STRING]) {
+        /* Get the UTF-8 version of the message string. */
+        len = message_part_size(message, part);
+        utf8 = XtMalloc(len + 1);
+        if (utf8 == NULL) {
+            perror("XtMalloc failed");
+            return -1;
+        }
+        message_get_part(message, part, utf8, len);
+        utf8[len] = '\0';
+
+        /* Convert if necessary. */
+        if (data->target == AN_UTF8_STRING) {
+            *value_out = utf8;
+        } else {
+            *value_out = utf8_to_target(utf8, data->target, &len);
+            XtFree(utf8);
+        }
+        *type_out = data->target;
+        *length_out = len;
+        *format_out = 8;
+        return 0;
+    }
+
+    return -1;
+}
+
+void
+message_convert(Widget widget, XtPointer *call_data,
+                message_t message, message_part_t part)
+{
+    XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
+    XtPointer value;
+    Atom type;
+    size_t len;
+    int format;
+
+    /* Make sure there's a message and part to copy. */
+    assert(message != NULL);
+    assert(part != MSGPART_NONE);
+
+    /* Do the widget-specific conversion. */
+    if (do_convert(widget, data, message, part, &value, &type, &len, &format) < 0) {
+        return;
+    }
+
+    /* If the application has supplied some data already then merge
+     * with that. */
+    if (data->status == XmCONVERT_MERGE) {
+        XmeConvertMerge(value, type, format, len, data);
+        return;
+    }
+
+    /* Otherwise use the conversion information. */
+    data->value = value;
+    data->type = type;
+    data->format = format;
+    data->length = len;
+    data->status = XmCONVERT_DONE;
 }
 
 /**********************************************************************/
