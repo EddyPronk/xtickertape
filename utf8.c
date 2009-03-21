@@ -52,6 +52,9 @@
 #ifdef HAVE_ERRNO_H
 # include <errno.h>
 #endif
+#ifdef HAVE_ASSERT_H
+# include <assert.h>
+#endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "globals.h"
@@ -1036,6 +1039,84 @@ utf8_encoder_decode(utf8_encoder_t self, const char *input)
     }
 
     return buffer;
+}
+
+char *
+utf8_to_target(const char *input, Atom target, size_t *len_out)
+{
+    const char *in;
+    char *result, *out;
+    size_t len;
+    char byte;
+    unsigned int ch;
+    int n;
+
+    if (target == XA_STRING) {
+        /* The target is STRING, which is supposed to be ISO8859-1
+         * encoded.  Since that's a subset of UTF-8, we can simply
+         * walk the UTF-8 string and extract the bytes of interest,
+         * replacing any characters outside that encoding with
+         * question marks.  Work out how many bytes we need. */
+        len = 0;
+        for (in = input; (byte = *in) != '\0'; in++) {
+            if ((byte & 0xc0) != 0x80) {
+                /* Count the number of initial bytes we find. */
+                len++;
+            }
+        }
+
+        /* Allocate memory to hold the translated string. */
+        result = XtMalloc(len);
+        if (result == NULL) {
+            return NULL;
+        }
+
+        /* Translate the string, substituting question marks for
+         * non-ISO8859-1 code points. */
+        out = result;
+        n = 0;
+        for (in = input; (byte = *in) != '\0'; in++) {
+            /* Skip non-initial characters. */
+            if (n > 0) {
+                /* All non-initial bytes are 10xx xxxx */
+                assert((byte & 0xc0) == 0x80);
+
+                /* Incorporate the low 6 bits. */
+                ch = (ch << 6) | (byte & 0x3f);
+                n--;
+            } else if ((byte & 0x80) == 0) {
+                /* Deal with ASCII code points. */
+                ch = byte;
+            } else if ((byte & 0xe0) == 0xc0) {
+                ch = byte & 0x1f;
+                n = 1;
+                continue;
+            } else if ((byte & 0xf0) == 0xe0) {
+                ch = byte & 0xf;
+                n = 2;
+                continue;
+            } else {
+                /* RFC 3629 limits UTF-8 to the range U+0000 through
+                 * U+10FFFF, so at most 4 bytes are required to
+                 * represent any character. */
+                assert((byte & 0xf8) == 0xf0);
+                ch = byte & 0x7;
+                n = 3;
+                continue;
+            }
+
+            /* We now have the complete code point.  If it's in the
+             * ISO8859-1 range then it will fall between 0 and 255. */
+            assert(n == 0);
+            *out++ = (ch < 0x100) ? (char)ch : '?';
+        }
+        *len_out = len;
+        assert(out - result == len);
+        return result;
+    }
+
+    /* Unsupported target. */
+    return NULL;
 }
 
 /**********************************************************************/

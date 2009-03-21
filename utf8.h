@@ -138,4 +138,11 @@ char *
 utf8_encoder_decode(utf8_encoder_t self, const char *input);
 
 
+/* Convert a UTF-8 string into the ICCCM target format specified by
+ * target.  Supported targets are: UTF8_STRING.  Returns the converted
+ * string as a block of memory allocated with XtMalloc, or NULL if
+ * something has gone wrong. */
+char *
+utf8_to_target(const char *input, Atom target, size_t *len_out);
+
 #endif /* MESSAGE_VIEW_H */
