@@ -736,6 +736,9 @@ size_t
 message_part_size(message_t self, message_part_t part)
 {
     switch (part) {
+    case MSGPART_NONE:
+        return 0;
+
     case MSGPART_ID:
         return (self->id == NULL) ? 0 : strlen(self->id);
 
@@ -764,6 +767,9 @@ message_get_part(message_t self, message_part_t part,
                  char *buffer, size_t buflen)
 {
     switch (part) {
+    case MSGPART_NONE:
+        return NULL;
+
     case MSGPART_ID:
         if (self->id == NULL) {
             return NULL;

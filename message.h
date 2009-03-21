@@ -52,6 +52,7 @@ typedef struct message *message_t;
 
 /* Portions of the message which may be copied via copy and paste. */
 typedef enum {
+    MSGPART_NONE,
     MSGPART_ID,
     MSGPART_TEXT,
     MSGPART_ALL,
