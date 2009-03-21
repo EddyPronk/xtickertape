@@ -205,23 +205,23 @@ iconv(iconv_t cd,
 static char *
 alloc_font_code_set(Display *display, XFontStruct *font)
 {
-    Atom atoms[2];
+    Atom ids[2];
     char *names[2];
     char *string;
     size_t length;
 
     /* Look up the font's CHARSET_REGISTRY property */
-    if (!XGetFontProperty(font, atoms[AN_CHARSET_REGISTRY], &atoms[0])) {
+    if (!XGetFontProperty(font, atoms[AN_CHARSET_REGISTRY], &ids[0])) {
         return NULL;
     }
 
     /* Look up the font's CHARSET_ENCODING property */
-    if (!XGetFontProperty(font, atoms[AN_CHARSET_ENCODING], &atoms[1])) {
+    if (!XGetFontProperty(font, atoms[AN_CHARSET_ENCODING], &ids[1])) {
         return NULL;
     }
 
     /* Stringify the names */
-    if (!XGetAtomNames(display, atoms, 2, names)) {
+    if (!XGetAtomNames(display, ids, 2, names)) {
         return NULL;
     }
 
