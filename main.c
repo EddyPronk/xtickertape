@@ -71,6 +71,7 @@
 #include <X11/Shell.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xmu/Editres.h>
+#include <Xm/XmStrDefs.h>
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
 #include "globals.h"
@@ -95,6 +96,8 @@ struct atom_info {
 
 #define DECLARE_ATOM(name) \
     { AN_##name, #name }
+#define DECLARE_XmATOM(name) \
+    { AN_##name, XmS##name }
 
 Atom atoms[AN_MAX + 1];
 
@@ -102,11 +105,15 @@ Atom atoms[AN_MAX + 1];
 struct atom_info atom_list[AN_MAX + 1] = {
     DECLARE_ATOM(CHARSET_ENCODING),
     DECLARE_ATOM(CHARSET_REGISTRY),
-    DECLARE_ATOM(STRING),
-    DECLARE_ATOM(TARGETS),
+    DECLARE_XmATOM(COMPOUND_TEXT),
+    DECLARE_XmATOM(TARGETS),
+    DECLARE_XmATOM(TEXT),
     DECLARE_ATOM(UTF8_STRING),
-    DECLARE_ATOM(_MOTIF_EXPORT_TARGETS),
-    DECLARE_ATOM(_MOTIF_CLIPBOARD_TARGETS)
+    DECLARE_XmATOM(_MOTIF_CLIPBOARD_TARGETS),
+    DECLARE_XmATOM(_MOTIF_DEFERRED_CLIPBOARD_TARGETS),
+    DECLARE_XmATOM(_MOTIF_EXPORT_TARGETS),
+    DECLARE_XmATOM(_MOTIF_LOSE_SELECTION),
+    DECLARE_ATOM(_MOTIF_SNAPSHOT)
 };
 
 #if defined(HAVE_GETOPT_LONG)
