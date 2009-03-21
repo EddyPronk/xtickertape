@@ -784,48 +784,117 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)widget;
     XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
-    Atom *targets;
+    Atom *targets, type;
     message_t message;
-    char *bytes;
+    char *utf8;
+    XtPointer value;
     size_t len;
+    int i, format;
 
     /* There must be a message to copy. */
     message = self->history.copy_message;
     assert(message != NULL);
-    printf("convert callback invoked (target=%lu)\n", data->target);
+    assert(self->history.copy_part != MSGPART_NONE);
+    dprintf(("convert callback invoked\n"
+             "    reason=%d\n"
+             "    selection=%lu\n"
+             "    target=%lu\n"
+             "    source_data=%p\n"
+             "    location_data=%p\n"
+             "    flags=0x%x\n"
+             "    parm=%p\n"
+             "    parm_format=%d\n"
+             "    status=%d\n"
+             "    value=%p\n"
+             "    type=%ld\n"
+             "    format=%d\n"
+             "    length=%lu\n",
+             data->reason,
+             data->selection,
+             data->target,
+             data->source_data,
+             data->location_data,
+             data->flags,
+             data->parm,
+             data->parm_format,
+             data->status,
+             data->value,
+             data->type,
+             data->format,
+             data->length));
+
+    /* Lose the selection when appropriate. */
+    if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
+        dprintf(("releasing selection\n"));
+        message_free(self->history.copy_message);
+        self->history.copy_message = NULL;
+        self->history.copy_part = MSGPART_NONE;
+        data->status = XmCONVERT_DONE;
+        return;
+    }
 
     /* If the destination has requested the list of targets then we
      * return this as the convert data. */
-    if (data->target == atoms[AN_TARGETS] ||
-        data->target == atoms[AN__MOTIF_CLIPBOARD_TARGETS] ||
-        data->target == atoms[AN__MOTIF_EXPORT_TARGETS]) {
-        targets = (Atom *)XtMalloc(sizeof(Atom) * 2);
-        targets[0] = atoms[AN_UTF8_STRING];
-        targets[1] = atoms[AN_STRING];
-        data->type = XA_ATOM;
-        data->value = targets;
-        data->length = 2;
-        data->format = 32;
-
-        /* Support all of the standard traits too. */
-        data->status = XmCONVERT_MERGE;
-    } else if (data->target == atoms[AN_UTF8_STRING] ||
-               data->target == atoms[AN_STRING]) {
-        len = message_part_size(message, self->history.copy_part);
-        bytes = XtMalloc(len);
-        if (bytes == NULL) {
+    if (data->target == atoms[AN_TARGETS]) {
+        targets = XmeStandardTargets(widget, 2, &i);
+        if (targets == NULL) {
             perror("XtMalloc failed");
+            data->status = XmCONVERT_REFUSE;
             return;
         }
-        message_get_part(message, self->history.copy_part, bytes, len);
-        data->value = bytes;
-        data->length = len;
-        data->type = data->target;
-        data->format = 8;
-        data->status = XmCONVERT_DONE;
+        targets[i++] = XA_STRING;
+        targets[i++] = atoms[AN_UTF8_STRING];
+        value = targets;
+        type = XA_ATOM;
+        len = i;
+        format = 32;
+    } else if (data->target == atoms[AN__MOTIF_CLIPBOARD_TARGETS]) {
+        targets = (Atom *)XtMalloc(1 * sizeof(Atom));
+        if (targets == NULL) {
+            perror("XtMalloc failed");
+            data->status = XmCONVERT_REFUSE;
+            return;
+        }
+        i = 0;
+        targets[i++] = XA_STRING;
+        value = targets;
+        type = XA_ATOM;
+        len = i;
+        format = 32;
+    } else if (data->target == atoms[AN__MOTIF_DEFERRED_CLIPBOARD_TARGETS] ||
+               data->target == atoms[AN__MOTIF_EXPORT_TARGETS]) {
+        return;
+    } else if (data->target == atoms[AN_UTF8_STRING] ||
+               data->target == XA_STRING) {
+        len = message_part_size(message, self->history.copy_part);
+        utf8 = XtMalloc(len + 1);
+        message_get_part(message, self->history.copy_part, utf8, len);
+        utf8[len] = '\0';
+
+        if (data->target == atoms[AN_UTF8_STRING]) {
+            value = utf8;
+        } else {
+            value = utf8_to_target(utf8, data->target, &len);
+            XtFree(utf8);
+        }
+            
+        type = data->target;
+        format = 8;
     } else {
-        data->status = XmCONVERT_MERGE;
+        dprintf(("unexpected target: %ld\n", data->target));
+        return;
     }
+
+    if (data->status == XmCONVERT_MERGE) {
+        XmeConvertMerge(value, type, format, len, data);
+        return;
+    }
+
+    data->value = value;
+    data->type = type;
+    data->format = format;
+    data->length = len;
+    data->status = XmCONVERT_DONE;
 }
 
 /* Initializes the History-related stuff */
@@ -896,7 +965,7 @@ init(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 
     /* Nothing has been copied yet. */
     self->history.copy_message = NULL;
-    self->history.copy_part = MSGPART_TEXT;
+    self->history.copy_part = MSGPART_NONE;
 
     /* Create the horizontal scrollbar */
     scrollbar = XtVaCreateManagedWidget("HorizScrollBar",
@@ -1296,19 +1365,43 @@ process_events(Widget widget, XtPointer closure, XEvent *event,
     /* Process all of the GraphicsExpose events in one hit */
     for (;;) {
         switch (event->type) {
-        case NoExpose:
-            /* Stop drawing if the widget is obscured. */
-            return;
-
         case GraphicsExpose:
             /* Continue processing graphics expose evens until we've
              * processed the entire batch. */
             if (!gexpose(self, &event->xgraphicsexpose)) {
+                *continue_to_dispatch = False;
                 return;
             }
 
+        case NoExpose:
+            /* Stop drawing if the widget is obscured. */
+            dprintf(("History: NoExpose event\n"));
+            *continue_to_dispatch = False;
+            return;
+
+        case SelectionClear:
+            dprintf(("History: SelectionClear"));
+            *continue_to_dispatch = True;
+            return;
+
+        case SelectionRequest:
+            dprintf(("History: SelectionRequest"));
+            *continue_to_dispatch = True;
+            return;
+
+        case SelectionNotify:
+            dprintf(("History: electionNotify"));
+            *continue_to_dispatch = True;
+            return;
+
+        case ClientMessage:
+        case MappingNotify:
+            *continue_to_dispatch = True;
+            return;
+
         default:
             dprintf(("ignoring unknown event type: %d\n", event->type));
+            *continue_to_dispatch = True;
             return;
         }
 
@@ -2191,32 +2284,9 @@ copy_selection(Widget widget, XEvent* event, char **params,
     message_part_t part;
     const char *target;
 
-    /* Determine the time of the event. */
-    switch (event->type) {
-    case KeyPress:
-    case KeyRelease:
-        when = event->xkey.time;
-        break;
-
-    case ButtonPress:
-    case ButtonRelease:
-        when = event->xbutton.time;
-        break;
-
-    case MotionNotify:
-        when = event->xmotion.time;
-        break;
-
-    case EnterNotify:
-    case LeaveNotify:
-        when = event->xcrossing.time;
-        break;
-
-    default:
-        /* FIXME: we need a way to get a timestamp. */
-        abort();
-        return;
-    }
+    /* Get the timestamp of the last event with a timestamp processed
+     * by the X toolkit. */
+    when = XtLastTimestampProcessed(XtDisplay(widget));
 
     /* Bail if there's no selection. */
     message = self->history.selection;
@@ -2254,7 +2324,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
         res = XmeClipboardSource(widget, XmCOPY, when);
     }
 
-    printf("XmeXXXSource: %s\n", res ? "true" : "false");
+    dprintf(("Xme[%s]Source: %s\n", target, res ? "true" : "false"));
 }
 
 /* Redraw the widget */
