@@ -1,3 +1,5 @@
+-*-text-*-
+
 Things that would be nice to have in future versions of xtickertape:
 
 General:
@@ -5,6 +7,12 @@ General:
 - XTickertape should be able to keep a history of notifications so
   that restarting isn't quite so painful.  An on-disk format similar
   to ep's output seems like a good starting point.
+
+- Reporting errors to stdout/stderr isn't very helpful.  XTickertape
+  should record the last n errors and display them in a separate
+  window.  It should probably also report the most recent error in the
+  status bar.  Possibly all status messages should be recorded in this
+  window for later perusal.
 
 Configuration
 
