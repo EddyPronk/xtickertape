@@ -784,44 +784,12 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 {
     HistoryWidget self = (HistoryWidget)widget;
     XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
-    Atom *targets, type;
     message_t message;
-    char *utf8;
-    XtPointer value;
-    size_t len;
-    int i, format;
 
     /* There must be a message to copy. */
     message = self->history.copy_message;
     assert(message != NULL);
     assert(self->history.copy_part != MSGPART_NONE);
-    dprintf(("convert callback invoked\n"
-             "    reason=%d\n"
-             "    selection=%lu\n"
-             "    target=%lu\n"
-             "    source_data=%p\n"
-             "    location_data=%p\n"
-             "    flags=0x%x\n"
-             "    parm=%p\n"
-             "    parm_format=%d\n"
-             "    status=%d\n"
-             "    value=%p\n"
-             "    type=%ld\n"
-             "    format=%d\n"
-             "    length=%lu\n",
-             data->reason,
-             data->selection,
-             data->target,
-             data->source_data,
-             data->location_data,
-             data->flags,
-             data->parm,
-             data->parm_format,
-             data->status,
-             data->value,
-             data->type,
-             data->format,
-             data->length));
 
     /* Lose the selection when appropriate. */
     if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
@@ -834,7 +802,7 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
     }
 
     /* Otherwise convert the message. */
-    message_convert(widget, data, self->history.copy_message,
+    message_convert(widget, (XtPointer)data, self->history.copy_message,
                     self->history.copy_part);
 }
 
