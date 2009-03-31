@@ -406,95 +406,45 @@ create_file_menu(control_panel_t self, Widget parent)
 }
 
 static void
+do_copy(control_panel_t self, const char* part)
+{
+    String params[2];
+    Cardinal i;
+
+    params[i++] = (String)part;
+    params[i++] = "CLIPBOARD";
+
+    // Invoke the history widget's copy action.
+    XtCallActionProc(self->history, "copy-selection", NULL, params, i);
+}
+
+static void
 edit_copy(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-    message_t message;
-    char *buffer;
-    size_t group_len, user_len, string_len, len;
-    XmString label;
-    int status;
-    long id;
-
-    /* Look up the current selection. */
-    message = HistoryGetSelection(self->history);
-    if (message == NULL) {
-        return;
-    }
-
-    /* Measure the message's strings. */
-    group_len = strlen(message_get_group(message));
-    user_len = strlen(message_get_user(message));
-    string_len = strlen(message_get_string(message));
-
-    /* Allocate a buffer big enough to hold the whole message. */
-    len = group_len + 1 + user_len + 1 + string_len;
-    buffer = malloc(len + 1);
-    if (buffer == NULL) {
-        perror("malloc failed");
-        return;
-    }
-
-    /* Construct a string composed of the group, user and message
-     * portions of the currently selected message in the history
-     * widget. */
-    snprintf(buffer, len + 1, "%s:%s:%s",
-           message_get_group(message),
-           message_get_user(message),
-           message_get_string(message));
-
-    /* Create a string to label the selection. */
-    label = XmStringCreateLocalized("to_clipbd");
-    if (label == NULL) {
-        perror("XmStringCreateLocalized failed");
-        free(buffer);
-        return;
-    }
-
-    /* Lock the clipboard. */
-    do {
-        status = XmClipboardStartCopy(XtDisplay(widget), XtWindow(widget),
-                                      label, CurrentTime, NULL, NULL, &id);
-    } while (status == ClipboardLocked);
-
-    /* Copy the data. */
-    do {
-        status = XmClipboardCopy(XtDisplay(widget), XtWindow(widget), id,
-                                 "STRING", buffer, len, 0, NULL);
-    } while (status == ClipboardLocked);
-
-    /* Unlock the clipboard. */
-    do {
-        status = XmClipboardEndCopy(XtDisplay(widget), XtWindow(widget), id);
-    } while (status == ClipboardLocked);
-
-    /* Clean up. */
-    XmStringFree(label);
-    free(buffer);
+    do_copy(self, "body");
 }
 
 static void
 edit_copy_id(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-
-    printf("[panel=%p] Edit>Copy Message-Id\n", self);
+    do_copy(self, "id");
 }
 
 static void
 edit_copy_link(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-
-    printf("[panel=%p] Edit>Copy Link\n", self);
+    do_copy(self, "link");
 }
 
 static void
 edit_copy_msg(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-
-    printf("[panel=%p] Edit>Copy Message\n", self);
+    printf("call_data=%p\n", call_data);
+    do_copy(self, "message");
 }
 
 /* Select the edit menu items appropriate for the selected message. */
