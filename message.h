@@ -170,6 +170,11 @@ void
 message_set_killed(message_t self, int is_killed);
 
 
+/* Convert a string into a message part. */
+message_part_t
+message_part_from_string(const char *string);
+
+
 /* Returns how many bytes are required to hold the named message
  * part. */
 size_t

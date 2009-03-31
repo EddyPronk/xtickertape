@@ -732,6 +732,24 @@ write_message(message_t self, char *buffer, size_t buflen)
     return buffer;
 }
 
+message_part_t
+message_part_from_string(const char *string)
+{
+    if (string == NULL) {
+        return MSGPART_TEXT;
+    } else if (strcmp(string, "id") == 0) {
+        return MSGPART_ID;
+    } else if (strcmp(string, "body") == 0) {
+        return MSGPART_TEXT;
+    } else if (strcmp(string, "message") == 0) {
+        return MSGPART_ALL;
+    } else if (strcmp(string, "link") == 0) {
+        return MSGPART_LINK;
+    } else {
+        return MSGPART_TEXT;
+    }
+}
+
 size_t
 message_part_size(message_t self, message_part_t part)
 {

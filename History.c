@@ -2208,19 +2208,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
     set_copy_message(self, message);
 
     /* Decide what to copy. */
-    if (*num_params < 1) {
-        part = MSGPART_TEXT;
-    } else if (strcmp(params[0], "id") == 0) {
-        part = MSGPART_ID;
-    } else if (strcmp(params[0], "body") == 0) {
-        part = MSGPART_TEXT;
-    } else if (strcmp(params[0], "message") == 0) {
-        part = MSGPART_ALL;
-    } else if (strcmp(params[0], "link") == 0) {
-        part = MSGPART_LINK;
-    } else {
-        part = MSGPART_TEXT;
-    }
+    part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
     self->history.copy_part = part;
 
     /* Decide where we're copying to. */
