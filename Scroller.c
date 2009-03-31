@@ -56,7 +56,10 @@
 #include <X11/CoreP.h>
 #include <Xm/XmAll.h>
 #include <Xm/PrimitiveP.h>
+#include <Xm/TransferT.h>
+#include <Xm/TraitP.h>
 #include "replace.h"
+#include "globals.h"
 #include "utils.h"
 #include "utf8.h"
 #include "message.h"
@@ -845,6 +848,47 @@ compute_min_gap_width(XFontStruct *font)
     return 3 * font->per_char->width;
 }
 
+static void
+set_copy_message(ScrollerWidget self, message_t message)
+{
+    if (self->scroller.copy_message != NULL) {
+        message_free(self->scroller.copy_message);
+    }
+
+    if (message == NULL) {
+        self->scroller.copy_message = NULL;
+    } else {
+        self->scroller.copy_message = message_alloc_reference(message);
+    }
+}
+
+static void
+scroller_convert(Widget widget, XtPointer closure, XtPointer call_data)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+    XmConvertCallbackStruct *data = (XmConvertCallbackStruct *)call_data;
+    message_t message;
+
+    /* There must be a message to copy. */
+    message = self->scroller.copy_message;
+    assert(message != NULL);
+    assert(self->scroller.copy_part != MSGPART_NONE);
+
+    /* Lose the selection if appropriate. */
+    if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
+        DPRINTF((stderr, "releasing selection\n"));
+        message_free(self->scroller.copy_message);
+        self->scroller.copy_message = NULL;
+        self->scroller.copy_part = MSGPART_NONE;
+        data->status = XmCONVERT_DONE;
+        return;
+    }
+
+    /* Otherwise convert the message. */
+    message_convert(widget, (XtPointer)data, self->scroller.copy_message,
+                    self->scroller.copy_part);
+}
+
 /* ARGSUSED */
 static void
 initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
@@ -903,6 +947,9 @@ initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     self->scroller.request_id = 0;
     self->scroller.local_delta = 0;
     self->scroller.target_delta = 0;
+
+    self->scroller.copy_message = NULL;
+    self->scroller.copy_part = MSGPART_NONE;
 }
 
 /* Realize the widget by creating a window in which to display it */
@@ -1573,6 +1620,46 @@ glyph_at_event(ScrollerWidget self, XEvent *event)
     return holder->glyph;
 }
 
+static void
+copy_at_event(Widget widget, XEvent* event, char **params,
+              Cardinal *num_params)
+{
+    ScrollerWidget self = (ScrollerWidget)widget;
+    glyph_t glyph;
+    message_part_t part;
+    const char* target;
+    Time when;
+    int res;
+
+    /* Bail if there's no message. */
+    glyph = glyph_at_event(self, event);
+    if (glyph == NULL) {
+        return;
+    }
+    set_copy_message(self, glyph_get_message(glyph));
+
+    /* Get the timestamp of the last event with a timestamp processed
+     * by the X toolkit. */
+    when = XtLastTimestampProcessed(XtDisplay(widget));
+
+    /* Decide what to copy. */
+    part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
+    self->scroller.copy_part = part;
+
+    /* Decide where we're copying to. */
+    target = (*num_params < 2) ? "CLIPBOARD" : params[1];
+    if (strcmp(target, "PRIMARY") == 0) {
+        res = XmePrimarySource(widget, when);
+    } else if (strcmp(target, "SECONDARY") == 0) {
+        res = XmeSecondarySource(widget, when);
+    } else /* if (strcmp(target, "CLIPBOARD") == 0) */ {
+        res = XmeClipboardSource(widget, XmCOPY, when);
+    }
+
+    DPRINTF((stderr, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+}
+
+
 /*
  * Action definitions
  */
@@ -2106,7 +2193,8 @@ static XtActionsRec actions[] =
     { "kill", do_kill },
     { "faster", faster },
     { "slower", slower },
-    { "set-speed", set_speed }
+    { "set-speed", set_speed },
+    { "copy", copy_at_event }
 };
 
 /*
@@ -2192,6 +2280,18 @@ ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
     }
 }
 
+/* Transfer traits. */
+static XmTransferTraitRec transfer_traits = {
+    0, scroller_convert, NULL, NULL
+};
+
+static void
+class_part_init(WidgetClass wclass)
+{
+    /* Initialize data transfer traits. */
+    XmeTraitSet(wclass, XmQTtransfer, (XtPointer)&transfer_traits);
+}
+
 /*
  * Class record initialization
  */
@@ -2203,7 +2303,7 @@ ScrollerClassRec scrollerClassRec =
         "Scroller", /* class_name */
         sizeof(ScrollerRec), /* widget_size */
         NULL, /* class_initialize */
-        NULL, /* class_part_initialize */
+        class_part_init, /* class_part_initialize */
         False, /* class_inited */
         initialize, /* initialize */
         NULL, /* initialize_hook */

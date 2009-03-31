@@ -176,6 +176,12 @@ typedef struct {
     /* The array of Pixels used to display the separator portion of a
      * message at varying degrees of fading */
     Pixel *separator_pixels;
+
+    /* The message selected for copying from the scroller. */
+    message_t copy_message;
+
+    /* The part of copy_message to copy. */
+    message_part_t copy_part;
 } ScrollerPart;
 
 
