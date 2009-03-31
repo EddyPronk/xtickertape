@@ -63,6 +63,7 @@
 struct tm *
 localtime_offset(time_t *when, int* utc_off);
 
+
 /* Handle the conversion of a selected message to various clipboard
  * types. */
 void
