@@ -178,7 +178,7 @@ do_convert(Widget widget, XmConvertCallbackStruct *data,
         utf8[len] = '\0';
 
         /* Convert if necessary. */
-        if (data->target == AN_UTF8_STRING) {
+        if (data->target == atoms[AN_UTF8_STRING]) {
             *value_out = utf8;
         } else {
             *value_out = utf8_to_target(utf8, data->target, &len);
@@ -190,7 +190,9 @@ do_convert(Widget widget, XmConvertCallbackStruct *data,
         return 0;
     }
 
-    return -1;
+    /* Standard conversions. */
+    XmeStandardConvert(widget, NULL, data);
+    return 0;
 }
 
 void
@@ -208,7 +210,9 @@ message_convert(Widget widget, XtPointer *call_data,
     assert(part != MSGPART_NONE);
 
     /* Do the widget-specific conversion. */
-    if (do_convert(widget, data, message, part, &value, &type, &len, &format) < 0) {
+    if (do_convert(widget, data, message, part,
+                   &value, &type, &len, &format) < 0) {
+        data->status = XmCONVERT_REFUSE;
         return;
     }
 
@@ -220,11 +224,11 @@ message_convert(Widget widget, XtPointer *call_data,
     }
 
     /* Otherwise use the conversion information. */
+    data->status = XmCONVERT_DONE;
     data->value = value;
     data->type = type;
     data->format = format;
     data->length = len;
-    data->status = XmCONVERT_DONE;
 }
 
 /**********************************************************************/
