@@ -20,9 +20,6 @@ Configuration
   other than the terminal which started the program.  A message in the
   scroller is probably the most appropriate place. [Thanks Clinton Roy]
 
-- Write replacement functions for XtVaXXX() so that we can run with
-  older versions of X11.
-
 - Tickertape should be able to dynamically load new subscription
    modules.  The existing subscription types should fit into this API.
 
