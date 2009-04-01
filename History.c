@@ -2187,15 +2187,10 @@ copy_selection(Widget widget, XEvent* event, char **params,
                Cardinal *num_params)
 {
     HistoryWidget self = (HistoryWidget)widget;
-    Time when;
     Boolean res;
     message_t message;
     message_part_t part;
     const char *target;
-
-    /* Get the timestamp of the last event with a timestamp processed
-     * by the X toolkit. */
-    when = XtLastTimestampProcessed(XtDisplay(widget));
 
     /* Bail if there's no selection. */
     message = self->history.selection;
@@ -2214,11 +2209,11 @@ copy_selection(Widget widget, XEvent* event, char **params,
     /* Decide where we're copying to. */
     target = (*num_params < 2) ? "CLIPBOARD" : params[1];
     if (strcmp(target, "PRIMARY") == 0) {
-        res = XmePrimarySource(widget, when);
+        res = XmePrimarySource(widget, 0);
     } else if (strcmp(target, "SECONDARY") == 0) {
-        res = XmeSecondarySource(widget, when);
+        res = XmeSecondarySource(widget, 0);
     } else /* if (strcmp(target, "CLIPBOARD") == 0) */ {
-        res = XmeClipboardSource(widget, XmCOPY, when);
+        res = XmeClipboardSource(widget, XmCOPY, 0);
     }
 
     dprintf(("Xme[%s]Source: %s\n", target, res ? "true" : "false"));

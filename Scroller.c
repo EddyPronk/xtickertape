@@ -1628,7 +1628,6 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     glyph_t glyph;
     message_part_t part;
     const char* target;
-    Time when;
     int res;
 
     /* Bail if there's no message. */
@@ -1638,10 +1637,6 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     }
     set_copy_message(self, glyph_get_message(glyph));
 
-    /* Get the timestamp of the last event with a timestamp processed
-     * by the X toolkit. */
-    when = XtLastTimestampProcessed(XtDisplay(widget));
-
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
     self->scroller.copy_part = part;
@@ -1649,11 +1644,11 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     /* Decide where we're copying to. */
     target = (*num_params < 2) ? "CLIPBOARD" : params[1];
     if (strcmp(target, "PRIMARY") == 0) {
-        res = XmePrimarySource(widget, when);
+        res = XmePrimarySource(widget, 0);
     } else if (strcmp(target, "SECONDARY") == 0) {
-        res = XmeSecondarySource(widget, when);
+        res = XmeSecondarySource(widget, 0);
     } else /* if (strcmp(target, "CLIPBOARD") == 0) */ {
-        res = XmeClipboardSource(widget, XmCOPY, when);
+        res = XmeClipboardSource(widget, XmCOPY, 0);
     }
 
     DPRINTF((stderr, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
