@@ -1289,17 +1289,17 @@ process_events(Widget widget, XtPointer closure, XEvent *event,
             return;
 
         case SelectionClear:
-            dprintf(("History: SelectionClear"));
+            dprintf(("History: SelectionClear\n"));
             *continue_to_dispatch = True;
             return;
 
         case SelectionRequest:
-            dprintf(("History: SelectionRequest"));
+            dprintf(("History: SelectionRequest\n"));
             *continue_to_dispatch = True;
             return;
 
         case SelectionNotify:
-            dprintf(("History: electionNotify"));
+            dprintf(("History: electionNotify\n"));
             *continue_to_dispatch = True;
             return;
 
