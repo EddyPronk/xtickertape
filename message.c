@@ -739,9 +739,9 @@ message_part_from_string(const char *string)
         return MSGPART_TEXT;
     } else if (strcmp(string, "id") == 0) {
         return MSGPART_ID;
-    } else if (strcmp(string, "body") == 0) {
+    } else if (strcmp(string, "text") == 0) {
         return MSGPART_TEXT;
-    } else if (strcmp(string, "message") == 0) {
+    } else if (strcmp(string, "all") == 0) {
         return MSGPART_ALL;
     } else if (strcmp(string, "link") == 0) {
         return MSGPART_LINK;

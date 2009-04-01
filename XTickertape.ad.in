@@ -119,10 +119,10 @@ XTickertape.sendHistoryCapacity: 32
 *menuBar.editMenu.labelString: Edit
 *menuBar.editMenu.mnemonic: E
 
-*menuBar*copy.labelString: Copy
+*menuBar*copyText.labelString: Copy Text
 *menuBar*copyId.labelString: Copy Message-Id
 *menuBar*copyLink.labelString: Copy Link
-*menuBar*copyMsg.labelString: Copy Message
+*menuBar*copyAll.labelString: Copy Full Message
 
 ! options menu labels
 *menuBar*optionsMenu.labelString: Options
@@ -245,7 +245,7 @@ XTickertape.sendHistoryCapacity: 32
 	Ctrl<Key>n: select-next()\n\
 	Ctrl<Key>b: scroll-left()\n\
 	Ctrl<Key>f: scroll-right()\n\
-	Ctrl<Key>c: copy-selection(body, CLIPBOARD)\n\
+	Ctrl<Key>c: copy-selection(text, CLIPBOARD)\n\
 	<Key>osfUp: select-previous()\n\
 	<Key>osfDown: select-next()\n\
 	<Key>osfLeft: scroll-left()\n\

@@ -192,7 +192,7 @@ struct control_panel {
     Widget copy_link;
 
     /* The 'copyMsg'  menu item. */
-    Widget copy_msg;
+    Widget copy_all;
 
     /* The receiver's user text widget */
     Widget user;
@@ -419,10 +419,10 @@ do_copy(control_panel_t self, const char* part)
 }
 
 static void
-edit_copy(Widget widget, XtPointer closure, XtPointer call_data)
+edit_copy_text(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-    do_copy(self, "body");
+    do_copy(self, "text");
 }
 
 static void
@@ -440,11 +440,10 @@ edit_copy_link(Widget widget, XtPointer closure, XtPointer call_data)
 }
 
 static void
-edit_copy_msg(Widget widget, XtPointer closure, XtPointer call_data)
+edit_copy_all(Widget widget, XtPointer closure, XtPointer call_data)
 {
     control_panel_t self = (control_panel_t)closure;
-    printf("call_data=%p\n", call_data);
-    do_copy(self, "message");
+    do_copy(self, "all");
 }
 
 /* Select the edit menu items appropriate for the selected message. */
@@ -456,7 +455,7 @@ prepare_edit_menu(control_panel_t self, message_t message)
                    message != NULL && message_get_id(message) != NULL);
     XtSetSensitive(self->copy_link,
                    message != NULL && message_has_attachment(message));
-    XtSetSensitive(self->copy_msg, message != NULL);
+    XtSetSensitive(self->copy_all, message != NULL);
 }
 
 /* Create the 'Edit' menu. */
@@ -470,10 +469,10 @@ create_edit_menu(control_panel_t self, Widget parent)
     menu = XmCreatePulldownMenu(parent, "_pulldown", NULL, 0);
 
     /* Create the 'copy' menu item. */
-    item = XtVaCreateManagedWidget("copy", xmPushButtonGadgetClass, menu,
+    item = XtVaCreateManagedWidget("copyText", xmPushButtonGadgetClass, menu,
                                    XtNsensitive, False,
                                    NULL);
-    XtAddCallback(item, XmNactivateCallback, edit_copy, self);
+    XtAddCallback(item, XmNactivateCallback, edit_copy_text, self);
     self->copy = item;
 
     /* Create the 'copyId' menu item. */
@@ -491,11 +490,11 @@ create_edit_menu(control_panel_t self, Widget parent)
     self->copy_link = item;
 
     /* Create the 'copy link' menu item. */
-    item = XtVaCreateManagedWidget("copyMsg", xmPushButtonGadgetClass, menu,
+    item = XtVaCreateManagedWidget("copyAll", xmPushButtonGadgetClass, menu,
                                    XtNsensitive, False,
                                    NULL);
-    XtAddCallback(item, XmNactivateCallback, edit_copy_msg, self);
-    self->copy_msg = item;
+    XtAddCallback(item, XmNactivateCallback, edit_copy_all, self);
+    self->copy_all = item;
 
     /* Create the menu's cascade button. */
     XtVaCreateManagedWidget("editMenu", xmCascadeButtonWidgetClass, parent,
