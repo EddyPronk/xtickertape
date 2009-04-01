@@ -409,7 +409,7 @@ static void
 do_copy(control_panel_t self, const char* part)
 {
     String params[2];
-    Cardinal i;
+    Cardinal i = 0;
 
     params[i++] = (String)part;
     params[i++] = "CLIPBOARD";
