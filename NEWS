@@ -5,6 +5,9 @@ Overview of changes in xtickertape-2.1
 * New elvinmail executable to make it easy to generate notifications of
   incoming e-mail from .procmail or .forward.
 
+* Added actions and menu items for copying portions of tickertape
+  messages.
+
 Overview of changes in xtickertape-2.0
 
 * Minor packaging clean-up.
