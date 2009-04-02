@@ -2169,20 +2169,6 @@ scroll_right(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 }
 
 static void
-set_copy_message(HistoryWidget self, message_t message)
-{
-    if (self->history.copy_message != NULL) {
-        message_free(self->history.copy_message);
-    }
-
-    if (message == NULL) {
-        self->history.copy_message = NULL;
-    } else {
-        self->history.copy_message = message_alloc_reference(message);
-    }
-}
-
-static void
 copy_selection(Widget widget, XEvent* event, char **params,
                Cardinal *num_params)
 {
@@ -2200,14 +2186,18 @@ copy_selection(Widget widget, XEvent* event, char **params,
     }
 
     /* Record the selected message. */
-    set_copy_message(self, message);
+    assert(self->history.copy_message == NULL);
+    self->history.copy_message = self->history.selection;
 
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
+    assert(self->history.copy_part == MSGPART_NONE);
     self->history.copy_part = part;
 
     /* Decide where we're copying to. */
     target = (*num_params < 2) ? "CLIPBOARD" : params[1];
+    dprintf(("BEFORE Xme[%s]Source\n", target));
+
     if (strcmp(target, "PRIMARY") == 0) {
         res = XmePrimarySource(widget, 0);
     } else if (strcmp(target, "SECONDARY") == 0) {
@@ -2216,7 +2206,10 @@ copy_selection(Widget widget, XEvent* event, char **params,
         res = XmeClipboardSource(widget, XmCOPY, 0);
     }
 
-    dprintf(("Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+    dprintf(("AFTER Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+
+    self->history.copy_message = NULL;
+    self->history.copy_part = MSGPART_NONE;
 }
 
 /* Redraw the widget */

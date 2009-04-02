@@ -849,20 +849,6 @@ compute_min_gap_width(XFontStruct *font)
 }
 
 static void
-set_copy_message(ScrollerWidget self, message_t message)
-{
-    if (self->scroller.copy_message != NULL) {
-        message_free(self->scroller.copy_message);
-    }
-
-    if (message == NULL) {
-        self->scroller.copy_message = NULL;
-    } else {
-        self->scroller.copy_message = message_alloc_reference(message);
-    }
-}
-
-static void
 scroller_convert(Widget widget, XtPointer closure, XtPointer call_data)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
@@ -1635,10 +1621,13 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     if (glyph == NULL) {
         return;
     }
-    set_copy_message(self, glyph_get_message(glyph));
+
+    assert(self->scroller.copy_message == NULL);
+    self->scroller.copy_message = glyph_get_message(glyph);
 
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
+    assert(self->scroller.copy_part == MSGPART_NONE);
     self->scroller.copy_part = part;
 
     /* Decide where we're copying to. */
@@ -1652,6 +1641,9 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     }
 
     DPRINTF((stderr, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+
+    self->scroller.copy_message = NULL;
+    self->scroller.copy_part = MSGPART_NONE;
 }
 
 
