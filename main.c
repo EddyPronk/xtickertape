@@ -65,6 +65,9 @@
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h> /* uname */
 #endif
+#ifdef HAVE_ASSERT_H
+# include <assert.h>
+#endif
 #include <X11/Xlib.h> /* X.* */
 #include <X11/Intrinsic.h> /* Xt* */
 #include <X11/StringDefs.h>
@@ -601,7 +604,7 @@ main(int argc, char *argv[])
     const char *keys_file;
     const char *keys_dir;
     Widget top;
-    Atom atom;
+    const char *names[AN_MAX + 1];
     int i;
 
 #ifdef HAVE_XTVAOPENAPPLICATION
@@ -711,14 +714,26 @@ main(int argc, char *argv[])
                &keys_file, &keys_dir,
                error);
 
-    /* Intern a bunch of atoms. */
+    /* Intern a bunch of atoms.  We jump through a few hoops in order
+     * in order to do this in a single RPC to the X server. */
+#ifdef USE_ASSERT
+    memset(names, 0, sizeof(names));
+#endif /* USE_ASSERT */
     for (i = 0; i <= AN_MAX; i++) {
-        atom = XInternAtom(XtDisplay(top), atom_list[i].name, False);
-        if (atom == None) {
-            fprintf(stderr, PACKAGE ": XtInternAtom %s failed\n", atom_list[i].name);
-        }
-        /*printf("ATOM %s=%lu\n", atom_list[i].name, atom);*/
-        atoms[atom_list[i].index] = atom;
+        ASSERT(names[atom_list[i].index] == NULL);
+        names[atom_list[i].index] = atom_list[i].name;
+    }
+
+    /* Make sure we've specified a name for each atom. */
+    for (i = 0; i <= AN_MAX; i++) {
+        ASSERT(names[i] != NULL);
+    }
+
+    /* Intern the atoms. */
+    if (!XInternAtoms(XtDisplay(top), (char **)names, AN_MAX + 1,
+                      False, atoms)) {
+        fprintf(stderr, PACKAGE ": XInternAtoms failed\n");
+        exit(1);
     }
 
     /* Create an Icon for the root shell */
