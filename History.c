@@ -784,16 +784,6 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
     ASSERT(message != NULL);
     ASSERT(self->history.copy_part != MSGPART_NONE);
 
-    /* Lose the selection when appropriate. */
-    if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
-        DPRINTF((5, "releasing selection\n"));
-        message_free(self->history.copy_message);
-        self->history.copy_message = NULL;
-        self->history.copy_part = MSGPART_NONE;
-        data->status = XmCONVERT_DONE;
-        return;
-    }
-
     /* Otherwise convert the message. */
     message_convert(widget, (XtPointer)data, self->history.copy_message,
                     self->history.copy_part);

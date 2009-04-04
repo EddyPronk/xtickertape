@@ -854,16 +854,6 @@ scroller_convert(Widget widget, XtPointer closure, XtPointer call_data)
     ASSERT(message != NULL);
     ASSERT(self->scroller.copy_part != MSGPART_NONE);
 
-    /* Lose the selection if appropriate. */
-    if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
-        DPRINTF((2, "releasing selection\n"));
-        message_free(self->scroller.copy_message);
-        self->scroller.copy_message = NULL;
-        self->scroller.copy_part = MSGPART_NONE;
-        data->status = XmCONVERT_DONE;
-        return;
-    }
-
     /* Otherwise convert the message. */
     message_convert(widget, (XtPointer)data, self->scroller.copy_message,
                     self->scroller.copy_part);
