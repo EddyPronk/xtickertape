@@ -193,6 +193,13 @@ if test "$enable_debug" = yes ; then
     AC_DEFINE(DEBUG)
 fi
 
+AH_TEMPLATE([USE_ASSERT],
+	 [Define to enable runtime sanity checks])
+AC_ARG_ENABLE([assert],
+    [AC_HELP_STRING([--enable-assert],
+                    [Enable runtime sanity checks])],
+    [AC_DEFINE(USE_ASSERT)])
+
 AH_TEMPLATE(DEBUG_GLYPH, [Define if you want glyph-specific debugging information])
 AC_ARG_ENABLE(debug-glyph, [  --enable-debug-glyph    enable glyph debugging code])
 if test "$enable_debug_glyph" = yes ; then

@@ -282,7 +282,7 @@ glyph_free(glyph_t self)
     }
 
     /* Sanity checks */
-    assert(self->visible_count == 0);
+    ASSERT(self->visible_count == 0);
 
     /* Free the message_view */
     if (self->message_view) {
@@ -335,7 +335,7 @@ glyph_set_clock(glyph_t self, int level_count)
     int duration;
 
     /* Sanity check */
-    assert(self->timeout == None);
+    ASSERT(self->timeout == None);
 
     /* Has the glyph expired? */
     if (self->is_expired) {
@@ -412,7 +412,7 @@ static long
 glyph_get_width(glyph_t self)
 {
     /* Sanity check */
-    assert(self->message_view != NULL);
+    ASSERT(self->message_view != NULL);
     return MAX(self->sizes.rbearing, self->sizes.width) -
            MIN(self->sizes.lbearing, 0);
 }
@@ -740,7 +740,7 @@ tick(XtPointer widget, XtIntervalId *interval)
     ScrollerWidget self = (ScrollerWidget)widget;
 
     /* Clear the timer so that set_clock() can set it again */
-    assert(*interval == self->scroller.timer);
+    ASSERT(*interval == self->scroller.timer);
     self->scroller.timer = 0;
 
     /* Set the clock now so that we get consistent scrolling speed */
@@ -748,7 +748,7 @@ tick(XtPointer widget, XtIntervalId *interval)
 
     /* Don't scroll if we're in the midst of a drag or if the scroller
      * is stopped */
-    assert(self->scroller.step != 0);
+    ASSERT(self->scroller.step != 0);
     scroll(self, self->scroller.step);
 }
 
@@ -857,8 +857,8 @@ scroller_convert(Widget widget, XtPointer closure, XtPointer call_data)
 
     /* There must be a message to copy. */
     message = self->scroller.copy_message;
-    assert(message != NULL);
-    assert(self->scroller.copy_part != MSGPART_NONE);
+    ASSERT(message != NULL);
+    ASSERT(self->scroller.copy_part != MSGPART_NONE);
 
     /* Lose the selection if appropriate. */
     if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
@@ -1324,7 +1324,7 @@ paint(ScrollerWidget self,
     }
 
     /* Sanity check */
-    assert(offset - self->core.width == self->scroller.right_offset);
+    ASSERT(offset - self->core.width == self->scroller.right_offset);
 }
 
 /* Repaints the scroller */
@@ -1371,7 +1371,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
     XEvent event_buffer;
 
     /* Sanity check */
-    assert(!self->scroller.use_pixmap);
+    ASSERT(!self->scroller.use_pixmap);
 
     /* Process all of the GraphicsExpose events in one go */
     for (;;) {
@@ -1389,7 +1389,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
         }
 
         /* Sanity check */
-        assert(event->type == GraphicsExpose);
+        ASSERT(event->type == GraphicsExpose);
 
         /* Coerce the event */
         g_event = (XGraphicsExposeEvent *)event;
@@ -1622,12 +1622,12 @@ copy_at_event(Widget widget, XEvent* event, char **params,
         return;
     }
 
-    assert(self->scroller.copy_message == NULL);
+    ASSERT(self->scroller.copy_message == NULL);
     self->scroller.copy_message = glyph_get_message(glyph);
 
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
-    assert(self->scroller.copy_part == MSGPART_NONE);
+    ASSERT(self->scroller.copy_part == MSGPART_NONE);
     self->scroller.copy_part = part;
 
     /* Decide where we're copying to. */
@@ -1711,7 +1711,7 @@ delete_left_to_right(ScrollerWidget self, glyph_t glyph)
      * out from under us. */
     if (self->scroller.left_holder->glyph == glyph) {
         add_left_holder(self);
-        assert(self->scroller.left_holder->glyph != glyph);
+        ASSERT(self->scroller.left_holder->glyph != glyph);
     }
 
     /* Go through the glyphs and compensate */
@@ -1730,7 +1730,7 @@ delete_left_to_right(ScrollerWidget self, glyph_t glyph)
             missing_width += holder->width;
 
             /* Previous can never be NULL */
-            assert(previous != NULL);
+            ASSERT(previous != NULL);
             previous->next = holder->next;
 
             /* Remove the holder from the list */
@@ -1791,7 +1791,7 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
      * out from under us. */
     if (self->scroller.right_holder->glyph == glyph) {
         add_right_holder(self);
-        assert(self->scroller.right_holder->glyph != glyph);
+        ASSERT(self->scroller.right_holder->glyph != glyph);
     }
 
     /* Go through the glyphs and compensate */
@@ -1810,7 +1810,7 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
             missing_width += holder->width;
 
             /* We'll always have a next glyph */
-            assert(next != NULL);
+            ASSERT(next != NULL);
             next->previous = holder->previous;
 
             /* Remove the holder from the list */
@@ -1870,7 +1870,7 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
      * delete the entire contents of the scroller */
     if (self->scroller.right_holder->glyph == glyph) {
         add_right_holder(self);
-        assert(self->scroller.right_holder->glyph != glyph);
+        ASSERT(self->scroller.right_holder->glyph != glyph);
     }
 
     /* Go through the visible glyphs and remove the deleted one */
@@ -1892,7 +1892,7 @@ delete_right_to_left(ScrollerWidget self, glyph_t glyph)
                 }
 
                 /* Remove the holder from the list */
-                assert(holder->next != NULL);
+                ASSERT(holder->next != NULL);
                 holder->next->previous = previous;
 
                 if (previous == NULL) {

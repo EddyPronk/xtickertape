@@ -1079,7 +1079,7 @@ utf8_to_target(const char *input, Atom target, size_t *len_out)
             /* Skip non-initial characters. */
             if (n > 0) {
                 /* All non-initial bytes are 10xx xxxx */
-                assert((byte & 0xc0) == 0x80);
+                ASSERT((byte & 0xc0) == 0x80);
 
                 /* Incorporate the low 6 bits. */
                 ch = (ch << 6) | (byte & 0x3f);
@@ -1099,7 +1099,7 @@ utf8_to_target(const char *input, Atom target, size_t *len_out)
                 /* RFC 3629 limits UTF-8 to the range U+0000 through
                  * U+10FFFF, so at most 4 bytes are required to
                  * represent any character. */
-                assert((byte & 0xf8) == 0xf0);
+                ASSERT((byte & 0xf8) == 0xf0);
                 ch = byte & 0x7;
                 n = 3;
                 continue;
@@ -1107,11 +1107,11 @@ utf8_to_target(const char *input, Atom target, size_t *len_out)
 
             /* We now have the complete code point.  If it's in the
              * ISO8859-1 range then it will fall between 0 and 255. */
-            assert(n == 0);
+            ASSERT(n == 0);
             *out++ = (ch < 0x100) ? (char)ch : '?';
         }
         *len_out = len;
-        assert(out - result == len);
+        ASSERT(out - result == len);
         return result;
     }
 

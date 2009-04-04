@@ -106,7 +106,7 @@ localtime_offset(time_t *when, int* utc_off)
     /* Record the offset to UTC. */
     *utc_off = off;
 # if HAVE_STRUCT_TM_TM_GMTOFF
-    assert(off == tm->tm_gmtoff);
+    ASSERT(off == tm->tm_gmtoff);
 # endif /* HAVE_STRUCT_TM_TM_GMTOFF */
 
 #else /* !DEBUG && HAVE_STRUCT_TM_TM_GMTOFF */
@@ -206,8 +206,8 @@ message_convert(Widget widget, XtPointer *call_data,
     int format;
 
     /* Make sure there's a message and part to copy. */
-    assert(message != NULL);
-    assert(part != MSGPART_NONE);
+    ASSERT(message != NULL);
+    ASSERT(part != MSGPART_NONE);
 
     /* Do the widget-specific conversion. */
     if (do_convert(widget, data, message, part,

@@ -389,7 +389,7 @@ node_add1(node_t *self,
             /* If the above statement is true, then it follows that
              * the node may not have any elder siblings.  Hence this
              * is a good sanity check. */
-            assert((*self)->sibling == NULL);
+            ASSERT((*self)->sibling == NULL);
 
             /* Free the node */
             node_free(*self);
@@ -488,7 +488,7 @@ node_kill(node_t self)
     node_t child;
 
     /* Sanity check */
-    assert(self != NULL);
+    ASSERT(self != NULL);
 
     /* If the node has already been killed then don't kill it again */
     if (message_is_killed(self->message)) {
@@ -603,11 +603,11 @@ copy_area(HistoryWidget self,
 
     /* Append the item to the translation queue */
     if (self->history.tqueue_end == NULL) {
-        assert(self->history.tqueue == NULL);
+        ASSERT(self->history.tqueue == NULL);
         self->history.tqueue = item;
         dprintf(("first: %lu\n", item->request_id));
     } else {
-        assert(self->history.tqueue != NULL);
+        ASSERT(self->history.tqueue != NULL);
         self->history.tqueue_end->next = item;
         dprintf(("added: %lu\n", item->request_id));
     }
@@ -642,7 +642,7 @@ compensate_bbox(HistoryWidget self,
             dprintf(("removing item %lu\n", item->request_id));
 
             /* Yes.  We no longer require it */
-            assert(self->history.tqueue == item);
+            ASSERT(self->history.tqueue == item);
             self->history.tqueue = item->next;
             free(item);
             item = self->history.tqueue;
@@ -788,8 +788,8 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 
     /* There must be a message to copy. */
     message = self->history.copy_message;
-    assert(message != NULL);
-    assert(self->history.copy_part != MSGPART_NONE);
+    ASSERT(message != NULL);
+    ASSERT(self->history.copy_part != MSGPART_NONE);
 
     /* Lose the selection when appropriate. */
     if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
@@ -1212,7 +1212,7 @@ motion_cb(Widget widget, XtPointer closure, XEvent *event,
     message_view_t view;
 
     /* Sanity check */
-    assert(event->type == MotionNotify);
+    ASSERT(event->type == MotionNotify);
     mevent = (XMotionEvent *)event;
 
     /* Assume that nothing is under the pointer */
@@ -1402,7 +1402,7 @@ insert_message(HistoryWidget self,
     long xpos, ypos;
 
     /* Sanity check */
-    assert(index <= self->history.message_count);
+    ASSERT(index <= self->history.message_count);
 
     /* Cancel our clip mask */
     if (gc != None) {
@@ -1572,7 +1572,7 @@ make_index_visible(HistoryWidget self, unsigned int index)
     long y;
 
     /* Sanity check */
-    assert(index < self->history.message_count);
+    ASSERT(index < self->history.message_count);
 
     /* Figure out where the index would appear */
     y = self->history.selection_index * self->history.line_height;
@@ -1840,7 +1840,7 @@ drag_timeout_cb(XtPointer closure, XtIntervalId *id)
     int x, y;
 
     /* Sanity check */
-    assert(self->history.drag_timeout == *id);
+    ASSERT(self->history.drag_timeout == *id);
 
     /* Clear our status */
     self->history.drag_direction = DRAG_NONE;
@@ -2186,12 +2186,12 @@ copy_selection(Widget widget, XEvent* event, char **params,
     }
 
     /* Record the selected message. */
-    assert(self->history.copy_message == NULL);
+    ASSERT(self->history.copy_message == NULL);
     self->history.copy_message = self->history.selection;
 
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
-    assert(self->history.copy_part == MSGPART_NONE);
+    ASSERT(self->history.copy_part == MSGPART_NONE);
     self->history.copy_part = part;
 
     /* Decide where we're copying to. */

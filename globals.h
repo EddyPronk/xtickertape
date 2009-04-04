@@ -67,4 +67,10 @@ typedef enum {
 
 extern Atom atoms[AN_MAX + 1];
 
+#if defined(USE_ASSERT)
+# define ASSERT(x) assert(x)
+#else /* !USE_ASSERT */
+# define ASSERT(x) do {} while (0)
+#endif /* USE_ASSERT */
+
 #endif /* GLOBALS_H */

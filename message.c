@@ -60,6 +60,7 @@
 # include <assert.h> /* assert */
 #endif
 #include "replace.h"
+#include "globals.h"
 #include "utils.h"
 #include "message.h"
 
@@ -268,7 +269,7 @@ cooked_size(const char *string)
 
     /* Visit each character in the string. */
     for (in = string; (ch = *(unsigned char *)in) != '\0'; in++) {
-        assert(ch >= 0);
+        ASSERT(ch >= 0);
         if (ch < 32) {
             /* Convert control characters to escape sequences. */
             len += escapes[ch].len;
@@ -300,7 +301,7 @@ cook_string(const char *string, char **buffer)
     /* Visit each character in the string. */
     for (in = string; (ch = *(unsigned char *)in) != '\0'; in++) {
         /* We've just converted from an unsigned char. */
-        assert(ch >= 0);
+        ASSERT(ch >= 0);
 
         if (ch < 32) {
             /* Convert control characters to escape sequences. */
@@ -359,9 +360,9 @@ message_alloc(const char *info,
     char *point;
 
     /* Make sure the mandatory fields have values. */
-    assert(group != NULL);
-    assert(user != NULL);
-    assert(string != NULL);
+    ASSERT(group != NULL);
+    ASSERT(user != NULL);
+    ASSERT(string != NULL);
 
     /* Measure each of the strings, including the NUL terminator. */
     info_size = (info == NULL) ? 0 : strlen(info) + 1;
@@ -405,7 +406,7 @@ message_alloc(const char *info,
     self->is_killed = 0;
 
     /* Check our addition. */
-    assert(point + length == self->data + len);
+    ASSERT(point + length == self->data + len);
 
     if (length == 0) {
         self->attachment = NULL;
@@ -418,7 +419,7 @@ message_alloc(const char *info,
     }
 
     /* Check our addition again. */
-    assert(point <= self->data + len);
+    ASSERT(point <= self->data + len);
 
 #ifdef DEBUG
     printf("allocated message_t %p (%ld)\n", self, ++message_count);
@@ -716,7 +717,7 @@ write_message(message_t self, char *buffer, size_t buflen)
                    tm->tm_hour, tm->tm_min, tm->tm_sec,
                    (long)self->creation_time.tv_usec,
                    sign, utc_off / 3600, utc_off / 60 % 60);
-    assert(len == sizeof("$time YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM\n") - 1);
+    ASSERT(len == sizeof("$time YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM\n") - 1);
     out = buffer + len;
 
     /* Append each of the strings. */
@@ -728,7 +729,7 @@ write_message(message_t self, char *buffer, size_t buflen)
     write_string_field("Thread-Id", self->thread_id, &out);
     write_string_field("Attachment", self->attachment, &out);
 
-    assert(out - buffer == buflen);
+    ASSERT(out - buffer == buflen);
     return buffer;
 }
 
@@ -796,7 +797,7 @@ message_get_part(message_t self, message_part_t part,
         return buffer;
 
     case MSGPART_TEXT:
-        assert(self->string != NULL);
+        ASSERT(self->string != NULL);
         strncpy(buffer, self->string, buflen);
         return buffer;
 
