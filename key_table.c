@@ -55,6 +55,7 @@
 #include <elvin/elvin.h>
 #include "replace.h"
 #include "key_table.h"
+#include "utils.h"
 
 #define TABLE_MIN_SIZE 8
 
@@ -77,12 +78,6 @@
 # define ELVIN_KEYS_ALLOC elvin_keys_alloc
 #else
 # error "Unsupported version of libelvin"
-#endif
-
-#ifdef DEBUG
-# define DPRINTF(x) fprintf x
-#else
-# define DPRINTF(x)
 #endif
 
 typedef struct key_entry *key_entry_t;
@@ -612,7 +607,7 @@ key_table_diff(key_table_t old_key_table,
         result = entry_compare(old_entries + old_index,
                                new_entries + new_index);
         if (result < 0) {
-            DPRINTF((stdout, "removing key: \"%s\"\n",
+            DPRINTF((2, "removing key: \"%s\"\n",
                      old_entries[old_index]->name));
             ensure_keys(&keys_to_remove);
             key_entry_add_to_keys(
@@ -620,7 +615,7 @@ key_table_diff(key_table_t old_key_table,
                 is_for_notify,
                 keys_to_remove, NULL);
         } else if (result > 0) {
-            DPRINTF((stdout, "adding key: \"%s\"\n",
+            DPRINTF((2, "adding key: \"%s\"\n",
                      new_entries[new_index]->name));
             ensure_keys(&keys_to_add);
             key_entry_add_to_keys(
@@ -630,11 +625,11 @@ key_table_diff(key_table_t old_key_table,
         } else {
             if (old_entries[old_index]->is_private ==
                 new_entries[old_index]->is_private) {
-                DPRINTF((stdout, "keeping key: \"%s\" -> \"%s\"\n",
+                DPRINTF((2, "keeping key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index]->name,
                          new_entries[new_index]->name));
             } else if (old_entries[old_index]->is_private) {
-                DPRINTF((stdout, "demoting key: \"%s\" -> \"%s\"\n",
+                DPRINTF((2, "demoting key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index]->name,
                          new_entries[new_index]->name));
                 ensure_keys(&keys_to_remove);
@@ -642,7 +637,7 @@ key_table_diff(key_table_t old_key_table,
                                   is_for_notify,
                                   keys_to_remove, NULL);
             } else if (new_entries[new_index]->is_private) {
-                DPRINTF((stdout, "promoting key: \"%s\" -> \"%s\"\n",
+                DPRINTF((2, "promoting key: \"%s\" -> \"%s\"\n",
                          old_entries[old_index]->name,
                          new_entries[new_index]->name));
                 ensure_keys(&keys_to_add);
@@ -657,8 +652,7 @@ key_table_diff(key_table_t old_key_table,
     }
 
     while (old_index < old_count) {
-        DPRINTF((stdout, "removing key: \"%s\"\n",
-                 old_entries[old_index]->name));
+        DPRINTF((2, "removing key: \"%s\"\n", old_entries[old_index]->name));
         ensure_keys(&keys_to_remove);
         key_entry_add_to_keys(
             old_entries[old_index++],
@@ -667,8 +661,7 @@ key_table_diff(key_table_t old_key_table,
     }
 
     while (new_index < new_count) {
-        DPRINTF((stdout, "adding key: \"%s\"\n",
-                 new_entries[new_index]->name));
+        DPRINTF((2, "adding key: \"%s\"\n", new_entries[new_index]->name));
         ensure_keys(&keys_to_add);
         key_entry_add_to_keys(
             new_entries[new_index++],
@@ -676,7 +669,7 @@ key_table_diff(key_table_t old_key_table,
             keys_to_add, NULL);
     }
 
-    DPRINTF((stdout, "---\n"));
+    DPRINTF((2, "---\n"));
 
     free(old_entries);
     free(new_entries);

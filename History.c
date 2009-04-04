@@ -70,13 +70,6 @@
 #include "HistoryP.h"
 
 
-#ifdef DEBUG
-# define dprintf(x) printf x
-#else
-# define dprintf(x) ;
-#endif
-
-
 /*
  *
  * Resources
@@ -289,7 +282,7 @@ node_free(node_t self)
         self->message = NULL;
     }
 
-    dprintf(("node_free(): %p\n", self));
+    DPRINTF((5, "node_free(): %p\n", self));
     free(self);
 }
 
@@ -605,11 +598,11 @@ copy_area(HistoryWidget self,
     if (self->history.tqueue_end == NULL) {
         ASSERT(self->history.tqueue == NULL);
         self->history.tqueue = item;
-        dprintf(("first: %lu\n", item->request_id));
+        DPRINTF((5, "first: %lu\n", item->request_id));
     } else {
         ASSERT(self->history.tqueue != NULL);
         self->history.tqueue_end->next = item;
-        dprintf(("added: %lu\n", item->request_id));
+        DPRINTF((5, "added: %lu\n", item->request_id));
     }
 
     self->history.tqueue_end = item;
@@ -632,14 +625,14 @@ compensate_bbox(HistoryWidget self,
     int top = bbox->y;
     int bottom = top + bbox->height;
 
-    dprintf(("compensate_bbox() %lu\n", request_id));
+    DPRINTF((5, "compensate_bbox() %lu\n", request_id));
 
     /* Go through each outstanding delta item */
     item = self->history.tqueue;
     while (item != NULL) {
         /* Has the request been processed? */
         if (item->request_id <= request_id) {
-            dprintf(("removing item %lu\n", item->request_id));
+            DPRINTF((5, "removing item %lu\n", item->request_id));
 
             /* Yes.  We no longer require it */
             ASSERT(self->history.tqueue == item);
@@ -649,7 +642,7 @@ compensate_bbox(HistoryWidget self,
             continue;
         }
 
-        dprintf(("compensating for item %lu; %ux%u+%d+%d to %d,%d\n",
+        DPRINTF((5, "compensating for item %lu; %ux%u+%d+%d to %d,%d\n",
                  item->request_id,
                  item->right - item->left, item->bottom - item->top,
                  item->left, item->top,
@@ -702,7 +695,7 @@ compensate_bbox(HistoryWidget self,
 
     /* Tidy up if the queue is empty */
     if (self->history.tqueue == NULL) {
-        dprintf(("empty!\n"));
+        DPRINTF((5, "empty!\n"));
         self->history.tqueue_end = NULL;
     }
 
@@ -722,7 +715,7 @@ set_origin(HistoryWidget self, long x, long y, int update_scrollbars)
     GC gc = self->history.gc;
     XGCValues values;
 
-    dprintf(("History.set_origin(x=%ld, y=%ld, update_scrollbars=%d)\n",
+    DPRINTF((5, "History.set_origin(x=%ld, y=%ld, update_scrollbars=%d)\n",
 	     x, y, update_scrollbars));
 
     /* Skip this part if we're not visible */
@@ -793,7 +786,7 @@ history_convert(Widget widget, XtPointer closure, XtPointer call_data)
 
     /* Lose the selection when appropriate. */
     if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
-        dprintf(("releasing selection\n"));
+        DPRINTF((5, "releasing selection\n"));
         message_free(self->history.copy_message);
         self->history.copy_message = NULL;
         self->history.copy_part = MSGPART_NONE;
@@ -814,7 +807,7 @@ init(Widget request, Widget widget, ArgList args, Cardinal *num_args)
     HistoryWidget self = (HistoryWidget)widget;
     Widget scrollbar;
 
-    dprintf(("History.init()\n"));
+    DPRINTF((5, "History.init()\n"));
 
     /* No GC to start with */
     self->history.gc = None;
@@ -1158,7 +1151,7 @@ redisplay(Widget widget, XEvent *event, Region region)
 
     /* Sanity check */
     if (!region) {
-        dprintf(("no region\n"));
+        DPRINTF((5, "no region\n"));
         return;
     }
 
@@ -1166,10 +1159,12 @@ redisplay(Widget widget, XEvent *event, Region region)
     XClipBox(region, &bbox);
 
     /* Compensate for unprocessed CopyArea requests */
-    dprintf(("redisplay() request_id=%lu\n", x_event->serial));
-    dprintf(("before: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
+    DPRINTF((5, "redisplay() request_id=%lu\n", x_event->serial));
+    DPRINTF((5, "before: %dx%d+%d+%d\n",
+             bbox.width, bbox.height, bbox.x, bbox.y));
     compensate_bbox(self, x_event->serial, &bbox);
-    dprintf(("after: %dx%d+%d+%d\n", bbox.width, bbox.height, bbox.x, bbox.y));
+    DPRINTF((5, "after: %dx%d+%d+%d\n",
+             bbox.width, bbox.height, bbox.x, bbox.y));
 
     /* Repaint the region */
     paint(self, &bbox);
@@ -1246,12 +1241,12 @@ gexpose(HistoryWidget self, XGraphicsExposeEvent *event)
     bbox.height = event->height;
 
     /* Compensate for unprocessed CopyArea requests */
-    dprintf(("process_events() request_id=%lu\n", event->serial));
-    dprintf(("before: %dx%d+%d+%d\n",
+    DPRINTF((5, "process_events() request_id=%lu\n", event->serial));
+    DPRINTF((5, "before: %dx%d+%d+%d\n",
              bbox.width, bbox.height,
              bbox.x, bbox.y));
     compensate_bbox(self, event->serial, &bbox);
-    dprintf(("after: %dx%d+%d+%d\n",
+    DPRINTF((5, "after: %dx%d+%d+%d\n",
              bbox.width, bbox.height,
              bbox.x, bbox.y));
 
@@ -1284,22 +1279,22 @@ process_events(Widget widget, XtPointer closure, XEvent *event,
 
         case NoExpose:
             /* Stop drawing if the widget is obscured. */
-            dprintf(("History: NoExpose event\n"));
+            DPRINTF((5, "History: NoExpose event\n"));
             *continue_to_dispatch = False;
             return;
 
         case SelectionClear:
-            dprintf(("History: SelectionClear\n"));
+            DPRINTF((5, "History: SelectionClear\n"));
             *continue_to_dispatch = True;
             return;
 
         case SelectionRequest:
-            dprintf(("History: SelectionRequest\n"));
+            DPRINTF((5, "History: SelectionRequest\n"));
             *continue_to_dispatch = True;
             return;
 
         case SelectionNotify:
-            dprintf(("History: electionNotify\n"));
+            DPRINTF((5, "History: electionNotify\n"));
             *continue_to_dispatch = True;
             return;
 
@@ -1309,7 +1304,7 @@ process_events(Widget widget, XtPointer closure, XEvent *event,
             return;
 
         default:
-            dprintf(("ignoring unknown event type: %d\n", event->type));
+            DPRINTF((5, "ignoring unknown event type: %d\n", event->type));
             *continue_to_dispatch = True;
             return;
         }
@@ -1360,7 +1355,7 @@ realize(Widget widget,
     Display *display = XtDisplay(self);
     XGCValues values;
 
-    dprintf(("History.realize()\n"));
+    DPRINTF((5, "History.realize()\n"));
 
     /* Create our window */
     XtCreateWindow(widget, InputOutput, CopyFromParent,
@@ -1733,7 +1728,7 @@ set_selection_index(HistoryWidget self, unsigned int index)
 static void
 destroy(Widget self)
 {
-    dprintf(("History.destroy()\n"));
+    DPRINTF((3, "History.destroy()\n"));
 }
 
 /* Resize the widget */
@@ -1744,7 +1739,7 @@ resize(Widget widget)
     int page_inc;
     long x, y;
 
-    dprintf(("History.resize(w=%d, h=%d)\n",
+    DPRINTF((3, "History.resize(w=%d, h=%d)\n",
              self->core.width, self->core.height));
 
     /* Update the page increment of the horizontal scrollbar */
@@ -1776,7 +1771,7 @@ set_values(Widget current,
            ArgList args,
            Cardinal *num_args)
 {
-    dprintf(("History.set_values()\n"));
+    DPRINTF((3, "History.set_values()\n"));
     return False;
 }
 
@@ -1786,7 +1781,7 @@ query_geometry(Widget widget,
                XtWidgetGeometry *intended,
                XtWidgetGeometry *preferred)
 {
-    dprintf(("History.query_geometry()\n"));
+    DPRINTF((3, "History.query_geometry()\n"));
     return XtGeometryYes;
 }
 
@@ -1796,7 +1791,7 @@ border_highlight(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
 
-    dprintf(("History.border_highlight()\n"));
+    DPRINTF((3, "History.border_highlight()\n"));
 
     /* Skip out if we're already highlighted */
     if (self->primitive.highlighted) {
@@ -1816,7 +1811,7 @@ border_unhighlight(Widget widget)
 {
     HistoryWidget self = (HistoryWidget)widget;
 
-    dprintf(("History.border_unhighlight()\n"));
+    DPRINTF((3, "History.border_unhighlight()\n"));
 
     /* No longer highlighting */
     self->primitive.highlighted = False;
@@ -2181,7 +2176,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
     /* Bail if there's no selection. */
     message = self->history.selection;
     if (message == NULL) {
-        dprintf(("No selection to copy.\n"));
+        DPRINTF((3, "No selection to copy.\n"));
         return;
     }
 
@@ -2196,7 +2191,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
 
     /* Decide where we're copying to. */
     target = (*num_params < 2) ? "CLIPBOARD" : params[1];
-    dprintf(("BEFORE Xme[%s]Source\n", target));
+    DPRINTF((2, "BEFORE Xme[%s]Source\n", target));
 
     if (strcmp(target, "PRIMARY") == 0) {
         res = XmePrimarySource(widget, 0);
@@ -2206,7 +2201,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
         res = XmeClipboardSource(widget, XmCOPY, 0);
     }
 
-    dprintf(("AFTER Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+    DPRINTF((2, "AFTER Xme[%s]Source: %s\n", target, res ? "true" : "false"));
 
     self->history.copy_message = NULL;
     self->history.copy_part = MSGPART_NONE;

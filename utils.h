@@ -45,6 +45,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdarg.h>
 #include <X11/Intrinsic.h>
 #include "message.h"
 
@@ -69,5 +70,27 @@ localtime_offset(time_t *when, int* utc_off);
 void
 message_convert(Widget widget, XtPointer *call_data,
                 message_t message, message_part_t part);
+
+
+
+/* Print debug messages if so configured. */
+#if defined(DEBUG)
+# define DPRINTF(x) dprintf x
+# define VDPRINTF(x) vdprintf x
+
+/* The level of debug message verbosity. */
+extern int verbosity;
+
+/* Print debug messages */
+void
+dprintf(int level, const char *format, ...);
+
+/* Print debug messages */
+void
+vdprintf(int level, const char *format, va_list args);
+#else /* !DEBUG */
+# define DPRINTF(x) do {} while (0)
+# define VDPRINTF(x) do {} while (0)
+#endif /* DEBUG */
 
 #endif /* UTILS_H */

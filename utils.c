@@ -44,6 +44,9 @@
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
+#ifdef HAVE_STDARG_H
+# include <stdarg.h>
+#endif
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
@@ -67,6 +70,10 @@
 
 #define YYMMDD(tm) \
     (((tm)->tm_year << 16) | ((tm)->tm_mon << 8) | (tm)->tm_mday)
+
+#if defined(DEBUG)
+int verbosity = 1;
+#endif /* DEBUG */
 
 struct tm *
 localtime_offset(time_t *when, int* utc_off)
@@ -114,6 +121,26 @@ localtime_offset(time_t *when, int* utc_off)
 #endif /* DEBUG || !HAVE_STRUCT_TM_TM_GMTOFF */
     return tm;
 }
+
+#if defined(DEBUG)
+void
+dprintf(int level, const char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    vdprintf(level, format, args);
+    va_end(args);
+}
+
+void
+vdprintf(int level, const char *format, va_list args)
+{
+    if (level <= verbosity) {
+        vfprintf(stderr, format, args);
+    }
+}
+#endif /* DEBUG */
 
 static int
 do_convert(Widget widget, XmConvertCallbackStruct *data,

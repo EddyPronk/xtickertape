@@ -66,12 +66,6 @@
 #include "message_view.h"
 #include "ScrollerP.h"
 
-#ifdef DEBUG
-# define DPRINTF(x) fprintf x
-#else
-# define DPRINTF(x)
-#endif
-
 /*
  * Resources
  */
@@ -705,7 +699,7 @@ static void
 enable_clock(ScrollerWidget self)
 {
     if (self->scroller.timer == 0 && self->scroller.step != 0) {
-        DPRINTF((stderr, "clock enabled\n"));
+        DPRINTF((1, "clock enabled\n"));
         set_clock(self);
     }
 }
@@ -715,7 +709,7 @@ static void
 disable_clock(ScrollerWidget self)
 {
     if (self->scroller.timer != None) {
-        DPRINTF((stderr, "clock disabled\n"));
+        DPRINTF((1, "clock disabled\n"));
         XtRemoveTimeOut(self->scroller.timer);
         self->scroller.timer = None;
     }
@@ -862,7 +856,7 @@ scroller_convert(Widget widget, XtPointer closure, XtPointer call_data)
 
     /* Lose the selection if appropriate. */
     if (data->target == atoms[AN__MOTIF_LOSE_SELECTION]) {
-        DPRINTF((stderr, "releasing selection\n"));
+        DPRINTF((2, "releasing selection\n"));
         message_free(self->scroller.copy_message);
         self->scroller.copy_message = NULL;
         self->scroller.copy_part = MSGPART_NONE;
@@ -1412,7 +1406,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
 static void
 destroy(Widget widget)
 {
-    DPRINTF((stderr, "destroy %p\n", widget));
+    DPRINTF((2, "destroy %p\n", widget));
 }
 
 /* Find the empty view and update its width */
@@ -1522,7 +1516,7 @@ set_values(Widget current,
            ArgList args,
            Cardinal *num_args)
 {
-    DPRINTF((stderr, "set_values\n"));
+    DPRINTF((5, "set_values\n"));
     return False;
 }
 
@@ -1532,7 +1526,7 @@ query_geometry(Widget widget,
                XtWidgetGeometry *intended,
                XtWidgetGeometry *preferred)
 {
-    DPRINTF((stderr, "query_geometry\n"));
+    DPRINTF((5, "query_geometry\n"));
     return XtGeometryYes;
 }
 
@@ -1545,7 +1539,7 @@ holder_at_point(ScrollerWidget self, int x, int y)
 
     /* Points outside the scroller bounds return NULL */
     if (x < 0 || self->core.width <= x || y < 0 || self->core.height <= y) {
-        DPRINTF((stderr, "out of bounds! (x=%d, y=%d)\n", x, y));
+        DPRINTF((1, "out of bounds! (x=%d, y=%d)\n", x, y));
         return NULL;
     }
 
@@ -1640,7 +1634,7 @@ copy_at_event(Widget widget, XEvent* event, char **params,
         res = XmeClipboardSource(widget, XmCOPY, 0);
     }
 
-    DPRINTF((stderr, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
+    DPRINTF((2, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
 
     self->scroller.copy_message = NULL;
     self->scroller.copy_part = MSGPART_NONE;
@@ -1658,7 +1652,7 @@ show_menu(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    DPRINTF((stderr, "show-menu()\n"));
+    DPRINTF((1, "show-menu()\n"));
 
     /* Pop up the menu and select the message that was clicked on */
     glyph = glyph_at_event(self, event);
@@ -1676,7 +1670,7 @@ show_attachment(Widget widget,
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    DPRINTF((stderr, "show-attachment()\n"));
+    DPRINTF((1, "show-attachment()\n"));
 
     /* Deliver the chosen message to the callbacks */
     glyph = glyph_at_event(self, event);
@@ -1691,7 +1685,7 @@ expire(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    DPRINTF((stderr, "expire()\n"));
+    DPRINTF((1, "expire()\n"));
 
     /* Expire the glyph under the pointer */
     glyph = glyph_at_event(self, event);
@@ -1975,7 +1969,7 @@ delete(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    DPRINTF((stderr, "delete()\n"));
+    DPRINTF((1, "delete()\n"));
 
     /* Figure out which glyph to delete */
     glyph = glyph_at_event(self, event);
@@ -1995,7 +1989,7 @@ do_kill(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
 
-    DPRINTF((stderr, "kill()\n"));
+    DPRINTF((1, "kill()\n"));
 
     /* Figure out which glyph to kill */
     glyph = glyph_at_event(self, event);
@@ -2010,7 +2004,7 @@ faster(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     int value = 1;
 
-    DPRINTF((stderr, "faster()\n"));
+    DPRINTF((1, "faster()\n"));
 
     /* If there's an argument then try to convert it to a number */
     if (*nparams > 0) {
@@ -2041,7 +2035,7 @@ slower(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     int value = 1;
 
-    DPRINTF((stderr, "slower()\n"));
+    DPRINTF((1, "slower()\n"));
 
     /* If there's an argument then try to convert it to a number */
     if (*nparams > 0) {
@@ -2076,7 +2070,7 @@ set_speed(Widget widget, XEvent *event, String *params, Cardinal *nparams)
         return;
     }
 
-    DPRINTF((stderr, "set-speed()\n"));
+    DPRINTF((1, "set-speed()\n"));
 
     /* Set the speed.  Disable the clock for a speed of 0 */
     self->scroller.step = atoi(params[0]);
@@ -2101,7 +2095,7 @@ start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
 
-    DPRINTF((stderr, "start-drag()\n"));
+    DPRINTF((1, "start-drag()\n"));
 
     /* Record the postion of the click for future reference */
     self->scroller.start_drag_x = button_event->x;
@@ -2115,7 +2109,7 @@ drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     XMotionEvent *motion_event = (XMotionEvent *)event;
 
-    DPRINTF((stderr, "drag()\n"));
+    DPRINTF((1, "drag()\n"));
 
     /* Aren't we officially dragging yet? */
     if (!self->scroller.is_dragging) {
@@ -2146,7 +2140,7 @@ stop_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
 
-    DPRINTF((stderr, "stop-drag()\n"));
+    DPRINTF((1, "stop-drag()\n"));
 
     /* If we were dragging then stop */
     if (self->scroller.is_dragging) {
@@ -2259,7 +2253,7 @@ ScPurgeKilled(Widget widget)
 void
 ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
-    DPRINTF((stderr, "[ScGlyphExpired]\n"));
+    DPRINTF((1, "[ScGlyphExpired]\n"));
 
     /* Dequeue the glyph if it's not visible */
     if (glyph->visible_count == 0) {
