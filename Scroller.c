@@ -1372,8 +1372,13 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
             return;
         }
 
-        /* Sanity check */
-        ASSERT(event->type == GraphicsExpose);
+        /* Ignore events other than GraphicsExpose. */
+        if (event->type != GraphicsExpose) {
+            ASSERT(event->type == SelectionClear ||
+                   event->type == SelectionRequest ||
+                   event->type == SelectionNotify) {
+            return;
+        }
 
         /* Coerce the event */
         g_event = (XGraphicsExposeEvent *)event;
