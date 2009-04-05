@@ -325,6 +325,10 @@ Displays the attachment of the notification under the pointer.
 .B expire()
 Deletes the notification under the pointer by quickly fading it away.
 .TP
+.B copy()
+Copies part of the message under the pointer to the primary or
+secondary selection or the cut buffer.  See below for details.
+.TP
 .B delete()
 Deletes a message from the scroller instantly.
 .TP
@@ -380,8 +384,29 @@ Select the message after the current selection.
 .B scroll-left()
 Scroll the history window to the left.
 .TP
+.TP
 .B scroll-right()
 Scroll the history window to the right.
+.TP
+.B copy-selection()
+Copies part of the selected message to the primary or secondary
+selection or the cut buffer.  See below for details.
+.PP
+The Scroller widget's
+.B copy()
+and History widget's
+.B copy-selection()
+actions take two optional arguments.
+.PP
+The first indicates which part of the message to copy and may be one
+of \fBid\fP, to copy the message-id, \fBtext\fP, the default, to copy
+the message string itself, \fBall\fP to copy the entire message in
+ep/ec format or \fBlink\fP to copy the attachment, if any.  Attempts
+to copy non-existent portions of a message will silently fail.
+.PP
+The second argument indicates the destination of the copy operation
+and may be one of \fBPRIMARY\fP, \fBSECONDARY\fP or \fBCLIPBOARD\fP,
+the default.
 .SH ENVIRONMENT VARIABLES
 If
 .B TICKERDIR
