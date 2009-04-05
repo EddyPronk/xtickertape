@@ -217,7 +217,9 @@ XTickertape.sendHistoryCapacity: 32
 	<Key>6: set-speed(6)\n\
 	<Key>7: set-speed(7)\n\
 	<Key>8: set-speed(8)\n\
-	<Key>9: set-speed(9)
+	<Key>9: set-speed(9)\n\
+	Ctrl<Key>c: copy(text, CLIPBOARD)\n\
+	Shift<Key>c: copy(id, CLIPBOARD)
 
 !
 ! History action translations
@@ -245,7 +247,6 @@ XTickertape.sendHistoryCapacity: 32
 	Ctrl<Key>n: select-next()\n\
 	Ctrl<Key>b: scroll-left()\n\
 	Ctrl<Key>f: scroll-right()\n\
-	Ctrl<Key>c: copy-selection(text, CLIPBOARD)\n\
 	<Key>osfUp: select-previous()\n\
 	<Key>osfDown: select-next()\n\
 	<Key>osfLeft: scroll-left()\n\
