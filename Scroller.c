@@ -1376,7 +1376,7 @@ gexpose(Widget widget, XtPointer rock, XEvent *event, Boolean *ignored)
         if (event->type != GraphicsExpose) {
             ASSERT(event->type == SelectionClear ||
                    event->type == SelectionRequest ||
-                   event->type == SelectionNotify) {
+                   event->type == SelectionNotify);
             return;
         }
 
