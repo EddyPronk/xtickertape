@@ -2170,12 +2170,17 @@ copy_selection(Widget widget, XEvent* event, char **params,
         return;
     }
 
-    /* Record the selected message. */
-    ASSERT(self->history.copy_message == NULL);
-    self->history.copy_message = self->history.selection;
-
     /* Decide what to copy. */
     part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
+
+    /* Bail if the relevant part of the message doesn't exist. */
+    if (message_part_size(message, part) == 0) {
+        DPRINTF((1, "Message has no %\n", message_part_to_string(part)));
+    }
+
+    /* Record the selected message and part. */
+    ASSERT(self->history.copy_message == NULL);
+    self->history.copy_message = self->history.selection;
     ASSERT(self->history.copy_part == MSGPART_NONE);
     self->history.copy_part = part;
 

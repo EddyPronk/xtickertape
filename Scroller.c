@@ -1601,21 +1601,34 @@ copy_at_event(Widget widget, XEvent* event, char **params,
 {
     ScrollerWidget self = (ScrollerWidget)widget;
     glyph_t glyph;
+    message_t message;
     message_part_t part;
     const char* target;
     int res;
 
-    /* Bail if there's no message. */
+    /* Bail if there's no glyph. */
     glyph = glyph_at_event(self, event);
     if (glyph == NULL) {
         return;
     }
 
+    /* Bail if there's no associated message. */
+    message = glyph_get_message(glyph);
+    if (message == NULL) {
+        return;
+    }
+
+    /* Decide what part of the message to copy. */
+    part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
+
+    /* Bail if the relevant part doesn't exist. */
+    if (message_part_size(message, part) == 0) {
+        DPRINTF((1, "Message has no %s\n", message_part_to_string(part)));
+    }
+
+    /* Record the message and part. */
     ASSERT(self->scroller.copy_message == NULL);
     self->scroller.copy_message = glyph_get_message(glyph);
-
-    /* Decide what to copy. */
-    part = message_part_from_string(*num_params < 1 ? NULL : params[0]);
     ASSERT(self->scroller.copy_part == MSGPART_NONE);
     self->scroller.copy_part = part;
 
