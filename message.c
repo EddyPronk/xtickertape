@@ -751,6 +751,23 @@ message_part_from_string(const char *string)
     }
 }
 
+const char *
+message_part_to_string(message_part_t part)
+{
+    switch (part) {
+    case MSGPART_ID:
+        return "id";
+    case MSGPART_TEXT:
+        return "text";
+    case MSGPART_ALL:
+        return "all";
+    case MSGPART_LINK:
+        return "link";
+    default:
+        return NULL;
+    }
+}
+
 size_t
 message_part_size(message_t self, message_part_t part)
 {

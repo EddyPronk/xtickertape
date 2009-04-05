@@ -175,6 +175,11 @@ message_part_t
 message_part_from_string(const char *string);
 
 
+/* Convert a message part to a string. */
+const char *
+message_part_to_string(message_part_t part);
+
+
 /* Returns how many bytes are required to hold the named message
  * part. */
 size_t
