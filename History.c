@@ -497,7 +497,7 @@ node_kill(node_t self)
     }
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) && 0
 static void
 node_dump(node_t self, int depth)
 {
