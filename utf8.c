@@ -783,11 +783,18 @@ utf8_renderer_draw_underline(utf8_renderer_t self,
                              XRectangle *bbox,
                              long width)
 {
-    XFillRectangle(display, drawable, gc,
-                   MAX(x, bbox->x), y + self->underline_position,
-                   MIN(x + width, (long)bbox->x + (long)bbox->width) -
-                   MAX(x, bbox->x),
-                   self->underline_thickness);
+    if (self->underline_thickness == 1) {
+        XDrawLine(display, drawable, gc,
+                  MAX(x, bbox->x), y + self->underline_position,
+                  MIN(x + width, (long)bbox->x + (long)bbox->width),
+                  y + self->underline_position);
+    } else {
+        XFillRectangle(display, drawable, gc,
+                       MAX(x, bbox->x), y + self->underline_position,
+                       MIN(x + width,
+                           (long)bbox->x + (long)bbox->width) - MAX(x, bbox->x),
+                       self->underline_thickness);
+    }
 }
 
 /* The structure of the UTF-8 encoder */
