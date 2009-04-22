@@ -64,6 +64,10 @@
 #include "utils.h"
 #include "message.h"
 
+/* The number of bytes required to hold a timestamp string, not
+ * including the terminating NUL character. */
+#define TIMESTAMP_SIZE (sizeof("YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM"))
+#define TIMESTAMP_LEN (TIMESTAMP_SIZE - 1)
 
 #ifdef DEBUG
 static long message_count;
@@ -456,28 +460,6 @@ message_free(message_t self)
     free(self);
 }
 
-#ifdef DEBUG
-/* Prints debugging information */
-void
-message_debug(message_t self)
-{
-    printf("message_t (%p)\n", self);
-    printf("  ref_count=%d\n", self->ref_count);
-    printf("  info = \"%s\"\n", (self->info == NULL) ? "<null>" : self->info);
-    printf("  group = \"%s\"\n", self->group);
-    printf("  user = \"%s\"\n", self->user);
-    printf("  string = \"%s\"\n", self->string);
-    printf("  attachment = \"%p\" [%zu]\n", self->attachment, self->length);
-    printf("  timeout = %ld\n", self->timeout);
-    printf("  tag = \"%s\"\n", (self->tag == NULL) ? "<null>" : self->tag);
-    printf("  id = \"%s\"\n", (self->id == NULL) ? "<null>" : self->id);
-    printf("  reply_id = \"%s\"\n",
-           (self->reply_id == NULL) ? "<null>" : self->reply_id);
-    printf("  thread_id = \"%s\"\n",
-           (self->thread_id == NULL) ? "<null>" : self->thread_id);
-}
-#endif /* DEBUG */
-
 /* Answers the Subscription matched to generate the receiver */
 const char *
 message_get_info(message_t self)
@@ -693,14 +675,16 @@ write_string_field(const char *name, const char *value, char **buffer)
     *buffer = out;
 }
 
+/* Writes a timestamp string into buffer and returns a pointer to it.
+ * The resulting timestamp should be exactly TIMESTAMP_LEN bytes, not
+ * including the NUL-terminator. */
 static char *
-write_message(message_t self, char *buffer, size_t buflen)
+write_timestamp(message_t self, char *buffer, size_t buflen)
 {
-    struct tm *tm;
+    const struct tm *tm;
     int utc_off;
-    char sign = '+';
-    char *out;
     size_t len;
+    char sign;
 
     /* Convert the timestamp to local time and determine the offset of
      * local time from UTC at that point in time. */
@@ -708,16 +692,31 @@ write_message(message_t self, char *buffer, size_t buflen)
     if (utc_off < 0) {
         sign = '-';
         utc_off = -utc_off;
+    } else {
+        sign = '+';
     }
 
     /* Write the timestamp into the buffer. */
     len = snprintf(buffer, buflen,
-                   "$time %04d-%02d-%02dT%02d:%02d:%02d.%06ld%c%02d%02d\n",
+                   "%04d-%02d-%02dT%02d:%02d:%02d.%06ld%c%02d%02d",
                    tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
                    tm->tm_hour, tm->tm_min, tm->tm_sec,
                    (long)self->creation_time.tv_usec,
                    sign, utc_off / 3600, utc_off / 60 % 60);
-    ASSERT(len == sizeof("$time YYYY-MM-DDTHH:MM:SS.uuuuuu+HHMM\n") - 1);
+
+    ASSERT(len == MAX(buflen, TIMESTAMP_LEN));
+    return buffer;
+}
+
+static char *
+write_message(message_t self, char *buffer, size_t buflen)
+{
+    char timebuf[TIMESTAMP_SIZE];
+    char *out;
+    size_t len;
+
+    len = snprintf(buffer, buflen, "$time %s\n",
+                   write_timestamp(self, timebuf, sizeof(timebuf)));
     out = buffer + len;
 
     /* Append each of the strings. */
@@ -831,5 +830,31 @@ message_get_part(message_t self, message_part_t part,
 
     return NULL;
 }
+
+#ifdef DEBUG
+/* Prints debugging information */
+void
+message_debug(message_t self)
+{
+    char timebuf[TIMESTAMP_SIZE];
+
+    printf("message_t (%p)\n", self);
+    printf("  ref_count=%d\n", self->ref_count);
+    printf("  creation_time=%s\n",
+           write_timestamp(self, timebuf, sizeof(timebuf)));
+    printf("  info=\"%s\"\n", (self->info == NULL) ? "<null>" : self->info);
+    printf("  group=\"%s\"\n", self->group);
+    printf("  user=\"%s\"\n", self->user);
+    printf("  string=\"%s\"\n", self->string);
+    printf("  attachment=\"%p\" [%zu]\n", self->attachment, self->length);
+    printf("  timeout=%ld\n", self->timeout);
+    printf("  tag=\"%s\"\n", (self->tag == NULL) ? "<null>" : self->tag);
+    printf("  id=\"%s\"\n", (self->id == NULL) ? "<null>" : self->id);
+    printf("  reply_id=\"%s\"\n",
+           (self->reply_id == NULL) ? "<null>" : self->reply_id);
+    printf("  thread_id=\"%s\"\n",
+           (self->thread_id == NULL) ? "<null>" : self->thread_id);
+}
+#endif /* DEBUG */
 
 /**********************************************************************/
