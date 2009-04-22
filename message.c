@@ -846,7 +846,7 @@ message_debug(message_t self)
     printf("  group=\"%s\"\n", self->group);
     printf("  user=\"%s\"\n", self->user);
     printf("  string=\"%s\"\n", self->string);
-    printf("  attachment=\"%p\" [%zu]\n", self->attachment, self->length);
+    printf("  attachment=%p [%zu]\n", self->attachment, self->length);
     printf("  timeout=%ld\n", self->timeout);
     printf("  tag=\"%s\"\n", (self->tag == NULL) ? "<null>" : self->tag);
     printf("  id=\"%s\"\n", (self->id == NULL) ? "<null>" : self->id);
