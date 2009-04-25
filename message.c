@@ -704,7 +704,7 @@ write_timestamp(message_t self, char *buffer, size_t buflen)
                    (long)self->creation_time.tv_usec,
                    sign, utc_off / 3600, utc_off / 60 % 60);
 
-    ASSERT(len == MIN(buflen - 1, TIMESTAMP_LEN));
+    ASSERT(len == MIN(buflen, TIMESTAMP_LEN));
     return buffer;
 }
 
