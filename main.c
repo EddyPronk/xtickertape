@@ -68,6 +68,12 @@
 #ifdef HAVE_ASSERT_H
 # include <assert.h>
 #endif
+#ifdef HAVE_VALGRIND_VALGRIND_H
+# include <valgrind/valgrind.h>
+#endif
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+# include <valgrind/memcheck.h>
+#endif
 #include <X11/Xlib.h> /* X.* */
 #include <X11/Intrinsic.h> /* Xt* */
 #include <X11/StringDefs.h>
@@ -81,6 +87,7 @@
 #include "replace.h"
 #include "message.h"
 #include "tickertape.h"
+#include "utils.h"
 
 #include "red.xbm"
 #include "white.xbm"
@@ -554,11 +561,29 @@ static RETSIGTYPE
 reload_subs(int signum)
 {
     /* Put the signal handler back in place */
-    signal(SIGHUP, reload_subs);
+    signal(signum, reload_subs);
 
     /* Reload configuration files */
     tickertape_reload_all(tickertape);
 }
+
+#ifdef USE_VALGRIND
+/* Signal handler which invokes valgrind magic. */
+static RETSIGTYPE
+count_leaks(int signum)
+{
+    unsigned long leaked, dubious, reachable, suppressed;
+
+    /* Put the signal handler back in place */
+    signal(signum, count_leaks);
+
+    /* Get valgrind's current leak counts. */
+    VALGRIND_COUNT_LEAKS(leaked, dubious, reachable, suppressed);
+    fprintf(stderr, "%s: valgrind: leaked=%lu, dubious=%lu, reachable=%lu, "
+            "suppressed=%lu\n", PACKAGE, leaked, dubious, reachable,
+            suppressed);
+}
+#endif /* USE_VALGRIND */
 
 /* Print an error message indicating that the app-defaults file is bogus */
 static void
@@ -745,6 +770,11 @@ main(int argc, char *argv[])
 
     /* Set up SIGHUP to reload the subscriptions */
     signal(SIGHUP, reload_subs);
+
+#ifdef USE_VALGRIND
+    /* Set up SIGUSR1 to invoke valgrind. */
+    signal(SIGUSR1, count_leaks);
+#endif /* USE_VALGRIND */
 
 #ifdef HAVE_LIBXMU
     /* Enable editres support */
