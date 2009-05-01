@@ -577,6 +577,9 @@ count_leaks(int signum)
     /* Put the signal handler back in place */
     signal(signum, count_leaks);
 
+    /* Run a leak check */
+    VALGRIND_DO_LEAK_CHECK;
+
     /* Get valgrind's current leak counts. */
     VALGRIND_COUNT_LEAKS(leaked, dubious, reachable, suppressed);
     fprintf(stderr, "%s: valgrind: leaked=%lu, dubious=%lu, reachable=%lu, "
