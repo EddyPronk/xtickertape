@@ -71,6 +71,13 @@
 
 #ifdef DEBUG
 static long message_count;
+
+# define MESSAGE_DEBUG(level, message) message_debug(level, message)
+
+static void
+message_debug(int level, message_t self);
+#else /* !DEBUG */
+# define MESSAGE_DEBUG(level, message)
 #endif /* DEBUG */
 
 #define CONTENT_TYPE "Content-Type:"
@@ -425,10 +432,8 @@ message_alloc(const char *info,
     /* Check our addition again. */
     ASSERT(point <= self->data + len);
 
-#ifdef DEBUG
-    printf("allocated message_t %p (%ld)\n", self, ++message_count);
-    message_debug(self);
-#endif /* DEBUG */
+    DPRINTF((1, "allocated message_t %p (%ld)\n", self, ++message_count));
+    MESSAGE_DEBUG(1, self);
 
     /* Allocate a reference to the caller. */
     self->ref_count++;
@@ -452,10 +457,8 @@ message_free(message_t self)
         return;
     }
 
-#ifdef DEBUG
-    printf("freeing message_t %p (%ld):\n", self, --message_count);
-    message_debug(self);
-#endif /* DEBUG */
+    DPRINTF((1, "freeing message_t %p (%ld):\n", self, --message_count));
+    MESSAGE_DEBUG(1, self);
 
     free(self);
 }
@@ -833,27 +836,45 @@ message_get_part(message_t self, message_part_t part,
 
 #ifdef DEBUG
 /* Prints debugging information */
-void
-message_debug(message_t self)
+static void
+message_debug(int level, message_t self)
 {
     char timebuf[TIMESTAMP_SIZE];
 
-    printf("message_t (%p)\n", self);
-    printf("  ref_count=%d\n", self->ref_count);
-    printf("  creation_time=%s\n",
-           write_timestamp(self, timebuf, sizeof(timebuf)));
-    printf("  info=\"%s\"\n", (self->info == NULL) ? "<null>" : self->info);
-    printf("  group=\"%s\"\n", self->group);
-    printf("  user=\"%s\"\n", self->user);
-    printf("  string=\"%s\"\n", self->string);
-    printf("  attachment=%p [%zu]\n", self->attachment, self->length);
-    printf("  timeout=%ld\n", self->timeout);
-    printf("  tag=\"%s\"\n", (self->tag == NULL) ? "<null>" : self->tag);
-    printf("  id=\"%s\"\n", (self->id == NULL) ? "<null>" : self->id);
-    printf("  reply_id=\"%s\"\n",
-           (self->reply_id == NULL) ? "<null>" : self->reply_id);
-    printf("  thread_id=\"%s\"\n",
-           (self->thread_id == NULL) ? "<null>" : self->thread_id);
+    DPRINTF((level,
+             "message_t (%p)\n"
+             "  ref_count=%d\n"
+             "  creation_time=%s\n"
+             "  info=%s%s%s\n"
+             "  group=\"%s\"\n"
+             "  user=\"%s\"\n"
+             "  string=\"%s\"\n"
+             "  attachment=%p [%zu]\n"
+             "  timeout=%ld\n"
+             "  tag=%s%s%s\n"
+             "  id=%s%s%s\n"
+             "  reply_id=%s%s%s\n"
+             "  thread_id=%s%s%s\n",
+             self, self->ref_count,
+             write_timestamp(self, timebuf, sizeof(timebuf)),
+             self->info ? "\"" : "",
+             self->info ? self->info : "NULL",
+             self->info ? "\"" : "",
+             self->group, self->user, self->string,
+             self->attachment, self->length,
+             self->timeout,
+             self->tag ? "\"" : "",
+             self->tag ? self->tag : "NULL",
+             self->tag ? "\"" : "",
+             self->id ? "\"" : "",
+             self->id ? self->id : "NULL",
+             self->id ? "\"" : "",
+             self->reply_id ? "\"" : "",
+             self->reply_id ? self->reply_id : "NULL",
+             self->reply_id ? "\"" : "",
+             self->thread_id ? "\"" : "",
+             self->thread_id ? self->thread_id : "NULL",
+             self->thread_id ? "\"" : ""));
 }
 #endif /* DEBUG */
 

@@ -85,11 +85,6 @@ void
 message_free(message_t self);
 
 
-/* Prints debugging information */
-void
-message_debug(message_t self);
-
-
 /* Answers the Subscription info for the receiver's subscription */
 const char *
 message_get_info(message_t self);
