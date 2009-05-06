@@ -423,11 +423,25 @@ glyph_get_successor(glyph_t self)
     return self;
 }
 
+/* Deletes a glyph */
+static void
+glyph_delete(glyph_t self)
+{
+    /* Don't delete the gap or already expired glyphs. */
+    if (self->message_view == NULL || self->is_expired) {
+        return;
+    }
+
+    /* Mark the glyph as expired so that it won't get considered as a
+     * replacement for glyph. */
+    self->is_expired = True;
+}
+
 /* Expires the glyph */
 static void
 glyph_expire(glyph_t self, ScrollerWidget widget)
 {
-    /* Don't expire the gap and don't expire more than once*/
+    /* Don't expire the gap and don't expire more than once */
     if (self->message_view == NULL || self->is_expired) {
         return;
     }
@@ -540,6 +554,7 @@ queue_remove(glyph_t glyph)
 {
     /* Don't dequeue if the glyph isn't queued */
     if (glyph->next == NULL) {
+        ASSERT(glyph->previous == NULL);
         return;
     }
 
@@ -603,7 +618,7 @@ glyph_holder_free(glyph_holder_t self)
 {
     glyph_t glyph = self->glyph;
 
-    /* Unqueue the glyph if it's expired and invisible */
+    /* Dequeue the glyph if it's expired and invisible */
     if (--glyph->visible_count == 0 && glyph->is_expired) {
         queue_remove(glyph);
     }
@@ -1948,22 +1963,30 @@ delete_glyph(ScrollerWidget self, glyph_t glyph)
         return;
     }
 
-    /* Mark the glyph as expired */
-    glyph_expire(glyph, self);
+    /* If the glyph isn't visible then simply remove it from the
+     * queue. */
+    if (glyph->visible_count == 0) {
+        queue_remove(glyph);
+        return;
+    }
 
-    /* Delete the glyph and any holders for that glyph.
-     * Keep the leading edge of the text in place */
+    /* Otherwise attempt to keep the leading edge of the text in
+     * place.  Mark the glyph as deleted so that it doesn't get
+     * re-added when looking for replacement glyphs. */
+    glyph_delete(glyph);
+
+    /* Fill in the space of the deleted glyph. */
     if (self->scroller.step < 0) {
         delete_left_to_right(self, glyph);
     } else {
         delete_right_to_left(self, glyph);
     }
 
+    /* Repaint the scroller. */
     if (self->scroller.use_pixmap) {
         paint(self, 0, 0, self->core.width, self->scroller.height);
         redisplay(self, NULL);
     } else {
-        /* Repaint the window */
         XFillRectangle(XtDisplay((Widget)self), XtWindow((Widget)self),
                        self->scroller.backgroundGC,
                        0, 0, self->core.width, self->scroller.height);
