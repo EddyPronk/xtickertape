@@ -1943,6 +1943,7 @@ static void
 delete_glyph(ScrollerWidget self, glyph_t glyph)
 {
     /* Refuse to delete the gap */
+    ASSERT(glyph != self->scroller.gap);
     if (glyph == self->scroller.gap) {
         return;
     }
