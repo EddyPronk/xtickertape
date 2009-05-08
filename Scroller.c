@@ -177,6 +177,42 @@ paint(ScrollerWidget self,
       unsigned int width,
       unsigned int height);
 
+#if defined(DEBUG)
+typedef enum glyph_ref_type glyph_ref_type_t;
+enum glyph_ref_type {
+    REF_GAP,
+    REF_QUEUE,
+    REF_HOLDER
+};
+
+static const char *ref_type_names[] = {
+    "GAP",
+    "QUEUE",
+    "HOLDER"
+};
+
+/* To help track memory leaks, we record the line number, reference
+ * type and a pointer for each reference to a glyph in debug builds.
+ * By inspecting this list, we should be able to determine why a glyph
+ * hasn't been freed. */
+typedef struct glyph_ref *glyph_ref_t;
+struct glyph_ref {
+    /* The next reference in the list. */
+    glyph_ref_t next;
+
+    /* The type of reference. */
+    glyph_ref_type_t type;
+
+    /* The name of the file where the reference was added. */
+    const char *file;
+
+    /* The line number where the reference was added. */
+    int line;
+
+    /* The pointer. */
+    void* rock;
+};
+#endif /* DEBUG */
 
 /* The structure of a glyph */
 struct glyph {
@@ -192,8 +228,13 @@ struct glyph {
     /* The widget which display's this glyph */
     ScrollerWidget widget;
 
+#if defined(DEBUG)
+    /* The references to this glyph. */
+    glyph_ref_t refs;
+#else /* !DEBUG */
     /* The number of external references to this glyph */
     short ref_count;
+#endif /* DEBUG */
 
     /* The number of glyph_holders pointing to this glyph */
     short visible_count;
@@ -238,9 +279,9 @@ glyph_alloc(ScrollerWidget widget, message_t message)
 
     /* Increment the reference count */
     self->widget = widget;
-    self->ref_count++;
 
     /* Bail out now if we're the gap */
+    DPRINTF((1, "allocated glyph %p\n", self));
     if (message == NULL) {
         return self;
     }
@@ -263,6 +304,7 @@ glyph_alloc(ScrollerWidget widget, message_t message)
     /* Start the clock */
     self->timeout = None;
     glyph_set_clock(self, widget->scroller.fade_levels);
+
     return self;
 }
 
@@ -270,12 +312,8 @@ glyph_alloc(ScrollerWidget widget, message_t message)
 static void
 glyph_free(glyph_t self)
 {
-    /* Check the reference count */
-    if (--self->ref_count > 0) {
-        return;
-    }
-
     /* Sanity checks */
+    ASSERT(self->refs == NULL);
     ASSERT(self->visible_count == 0);
 
     /* Free the message_view */
@@ -290,7 +328,88 @@ glyph_free(glyph_t self)
 
     /* Free the glyph itself */
     free(self);
+
+    DPRINTF((1, "freed glyph %p\n", self));
 }
+
+#if defined(DEBUG)
+# define GLYPH_ALLOC_REF(glyph, type, rock)     \
+    glyph_alloc_ref(glyph, type, __FILE__, __LINE__, rock)
+# define GLYPH_FREE_REF(glyph, type, rock)      \
+    glyph_free_ref(glyph, type, __FILE__, __LINE__, rock)
+
+static void
+glyph_alloc_ref(glyph_t self, glyph_ref_type_t type, 
+                const char *file, int line, void* rock)
+{
+    glyph_ref_t ref;
+
+    /* Allocate memory to hold the reference. */
+    ref = malloc(sizeof(struct glyph_ref));
+    ASSERT(ref != NULL);
+
+    ref->type = type;
+    ref->file = file;
+    ref->line = line;
+    ref->rock = rock;
+
+    ref->next = self->refs;
+    self->refs = ref;
+
+    DPRINTF((1, "%s:%d: acquired %s reference to glyph %p with rock=%p\n",
+             file, line, ref_type_names[type], self, rock));
+}
+
+static void
+glyph_free_ref(glyph_t self, glyph_ref_type_t type,
+               const char* file, int line, void* rock)
+{
+    glyph_ref_t ref;
+    glyph_ref_t prev;
+
+    /* Find and remove the reference. */
+    prev = NULL;
+    for (ref = self->refs; ref != NULL; ref = ref->next) {
+        if (ref->type == type && ref->rock == rock) {
+            DPRINTF((1, "%s:%d: freeing %s reference to glyph %p acquired "
+                     "at %s:%d with reference rock=%p\n",
+                     file, line, ref_type_names[type], self,
+                     ref->file, ref->line, rock));
+
+            /* Update the previous link to point to the next one. */
+            if (prev == NULL) {
+                ASSERT(ref == self->refs);
+                self->refs = ref->next;
+            } else {
+                prev->next = ref->next;
+            }
+
+            free(ref);
+            break;
+        }
+
+        prev = ref;
+    }
+
+    /* If we don't find the reference the we have a bug. */
+    ASSERT(ref != NULL);
+
+    /* If there are no more references then discard the glyph. */
+    if (self->refs == NULL) {
+        glyph_free(self);
+    }
+}
+#else /* !DEBUG */
+# define GLYPH_ALLOC_REF(glyph, type, rock)     \
+    glyph->ref_count++
+
+# define GLYPH_FREE_REF(glyph, type, rock)      \
+    do {                                        \
+        if (--glyph->ref_count == 0) {          \
+            glyph_free(glyph);                  \
+        }                                       \
+    } while (0)
+#endif /* DEBUG */
 
 /* This is called each time the glyph should fade */
 static void
@@ -486,6 +605,8 @@ queue_add(glyph_t tail, glyph_t glyph)
 
     tail->next->previous = glyph;
     tail->next = glyph;
+
+    GLYPH_ALLOC_REF(glyph, REF_QUEUE, NULL);
 }
 
 /* Locates the item in the queue with the given tag */
@@ -541,11 +662,11 @@ queue_replace(glyph_t old_glyph, glyph_t new_glyph)
     old_glyph->next = NULL;
 
     /* Tell the old glyph that it's been superseded */
-    new_glyph->ref_count++;
+    GLYPH_ALLOC_REF(new_glyph, REF_QUEUE, NULL);
     old_glyph->successor = new_glyph;
 
     /* Clean up */
-    glyph_free(old_glyph);
+    GLYPH_FREE_REF(old_glyph, REF_QUEUE, NULL);
 }
 
 /* Removes an item from a circular queue of glyphs */
@@ -566,7 +687,7 @@ queue_remove(glyph_t glyph)
     glyph->next = NULL;
 
     /* Lose our reference to the glyph */
-    glyph_free(glyph);
+    GLYPH_FREE_REF(glyph, REF_QUEUE, NULL);
 }
 
 /* The glyph_holders are used to maintain a doubly-linked list of the
@@ -607,7 +728,7 @@ glyph_holder_alloc(glyph_t glyph, int width)
 
     /* Record the glyph and tell it that it's visible */
     self->glyph = glyph;
-    glyph->ref_count++;
+    GLYPH_ALLOC_REF(glyph, REF_HOLDER, self);
     glyph->visible_count++;
     return self;
 }
@@ -624,7 +745,7 @@ glyph_holder_free(glyph_holder_t self)
     }
 
     /* Lose our reference to the glyph */
-    glyph_free(glyph);
+    GLYPH_FREE_REF(glyph, REF_HOLDER, self);
     free(self);
 }
 
@@ -910,6 +1031,7 @@ initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 
     /* Allocate a glyph to represent the gap */
     self->scroller.gap = glyph_alloc(self, NULL);
+    GLYPH_ALLOC_REF(self->scroller.gap, REF_GAP, self);
     self->scroller.gap->next = self->scroller.gap;
     self->scroller.gap->previous = self->scroller.gap;
 
@@ -1965,6 +2087,8 @@ delete_glyph(ScrollerWidget self, glyph_t glyph)
 
     /* If the glyph isn't visible then simply remove it from the
      * queue. */
+    DPRINTF((1, "[delete_glyph %c]\n",
+             glyph->visible_count == 0 ? 'f' : 't'));
     if (glyph->visible_count == 0) {
         queue_remove(glyph);
         return;
@@ -2285,7 +2409,8 @@ ScPurgeKilled(Widget widget)
 void
 ScGlyphExpired(ScrollerWidget self, glyph_t glyph)
 {
-    DPRINTF((1, "[ScGlyphExpired]\n"));
+    DPRINTF((1, "[ScGlyphExpired %c]\n",
+             glyph->visible_count == 0 ? 'f' : 't'));
 
     /* Dequeue the glyph if it's not visible */
     if (glyph->visible_count == 0) {
