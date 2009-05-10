@@ -655,24 +655,22 @@ queue_find(glyph_t head, const char *tag)
 static void
 queue_replace(glyph_t old_glyph, glyph_t new_glyph)
 {
-    glyph_t previous = old_glyph->previous;
-    glyph_t next = old_glyph->next;
-
     /* Swap the message into place */
-    new_glyph->previous = previous;
-    previous->next = new_glyph;
+    new_glyph->previous = old_glyph->previous;
+    old_glyph->previous->next = new_glyph;
     old_glyph->previous = NULL;
 
-    new_glyph->next = next;
-    next->previous = new_glyph;
+    new_glyph->next = old_glyph->next;
+    old_glyph->next->previous = new_glyph;
     old_glyph->next = NULL;
 
-    /* Tell the old glyph that it's been superseded; it retains a
-     * reference to its successor. */
+    /* The old glyph retains a replacement reference to the new glyph. */
     GLYPH_ALLOC_REF(new_glyph, REF_REPLACE, old_glyph);
     old_glyph->successor = new_glyph;
 
-    /* Clean up */
+    /* The queue now has a reference to the new glyph and no longer
+     * has one to the old. */
+    GLYPH_ALLOC_REF(new_glyph, REF_QUEUE, NULL);
     GLYPH_FREE_REF(old_glyph, REF_QUEUE, NULL);
 }
 
