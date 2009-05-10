@@ -1128,8 +1128,7 @@ add_left_holder(ScrollerWidget self)
     int width;
 
     /* Find the first unexpired glyph to the left of the scroller */
-    glyph = self->scroller.left_holder->glyph;
-    glyph = glyph_get_successor(glyph)->previous;
+    glyph = glyph_get_successor(self->scroller.left_holder->glyph)->previous;
     while (glyph->is_expired) {
         glyph = glyph->previous;
     }
@@ -1174,8 +1173,7 @@ add_right_holder(ScrollerWidget self)
     int width;
 
     /* Find the first unexpired glyph to the right of the scroller */
-    glyph = self->scroller.right_holder->glyph;
-    glyph = glyph_get_successor(glyph)->next;
+    glyph = glyph_get_successor(self->scroller.right_holder->glyph)->next;
     while (glyph->is_expired) {
         glyph = glyph->next;
     }
