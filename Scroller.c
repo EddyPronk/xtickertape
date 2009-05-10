@@ -224,7 +224,12 @@ struct glyph {
     /* The next glyph in the circular queue */
     glyph_t next;
 
-    /* The glyph which supersedes this one */
+    /* The glyph which supersedes this one.  When a replacement glyph
+     * arrives. we substitute it for its replacement in the circular
+     * queue.  In order to find the old glyph's next or previous
+     * glyph, we walk the chain of successor pointers until we find
+     * the glyph that's actually in the queue and use the next or
+     * previous pointers of that. */
     glyph_t successor;
 
     /* The widget which display's this glyph */
