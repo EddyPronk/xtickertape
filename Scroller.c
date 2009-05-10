@@ -182,13 +182,15 @@ typedef enum glyph_ref_type glyph_ref_type_t;
 enum glyph_ref_type {
     REF_GAP,
     REF_QUEUE,
-    REF_HOLDER
+    REF_HOLDER,
+    REF_REPLACE
 };
 
 static const char *ref_type_names[] = {
     "GAP",
     "QUEUE",
-    "HOLDER"
+    "HOLDER",
+    "REPLACE"
 };
 
 /* To help track memory leaks, we record the line number, reference
@@ -260,77 +262,6 @@ static void
 glyph_free(glyph_t self);
 static void
 glyph_set_clock(glyph_t self, int level_count);
-
-
-/* Allocates and initializes a new glyph holder for the given message */
-static glyph_t
-glyph_alloc(ScrollerWidget widget, message_t message)
-{
-    glyph_t self;
-
-    /* Allocate memory for a new glyph */
-    self = malloc(sizeof(struct glyph));
-    if (self == NULL) {
-        return NULL;
-    }
-
-    /* Initialize its fields to sane values */
-    memset(self, 0, sizeof(struct glyph));
-
-    /* Increment the reference count */
-    self->widget = widget;
-
-    /* Bail out now if we're the gap */
-    DPRINTF((1, "allocated glyph %p\n", self));
-    if (message == NULL) {
-        return self;
-    }
-
-    /* Allocate a message view for display */
-    self->message_view = message_view_alloc(message, 0,
-                                            widget->scroller.renderer);
-    if (self->message_view == NULL) {
-        glyph_free(self);
-        return NULL;
-    }
-
-    /* Figure out how big the glyph should be */
-    message_view_get_sizes(self->message_view, False, &self->sizes);
-
-    /* Add a little space on the end */
-    /* FIX THIS: compute the per_char info for a space */
-    self->sizes.width += widget->scroller.font->ascent;
-
-    /* Start the clock */
-    self->timeout = None;
-    glyph_set_clock(self, widget->scroller.fade_levels);
-
-    return self;
-}
-
-/* Frees the resources consumed by the receiver */
-static void
-glyph_free(glyph_t self)
-{
-    /* Sanity checks */
-    ASSERT(self->refs == NULL);
-    ASSERT(self->visible_count == 0);
-
-    /* Free the message_view */
-    if (self->message_view) {
-        message_view_free(self->message_view);
-    }
-
-    /* Cancel any pending timeout */
-    if (self->timeout != None) {
-        XtRemoveTimeOut(self->timeout);
-    }
-
-    /* Free the glyph itself */
-    free(self);
-
-    DPRINTF((1, "freed glyph %p\n", self));
-}
 
 #if defined(DEBUG)
 # define GLYPH_ALLOC_REF(glyph, type, rock)     \
@@ -410,6 +341,81 @@ glyph_free_ref(glyph_t self, glyph_ref_type_t type,
         }                                       \
     } while (0)
 #endif /* DEBUG */
+
+/* Allocates and initializes a new glyph holder for the given message */
+static glyph_t
+glyph_alloc(ScrollerWidget widget, message_t message)
+{
+    glyph_t self;
+
+    /* Allocate memory for a new glyph */
+    self = malloc(sizeof(struct glyph));
+    if (self == NULL) {
+        return NULL;
+    }
+
+    /* Initialize its fields to sane values */
+    memset(self, 0, sizeof(struct glyph));
+
+    /* Increment the reference count */
+    self->widget = widget;
+
+    /* Bail out now if we're the gap */
+    DPRINTF((1, "allocated glyph %p\n", self));
+    if (message == NULL) {
+        return self;
+    }
+
+    /* Allocate a message view for display */
+    self->message_view = message_view_alloc(message, 0,
+                                            widget->scroller.renderer);
+    if (self->message_view == NULL) {
+        glyph_free(self);
+        return NULL;
+    }
+
+    /* Figure out how big the glyph should be */
+    message_view_get_sizes(self->message_view, False, &self->sizes);
+
+    /* Add a little space on the end */
+    /* FIX THIS: compute the per_char info for a space */
+    self->sizes.width += widget->scroller.font->ascent;
+
+    /* Start the clock */
+    self->timeout = None;
+    glyph_set_clock(self, widget->scroller.fade_levels);
+
+    return self;
+}
+
+/* Frees the resources consumed by the receiver */
+static void
+glyph_free(glyph_t self)
+{
+    /* Sanity checks */
+    ASSERT(self->refs == NULL);
+    ASSERT(self->visible_count == 0);
+
+    /* If the glyph has a successor then release our reference to it. */
+    if (self->successor) {
+	GLYPH_FREE_REF(self->successor, REF_REPLACE, self);
+    }
+
+    /* Free the message_view */
+    if (self->message_view) {
+        message_view_free(self->message_view);
+    }
+
+    /* Cancel any pending timeout */
+    if (self->timeout != None) {
+        XtRemoveTimeOut(self->timeout);
+    }
+
+    /* Free the glyph itself */
+    free(self);
+
+    DPRINTF((1, "freed glyph %p\n", self));
+}
 
 /* This is called each time the glyph should fade */
 static void
@@ -661,8 +667,9 @@ queue_replace(glyph_t old_glyph, glyph_t new_glyph)
     next->previous = new_glyph;
     old_glyph->next = NULL;
 
-    /* Tell the old glyph that it's been superseded */
-    GLYPH_ALLOC_REF(new_glyph, REF_QUEUE, NULL);
+    /* Tell the old glyph that it's been superseded; it retains a
+     * reference to its successor. */
+    GLYPH_ALLOC_REF(new_glyph, REF_REPLACE, old_glyph);
     old_glyph->successor = new_glyph;
 
     /* Clean up */
