@@ -397,6 +397,10 @@ glyph_alloc(ScrollerWidget widget, message_t message)
 static void
 glyph_free(glyph_t self)
 {
+#if defined(DEBUG)
+    message_t message = message_view_get_message(self->message_view);
+#endif /* DEBUG */
+
     /* Sanity checks */
     ASSERT(self->refs == NULL);
     ASSERT(self->visible_count == 0);
@@ -417,7 +421,7 @@ glyph_free(glyph_t self)
     }
 
     /* Free the glyph itself */
-    DPRINTF((1, "freeing glyph %p with message %p\n", self, self->message));
+    DPRINTF((1, "freeing glyph %p with message %p\n", self, message));
     free(self);
 }
 
