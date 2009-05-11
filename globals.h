@@ -50,6 +50,9 @@ extern elvin_client_t client;
 # endif
 #endif
 
+/* The name of the executable (basename of argv[0]). */
+extern const char *progname;
+
 typedef enum {
     AN_CHARSET_ENCODING,
     AN_CHARSET_REGISTRY,
