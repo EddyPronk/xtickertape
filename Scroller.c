@@ -235,13 +235,13 @@ struct glyph {
     /* The widget which display's this glyph */
     ScrollerWidget widget;
 
-#if defined(DEBUG)
+#if defined(DEBUG_GLYPH)
     /* The references to this glyph. */
     glyph_ref_t refs;
-#else /* !DEBUG */
+#else /* !DEBUG_GLYPH */
     /* The number of external references to this glyph */
     short ref_count;
-#endif /* DEBUG */
+#endif /* DEBUG_GLYPH */
 
     /* The number of glyph_holders pointing to this glyph */
     short visible_count;
@@ -268,7 +268,7 @@ glyph_free(glyph_t self);
 static void
 glyph_set_clock(glyph_t self, int level_count);
 
-#if defined(DEBUG)
+#if defined(DEBUG_GLYPH)
 # define GLYPH_ALLOC_REF(glyph, type, rock)     \
     glyph_alloc_ref(glyph, type, __FILE__, __LINE__, rock)
 # define GLYPH_FREE_REF(glyph, type, rock)      \
@@ -335,7 +335,7 @@ glyph_free_ref(glyph_t self, glyph_ref_type_t type,
         glyph_free(self);
     }
 }
-#else /* !DEBUG */
+#else /* !DEBUG_GLYPH */
 # define GLYPH_ALLOC_REF(glyph, type, rock)     \
     glyph->ref_count++
 
@@ -345,7 +345,7 @@ glyph_free_ref(glyph_t self, glyph_ref_type_t type,
             glyph_free(glyph);                  \
         }                                       \
     } while (0)
-#endif /* DEBUG */
+#endif /* DEBUG_GLYPH */
 
 /* Allocates and initializes a new glyph holder for the given message */
 static glyph_t
@@ -402,7 +402,11 @@ glyph_free(glyph_t self)
 #endif /* DEBUG */
 
     /* Sanity checks */
+#if defined(DEBUG_GLYPH)
     ASSERT(self->refs == NULL);
+#else /* !DEBUG_GLYPH */
+    ASSERT(self->ref_count == 0);
+#endif /* DEBUG_GLYPH */
     ASSERT(self->visible_count == 0);
 
     /* If the glyph has a successor then release our reference to it. */
