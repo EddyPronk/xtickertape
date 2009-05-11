@@ -151,7 +151,7 @@ static int verbosity = 0;
 
 /* Debugging printf */
 void
-dprintf(int level, const char *format, ...)
+xdprintf(int level, const char *format, ...)
 {
     va_list ap;
 
@@ -188,7 +188,7 @@ append_char(int ch)
 {
     /* Make sure there's enough room */
     if (cmd_index >= cmd_length) {
-        dprintf(3, "growing buffer\n");
+        xdprintf(3, "growing buffer\n");
 
         /* Double the buffer size */
         cmd_length *= 2;
@@ -298,7 +298,7 @@ invoke(const char *browser, const char *url)
             append_char('\0');
 
             /* Invoke the command */
-            dprintf(1, "exec: %s\n", cmd_buffer);
+            xdprintf(1, "exec: %s\n", cmd_buffer);
 
             status = system(cmd_buffer);
             if (status < 0) {
@@ -308,11 +308,11 @@ invoke(const char *browser, const char *url)
 
             /* If successful return NULL */
             if (WEXITSTATUS(status) == 0) {
-                dprintf(2, "ok\n");
+                xdprintf(2, "ok\n");
                 return NULL;
             }
 
-            dprintf(2, "failed: %d\n", WEXITSTATUS(status));
+            xdprintf(2, "failed: %d\n", WEXITSTATUS(status));
             return ch == '\0' ? point : point + 1;
 
         case '"':
@@ -438,13 +438,13 @@ main(int argc, char *argv[])
             /* --url= or -u */
             /* Determine if we should view a local file or a remote one */
             if (stat(optarg, &statbuf) < 0) {
-                dprintf(2, "%s: unable to stat file: %s\n", progname, optarg);
+                xdprintf(2, "%s: unable to stat file: %s\n", progname, optarg);
                 url = strdup(optarg);
             } else if ((statbuf.st_mode & S_IRUSR) == 0) {
-                dprintf(2, "%s: unable to read file: %s\n", progname, optarg);
+                xdprintf(2, "%s: unable to read file: %s\n", progname, optarg);
                 url = strdup(optarg);
             } else {
-                dprintf(3, "%s: creating file URL: %s\n", progname, optarg);
+                xdprintf(3, "%s: creating file URL: %s\n", progname, optarg);
                 if (optarg[0] == '/') {
                     length = sizeof(FILE_URL_PREFIX) + strlen(optarg);
                     url = malloc(length);
@@ -474,7 +474,7 @@ main(int argc, char *argv[])
                 }
             }
 
-            dprintf(2, "%s: raw URL: %s\n", progname, url);
+            xdprintf(2, "%s: raw URL: %s\n", progname, url);
             break;
 
         case 'v':
@@ -515,11 +515,11 @@ main(int argc, char *argv[])
     /* Extract the URL from the file */
     if (url == NULL) {
         if (filename == NULL) {
-            dprintf(3, "%s: reading URL from stdin\n", progname);
+            xdprintf(3, "%s: reading URL from stdin\n", progname);
             filename = "<stdin>";
             file = stdin;
         } else {
-            dprintf(3, "%s: reading URL from %s\n", progname, filename);
+            xdprintf(3, "%s: reading URL from %s\n", progname, filename);
 
             /* Read the URL from the file */
             file = fopen(filename, "r");
@@ -540,7 +540,7 @@ main(int argc, char *argv[])
         }
         buffer[i] = '\0';
 
-        dprintf(2, "%s: raw URL: %s\n", progname, buffer);
+        xdprintf(2, "%s: raw URL: %s\n", progname, buffer);
 
         /* Clean up */
         fclose(file);

@@ -75,19 +75,19 @@ message_convert(Widget widget, XtPointer *call_data,
 
 /* Print debug messages if so configured. */
 #if defined(DEBUG)
-# define DPRINTF(x) dprintf x
-# define VDPRINTF(x) vdprintf x
+# define DPRINTF(x) xdprintf x
+# define VDPRINTF(x) vxdprintf x
 
 /* The level of debug message verbosity. */
 extern int verbosity;
 
 /* Print debug messages */
 void
-dprintf(int level, const char *format, ...);
+xdprintf(int level, const char *format, ...);
 
 /* Print debug messages */
 void
-vdprintf(int level, const char *format, va_list args);
+vxdprintf(int level, const char *format, va_list args);
 #else /* !DEBUG */
 # define DPRINTF(x) do {} while (0)
 # define VDPRINTF(x) do {} while (0)

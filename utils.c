@@ -124,17 +124,17 @@ localtime_offset(time_t *when, int* utc_off)
 
 #if defined(DEBUG)
 void
-dprintf(int level, const char *format, ...)
+xdprintf(int level, const char *format, ...)
 {
     va_list args;
 
     va_start(args, format);
-    vdprintf(level, format, args);
+    vxdprintf(level, format, args);
     va_end(args);
 }
 
 void
-vdprintf(int level, const char *format, va_list args)
+vxdprintf(int level, const char *format, va_list args)
 {
     char buffer[128];
     struct timeval tv;
