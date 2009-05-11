@@ -842,20 +842,10 @@ message_debug(int level, message_t self)
     char timebuf[TIMESTAMP_SIZE];
 
     DPRINTF((level,
-             "message_t (%p)\n"
-             "  ref_count=%d\n"
-             "  creation_time=%s\n"
-             "  info=%s%s%s\n"
-             "  group=\"%s\"\n"
-             "  user=\"%s\"\n"
-             "  string=\"%s\"\n"
-             "  attachment=%p [%zu]\n"
-             "  timeout=%ld\n"
-             "  tag=%s%s%s\n"
-             "  id=%s%s%s\n"
-             "  reply_id=%s%s%s\n"
-             "  thread_id=%s%s%s\n",
-             self, self->ref_count,
+             "message_t (%p) { ref_count=%d, creation_time=%s, info=%s%s%s, "
+             "group=\"%s\", user=\"%s\", string=\"%s\", attachment=%p [%zu], "
+             "timeout=%ld, tag=%s%s%s, id=%s%s%s, reply_id=%s%s%s, "
+             "thread_id=%s%s%s }\n", self, self->ref_count,
              write_timestamp(self, timebuf, sizeof(timebuf)),
              self->info ? "\"" : "",
              self->info ? self->info : "NULL",
