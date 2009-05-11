@@ -136,7 +136,27 @@ dprintf(int level, const char *format, ...)
 void
 vdprintf(int level, const char *format, va_list args)
 {
+    char buffer[128];
+    struct timeval tv;
+    struct tm* tm;
+    size_t len;
+
+    /* Get the current time. */
+    if (gettimeofday(&tv, NULL) < 0) {
+        perror("gettimeofday failed");
+        return;
+    }
+
+    /* Break it down. */
+    tm = localtime(&tv.tv_sec);
+    len = snprintf(buffer, sizeof(buffer),
+                   "%s: %04d-%02d-%02dT%02d:%02d:%02d.%06ld: ", progname,
+                   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                   tm->tm_hour, tm->tm_min, tm->tm_sec, (long)tv.tv_usec);
+    ASSERT(len < sizeof(buffer));
+
     if (level <= verbosity) {
+        fwrite(buffer, len, 1, stderr);
         vfprintf(stderr, format, args);
     }
 }
