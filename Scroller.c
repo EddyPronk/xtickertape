@@ -366,7 +366,7 @@ glyph_alloc(ScrollerWidget widget, message_t message)
     self->widget = widget;
 
     /* Bail out now if we're the gap */
-    DPRINTF((1, "allocated glyph %p\n", self));
+    DPRINTF((1, "allocated glyph %p for message %p\n", self, message));
     if (message == NULL) {
         return self;
     }
@@ -417,9 +417,8 @@ glyph_free(glyph_t self)
     }
 
     /* Free the glyph itself */
+    DPRINTF((1, "freeing glyph %p with message %p\n", self, self->message));
     free(self);
-
-    DPRINTF((1, "freed glyph %p\n", self));
 }
 
 /* This is called each time the glyph should fade */
