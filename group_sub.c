@@ -56,6 +56,7 @@
 #include "replace.h"
 #include "key_table.h"
 #include "group_sub.h"
+#include "utils.h"
 
 #define F3_VERSION "org.tickertape.message"
 #define F3_USER_AGENT "User-Agent"
@@ -468,16 +469,14 @@ notify_cb(elvin_handle_t handle,
     /* Get the 'org.tickertape.message' field */
     if (!elvin_notification_get_int32(notification, F3_VERSION, &found,
                                       &version, error)) {
-        fprintf(stderr, "elvin_notification_get_int32(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_int32 failed\n");
         exit(1);
     }
 
     /* Get the `From' field from the notification */
     if (!elvin_notification_get_string(notification, F3_FROM, &found, &user,
                                        error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -485,8 +484,7 @@ notify_cb(elvin_handle_t handle,
     if (!found) {
         if (!elvin_notification_get_string(notification, F2_USER, &found,
                                            &user, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed");
             exit(1);
         }
     }
@@ -499,8 +497,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the `Message' field from the notification */
     if (!elvin_notification_get_string(notification, F3_MESSAGE, &found,
                                        &text, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed");
         exit(1);
     }
 
@@ -508,8 +505,7 @@ notify_cb(elvin_handle_t handle,
     if (!found) {
         if (!elvin_notification_get_string(notification, F2_TICKERTEXT,
                                            &found, &text, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed");
             exit(1);
         }
     }
@@ -522,8 +518,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the `Timeout' field from the notification */
     if (!elvin_notification_get(notification, F3_TIMEOUT, &found, &type,
                                 &value, error)) {
-        fprintf(stderr, "elvin_notification_get(): failed");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get failed");
         exit(1);
     }
 
@@ -531,8 +526,7 @@ notify_cb(elvin_handle_t handle,
     if (!found) {
         if (!elvin_notification_get(notification, F2_TIMEOUT, &found, &type,
                                     &value, error)) {
-            fprintf(stderr, "elvin_notification_get(): failed");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get failed");
             exit(1);
         }
     }
@@ -595,8 +589,7 @@ notify_cb(elvin_handle_t handle,
                                 &found, &type, &value,
                                 error))
     {
-        fprintf(stderr, "elvin_notification_get(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get failed\n");
         exit(1);
     }
 
@@ -614,8 +607,7 @@ notify_cb(elvin_handle_t handle,
                                            F2_MIME_TYPE,
                                            NULL, &mime_type,
                                            error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed");
             exit(1);
         }
 
@@ -630,7 +622,7 @@ notify_cb(elvin_handle_t handle,
                     F2_MIME_ARGS,
                     &found, &type, &value,
                     error)) {
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "elvin_notification_get failed");
                 exit(1);
             }
 
@@ -671,8 +663,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the `Replaces' field from the notification */
     if (!elvin_notification_get_string(notification, F3_REPLACEMENT_ID,
                                        &found, &tag, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -680,8 +671,7 @@ notify_cb(elvin_handle_t handle,
     if (!found) {
         if (!elvin_notification_get_string(notification, F2_REPLACEMENT, NULL,
                                            &tag, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed\n");
             exit(1);
         }
     }
@@ -689,24 +679,21 @@ notify_cb(elvin_handle_t handle,
     /* Get the `Message-Id' from the notification */
     if (!elvin_notification_get_string(notification, F3_MESSAGE_ID, NULL,
                                        &message_id, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
     /* Get the `In-Reply-To' field from the notification */
     if (!elvin_notification_get_string(notification, F3_IN_REPLY_TO, NULL,
                                        &reply_id, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
     /* Get the `Thread-Id' field from the notification */
     if (!elvin_notification_get_string(notification, F3_THREAD_ID, NULL,
                                        &thread_id, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -757,16 +744,14 @@ send_message(group_sub_t self, message_t message)
     /* Allocate a new notification */
     notification = ELVIN_NOTIFICATION_ALLOC(client, self->error);
     if (notification == NULL) {
-        fprintf(stderr, PACKAGE ": elvin_notification_alloc(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_alloc failed\n");
         exit(1);
     }
 
     /* Add the xtickertape version number */
     if (elvin_notification_add_int32(notification, F3_VERSION, 3001,
                                      self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_int32(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_int32 failed\n");
         exit(1);
     }
 
@@ -774,8 +759,7 @@ send_message(group_sub_t self, message_t message)
     if (elvin_notification_add_string(notification, F3_USER_AGENT,
                                       PACKAGE "-" VERSION,
                                       self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_string(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_string failed\n");
         exit(1);
     }
 
@@ -785,8 +769,7 @@ send_message(group_sub_t self, message_t message)
                                       self->error) == 0 ||
         elvin_notification_add_string(notification, F2_TICKERTAPE,
                                       self->name, self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_string(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_string failed\n");
         exit(1);
     }
 
@@ -798,8 +781,7 @@ send_message(group_sub_t self, message_t message)
         elvin_notification_add_string(notification, F2_USER,
                                       message_get_user(message),
                                       self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_string(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_string failed\n");
         exit(1);
     }
 
@@ -811,8 +793,7 @@ send_message(group_sub_t self, message_t message)
         elvin_notification_add_string(notification, F2_TICKERTEXT,
                                       message_get_string(message),
                                       self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_string(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_string failed\n");
         exit(1);
     }
 
@@ -823,8 +804,7 @@ send_message(group_sub_t self, message_t message)
                                      self->error) == 0 ||
         elvin_notification_add_int32(notification, F2_TIMEOUT,
                                      timeout / 60, self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_int32(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_int32 failed\n");
         exit(1);
     }
 
@@ -833,8 +813,7 @@ send_message(group_sub_t self, message_t message)
         if (elvin_notification_add_opaque(notification, F3_ATTACHMENT,
                                           attachment, length,
                                           self->error) == 0) {
-            fprintf(stderr, "elvin_notification_add_opaque(): failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_notification_add_opaque failed\n");
             exit(1);
         }
     }
@@ -842,8 +821,7 @@ send_message(group_sub_t self, message_t message)
     if (mime_args != NULL) {
         if (elvin_notification_add_string(notification, F2_MIME_ARGS,
                                           mime_args, self->error) == 0) {
-            fprintf(stderr, "elvin_notification_add_string(): failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_notification_add_string failed\n");
             exit(1);
         }
 
@@ -853,8 +831,7 @@ send_message(group_sub_t self, message_t message)
     if (mime_type != NULL) {
         if (elvin_notification_add_string(notification, F2_MIME_TYPE,
                                           mime_type, self->error) == 0) {
-            fprintf(stderr, "elvin_notification_add_string(): failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_notification_add_string failed\n");
             exit(1);
         }
 
@@ -864,8 +841,7 @@ send_message(group_sub_t self, message_t message)
     /* Add the Message-ID field */
     if (elvin_notification_add_string(notification, F3_MESSAGE_ID, message_id,
                                       self->error) == 0) {
-        fprintf(stderr, "elvin_notification_add_string(): failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_notification_add_string failed\n");
         exit(1);
     }
 
@@ -874,8 +850,7 @@ send_message(group_sub_t self, message_t message)
     if (reply_id != NULL) {
         if (elvin_notification_add_string(notification, F3_IN_REPLY_TO,
                                           reply_id, self->error) == 0) {
-            fprintf(stderr, "elvin_notification_add_string(): failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_notification_add_string failed\n");
             exit(1);
         }
     }
@@ -884,8 +859,7 @@ send_message(group_sub_t self, message_t message)
     if (thread_id != NULL) {
         if (elvin_notification_add_string(notification, F3_THREAD_ID,
                                           thread_id, self->error) == 0) {
-            fprintf(stderr, "elvin_notification_add_string(): failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_notification_add_string failed\n");
             exit(1);
         }
     }
@@ -896,8 +870,7 @@ send_message(group_sub_t self, message_t message)
 
     if (!elvin_async_notify(self->handle, notification,
                             self->key_count == 0, keys, self->error)) {
-        fprintf(stderr, "elvin_async_notify failed\n");
-        elvin_error_fprintf(stderr, self->error);
+        eeprintf(self->error, "elvin_async_notify failed\n");
         elvin_error_clear(self->error);
     }
 
@@ -909,8 +882,7 @@ send_message(group_sub_t self, message_t message)
 
     if (keys) {
         if (!elvin_keys_free(keys, self->error)) {
-            fprintf(stderr, "elvin_keys_free failed\n");
-            elvin_error_fprintf(stderr, self->error);
+            eeprintf(self->error, "elvin_keys_free failed\n");
             abort();
         }
     }
@@ -1146,8 +1118,9 @@ group_sub_update_from_sub(group_sub_t self,
                                              self->subscription, expression,
                                              keys_to_add, keys_to_remove,
                                              &accept_insecure,
-                                             NULL, NULL, NULL, NULL, NULL)) {
-            fprintf(stderr, "elvin_async_modify_subscription failed\n");
+                                             NULL, NULL, NULL, NULL,
+                                             self->error)) {
+            eeprintf(self->error, "elvin_async_modify_subscription failed\n");
             abort();
         }
     }
@@ -1216,7 +1189,7 @@ group_sub_set_connection(group_sub_t self,
                                             self->subscription,
                                             unsubscribe_cb, self,
                                             error) == 0) {
-            fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+            eeprintf(error, "elvin_delete_subscription failed\n");
             exit(1);
         }
 
@@ -1238,14 +1211,12 @@ group_sub_set_connection(group_sub_t self,
                                           notify_cb, self,
                                           subscribe_cb, self,
                                           error)) {
-            fprintf(stderr, "elvin_async_add_subscription() failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_async_add_subscription failed\n");
         }
 
         if (keys) {
             if (!elvin_keys_free(keys, error)) {
-                fprintf(stderr, "elvin_keys_free failed\n");
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "elvin_keys_free failed\n");
                 exit(1);
             }
         }

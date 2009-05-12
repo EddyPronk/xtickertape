@@ -52,9 +52,13 @@
 #ifdef HAVE_ERRNO_H
 # include <errno.h> /* errno */
 #endif
+#ifdef HAVE_ASSERT_H
+# include <assert.h> /* assert */
+#endif
 #include <elvin/elvin.h>
 #include "replace.h"
 #include "key_table.h"
+#include "globals.h"
 #include "utils.h"
 
 #define TABLE_MIN_SIZE 8
@@ -199,8 +203,7 @@ key_entry_add_to_keys(key_entry_t self,
                             ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
                             self->data, self->data_length, NULL,
                             error)) {
-            fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
-                    self->name);
+            eeprintf(error, "elvin_keys_add failed for key %s\n", self->name);
             abort();
         }
     }
@@ -212,9 +215,7 @@ key_entry_add_to_keys(key_entry_t self,
                         ELVIN_KEY_SHA1_DUAL_PRODUCER_INDEX,
                         self->hash, self->hash_length, NULL,
                         error)) {
-        fprintf(stderr,
-                PACKAGE ": elvin_keys_add failed for key %s\n",
-                self->name);
+        eeprintf(error, "elvin_keys_add failed for key %s\n", self->name);
         abort();
     }
 
@@ -228,9 +229,7 @@ key_entry_add_to_keys(key_entry_t self,
                         ELVIN_KEY_SHA1_PRODUCER_INDEX,
                         self->hash, self->hash_length, NULL,
                         error)) {
-        fprintf(stderr,
-                PACKAGE ": elvin_keys_add failed for key %s\n",
-                self->name);
+        eeprintf(error, "elvin_keys_add failed for key %s\n", self->name);
         abort();
     }
 }
@@ -254,8 +253,7 @@ key_entry_promote(key_entry_t self,
                         ELVIN_KEY_SHA1_DUAL_CONSUMER_INDEX,
                         self->data, self->data_length, NULL,
                         error)) {
-        fprintf(stderr, PACKAGE ": elvin_keys_add failed for key %s\n",
-                self->name);
+        eeprintf(error, "elvin_keys_add failed for key %s\n", self->name);
         abort();
     }
 }

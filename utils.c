@@ -162,6 +162,25 @@ vxdprintf(int level, const char *format, va_list args)
 }
 #endif /* DEBUG */
 
+void
+eeprintf(elvin_error_t error, const char *format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    veeprintf(error, format, args);
+    va_end(args);
+}
+
+void
+veeprintf(elvin_error_t error, const char *format, va_list args)
+{
+    fprintf(stderr, "%s: error: ", progname);
+    vfprintf(stderr, format, args);
+    elvin_error_fprintf(stderr, error);
+}
+
+
 const char *
 xbasename(const char *path)
 {

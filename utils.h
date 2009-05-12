@@ -47,6 +47,7 @@
 
 #include <stdarg.h>
 #include <X11/Intrinsic.h>
+#include <elvin/elvin.h>
 #include "message.h"
 
 /* Useful macros */
@@ -92,6 +93,14 @@ vxdprintf(int level, const char *format, va_list args);
 # define DPRINTF(x) do {} while (0)
 # define VDPRINTF(x) do {} while (0)
 #endif /* DEBUG */
+
+/* Print an error message with accompanying elvin error. */
+void
+eeprintf(elvin_error_t error, const char *format, ...);
+
+/* Print an error message with accompanying elvin error. */
+void
+veeprintf(elvin_error_t error, const char *format, va_list args);
 
 /* Simple version of basename without all of the baggage of the original. */
 const char *

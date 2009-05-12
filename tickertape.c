@@ -92,6 +92,7 @@
 #include "usenet_parser.h"
 #include "usenet_sub.h"
 #include "mail_sub.h"
+#include "utils.h"
 
 #define DEFAULT_TICKERDIR ".ticker"
 #define DEFAULT_CONFIG_FILE "xtickertape.conf"
@@ -893,8 +894,7 @@ connect_cb(elvin_handle_t handle, int result, void *rock, elvin_error_t error)
 
     /* Check for a failure to connect */
     if (result == 0) {
-        fprintf(stderr, "%s: unable to connect\n", PACKAGE);
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "unable to connect\n");
         exit(1);
     }
 
@@ -938,8 +938,7 @@ status_cb(elvin_handle_t handle,
     switch (event) {
     case ELVIN_STATUS_CONNECTION_FAILED:
         /* We were unable to (re)connect */
-        fprintf(stderr, PACKAGE ": unable to connect\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "unable to connect\n");
         exit(1);
 
     case ELVIN_STATUS_CONNECTION_FOUND:
@@ -1011,13 +1010,11 @@ status_cb(elvin_handle_t handle,
         break;
 
     case ELVIN_STATUS_IGNORED_ERROR:
-        fprintf(stderr, "%s: status ignored\n", PACKAGE);
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "status ignored\n");
         exit(1);
 
     case ELVIN_STATUS_CLIENT_ERROR:
-        fprintf(stderr, "%s: client error\n", PACKAGE);
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "client error\n");
         exit(1);
 
     default:
@@ -1063,8 +1060,8 @@ status_cb(elvin_handle_t handle,
     switch (event->type) {
     case ELVIN_STATUS_CONNECTION_FAILED:
         /* We were unable to (re)connect */
-        fprintf(stderr, PACKAGE ": unable to connect\n");
-        elvin_error_fprintf(stderr, event->details.connection_failed.error);
+        eeprintf(event->details.connection_failed.error,
+                 "unable to connect\n");
         exit(1);
 
     case ELVIN_STATUS_CONNECTION_FOUND:
@@ -1072,8 +1069,7 @@ status_cb(elvin_handle_t handle,
         url = elvin_url_get_canonical(event->details.connection_found.url,
                                       error);
         if (url == NULL) {
-            fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_url_get_canonical failed\n");
             exit(1);
         }
 
@@ -1097,8 +1093,7 @@ status_cb(elvin_handle_t handle,
         url = elvin_url_get_canonical(event->details.connection_lost.url,
                                       error);
         if (url == NULL) {
-            fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_url_get_canonical failed\n");
             exit(1);
         }
 
@@ -1168,8 +1163,7 @@ status_cb(elvin_handle_t handle,
         url = elvin_url_get_canonical(event->details.protocol_error.url,
                                       error);
         if (url == NULL) {
-            fprintf(stderr, PACKAGE ": elvin_url_get_canonical() failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_url_get_canonical failed\n");
             exit(1);
         }
 
@@ -1193,13 +1187,11 @@ status_cb(elvin_handle_t handle,
         break;
 
     case ELVIN_STATUS_IGNORED_ERROR:
-        fprintf(stderr, "%s: status ignored\n", PACKAGE);
-        elvin_error_fprintf(stderr, event->details.ignored_error.error);
+        eeprintf(event->details.ignored_error.error, "status ignored\n");
         exit(1);
 
     case ELVIN_STATUS_CLIENT_ERROR:
-        fprintf(stderr, "%s: client error\n", PACKAGE);
-        elvin_error_fprintf(stderr, event->details.client_error.error);
+        eeprintf(event->details.client_error.error, "client error\n");
         exit(1);
 
     default:
@@ -1305,15 +1297,13 @@ tickertape_alloc(XTickertapeRec *resources,
 
     /* Set the handle's status callback */
     if (!elvin_handle_set_status_cb(handle, status_cb, self, self->error)) {
-        fprintf(stderr, PACKAGE ": elvin_handle_set_status_cb(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_handle_set_status_cb failed\n");
         exit(1);
     }
 
     /* Connect to the elvin server */
     if (elvin_async_connect(handle, connect_cb, self, self->error) == 0) {
-        fprintf(stderr, PACKAGE ": elvin_async_connect(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_async_connect failed\n");
         exit(1);
     }
 

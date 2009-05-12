@@ -54,6 +54,7 @@
 #include "message.h"
 #include "mbox_parser.h"
 #include "mail_sub.h"
+#include "utils.h"
 
 #define MAIL_SUB "require(elvinmail) && user == \"%s\""
 #define FOLDER_FMT "+%s"
@@ -196,8 +197,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the name from the `From' field */
     if (!elvin_notification_get_string(notification, F_FROM, &found, &value,
                                        error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -216,8 +216,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the folder field */
     if (!elvin_notification_get_string(notification, F_FOLDER, NULL, &value,
                                        error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -235,8 +234,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the subject field */
     if (!elvin_notification_get_string(notification, F_SUBJECT, &found,
                                        &value, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -348,7 +346,7 @@ mail_sub_set_connection(mail_sub_t self,
                 self->handle, self->subscription,
                 NULL, NULL,
                 error) == 0) {
-            fprintf(stderr, "elvin_async_delete_subscription(): failed\n");
+            eeprintf(error, "elvin_async_delete_subscription failed\n");
             exit(1);
         }
     }
@@ -373,7 +371,7 @@ mail_sub_set_connection(mail_sub_t self,
                                          notify_cb, self,
                                          subscribe_cb, self,
                                          error) == 0) {
-            fprintf(stderr, "elvin_xt_add_subscription(): failed\n");
+            eeprintf(error, "elvin_xt_add_subscription failed\n");
             exit(1);
         }
 

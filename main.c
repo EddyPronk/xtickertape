@@ -393,9 +393,7 @@ parse_args(int argc,
         case 'e':
             /* --elvin= or -e */
             if (elvin_handle_append_url(handle, optarg, error) == 0) {
-                fprintf(stderr, PACKAGE ":bad URL: no doughnut \"%s\"\n",
-                        optarg);
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "invalid URL: %s\n", optarg);
                 exit(1);
             }
 
@@ -404,9 +402,7 @@ parse_args(int argc,
         case 'S':
             /* --scope= or -S */
             if (!elvin_handle_set_discovery_scope(handle, optarg, error)) {
-                fprintf(stderr, PACKAGE ": unable to set scope to %s\n",
-                        optarg);
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "unable to set scope to %s\n", optarg);
                 exit(1);
             }
 
@@ -420,9 +416,7 @@ parse_args(int argc,
         case 'I':
             /* --idle= or -I */
             if (!elvin_handle_set_idle_period(handle, atoi(optarg), error)) {
-                fprintf(stderr, PACKAGE ": unable to set idle period to %s\n",
-                        optarg);
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "unable to set idle period to %s\n", optarg);
                 exit(1);
             }
 
@@ -694,16 +688,14 @@ main(int argc, char *argv[])
 
     /* Double-check that the initialization worked */
     if (elvin_error_is_error(error)) {
-        fprintf(stderr, "*** elvin_xt_init(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_xt_init failed\n");
         exit(1);
     }
 
     /* Create a new elvin connection handle */
     handle = elvin_handle_alloc(error);
     if (handle == NULL) {
-        fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_handle_alloc failed\n");
         exit(1);
     }
 
@@ -718,16 +710,14 @@ main(int argc, char *argv[])
     /* Initialize the elvin client library */
     client = elvin_xt_init_default(context, error);
     if (client == NULL) {
-        fprintf(stderr, PACKAGE ": elvin_xt_init() failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_xt_init failed\n", progname);
         exit(1);
     }
 
     /* Create a new elvin connection handle */
     handle = elvin_handle_alloc(client, error);
     if (handle == NULL) {
-        fprintf(stderr, PACKAGE ": elvin_handle_alloc() failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_handle_alloc failed\n");
         exit(1);
     }
 #else /* ELVIN_VERSION_AT_LEAST */

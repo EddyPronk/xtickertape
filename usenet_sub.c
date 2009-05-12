@@ -324,8 +324,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the newsgroups to which the message was posted */
     if (!elvin_notification_get_string(notification, NEWSGROUPS, &found,
                                        &string, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -344,8 +343,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the name from the FROM_NAME field (if provided) */
     if (!elvin_notification_get_string(notification, FROM_NAME, &found, &name,
                                        error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -353,8 +351,7 @@ notify_cb(elvin_handle_t handle,
         /* No FROM_NAME field, so try FROM_EMAIL */
         if (!elvin_notification_get_string(notification, FROM_EMAIL, &found,
                                            &name, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed\n");
             exit(1);
         }
 
@@ -362,8 +359,7 @@ notify_cb(elvin_handle_t handle,
             /* No FROM_EMAIL, so try FROM */
             if (!elvin_notification_get_string(notification, FROM, &found,
                                                &name, error)) {
-                fprintf(stderr, "elvin_notification_get_string(): failed\n");
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "elvin_notification_get_string failed\n");
                 exit(1);
             }
 
@@ -377,8 +373,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the SUBJECT field (if provided) */
     if (!elvin_notification_get_string(notification, SUBJECT, &found,
                                        &subject, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -388,8 +383,7 @@ notify_cb(elvin_handle_t handle,
     /* Get the MIME_ARGS field (if provided) */
     if (!elvin_notification_get_string(notification, MIME_ARGS, &found,
                                        &mime_args, error)) {
-        fprintf(stderr, "elvin_notification_get_string(): failed\n");
-        elvin_error_fprintf(stderr, error);
+        eeprintf(error, "elvin_notification_get_string failed\n");
         exit(1);
     }
 
@@ -398,8 +392,7 @@ notify_cb(elvin_handle_t handle,
         /* Get the MIME_TYPE field (if provided) */
         if (!elvin_notification_get_string(notification, MIME_TYPE, &found,
                                            &mime_type, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed\n");
             exit(1);
         }
 
@@ -411,8 +404,7 @@ notify_cb(elvin_handle_t handle,
         /* No MIME_ARGS.  Look for a message-id */
         if (!elvin_notification_get_string(notification, MESSAGE_ID, &found,
                                            &message_id, error)) {
-            fprintf(stderr, "elvin_notification_get_string(): failed\n");
-            elvin_error_fprintf(stderr, error);
+            eeprintf(error, "elvin_notification_get_string failed\n");
             exit(1);
         }
 
@@ -425,8 +417,7 @@ notify_cb(elvin_handle_t handle,
                     X_NNTP_HOST,
                     &found, &news_host,
                     error)) {
-                fprintf(stderr, "elvin_notification_get_string(): failed\n");
-                elvin_error_fprintf(stderr, error);
+                eeprintf(error, "elvin_notification_get_string failed\n");
                 exit(1);
             }
 
