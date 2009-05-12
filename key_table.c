@@ -241,10 +241,7 @@ key_entry_promote(key_entry_t self,
                   elvin_error_t error)
 {
     /* Sanity check */
-    if (!self->is_private) {
-        fprintf(stderr, PACKAGE ": internal error\n");
-        abort();
-    }
+    ASSERT(self->is_private);
 
     if (!ELVIN_KEYS_ADD(keys,
                         ELVIN_KEY_SCHEME_SHA1_DUAL,
@@ -494,7 +491,7 @@ get_sorted_entries(key_table_t self,
     /* Allocate memory for the entries */
     entries = malloc(key_count * sizeof(key_entry_t));
     if (entries == NULL) {
-        fprintf(stderr, PACKAGE ": malloc failed: %s\n", strerror(errno));
+        perror("malloc failed");
         exit(1);
     }
 
@@ -503,8 +500,8 @@ get_sorted_entries(key_table_t self,
         entry = key_table_search(self, key_names[i]);
         if (entry == NULL) {
             if (do_warn) {
-                fprintf(stderr, PACKAGE ": warning: unknown key: \"%s\"\n",
-                        key_names[i]);
+                fprintf(stderr, "%s: warning: unknown key: \"%s\"\n",
+                        progname, key_names[i]);
             }
             entries[i] = NULL;
         } else {
@@ -529,8 +526,8 @@ get_sorted_entries(key_table_t self,
                    entries[i]->hash_length) == 0) {
             if (do_warn) {
                 fprintf(stderr,
-                    PACKAGE ": warning: duplicate keys: \"%s\" and \"%s\"\n",
-                    last->name, entries[i]->name);
+                        "%s: warning: duplicate keys: \"%s\" and \"%s\"\n",
+                        progname, last->name, entries[i]->name);
             }
 
             /* Keep the private key over a public one */
