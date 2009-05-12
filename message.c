@@ -432,7 +432,8 @@ message_alloc(const char *info,
     /* Check our addition again. */
     ASSERT(point <= self->data + len);
 
-    DPRINTF((1, "allocated message_t %p (%ld)\n", self, ++message_count));
+    DPRINTF((1, "allocated %zu bytes for message_t %p (%ld)\n",
+             sizeof(struct message) + len - 1, self, ++message_count));
     MESSAGE_DEBUG(1, self);
 
     /* Allocate a reference to the caller. */
