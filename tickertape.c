@@ -85,6 +85,7 @@
 #include "keys.h"
 #include "key_table.h"
 #include "keys_parser.h"
+#include "globals.h"
 #include "groups.h"
 #include "groups_parser.h"
 #include "group_sub.h"
@@ -798,7 +799,8 @@ tickertape_reload_keys(tickertape_t self)
 
     /* Try to read in the new one */
     if (parse_keys_file(self) < 0) {
-        fprintf(stderr, PACKAGE ": errors in keys file; not reloading\n");
+        fprintf(stderr, "%s: warning: errors in keys file; not reloading\n",
+                progname);
         key_table_free(self->keys);
         self->keys = old_keys;
         return;
@@ -828,7 +830,8 @@ tickertape_reload_all(tickertape_t self)
 
     /* Try to read in the new ones */
     if (parse_keys_file(self) < 0) {
-        fprintf(stderr, PACKAGE ": errors in keys file; not reloading\n");
+        fprintf(stderr, "%s: warning: errors in keys file; not reloading\n",
+                progname);
         if (self->keys != NULL) {
             key_table_free(self->keys);
         }

@@ -579,7 +579,7 @@ count_leaks(int signum)
     /* Get valgrind's current leak counts. */
     VALGRIND_COUNT_LEAKS(leaked, dubious, reachable, suppressed);
     fprintf(stderr, "%s: valgrind: leaked=%lu, dubious=%lu, reachable=%lu, "
-            "suppressed=%lu\n", PACKAGE, leaked, dubious, reachable,
+            "suppressed=%lu\n", progname, leaked, dubious, reachable,
             suppressed);
 }
 #endif /* USE_VALGRIND */
@@ -598,7 +598,7 @@ app_defaults_version_error(const char *message)
             "XFILESEARCHPATH environment\n"
             "variable to something like /usr/local/lib/X11/%%T/%%N:%%D.  "
             "See the man page for\n"
-            "XtResolvePathname for more information.\n", PACKAGE, message);
+            "XtResolvePathname for more information.\n", progname, message);
 }
 
 /* Parse args and go */
@@ -703,7 +703,7 @@ main(int argc, char *argv[])
     /* Allocate an error context */
     error = elvin_error_alloc(NULL, NULL);
     if (error == NULL) {
-        fprintf(stderr, PACKAGE ": elvin_error_alloc() failed\n");
+        fprintf(stderr, "%s: error: elvin_error_alloc failed\n", progname);
         exit(1);
     }
 
@@ -749,7 +749,7 @@ main(int argc, char *argv[])
     /* Intern the atoms. */
     if (!XInternAtoms(XtDisplay(top), (char **)names, AN_MAX + 1,
                       False, atoms)) {
-        fprintf(stderr, PACKAGE ": XInternAtoms failed\n");
+        fprintf(stderr, "%s: error: XInternAtoms failed\n", progname);
         exit(1);
     }
 

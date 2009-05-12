@@ -51,6 +51,7 @@
 #include <elvin/elvin.h>
 #include <elvin/xt_mainloop.h>
 #include "replace.h"
+#include "globals.h"
 #include "usenet_sub.h"
 
 /* Some notification field names */
@@ -522,7 +523,8 @@ alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
 
     default:
         /* Should never get here */
-        fprintf(stderr, PACKAGE ": internal error\n");
+        fprintf(stderr, "%s: internal error: field not handled: %u\n",
+                progname, expression->field);
         return NULL;
     }
 
@@ -589,7 +591,8 @@ alloc_expr(usenet_sub_t self, struct usenet_expr *expression)
         break;
 
     default:
-        fprintf(stderr, PACKAGE ": internal error\n");
+        fprintf(stderr, "%s: internal error: operator %d not handled\n",
+                progname, expression->operator);
         return NULL;
     }
 
@@ -759,7 +762,7 @@ usenet_sub_add(usenet_sub_t self,
 
     /* If we're connected then resubscribe */
     if (self->handle != NULL) {
-        fprintf(stderr, PACKAGE ": hmmm\n");
+        fprintf(stderr, "%s: hmmm\n", progname);
         abort();
     }
 
