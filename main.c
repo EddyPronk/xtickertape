@@ -619,7 +619,6 @@ main(int argc, char *argv[])
     XTickertapeRec rc;
     elvin_handle_t handle;
     elvin_error_t error;
-    const char *point;
     const char *user;
     const char *domain;
     const char *ticker_dir;
@@ -633,8 +632,7 @@ main(int argc, char *argv[])
     int i;
 
     /* Determine the name of the executable. */
-    point = strrchr(argv[0], '/');
-    progname = (point == NULL) ? argv[0] : point + 1;
+    progname = xbasename(argv[0]);
 
 #ifdef HAVE_XTVAOPENAPPLICATION
     /* Create the toplevel widget */

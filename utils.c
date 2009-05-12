@@ -162,6 +162,15 @@ vxdprintf(int level, const char *format, va_list args)
 }
 #endif /* DEBUG */
 
+const char *
+xbasename(const char *path)
+{
+    const char *point;
+
+    point = strrchr(path, '/');
+    return (point == NULL) ? path : point + 1;
+}
+
 static int
 do_convert(Widget widget, XmConvertCallbackStruct *data,
            message_t message, message_part_t part,

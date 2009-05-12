@@ -93,4 +93,8 @@ vxdprintf(int level, const char *format, va_list args);
 # define VDPRINTF(x) do {} while (0)
 #endif /* DEBUG */
 
+/* Simple version of basename without all of the baggage of the original. */
+const char *
+xbasename(const char *path);
+
 #endif /* UTILS_H */

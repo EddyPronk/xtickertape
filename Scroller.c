@@ -293,7 +293,7 @@ glyph_alloc_ref(glyph_t self, glyph_ref_type_t type,
     self->refs = ref;
 
     DPRINTF((1, "%s:%d: acquired %s reference to glyph %p with rock=%p\n",
-             file, line, ref_type_names[type], self, rock));
+             xbasename(file), line, ref_type_names[type], self, rock));
 }
 
 static void
@@ -309,8 +309,8 @@ glyph_free_ref(glyph_t self, glyph_ref_type_t type,
         if (ref->type == type && ref->rock == rock) {
             DPRINTF((1, "%s:%d: freeing %s reference to glyph %p acquired "
                      "at %s:%d with reference rock=%p\n",
-                     file, line, ref_type_names[type], self,
-                     ref->file, ref->line, rock));
+                     xbasename(file), line, ref_type_names[type], self,
+                     xbasename(ref->file), ref->line, rock));
 
             /* Update the previous link to point to the next one. */
             if (prev == NULL) {
