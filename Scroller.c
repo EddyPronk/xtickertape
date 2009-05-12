@@ -676,12 +676,17 @@ queue_replace(glyph_t old_glyph, glyph_t new_glyph)
     old_glyph->next->previous = new_glyph;
     old_glyph->next = NULL;
 
-    /* The old glyph retains a replacement reference to the new glyph. */
-    GLYPH_ALLOC_REF(new_glyph, REF_REPLACE, old_glyph);
-    old_glyph->successor = new_glyph;
+    /* If the old glyph is visible then we won't substitute the new
+     * glyph for it right away.  Add a successor link from the old
+     * glyph to the new so that we can still find the old glyph's next
+     * and previous glyphs. */
+    if (old_glyph->visible_count != 0) {
+        old_glyph->successor = new_glyph;
+        GLYPH_ALLOC_REF(new_glyph, REF_REPLACE, old_glyph);
+    }
 
     /* The queue now has a reference to the new glyph and no longer
-     * has one to the old. */
+     * has one to the old one. */
     GLYPH_ALLOC_REF(new_glyph, REF_QUEUE, NULL);
     GLYPH_FREE_REF(old_glyph, REF_QUEUE, NULL);
 }
