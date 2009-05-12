@@ -280,7 +280,7 @@ mail_sub_alloc(const char *user, mail_sub_callback_t callback, void *rock)
     /* Allocate memory for the receiver */
     self = malloc(sizeof(struct mail_sub));
     if (self == NULL) {
-        fprintf(stderr, PACKAGE ": out of memory\n");
+        perror("malloc failed");
         exit(1);
     }
 

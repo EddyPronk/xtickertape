@@ -949,7 +949,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -965,7 +965,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -981,7 +981,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(CONN_CLOSED_MSG) + 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1001,7 +1001,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1080,7 +1080,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(CONNECT_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1104,7 +1104,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(LOST_CONNECT_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1120,7 +1120,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(CONN_CLOSED_MSG) + 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1133,7 +1133,7 @@ status_cb(elvin_handle_t handle,
         /* Get a big buffer */
         buffer = malloc(BUFFER_SIZE);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 
@@ -1174,7 +1174,7 @@ status_cb(elvin_handle_t handle,
         length = strlen(PROTOCOL_ERROR_MSG) + strlen(url) - 1;
         buffer = malloc(length);
         if (buffer == NULL) {
-            perror(PACKAGE ": malloc() failed");
+            perror("malloc failed");
             exit(1);
         }
 

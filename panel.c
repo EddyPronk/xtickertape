@@ -1972,7 +1972,7 @@ control_panel_add_subscription(control_panel_t self,
     /* Create a tuple to hold callback information */
     tuple = malloc(sizeof(struct menu_item_tuple));
     if (tuple == NULL) {
-        fprintf(stderr, PACKAGE ": out of memory\n");
+        perror("malloc failed");
         exit(1);
     }
 
