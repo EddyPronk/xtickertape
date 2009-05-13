@@ -53,6 +53,7 @@
 #include "replace.h"
 #include "globals.h"
 #include "usenet_sub.h"
+#include "utils.h"
 
 /* Some notification field names */
 #define BODY "BODY"
