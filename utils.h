@@ -59,6 +59,10 @@
 # define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
+#if !defined(HAVE___ATTRIBUTE____FORMAT__)
+# define __attribute__(x)
+#endif /* !HAVE___ATTRIBUTE____FORMAT__ */
+
 /* Transform a time_t into a broken-down time in the local time zone,
  * like localtime.  Also compute the determine the number of seconds
  * east of (before) UTC that time zone is/was/will be at that time. */
@@ -84,7 +88,8 @@ extern int verbosity;
 
 /* Print debug messages */
 void
-xdprintf(int level, const char *format, ...);
+xdprintf(int level, const char *format, ...)
+    __attribute__ ((__format__ (__printf__, 2, 3)));
 
 /* Print debug messages */
 void
@@ -96,7 +101,8 @@ vxdprintf(int level, const char *format, va_list args);
 
 /* Print an error message with accompanying elvin error. */
 void
-eeprintf(elvin_error_t error, const char *format, ...);
+eeprintf(elvin_error_t error, const char *format, ...)
+    __attribute__ ((__format__ (__printf__, 2, 3)));
 
 /* Print an error message with accompanying elvin error. */
 void

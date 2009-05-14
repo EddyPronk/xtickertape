@@ -188,6 +188,14 @@ dnl =============================
 unset ac_cv_func_gethostbyname
 AC_CHECK_FUNCS([dup2 gethostbyname getopt_long memset mkdir snprintf strcasecmp strchr strdup strerror strrchr uname XtVaOpenApplication])
 
+AH_TEMPLATE([HAVE___ATTRIBUTE____FORMAT__],
+    [Define if compiler the printf format attribute])
+AC_MSG_CHECKING([if the compiler understands the format attribute])
+AC_COMPILE_IFELSE([
+void xdprintf(int, const char *, ...)
+    __attribute__ ((__format__ (__printf__, 2, 3)));],
+    [have_format=yes
+     AC_DEFINE(HAVE___ATTRIBUTE____FORMAT__)], [have_format=no])
 
 dnl Checks for misc features
 dnl ========================
