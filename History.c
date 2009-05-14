@@ -2175,7 +2175,7 @@ copy_selection(Widget widget, XEvent* event, char **params,
 
     /* Bail if the relevant part of the message doesn't exist. */
     if (message_part_size(message, part) == 0) {
-        DPRINTF((1, "Message has no %\n", message_part_to_string(part)));
+        DPRINTF((1, "Message has no %s\n", message_part_to_string(part)));
     }
 
     /* Record the selected message and part. */

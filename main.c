@@ -710,7 +710,7 @@ main(int argc, char *argv[])
     /* Initialize the elvin client library */
     client = elvin_xt_init_default(context, error);
     if (client == NULL) {
-        eeprintf(error, "elvin_xt_init failed\n", progname);
+        eeprintf(error, "elvin_xt_init failed\n");
         exit(1);
     }
 
