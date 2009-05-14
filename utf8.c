@@ -178,8 +178,8 @@ do_iconv_open(const char *tocode, const char *fromcode)
     }
 
     /* Give up */
-    fprintf(stderr, "Unable to convert from %s to %s: %s\n",
-            fromcode, tocode, strerror(errno));
+    fprintf(stderr, "%s: warning: unable to convert from %s to %s: %s\n",
+            progname, fromcode, tocode, strerror(errno));
     return (iconv_t)-1;
 }
 #else /* !HAVE_ICONV */
