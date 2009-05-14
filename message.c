@@ -772,6 +772,7 @@ write_message(message_t self, char *buffer, size_t buflen)
     write_string_field("Message-Id", self->id, &out);
     write_string_field("In-Reply-To", self->reply_id, &out);
     write_string_field("Thread-Id", self->thread_id, &out);
+    write_string_field("Replacement-Id", self->tag, &out);
     write_opaque_field("Attachment", self->attachment, self->length, &out);
 
     ASSERT(out - buffer == buflen);
@@ -837,6 +838,7 @@ message_part_size(message_t self, message_part_t part)
             measure_string_field("Message-Id", self->id) +
             measure_string_field("In-Reply-To", self->reply_id) +
             measure_string_field("Thread-Id", self->thread_id) +
+            measure_string_field("Replacement-Id", self->tag) + 
             measure_opaque_field("Attachment", self->attachment, self->length);
     }
 
