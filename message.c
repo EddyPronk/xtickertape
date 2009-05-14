@@ -679,6 +679,48 @@ write_string_field(const char *name, const char *value, char **buffer)
     *buffer = out;
 }
 
+static size_t
+measure_opaque_field(const char *name, const char *value, size_t len)
+{
+    return (value == NULL) ? 0 : strlen(name) + 3 + 2 * len + 2;
+}
+
+static void
+write_opaque_field(const char *name, const char *value, size_t len,
+                   char **buffer)
+{
+    static const char *hexdigits = "0123456789abcdef";
+    char *out = *buffer;
+    const char *point;
+    unsigned char ch;
+    size_t namelen;
+
+    /* Skip this entry if it has no value. */
+    if (value == NULL) {
+        return;
+    }
+
+    /* Append the name, followed by a colon and a space. */
+    namelen = strlen(name);
+    memcpy(out, name, namelen);
+    out += namelen;
+    *out++ = ':';
+    *out++ = ' ';
+
+    /* Append the value as hexadecimal, enclosed in square brackets. */
+    *out++ = '[';
+    for (point = value; point < value + len; point++) {
+        ch = *(unsigned char *)point;
+        *out++ = hexdigits[((int)ch >> 4) & 0xf];
+        *out++ = hexdigits[((int)ch >> 0) & 0xf];
+    }
+    *out++ = ']';
+    *out++ = '\n';
+
+    /* Update the pointer. */
+    *buffer = out;
+}
+
 /* Writes a timestamp string into buffer and returns a pointer to it.
  * The resulting timestamp should be exactly TIMESTAMP_LEN bytes, not
  * including the NUL-terminator. */
@@ -730,7 +772,7 @@ write_message(message_t self, char *buffer, size_t buflen)
     write_string_field("Message-Id", self->id, &out);
     write_string_field("In-Reply-To", self->reply_id, &out);
     write_string_field("Thread-Id", self->thread_id, &out);
-    write_string_field("Attachment", self->attachment, &out);
+    write_opaque_field("Attachment", self->attachment, self->length, &out);
 
     ASSERT(out - buffer == buflen);
     return buffer;
@@ -795,7 +837,7 @@ message_part_size(message_t self, message_part_t part)
             measure_string_field("Message-Id", self->id) +
             measure_string_field("In-Reply-To", self->reply_id) +
             measure_string_field("Thread-Id", self->thread_id) +
-            measure_string_field("Attachment", self->attachment);
+            measure_opaque_field("Attachment", self->attachment, self->length);
     }
 
     return 0;
