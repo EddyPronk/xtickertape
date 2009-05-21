@@ -240,11 +240,13 @@ glyph_set_clock(glyph_t self, int level_count);
 #if defined(DEBUG_GLYPH)
 # define GLYPH_ALLOC_REF(glyph, type, rock)                     \
     acquire_explicit_ref(&glyph->refs, "glyph", glyph,          \
-                         __FILE__, __LINE__, type, rock)
+                         xbasename(__FILE__), __LINE__,         \
+                         type, rock)
 # define GLYPH_FREE_REF(glyph, type, rock)                      \
     do {                                                        \
         release_explicit_ref(&glyph->refs, "glyph", glyph,      \
-                             __FILE__, __LINE__, type, rock);   \
+                             xbasename(__FILE__), __LINE__,     \
+                             type, rock);                       \
         if (glyph->refs == NULL) {                              \
             glyph_free(glyph);                                  \
         }                                                       \
