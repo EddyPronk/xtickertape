@@ -62,6 +62,7 @@ xtickertape_SOURCES = \
 	key_table.h key_table.c \
 	mbox_parser.h mbox_parser.c mail_sub.h mail_sub.c \
 	mask.xbm red.xbm white.xbm \
+	ref.h ref.c \
 	replace.h replace.c \
 	utf8.h utf8.c \
 	utils.h utils.c \

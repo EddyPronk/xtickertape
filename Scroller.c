@@ -65,6 +65,7 @@
 #include "message.h"
 #include "message_view.h"
 #include "ScrollerP.h"
+#include "ref.h"
 
 /*
  * Resources
@@ -182,28 +183,6 @@ static const char *ref_gap = "gap";
 static const char *ref_queue = "queue";
 static const char *ref_holder = "holder";
 static const char *ref_replace = "replace";
-
-/* To help track memory leaks, we record the line number, reference
- * type and a pointer for each reference to a glyph in debug builds.
- * By inspecting this list, we should be able to determine why a glyph
- * hasn't been freed. */
-typedef struct glyph_ref *glyph_ref_t;
-struct glyph_ref {
-    /* The next reference in the list. */
-    glyph_ref_t next;
-
-    /* The type of reference. */
-    const char *type;
-
-    /* The name of the file where the reference was added. */
-    const char *file;
-
-    /* The line number where the reference was added. */
-    int line;
-
-    /* The pointer. */
-    void* rock;
-};
 #endif /* DEBUG */
 
 /* The structure of a glyph */
@@ -227,7 +206,7 @@ struct glyph {
 
 #if defined(DEBUG_GLYPH)
     /* The references to this glyph. */
-    glyph_ref_t refs;
+    explicit_ref_t refs;
 #else /* !DEBUG_GLYPH */
     /* The number of external references to this glyph */
     short ref_count;
@@ -259,72 +238,17 @@ static void
 glyph_set_clock(glyph_t self, int level_count);
 
 #if defined(DEBUG_GLYPH)
-# define GLYPH_ALLOC_REF(glyph, type, rock)     \
-    glyph_alloc_ref(glyph, type, __FILE__, __LINE__, rock)
-# define GLYPH_FREE_REF(glyph, type, rock)      \
-    glyph_free_ref(glyph, type, __FILE__, __LINE__, rock)
-
-static void
-glyph_alloc_ref(glyph_t self, const char *type, 
-                const char *file, int line, void* rock)
-{
-    glyph_ref_t ref;
-
-    /* Allocate memory to hold the reference. */
-    ref = malloc(sizeof(struct glyph_ref));
-    ASSERT(ref != NULL);
-
-    ref->type = type;
-    ref->file = file;
-    ref->line = line;
-    ref->rock = rock;
-
-    ref->next = self->refs;
-    self->refs = ref;
-
-    DPRINTF((1, "%s:%d: acquired %s reference to glyph %p with rock=%p\n",
-             xbasename(file), line, type, self, rock));
-}
-
-static void
-glyph_free_ref(glyph_t self, const char *type,
-               const char* file, int line, void* rock)
-{
-    glyph_ref_t ref;
-    glyph_ref_t prev;
-
-    /* Find and remove the reference. */
-    prev = NULL;
-    for (ref = self->refs; ref != NULL; ref = ref->next) {
-        if (ref->type == type && ref->rock == rock) {
-            DPRINTF((1, "%s:%d: freeing %s reference to glyph %p acquired "
-                     "at %s:%d with reference rock=%p\n",
-                     xbasename(file), line, type, self,
-                     xbasename(ref->file), ref->line, rock));
-
-            /* Update the previous link to point to the next one. */
-            if (prev == NULL) {
-                ASSERT(ref == self->refs);
-                self->refs = ref->next;
-            } else {
-                prev->next = ref->next;
-            }
-
-            free(ref);
-            break;
-        }
-
-        prev = ref;
-    }
-
-    /* If we don't find the reference the we have a bug. */
-    ASSERT(ref != NULL);
-
-    /* If there are no more references then discard the glyph. */
-    if (self->refs == NULL) {
-        glyph_free(self);
-    }
-}
+# define GLYPH_ALLOC_REF(glyph, type, rock)                     \
+    acquire_explicit_ref(&glyph->refs, "glyph", glyph,          \
+                         __FILE__, __LINE__, type, rock)
+# define GLYPH_FREE_REF(glyph, type, rock)                      \
+    do {                                                        \
+        release_explicit_ref(&glyph->refs, "glyph", glyph,      \
+                             __FILE__, __LINE__, type, rock);   \
+        if (glyph->refs == NULL) {                              \
+            glyph_free(glyph);                                  \
+        }                                                       \
+    } while (0)
 #else /* !DEBUG_GLYPH */
 # define GLYPH_ALLOC_REF(glyph, type, rock)     \
     glyph->ref_count++
