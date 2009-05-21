@@ -178,20 +178,10 @@ paint(ScrollerWidget self,
       unsigned int height);
 
 #if defined(DEBUG)
-typedef enum glyph_ref_type glyph_ref_type_t;
-enum glyph_ref_type {
-    REF_GAP,
-    REF_QUEUE,
-    REF_HOLDER,
-    REF_REPLACE
-};
-
-static const char *ref_type_names[] = {
-    "GAP",
-    "QUEUE",
-    "HOLDER",
-    "REPLACE"
-};
+static const char *ref_gap = "gap";
+static const char *ref_queue = "queue";
+static const char *ref_holder = "holder";
+static const char *ref_replace = "replace";
 
 /* To help track memory leaks, we record the line number, reference
  * type and a pointer for each reference to a glyph in debug builds.
@@ -203,7 +193,7 @@ struct glyph_ref {
     glyph_ref_t next;
 
     /* The type of reference. */
-    glyph_ref_type_t type;
+    const char *type;
 
     /* The name of the file where the reference was added. */
     const char *file;
@@ -275,7 +265,7 @@ glyph_set_clock(glyph_t self, int level_count);
     glyph_free_ref(glyph, type, __FILE__, __LINE__, rock)
 
 static void
-glyph_alloc_ref(glyph_t self, glyph_ref_type_t type, 
+glyph_alloc_ref(glyph_t self, const char *type, 
                 const char *file, int line, void* rock)
 {
     glyph_ref_t ref;
@@ -293,11 +283,11 @@ glyph_alloc_ref(glyph_t self, glyph_ref_type_t type,
     self->refs = ref;
 
     DPRINTF((1, "%s:%d: acquired %s reference to glyph %p with rock=%p\n",
-             xbasename(file), line, ref_type_names[type], self, rock));
+             xbasename(file), line, type, self, rock));
 }
 
 static void
-glyph_free_ref(glyph_t self, glyph_ref_type_t type,
+glyph_free_ref(glyph_t self, const char *type,
                const char* file, int line, void* rock)
 {
     glyph_ref_t ref;
@@ -309,7 +299,7 @@ glyph_free_ref(glyph_t self, glyph_ref_type_t type,
         if (ref->type == type && ref->rock == rock) {
             DPRINTF((1, "%s:%d: freeing %s reference to glyph %p acquired "
                      "at %s:%d with reference rock=%p\n",
-                     xbasename(file), line, ref_type_names[type], self,
+                     xbasename(file), line, type, self,
                      xbasename(ref->file), ref->line, rock));
 
             /* Update the previous link to point to the next one. */
@@ -411,7 +401,7 @@ glyph_free(glyph_t self)
 
     /* If the glyph has a successor then release our reference to it. */
     if (self->successor) {
-	GLYPH_FREE_REF(self->successor, REF_REPLACE, self);
+	GLYPH_FREE_REF(self->successor, ref_replace, self);
     }
 
     /* Free the message_view */
@@ -624,7 +614,7 @@ queue_add(glyph_t tail, glyph_t glyph)
     tail->next->previous = glyph;
     tail->next = glyph;
 
-    GLYPH_ALLOC_REF(glyph, REF_QUEUE, NULL);
+    GLYPH_ALLOC_REF(glyph, ref_queue, NULL);
 }
 
 /* Locates the item in the queue with the given tag */
@@ -682,13 +672,13 @@ queue_replace(glyph_t old_glyph, glyph_t new_glyph)
      * and previous glyphs. */
     if (old_glyph->visible_count != 0) {
         old_glyph->successor = new_glyph;
-        GLYPH_ALLOC_REF(new_glyph, REF_REPLACE, old_glyph);
+        GLYPH_ALLOC_REF(new_glyph, ref_replace, old_glyph);
     }
 
     /* The queue now has a reference to the new glyph and no longer
      * has one to the old one. */
-    GLYPH_ALLOC_REF(new_glyph, REF_QUEUE, NULL);
-    GLYPH_FREE_REF(old_glyph, REF_QUEUE, NULL);
+    GLYPH_ALLOC_REF(new_glyph, ref_queue, NULL);
+    GLYPH_FREE_REF(old_glyph, ref_queue, NULL);
 }
 
 /* Removes an item from a circular queue of glyphs */
@@ -709,7 +699,7 @@ queue_remove(glyph_t glyph)
     glyph->next = NULL;
 
     /* Lose our reference to the glyph */
-    GLYPH_FREE_REF(glyph, REF_QUEUE, NULL);
+    GLYPH_FREE_REF(glyph, ref_queue, NULL);
 }
 
 /* The glyph_holders are used to maintain a doubly-linked list of the
@@ -750,7 +740,7 @@ glyph_holder_alloc(glyph_t glyph, int width)
 
     /* Record the glyph and tell it that it's visible */
     self->glyph = glyph;
-    GLYPH_ALLOC_REF(glyph, REF_HOLDER, self);
+    GLYPH_ALLOC_REF(glyph, ref_holder, self);
     glyph->visible_count++;
     return self;
 }
@@ -767,7 +757,7 @@ glyph_holder_free(glyph_holder_t self)
     }
 
     /* Lose our reference to the glyph */
-    GLYPH_FREE_REF(glyph, REF_HOLDER, self);
+    GLYPH_FREE_REF(glyph, ref_holder, self);
     free(self);
 }
 
@@ -1053,7 +1043,7 @@ initialize(Widget request, Widget widget, ArgList args, Cardinal *num_args)
 
     /* Allocate a glyph to represent the gap */
     self->scroller.gap = glyph_alloc(self, NULL);
-    GLYPH_ALLOC_REF(self->scroller.gap, REF_GAP, self);
+    GLYPH_ALLOC_REF(self->scroller.gap, ref_gap, self);
     self->scroller.gap->next = self->scroller.gap;
     self->scroller.gap->previous = self->scroller.gap;
 
