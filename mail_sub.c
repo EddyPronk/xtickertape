@@ -166,9 +166,6 @@ notify_cb(elvin_handle_t handle,
 
     self->callback(self->rock, message, False);
 
-    /* Clean up */
-    message_free(message);
-
     /* Free the folder name */
     if (buffer != NULL) {
         free(buffer);
@@ -250,9 +247,6 @@ notify_cb(elvin_handle_t handle,
         NULL, 0, NULL, NULL, NULL, NULL);
 
     self->callback(self->rock, message, False);
-
-    /* Clean up */
-    message_free(message);
 
     /* Free the folder name */
     if (buffer != NULL) {

@@ -121,6 +121,10 @@ static const char *mime_types[] = { "text/uri-list", "x-elvin/url", NULL };
 /* The characters to use when converting a hex digit to ASCII */
 static const char *hex_chars = "0123456789abcdef";
 
+#if defined(DEBUG_MESSAGE)
+static const char *ref_status = "status";
+static const char *ref_send_history = "send_history";
+#endif /* DEBUG_MESSAGE */
 
 /* The structure used to hold font code-set information */
 typedef struct {
@@ -1720,7 +1724,7 @@ action_send(Widget button, XtPointer closure, XtPointer call_data)
         /* Clear a spot in the message history */
         message = self->send_history[self->send_history_next];
         if (message != NULL) {
-            message_free(message);
+            MESSAGE_FREE_REF(message, ref_send_history, self);
         }
 
         /* Construct a new message */
@@ -1728,6 +1732,7 @@ action_send(Widget button, XtPointer closure, XtPointer call_data)
 
         /* Record it in the send history */
         self->send_history[self->send_history_next] = message;
+        MESSAGE_ALLOC_REF(message, ref_send_history, self);
         self->send_history_next = (self->send_history_next + 1) %
                                   self->send_history_count;
         self->send_history_point = self->send_history_next;
@@ -1913,14 +1918,15 @@ control_panel_set_status_message(control_panel_t self, message_t message)
     if (self->status_message != NULL) {
         /* Did it have an attachment? */
         had_attachment = message_has_attachment(self->status_message);
-        message_free(self->status_message);
+        MESSAGE_FREE_REF(self->status_message, ref_status, self);
         self->status_message = NULL;
         self->is_overridden = False;
     }
 
     /* Record which message we're showing */
     if (message) {
-        self->status_message = message_alloc_reference(message);
+        self->status_message = message;
+        MESSAGE_ALLOC_REF(message, ref_status, self);
         message_decode_attachment(message, &mime_type, &attachment);
     }
 
@@ -2291,11 +2297,13 @@ control_panel_history_prev(control_panel_t self)
         /* Free the previous contents */
         message = self->send_history[self->send_history_next];
         if (message != NULL) {
-            message_free(message);
+            MESSAGE_FREE_REF(message, ref_send_history, self);
         }
 
         /* Record the current message in the history */
-        self->send_history[self->send_history_next] = construct_message(self);
+        message = construct_message(self);
+        self->send_history[self->send_history_next] = message;
+        MESSAGE_ALLOC_REF(message, ref_send_history, self);
     }
 
     /* Update the send history's point */

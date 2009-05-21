@@ -46,6 +46,17 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+
+#if defined(DEBUG_MESSAGE)
+# define MESSAGE_ALLOC_REF(message, type, rock) \
+    message_alloc_ref(message, xbasename(__FILE__), __LINE__, type, rock)
+# define MESSAGE_FREE_REF(message, type, rock) \
+    message_free_ref(message, xbasename(__FILE__), __LINE__, type, rock)
+#else /* !DEBUG_MESSAGE */
+# define MESSAGE_ALLOC_REF(message, type, rock) message_alloc_ref(message)
+# define MESSAGE_FREE_REF(message, type, rock) message_free_ref(message)
+#endif /* DEBUG_MESSAGE */
+
 /* The message_t type */
 typedef struct message *message_t;
 
@@ -76,14 +87,25 @@ message_alloc(const char *info,
 
 
 /* Allocates another reference to the message_t */
-message_t
-message_alloc_reference(message_t self);
+#if defined(DEBUG_MESSAGE)
+void
+message_alloc_ref(message_t self, const char *file, int line,
+                  const char *type, void *rock);
+#else /* !DEBUG_MESSAGE */
+void
+message_alloc_ref(message_t self);
+#endif /* DEBUG_MESSAGE */
 
 
 /* Frees the memory used by the receiver */
+#if defined(DEBUG_MESSAGE)
 void
-message_free(message_t self);
-
+message_free_ref(message_t self, const char *file, int line,
+                 const char *type, void *rock);
+#else /* !DEBUG_MESSAGE */
+void
+message_free_ref(message_t self);
+#endif /* DEBUG_MESSAGE */
 
 /* Answers the Subscription info for the receiver's subscription */
 const char *

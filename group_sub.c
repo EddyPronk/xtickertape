@@ -423,9 +423,6 @@ notify_cb(elvin_handle_t handle,
     /* Deliver the message */
     self->callback(self->rock, message, self->has_nazi);
 
-    /* Clean up */
-    message_free(message);
-
     if (buffer != NULL) {
         free(buffer);
     }
@@ -704,9 +701,6 @@ notify_cb(elvin_handle_t handle,
 
     /* Deliver the message */
     self->callback(self->rock, message, self->has_nazi);
-
-    /* Clean up */
-    message_free(message);
 
     if (buffer != NULL) {
         free(buffer);

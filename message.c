@@ -61,6 +61,7 @@
 #endif
 #include "replace.h"
 #include "globals.h"
+#include "ref.h"
 #include "utils.h"
 #include "message.h"
 
@@ -83,8 +84,13 @@ message_debug(int level, message_t self);
 #define CONTENT_TYPE "Content-Type:"
 
 struct message {
+#if defined(DEBUG_MESSAGE)
+    /* The list of references to this glyph. */
+    explicit_ref_t refs;
+#else /* !DEBUG_MESSAGE */
     /* The receiver's reference count */
     int ref_count;
+#endif /* DEBUG_MESSAGE */
 
     /* The time when the message was created */
     struct timeval creation_time;
@@ -404,7 +410,11 @@ message_alloc(const char *info,
 
     /* Copy each of the strings info the data array. */
     point = self->data;
+#if defined(DEBUG_MESSAGE)
+    self->refs = NULL;
+#else /* !DEBUG_MESSAGE */
     self->ref_count = 0;
+#endif /* DEBUG_MESSAGE */
     self->info = append_data(&point, info, info_size);
     self->group = append_data(&point, group, group_size);
     self->user = append_data(&point, user, user_size);
@@ -436,33 +446,54 @@ message_alloc(const char *info,
              sizeof(struct message) + len - 1, self, ++message_count));
     MESSAGE_DEBUG(1, self);
 
-    /* Allocate a reference to the caller. */
-    self->ref_count++;
     return self;
 }
 
 /* Allocates another reference to the message_t */
-message_t
-message_alloc_reference(message_t self)
+#if defined(DEBUG_MESSAGE)
+void
+message_alloc_ref(message_t self, const char *file, int line,
+                  const char *type, void *rock)
+{
+    acquire_explicit_ref(&self->refs, "message", self, file, line, type, rock);
+}
+#else /* !DEBUG_MESSAGE */
+void
+message_alloc_ref(message_t self)
 {
     self->ref_count++;
-    return self;
 }
+#endif /* DEBUG_MESSAGE */
 
 /* Frees the memory used by the receiver */
+#if defined(DEBUG_MESSAGE)
 void
-message_free(message_t self)
+message_free_ref(message_t self, const char *file, int line,
+                 const char *type, void *rock)
 {
-    /* Decrement the reference count */
-    if (--self->ref_count > 0) {
+    release_explicit_ref(&self->refs, "message", self, file, line, type, rock);
+    if (self->refs != NULL) {
         return;
     }
 
     DPRINTF((1, "freeing message_t %p (%ld):\n", self, --message_count));
     MESSAGE_DEBUG(1, self);
-
     free(self);
 }
+#else /* !DEBUG_MESSAGE */
+void
+message_free_ref(message_t self)
+{
+    self->ref_count--;
+    if (self->ref_count != 0) {
+        return;
+    }
+
+    DPRINTF((1, "freeing message_t %p (%ld):\n", self, --message_count));
+    MESSAGE_DEBUG(1, self);
+    free(self);
+}
+#endif /* DEBUG_MESSAGE */
 
 /* Answers the Subscription matched to generate the receiver */
 const char *
@@ -885,12 +916,19 @@ static void
 message_debug(int level, message_t self)
 {
     char timebuf[TIMESTAMP_SIZE];
+    int ref_count;
+
+#if defined(DEBUG_MESSAGE)
+    ref_count = explicit_ref_count(self->refs);
+#else /* !DEBUG_MESSAGE */
+    ref_count = self->ref_count;
+#endif /* DEBUG_MESSAGE */
 
     DPRINTF((level,
              "message_t (%p) { ref_count=%d, creation_time=%s, info=%s%s%s, "
              "group=\"%s\", user=\"%s\", string=\"%s\", attachment=%p [%zu], "
              "timeout=%ld, tag=%s%s%s, id=%s%s%s, reply_id=%s%s%s, "
-             "thread_id=%s%s%s }\n", self, self->ref_count,
+             "thread_id=%s%s%s }\n", self, ref_count,
              write_timestamp(self, timebuf, sizeof(timebuf)),
              self->info ? "\"" : "",
              self->info ? self->info : "NULL",

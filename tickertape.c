@@ -135,6 +135,10 @@
 
 #define F_USER "user"
 
+#if defined(DEBUG_MESSAGE)
+static const char *ref_recursion = "recursion";
+#endif /* DEBUG_MESSAGE */
+
 /* The tickertape data type */
 struct tickertape {
     /* A convenient error context */
@@ -323,6 +327,9 @@ receive_callback(void *rock, message_t message, int show_attachment)
 {
     tickertape_t self = (tickertape_t)rock;
 
+    /* Get a reference to the message. */
+    MESSAGE_ALLOC_REF(message, ref_recursion, self);
+
     /* Add the message to the control panel.  This will mark it as
      * killed if it is added to a thread which has been killed */
     control_panel_add_message(self->control_panel, message);
@@ -336,6 +343,9 @@ receive_callback(void *rock, message_t message, int show_attachment)
             tickertape_show_attachment(self, message);
         }
     }
+
+    /* Release our reference to the message. */
+    MESSAGE_FREE_REF(message, ref_recursion, self);
 }
 
 /* Write the template to the given file, doing some substitutions */
@@ -1033,7 +1043,6 @@ status_cb(elvin_handle_t handle,
                             NULL, 0, NULL, NULL, NULL, NULL);
     if (message != NULL) {
         receive_callback(self, message, False);
-        message_free(message);
     }
 
     /* Also display the message on the status line */
@@ -1210,7 +1219,6 @@ status_cb(elvin_handle_t handle,
                             NULL, 0, NULL, NULL, NULL, NULL);
     if (message != NULL) {
         receive_callback(self, message, False);
-        message_free(message);
     }
 
     /* Also display the message on the status line */

@@ -53,11 +53,16 @@
 #if defined(HAVE_SYS_TIME_H) && defined(TM_IN_SYS_TIME)
 # include <sys/time.h> /* struct tm */
 #endif
+#ifdef HAVE_ASSERT_H
+# include <assert.h>
+#endif
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include "replace.h"
+#include "globals.h"
 #include "message.h"
 #include "utf8.h"
+#include "utils.h"
 #include "message_view.h"
 
 #define SEPARATOR ":"
@@ -113,6 +118,9 @@ struct message_view {
     struct string_sizes separator_sizes;
 };
 
+#if defined(DEBUG_MESSAGE)
+static const char *ref_message_view = "message_view";
+#endif /* DEBUG_MESSAGE */
 
 /* Answers non-zero if the XRectangle overlaps with the rectangular
  * region described by left, top, right and bottom */
@@ -181,6 +189,9 @@ message_view_alloc(message_t message, long indent, utf8_renderer_t renderer)
     struct tm *timestamp;
     struct string_sizes sizes;
 
+    /* Make sure there's a message. */
+    ASSERT(message != NULL);
+
     /* Allocate enough memory for the new message view */
     self = malloc(sizeof(struct message_view));
     if (self == NULL) {
@@ -191,11 +202,8 @@ message_view_alloc(message_t message, long indent, utf8_renderer_t renderer)
     memset(self, 0, sizeof(struct message_view));
 
     /* Allocate a reference to the message */
-    self->message = message_alloc_reference(message);
-    if (self->message == NULL) {
-        message_view_free(self);
-        return NULL;
-    }
+    self->message = message;
+    MESSAGE_ALLOC_REF(message, ref_message_view, self);
 
     /* Record the indentation and code set info */
     self->indent = indent;
@@ -244,7 +252,7 @@ void
 message_view_free(message_view_t self)
 {
     /* Free our reference to the message */
-    message_free(self->message);
+    MESSAGE_FREE_REF(self->message, ref_message_view, self);
 
     /* Free the message_view itself */
     free(self);

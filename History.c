@@ -208,6 +208,11 @@ struct translation_queue {
     int dy;
 };
 
+#if defined(DEBUG_MESSAGE)
+static const char *ref_node = "node";
+static const char *ref_selection = "selection";
+static const char *ref_history = "history";
+#endif /* DEBUG_MESSAGE */
 
 /* Allocates a translation queue item */
 static translation_queue_t
@@ -268,7 +273,8 @@ node_alloc(message_t message)
     memset(self, 0, sizeof(struct node));
 
     /* Record the message */
-    self->message = message_alloc_reference(message);
+    self->message = message;
+    MESSAGE_ALLOC_REF(message, ref_node, self);
     return self;
 }
 
@@ -278,7 +284,7 @@ node_free(node_t self)
 {
     /* Make sure we decrement the message's reference count */
     if (self->message != NULL) {
-        message_free(self->message);
+        MESSAGE_FREE_REF(self->message, ref_node, self);
         self->message = NULL;
     }
 
@@ -1608,7 +1614,7 @@ set_selection(HistoryWidget self, unsigned int index, message_t message)
 
     /* Drop our extra reference to the old selection */
     if (self->history.selection != NULL) {
-        message_free(self->history.selection);
+        MESSAGE_FREE_REF(self->history.selection, ref_selection, self);
     }
 
     /* Redraw the old selection if appropriate */
@@ -1648,7 +1654,8 @@ set_selection(HistoryWidget self, unsigned int index, message_t message)
     if (message == NULL) {
         self->history.selection = NULL;
     } else {
-        self->history.selection = message_alloc_reference(message);
+        self->history.selection = message;
+        MESSAGE_ALLOC_REF(message, ref_selection, self);
     }
 
     /* And record its index */
@@ -2383,15 +2390,16 @@ HistoryAddMessage(Widget widget, message_t message)
     /* If we're not at capacity then just add a reference to the end
      * of the array of messages */
     if (self->history.message_count < self->history.message_capacity) {
-        self->history.messages[self->history.message_count] =
-            message_alloc_reference(message);
+        self->history.messages[self->history.message_count] = message;
+        MESSAGE_ALLOC_REF(message, ref_history, self);
     } else {
         /* Free the old message */
-        message_free(self->history.messages[self->history.message_index]);
+        MESSAGE_FREE_REF(self->history.messages[self->history.message_index],
+                         ref_history, self);
 
         /* Replace it with this message */
-        self->history.messages[self->history.message_index] =
-            message_alloc_reference(message);
+        self->history.messages[self->history.message_index] = message;
+        MESSAGE_ALLOC_REF(message, ref_history, self);
 
         self->history.message_index = (self->history.message_index + 1) %
             self->history.message_capacity;
