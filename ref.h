@@ -83,5 +83,9 @@ void
 release_explicit_ref(explicit_ref_t *list, const char *obj_type, void *obj,
 		     const char *file, int line, const char *type, void *rock);
 
+/* Count the number of references. */
+int
+explicit_ref_count(explicit_ref_t list);
+
 # endif /* DEBUG */
 #endif /* EXPLICIT_REF_H */

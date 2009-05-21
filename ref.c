@@ -110,6 +110,19 @@ release_explicit_ref(explicit_ref_t *list, const char *obj_type, void *obj,
     free(self);
 }
 
+int
+explicit_ref_count(explicit_ref_t list)
+{
+    explicit_ref_t ref;
+    int count = 0;
+
+    for (ref = list; ref != NULL; ref = ref->next) {
+        count++;
+    }
+
+    return count;
+}
+
 #endif /* DEBUG */
 
 /**********************************************************************/
