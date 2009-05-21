@@ -89,6 +89,7 @@ release_explicit_ref(explicit_ref_t *list, const char *obj_type, void *obj,
 	if (self->type == type && self->rock == rock) {
 	    break;
 	}
+        prev = self;
     }
 
     /* Make sure it was found. */
