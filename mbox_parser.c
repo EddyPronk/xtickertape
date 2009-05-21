@@ -456,7 +456,7 @@ int
 mbox_parser_parse(mbox_parser_t self, const char *mailbox)
 {
     int length;
-    char *pointer;
+    const char *pointer;
 
     /* Make sure we have enough room in our buffers */
     length = strlen(mailbox) + 1;
