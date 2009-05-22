@@ -2187,7 +2187,7 @@ start_drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     XButtonEvent *button_event = (XButtonEvent *)event;
 
-    DPRINTF((1, "start-drag()\n"));
+    DPRINTF((2, "start-drag()\n"));
 
     /* Record the postion of the click for future reference */
     self->scroller.start_drag_x = button_event->x;
@@ -2201,7 +2201,7 @@ drag(Widget widget, XEvent *event, String *params, Cardinal *nparams)
     ScrollerWidget self = (ScrollerWidget)widget;
     XMotionEvent *motion_event = (XMotionEvent *)event;
 
-    DPRINTF((1, "drag()\n"));
+    DPRINTF((5, "drag()\n"));
 
     /* Aren't we officially dragging yet? */
     if (!self->scroller.is_dragging) {
