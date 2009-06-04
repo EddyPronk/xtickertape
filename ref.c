@@ -74,7 +74,7 @@ acquire_explicit_ref(explicit_ref_t *list, const char *obj_type, void *obj,
     self->next = *list;
     *list = self;
 
-    DPRINTF((1, "%s:%d: acquiried %s reference to %s %p with rock=%p\n",
+    DPRINTF((1, "%s:%d: acquired %s reference to %s %p with rock=%p\n",
 	     file, line, type, obj_type, obj, rock));
 }
 void
