@@ -80,3 +80,8 @@ History Widget
 
 - Being able to search the history would make it substantially more
   useful.
+
+- When the history window shrinks, it should keep the bottom line
+  visible if (and only if) it had previously been visible, similar to
+  the way it behaves when new messages arrive.
+
