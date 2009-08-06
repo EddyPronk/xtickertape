@@ -212,6 +212,7 @@ struct translation_queue {
 static const char *ref_node = "node";
 static const char *ref_selection = "selection";
 static const char *ref_history = "history";
+static const char *ref_copy = "copy";
 #endif /* DEBUG_MESSAGE */
 
 /* Allocates a translation queue item */
@@ -2186,9 +2187,12 @@ copy_selection(Widget widget, XEvent* event, char **params,
     }
 
     /* Record the selected message and part. */
-    ASSERT(self->history.copy_message == NULL);
+    if (self->history.copy_message != NULL) {
+        MESSAGE_FREE_REF(self->history.copy_message, ref_copy, self);
+        self->history.copy_message = NULL;
+    }
     self->history.copy_message = self->history.selection;
-    ASSERT(self->history.copy_part == MSGPART_NONE);
+    MESSAGE_ALLOC_REF(self->history.copy_message, ref_copy, self);
     self->history.copy_part = part;
 
     /* Decide where we're copying to. */
@@ -2204,9 +2208,6 @@ copy_selection(Widget widget, XEvent* event, char **params,
     }
 
     DPRINTF((2, "AFTER Xme[%s]Source: %s\n", target, res ? "true" : "false"));
-
-    self->history.copy_message = NULL;
-    self->history.copy_part = MSGPART_NONE;
 }
 
 /* Redraw the widget */
