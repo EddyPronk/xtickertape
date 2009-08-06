@@ -179,6 +179,7 @@ paint(ScrollerWidget self,
       unsigned int height);
 
 #if defined(DEBUG)
+static const char *ref_copy = "copy";
 static const char *ref_gap = "gap";
 static const char *ref_queue = "queue";
 static const char *ref_holder = "holder";
@@ -1700,9 +1701,12 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     }
 
     /* Record the message and part. */
-    ASSERT(self->scroller.copy_message == NULL);
+    if (self->scroller.copy_message != NULL) {
+        MESSAGE_FREE_REF(self->scroller.copy_message, ref_copy, self);
+        self->scroller.copy_message = NULL;
+    }
     self->scroller.copy_message = glyph_get_message(glyph);
-    ASSERT(self->scroller.copy_part == MSGPART_NONE);
+    MESSAGE_ALLOC_REF(self->scroller.copy_message, ref_copy, self);
     self->scroller.copy_part = part;
 
     /* Decide where we're copying to. */
@@ -1716,9 +1720,6 @@ copy_at_event(Widget widget, XEvent* event, char **params,
     }
 
     DPRINTF((2, "Xme[%s]Source: %s\n", target, res ? "true" : "false"));
-
-    self->scroller.copy_message = NULL;
-    self->scroller.copy_part = MSGPART_NONE;
 }
 
 
