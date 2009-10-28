@@ -477,6 +477,41 @@ glyph_get_successor(glyph_t self)
     return self;
 }
 
+/* Updates a glyph's successor. */
+static void
+glyph_set_successor(glyph_t self, glyph_t successor)
+{
+    /* This should only be called when the glyph is visible. */
+    ASSERT(self->visible_count != 0);
+
+    /* The linked list of successors should never contain more than
+     * three elements.  We can end up with three glyphs when the
+     * leftmost and rightmost glyph holders refer to different
+     * versions of the glyph and another replacement has been
+     * received.  All other cases can be thought of as degenerate
+     * forms of this case.
+     *
+     * This function can be called with either of the visible glyphs,
+     * but we're only interested in the one which points to the
+     * invisible glyph, so if this glyph's successor is visible, use
+     * that instead. */
+    if (self->successor != NULL && self->successor->visible_count != 0) {
+        self = self->successor;
+    }
+
+    /* See if this glyph has a successor already. */
+    if (self->successor != NULL) {
+        ASSERT(self->successor->visible_count == 0);
+
+        /* Discard the replacement reference to the successor. */
+        GLYPH_FREE_REF(self->successor, ref_replace, self);
+    }
+
+    /* Allocate a replacement reference to the new successor. */
+    GLYPH_ALLOC_REF(successor, ref_replace, self);
+    self->successor = successor;
+}
+
 /* Deletes a glyph */
 static void
 glyph_delete(glyph_t self)
@@ -593,15 +628,6 @@ queue_replace(glyph_t old_glyph, glyph_t new_glyph)
     old_glyph->next->previous = new_glyph;
     old_glyph->next = NULL;
 
-    /* If the old glyph is visible then we won't substitute the new
-     * glyph for it right away.  Add a successor link from the old
-     * glyph to the new so that we can still find the old glyph's next
-     * and previous glyphs. */
-    if (old_glyph->visible_count != 0) {
-        old_glyph->successor = new_glyph;
-        GLYPH_ALLOC_REF(new_glyph, ref_replace, old_glyph);
-    }
-
     /* The queue now has a reference to the new glyph and no longer
      * has one to the old one. */
     GLYPH_ALLOC_REF(new_glyph, ref_queue, NULL);
@@ -686,6 +712,14 @@ glyph_holder_free(glyph_holder_t self)
     /* Lose our reference to the glyph */
     GLYPH_FREE_REF(glyph, ref_holder, self);
     free(self);
+}
+
+/* Returns the glyph holder's tag, or NULL if it has none. */
+static const char *
+glyph_holder_get_tag(glyph_holder_t self)
+{
+    message_t message = glyph_get_message(self->glyph);
+    return message == NULL ? NULL : message_get_tag(message);
 }
 
 /* Paints the holder's glyph */
@@ -1160,6 +1194,28 @@ remove_right_holder(ScrollerWidget self)
     self->scroller.right_holder->next = NULL;
     self->scroller.right_offset -= holder->width;
     glyph_holder_free(holder);
+}
+
+/* Find a holder whose glyph has the given tag. */
+static glyph_holder_t
+find_holder(ScrollerWidget self, const char *tag)
+{
+    glyph_holder_t probe;
+    const char *probe_tag;
+
+    /* This should never be called with a NULL tag. */
+    ASSERT(tag != NULL);
+
+    /* Walk the list of glyph holders looking for a match. */
+    probe = self->scroller.left_holder;
+    for (; probe != NULL; probe = probe->next) {
+        probe_tag = glyph_holder_get_tag(probe);
+        if (probe_tag != NULL && strcmp(probe_tag, tag) == 0) {
+            return probe;
+        }
+    }
+
+    return NULL;
 }
 
 /* Updates the state of the scroller after a shift of zero or more
@@ -2280,6 +2336,7 @@ void
 ScAddMessage(Widget widget, message_t message)
 {
     ScrollerWidget self = (ScrollerWidget)widget;
+    const char *tag;
     glyph_t glyph;
     glyph_t probe;
     glyph_holder_t holder;
@@ -2290,12 +2347,24 @@ ScAddMessage(Widget widget, message_t message)
         return;
     }
 
-    /* Try replacing an existing queue element with the same tag as this one */
-    probe = queue_find(self->scroller.gap, message_get_tag(message));
-    if (probe != NULL) {
-        queue_replace(probe, glyph);
-    } else {
+    /* See if the new message replaces another. */
+    tag = message_get_tag(message);
+    probe = (tag == NULL) ? NULL : queue_find(self->scroller.gap, tag);
+    if (probe == NULL) {
+        /* The message doesn't match an existing one, so just append
+         * it to the end. */
         queue_add(self->scroller.gap->previous, glyph);
+    } else {
+        /* The message replaces another.  Update the glyph queue to
+         * refer to our new glyph instead of the replaced one. */
+        queue_replace(probe, glyph);
+
+        /* If the replaced glyph is still visible then record our new
+           glyph as its successor. */
+        holder = find_holder(self, tag);
+        if (holder != NULL) {
+            glyph_set_successor(holder->glyph, glyph);
+        }
     }
 
     /* Adjust the gap width if possible and appropriate */
