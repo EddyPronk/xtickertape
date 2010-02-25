@@ -163,7 +163,6 @@ do_iconv_open(const char *tocode, const char *fromcode)
         from_string = fromcode;
         while (from_string != NULL) {
             /* Try this combination */
-            fflush(stderr);
             cd = iconv_open(to_string, from_string);
             if (cd != (iconv_t)-1) {
                 return cd;
