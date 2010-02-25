@@ -130,7 +130,7 @@ find_guess(const char *code)
 
     /* Go through the guesses */
     for (guess = guesses; guess->code != NULL; guess++) {
-        if (strcmp(guess->code, code) == 0) {
+        if (strcasecmp(guess->code, code) == 0) {
             return guess;
         }
     }
