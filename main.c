@@ -113,6 +113,10 @@ struct atom_info {
 
 Atom atoms[AN_MAX + 1];
 
+#ifndef XmS_MOTIF_CLIPBOARD_TARGETS
+#define XmS_MOTIF_CLIPBOARD_TARGETS ((char*)&_XmStrings[17073])
+#endif
+
 /* The table of X11 atoms to intern. */
 struct atom_info atom_list[AN_MAX + 1] = {
     DECLARE_ATOM(CHARSET_ENCODING),
